@@ -1,0 +1,19 @@
+ZMPP Common - Common library of the ZMPP project.
+
+Description
+
+When implementing an interpreter for Interactive Fiction, there are
+concepts and standards, that are reused across different systems.
+This library was created to provide common services on the Java
+Virtual Machine.
+This library was extracted from the Glulx/Z-Machine versions of
+ZMPP, but could be reused for other IF systems as well.
+
+Currently this includes:
+
+  - generic memory model
+  - IFF access functions
+  - support for Blorb 
+  - support for Quetzal (save game abstractions)
+  - support for IF metadata
+
