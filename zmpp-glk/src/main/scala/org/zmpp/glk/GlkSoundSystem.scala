@@ -54,6 +54,12 @@ class GlkSoundChannel(val id: Int, val rock: Int, nativeChannel: NativeSoundChan
   }  
 }
 
+object NullSoundChannel extends GlkSoundChannel(0, 0, null) {
+  override def stop { }
+  override def setVolume(volume: Int) { }
+  override def play(soundnum: Int, repeats: Int, notify: Boolean) = false
+}
+
 
 class GlkSoundSystem {
   val logger = Logger.getLogger("glk")
@@ -85,7 +91,8 @@ class GlkSoundSystem {
   }
 
   private def channelWithId(id: Int) = {
-    channels.filter(channel => channel.id == id).head
+    if (channels.isEmpty) NullSoundChannel
+    else channels.filter(channel => channel.id == id).head
   }
 
   def destroyChannel(channelId: Int) {
