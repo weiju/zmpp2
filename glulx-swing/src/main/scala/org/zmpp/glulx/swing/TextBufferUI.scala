@@ -57,10 +57,20 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
                                 SwingTextBufferUI.MarginBottom,
                                 SwingTextBufferUI.MarginRight))
   style = StyleType.Normal.id
-  val attrs = getInputAttributes
-  setFont(screenUI.standardFont)
-  StyleConstants.setFontFamily(attrs, screenUI.standardFont.getFamily)
-  StyleConstants.setFontSize(attrs,   screenUI.standardFont.getSize)
+  setStandardFont
+
+  private def setStandardFont {
+    val attrs = getInputAttributes
+    setFont(screenUI.standardFont)
+    StyleConstants.setFontFamily(attrs, screenUI.standardFont.getFamily)
+    StyleConstants.setFontSize(attrs,   screenUI.standardFont.getSize)
+  }
+  private def setFixedFont {
+    val attrs = getInputAttributes
+    setFont(screenUI.fixedFont)
+    StyleConstants.setFontFamily(attrs, screenUI.fixedFont.getFamily)
+    StyleConstants.setFontSize(attrs,   screenUI.fixedFont.getSize)
+  }
 
   protected def numCols = getWidth / screenUI.charWidthStdFont
   protected def numRows = getHeight / screenUI.lineHeightStdFont
@@ -86,6 +96,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     import StyleHintType._
     flush
     val attrs = getInputAttributes
+    val isProportional = if (glkWindow.styleHints.get(style, Proportional.id) == 1) true else false
     val isBold = if (glkWindow.styleHints.get(style, Weight.id) == 1) true else false
     val isItalic = if (glkWindow.styleHints.get(style, Oblique.id) == 1) true else false
     val isReverse = if (glkWindow.styleHints.get(style, ReverseColor.id) == 1) true else false
@@ -100,6 +111,8 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     StyleConstants.setBackground(attrs, new Color(backColor))
     StyleConstants.setForeground(attrs, new Color(textColor))
     StyleConstants.setUnderline(attrs, false)
+    if (isProportional) setStandardFont
+    else setFixedFont
   }
   override def setPreferredSize(size: Dimension) {
     super.setPreferredSize(size)
@@ -134,8 +147,39 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   def requestMouseInput {
     throw new UnsupportedOperationException("no mouse input in text buffers")
   }
+
+  private def currentPos = getDocument.getLength
+
   def _setHyperlink(linkval: Int) {
-    throw new UnsupportedOperationException("no hyperlinks in text buffers")
+    //throw new UnsupportedOperationException("no hyperlinks in text buffers")
+    //    logger.info("SET HYPERLINK LINKVAL = " + linkval)
+    if (linkval == 0) {
+      flush
+      // reset style to normal
+      style = StyleType.Normal.id
+      if (currentHyperLink != null) {
+        currentHyperLink.endPos = currentPos
+        hyperLinkMap(currentHyperLink.id) = currentHyperLink
+        // This output can generate BadLocationExceptions !!!
+        /*
+        val doc = getDocument
+        printf("ADDED HYPERLINK %d: start: %d end: %d text: '%s'\n",
+          currentHyperLink.id, currentHyperLink.startPos, currentHyperLink.endPos,
+          doc.getText(currentHyperLink.startPos, currentHyperLink.endPos))
+          */
+        currentHyperLink = null
+      }
+    } else {
+      flush
+      val attrs = getInputAttributes
+      StyleConstants.setBold(attrs, false)
+      StyleConstants.setItalic(attrs, false)
+      StyleConstants.setUnderline(attrs, true)
+      StyleConstants.setForeground(attrs, new Color(0x0000ff))
+      currentHyperLink = new HyperLink(linkval)
+      currentHyperLink.startPos = currentPos
+    }
+
   }
 
   def putChar(c: Char) {
