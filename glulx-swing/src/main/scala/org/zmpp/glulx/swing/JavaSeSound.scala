@@ -91,8 +91,12 @@ class PlaySoundTask(blorbData: BlorbData, channel: LineListener,
 extends Callable[Boolean] {
   val logger = Logger.getLogger("zmppsound")
   
+  val MAX_VOLUME: Float = 0x10000.asInstanceOf[Float]
+
   @volatile
   var running = true
+  val data = new Array[Byte](4096)
+  var line: SourceDataLine = null
 
   def call: Boolean = {
     running = true
@@ -118,34 +122,49 @@ extends Callable[Boolean] {
       baseFormat.getSampleRate,
       false)
     val decodedInputStream = AudioSystem.getAudioInputStream(decodedFormat, in)
-    playDecoded(decodedFormat, decodedInputStream)
+    val status = playDecoded(decodedFormat, decodedInputStream)
     in.close
-    true
+    status
   }
 
-  private def playDecoded(targetFormat: AudioFormat, decodedIn: AudioInputStream) {
-    val data = new Array[Byte](4096)
-    val line = getLine(targetFormat)
+  private def playDecoded(targetFormat: AudioFormat,
+                          decodedIn: AudioInputStream): Boolean = {
+    line = getLine(targetFormat)
     if (line != null) {
       line.addLineListener(channel)
       line.start
-      var nBytesRead = 0
-      var nBytesWritten = 0
-      while (running && nBytesRead != -1) {
-        nBytesRead = decodedIn.read(data, 0, data.length)
-        if (nBytesRead != -1) nBytesWritten = line.write(data, 0, nBytesRead)
+      decodedIn.mark(0) // for rewinding
+      if (repeats == -1) {
+        while (running) playDecodedOnce(line, decodedIn)
+      } else {
+        var repeatsLeft = repeats
+        while (running && repeatsLeft > 0) {
+          playDecodedOnce(line, decodedIn)
+          decodedIn.reset
+          repeatsLeft -= 1
+        }
       }
-      // remove the line listener before the line.stop call to prevent the
-      // stop event being sent to the channel
-      if (!running) {
-        line.removeLineListener(channel)
-        logger.info("PLAY TASK INTERRUPTED !!!")
-      }
-      line.drain
       line.stop
       line.close
       line.removeLineListener(channel)
       decodedIn.close
+      true
+    } else false
+  }
+  
+  private def playDecodedOnce(line: SourceDataLine, decodedIn: AudioInputStream) {
+    var nBytesRead = 0
+    var nBytesWritten = 0
+    while (running && nBytesRead != -1) {
+      nBytesRead = decodedIn.read(data, 0, data.length)
+      if (nBytesRead != -1) nBytesWritten = line.write(data, 0, nBytesRead)
+    }
+    line.drain
+    // remove the line listener before the line.stop call to prevent the
+    // stop event being sent to the channel
+    if (!running) {
+      line.removeLineListener(channel)
+      logger.info("PLAY TASK INTERRUPTED !!!")
     }
   }
   
@@ -159,6 +178,26 @@ extends Callable[Boolean] {
   
   def stop {
     running = false
+  }
+
+  def setVolume(volume: Int) {
+    if (line != null) {
+      val gainControl =
+        line.getControl(FloatControl.Type.MASTER_GAIN).asInstanceOf[FloatControl]
+      val minimumGain = gainControl.getMinimum
+      val maximumGain = gainControl.getMaximum
+      val gain = if (volume == 0) minimumGain
+      else {
+        // scale the volume value of 0x00000-0x10000 to the sound system's gain
+        val gainRange = maximumGain - minimumGain
+        val units = gainRange / MAX_VOLUME
+        (minimumGain + units * volume).asInstanceOf[Float] 
+      }
+      //logger.info("SoundChannel.setVolume(%d) -> gain = %f".format(volume, gain))
+      gainControl.setValue(gain)
+    } else {
+      logger.warning("SET_VOLUME() - NO LINE AVAILABLE")
+    }
   }
 }
 
@@ -174,20 +213,31 @@ extends NativeSoundChannel with LineListener {
     logger.info("SoundChannel.play(%d) repeats: %d".format(soundnum, repeats))
     notifyOnStop = notify
     stop
-    try {
-      if (blorbData.soundResource(soundnum) != null) {
-        currentTask = new PlaySoundTask(blorbData, this, soundnum, repeats)
-        currentFuture = executor.submit(currentTask)
-        return true
-      } else return false
-    } catch {
-      case ex => ex.printStackTrace
+    if (repeats != 0) {
+      try {
+        if (blorbData.soundResource(soundnum) != null) {
+          currentTask = new PlaySoundTask(blorbData, this, soundnum, repeats)
+          currentFuture = executor.submit(currentTask)
+          return true
+        } else {
+          logger.warning("SOUND %d NOT FOUND".format(soundnum))
+          return false
+        }
+      } catch {
+        case ex =>
+          ex.printStackTrace
+          return false
+      }
     }
-    false
+    true
   }
   
   def setVolume(volume: Int) {
-    logger.info("SoundChannel.setVolume(%d)".format(volume))
+    if (currentTask != null) {
+      currentTask.setVolume(volume)
+    } else {
+      logger.warning("NO SOUND TASK AVAILABLE")
+    }
   }
   def stop {
     //logger.info("SoundChannel.stop")

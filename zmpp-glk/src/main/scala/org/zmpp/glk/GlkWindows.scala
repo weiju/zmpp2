@@ -312,7 +312,7 @@ class GlkWindowSystem {
     newWindow.id
   }
   def closeWindow(winId: Int): Int = {
-    //logger.info("CLOSING WINDOW WITH ID: %d".format(winId))
+    logger.info("CLOSING WINDOW WITH ID: %d".format(winId))
     val windowToClose = windowWithId(winId)
     val writeCount = windowToClose.outputStream.writeCount
 
@@ -377,7 +377,7 @@ class GlkWindowSystem {
    */
   private def createLayoutTree(window: GlkWindow): GlkLayoutTreeNode = {
     if (window == null) return null
-    //logger.info("REC CREATE LAYOUT TREE - WINDOW TYPE: " + window.typeName + " id = " + window.id)
+    logger.info("REC CREATE LAYOUT TREE - WINDOW TYPE: " + window.typeName + " id = " + window.id)
     val node = new GlkLayoutTreeNode(window.id)
     node.size = window.size
     if (window.isInstanceOf[GlkGraphicsUIWindow]) node.isGraphics = true
@@ -395,8 +395,8 @@ class GlkWindowSystem {
   
   private def splitWindow(tosplit: GlkWindow, newWindow: GlkWindow,
                           method: Int) {
-      //logger.info("splitWindow(), splitting: %s new: %s method: %d size: %d".format(
-      //  tosplit.typeName, newWindow.typeName, method, newWindow.size))
+      logger.info("splitWindow(), splitting: %s new: %s method: %d size: %d".format(
+        tosplit.typeName, newWindow.typeName, method, newWindow.size))
       val oldParent = tosplit.parent.asInstanceOf[GlkPairWindow]
       val newParent =
         createWindow(GlkWindowType.PairWindow, 0, 0).asInstanceOf[GlkPairWindow]
@@ -412,10 +412,9 @@ class GlkWindowSystem {
       newParent.child0.parent = newParent
       newParent.child1.parent = newParent
       if (_rootWindow == newParent.child0) _rootWindow = newParent
-      /*
       logger.info("SPLITTING WINDOW WITH ID: %d SIZE: %d POS: %s DIV: %s".format(
              tosplit.id, newWindow.size, GlkWindowPosition.name(method),
-             GlkWindowDivision.name(method)))*/
+             GlkWindowDivision.name(method)))
   }
 }
 
