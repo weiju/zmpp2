@@ -27,9 +27,9 @@
       <url>http://scala-tools.org/repo-snapshots</url>
     </repository>
     <repository>
-      <id>maven-boxofrats.com</id>
-      <name>Box of Rats Maven2 Repository</name>
-      <url>http://localhost/~weiju/maven2</url>
+      <id>zmpp.sourceforge.net</id>
+      <name>ZMPP Maven2 Repository</name>
+      <url>http://zmpp.sourceforge.net/maven2</url>
     </repository>
   </repositories>
 
