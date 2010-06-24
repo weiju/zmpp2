@@ -427,7 +427,10 @@ trait SwingGlkScreenUI extends GlkScreenUI {
     if (resourceInfo != null) {
       val inputStream = blorbData.pictureInputStream(resnum)
       ImageIO.read(inputStream)
-    } else null
+    } else {
+      logger.info("IMAGE NUM NOT FOUND: %d".format(resnum))
+      null
+    }
   }
   
   def imageSize(resnum: Int): GlkDimension = {

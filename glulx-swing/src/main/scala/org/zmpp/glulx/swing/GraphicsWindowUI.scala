@@ -99,6 +99,7 @@ extends JComponent with SwingGlkWindowUI {
   }
   def _drawScaledImage(resnum: Int, posx: Int, posy: Int,
                        width: Int, height: Int) {
+    logger.info("GRAPHICS WINDOW(%d), DRAWSCALEDIMAGE(%d)".format(glkWindow.id, resnum))
     val g2d = getOffscreenGraphics
     val image = screenUI.getImage(resnum).getScaledInstance(
       width, height, java.awt.Image.SCALE_SMOOTH)
@@ -115,6 +116,7 @@ extends JComponent with SwingGlkWindowUI {
     }
   }
   def _drawImage(resnum: Int, posx: Int, posy: Int) {
+    logger.info("GRAPHICS WINDOW(%d), DRAWIMAGE(%d)".format(glkWindow.id, resnum))
     val g2d = getOffscreenGraphics
     val image = screenUI.getImage(resnum)
     g2d.drawImage(image, posx, posy, null)

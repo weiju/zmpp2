@@ -41,6 +41,7 @@ object GlkEventType extends Enumeration {
   val MouseInput  = Value("MouseInput")
   val Arrange     = Value("Arrange")
   val Redraw      = Value("Redraw")
+  val SoundNotify = Value("SoundNotify")
   val Hyperlink   = Value("Hyperlink")
 }
 

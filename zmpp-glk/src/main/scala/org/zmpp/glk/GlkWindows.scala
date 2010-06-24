@@ -244,6 +244,7 @@ class GlkWindowSystem {
   def clearWindow(winId: Int) = windowWithId(winId).ui.clear
   def createWindow(wintype: GlkWindowType.Value, size: Int, rock: Int) = {
     val id = nextId
+    logger.info("CREATED WINDOW WITH ID %d TYPE: %s SIZE: %d".format(id, wintype.toString, size))
 
     import GlkWindowType._
     val newWindow: GlkWindow = wintype match {
@@ -312,9 +313,11 @@ class GlkWindowSystem {
     newWindow.id
   }
   def closeWindow(winId: Int): Int = {
-    logger.info("CLOSING WINDOW WITH ID: %d".format(winId))
     val windowToClose = windowWithId(winId)
     val writeCount = windowToClose.outputStream.writeCount
+    
+    val winParentId = if (windowToClose.parent == null) -1 else windowToClose.parent.id
+    logger.info("CLOSING WINDOW WITH ID: %d (PARENT ID: %d)".format(winId, winParentId))
 
     // remove window from its parent by replacing its parent with the sibling
     if (windowToClose.parent != null) {
@@ -322,8 +325,10 @@ class GlkWindowSystem {
       val sibling =
         if (windowToClose == winParent.child0) winParent.child1
         else winParent.child0
-      if (winParent == _rootWindow) _rootWindow = sibling
-      else {
+      if (winParent == _rootWindow) {
+        sibling.parent = null
+        _rootWindow = sibling
+      } else {
         val winGrandParent = winParent.parent.asInstanceOf[GlkPairWindow]
         sibling.parent = winGrandParent
         if (winParent == winGrandParent.child0) winGrandParent.child0 = sibling
@@ -395,8 +400,6 @@ class GlkWindowSystem {
   
   private def splitWindow(tosplit: GlkWindow, newWindow: GlkWindow,
                           method: Int) {
-      logger.info("splitWindow(), splitting: %s new: %s method: %d size: %d".format(
-        tosplit.typeName, newWindow.typeName, method, newWindow.size))
       val oldParent = tosplit.parent.asInstanceOf[GlkPairWindow]
       val newParent =
         createWindow(GlkWindowType.PairWindow, 0, 0).asInstanceOf[GlkPairWindow]
@@ -412,9 +415,9 @@ class GlkWindowSystem {
       newParent.child0.parent = newParent
       newParent.child1.parent = newParent
       if (_rootWindow == newParent.child0) _rootWindow = newParent
-      logger.info("SPLITTING WINDOW WITH ID: %d SIZE: %d POS: %s DIV: %s".format(
+      logger.info("SPLITTING WINDOW WITH ID: %d SIZE: %d POS: %s DIV: %s PAIR PARENT: %d".format(
              tosplit.id, newWindow.size, GlkWindowPosition.name(method),
-             GlkWindowDivision.name(method)))
+             GlkWindowDivision.name(method), if (oldParent == null) -1 else oldParent.id))
   }
 }
 
