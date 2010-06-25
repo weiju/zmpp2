@@ -55,8 +55,12 @@
     </dependency>
     <dependency>
       <groupId>org.specs</groupId>
+      <!--
       <artifactId>specs</artifactId>
-      <version>1.4.3</version>
+      <version>1.6.2</version>
+      -->
+      <artifactId>specs_2.8.0.Beta1</artifactId>
+      <version>1.6.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>

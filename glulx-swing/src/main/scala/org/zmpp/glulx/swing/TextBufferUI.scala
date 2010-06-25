@@ -83,8 +83,10 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   }
   def _clear {
     _flush
+    val newForeground = new Color(currentForegroundColor)
     setBackground(new Color(currentBackgroundColor))
-    setForeground(new Color(currentForegroundColor))
+    setForeground(newForeground)
+    setCaretColor(newForeground)
     getDocument.remove(0, getDocument.getLength)
   }
   override def _flush {
