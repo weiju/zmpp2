@@ -93,7 +93,7 @@ class BlorbViewerFrame extends JFrame("Blorb Viewer") {
       val chooser = new JFileChooser
       if (chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
         tableModel.blorbData = readGblorbFile(chooser.getSelectedFile)
-        soundChannel = new JavaSeSoundChannel(tableModel.blorbData)
+        soundChannel = new JavaSeSoundChannel(tableModel.blorbData, null)
       }
     }
   })
@@ -106,7 +106,7 @@ class BlorbViewerFrame extends JFrame("Blorb Viewer") {
           println("PLAY PICTURE")
         } else if (resource.isSound) {
           println("PLAY SOUND")
-          soundChannel.play(resource.number, 1, false)
+          soundChannel.play(resource.number, 1, 0)
         }
       }
     }

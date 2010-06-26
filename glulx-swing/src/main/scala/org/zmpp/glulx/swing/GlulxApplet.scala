@@ -76,7 +76,7 @@ class GlulxApplet extends JApplet with SwingGlkScreenUI {
     val storyUrl = new java.net.URL(getDocumentBase, getParameter("story-file"))
     readFromUrl(storyUrl)
     _vm.screenUI = this
-    _vm.nativeSoundSystem = new JavaSeSoundSystem(_vm.blorbData)
+    _vm.nativeSoundSystem = new JavaSeSoundSystem(_vm.blorbData, _vm)
     vm = _vm
     initMetrics
   }

@@ -99,7 +99,7 @@ object ExecutionControl {
       val vm = Glulx.readFile(filename)
       vm.screenUI = screenUI
       screenUI.vm = vm
-      vm.nativeSoundSystem = new JavaSeSoundSystem(vm.blorbData)
+      vm.nativeSoundSystem = new JavaSeSoundSystem(vm.blorbData, vm)
       
       executeTurn(vm)
     } catch {

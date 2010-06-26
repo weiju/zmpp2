@@ -38,6 +38,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
 
+import org.zmpp.base._
 import org.zmpp.iff._
 import org.zmpp.glk._
 import org.zmpp.glulx._
@@ -201,17 +202,19 @@ extends Callable[Boolean] {
   }
 }
 
-class JavaSeSoundChannel(blorbData: BlorbData)
+class JavaSeSoundChannel(blorbData: BlorbData, vm: GlulxVM)
 extends NativeSoundChannel with LineListener {
   val logger = Logger.getLogger("zmppsound")
   var currentTask: PlaySoundTask = null
   var currentFuture: Future[Boolean] = null
   val executor = Executors.newSingleThreadExecutor
-  var notifyOnStop = false
+  var notifyOnStop    = 0
+  var currentSoundNum = 0
 
-  def play(soundnum: Int, repeats: Int, notify: Boolean): Boolean = {
+  def play(soundnum: Int, repeats: Int, notify: Int): Boolean = {
     logger.info("SoundChannel.play(%d) repeats: %d".format(soundnum, repeats))
-    notifyOnStop = notify
+    notifyOnStop    = notify
+    currentSoundNum = soundnum
     stop
     if (repeats != 0) {
       try {
@@ -250,13 +253,26 @@ extends NativeSoundChannel with LineListener {
   def update(event: LineEvent) {
     if (event.getType == LineEvent.Type.STOP) {
       logger.info("SOUND STOPPED !!")
+      if (notifyOnStop != 0 && vm != null) {
+        logger.info("Send notification with notification value: %d".format(notifyOnStop))
+        vm.eventManager.addSoundNotifyEvent(currentSoundNum, notifyOnStop)
+        resumeWithNextEvent
+      }
+    }
+  }
+
+  private def resumeWithNextEvent {
+    if (vm.state.runState == VMRunStates.WaitForEvent &&
+        vm.eventManager.processNextEvent) {
+      ExecutionControl.executeTurn(vm)   
     }
   }
 }
 
-class JavaSeSoundSystem(blorbData: BlorbData) extends NativeSoundSystem {
+class JavaSeSoundSystem(blorbData: BlorbData, vm: GlulxVM)
+extends NativeSoundSystem {
   def createChannel: NativeSoundChannel = {
-    new JavaSeSoundChannel(blorbData)
+    new JavaSeSoundChannel(blorbData, vm)
   }
 }
 

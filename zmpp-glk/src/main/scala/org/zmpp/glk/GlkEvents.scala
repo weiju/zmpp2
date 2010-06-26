@@ -82,15 +82,20 @@ object GlkKeyCodes {
 // ***** Events
 // ***************************
 abstract class GlkEvent {
-  def eventType: GlkEventType.Value
-  def windowId : Int
+  def eventType  : GlkEventType.Value
+  def windowId   : Int
+  def isInternal : Boolean
   def process(eventManager: EventManager, state: VMState)
 }
 
-class ValueEvent(val eventType: GlkEventType.Value,
-                 val windowId : Int,
-                 val value1   : Int,
-                 val value2   : Int) extends GlkEvent {
+class ValueEvent(val eventType  : GlkEventType.Value,
+                 val windowId   : Int,
+                 val value1     : Int,
+                 val value2     : Int,
+                 val isInternal : Boolean) extends GlkEvent {
+  def this(eventType: GlkEventType.Value, windowId: Int, value1: Int, value2: Int) {
+    this(eventType, windowId, value1, value2, false)
+  }
   def process(eventManager: EventManager, state: VMState) {
     eventManager.removeInputRequestInWindow(windowId, eventType)    
     eventManager.setEventAndResume(eventType, windowId, value1, value2)
@@ -99,6 +104,7 @@ class ValueEvent(val eventType: GlkEventType.Value,
 
 class LineInputEvent(val windowId: Int, input: String) extends GlkEvent {
   def eventType = GlkEventType.LineInput
+  def isInternal = false
   
   def process(eventManager: EventManager, state: VMState) {
     // TODO: This only works for 8-bit char input, unicode is not yet supported
@@ -297,15 +303,12 @@ class EventManager(_state: VMState) {
     // - timer
     // - sound notify
     // - arrange
-    val event = eventQueue.poll
-    if (event != null) {
-      // TODO: We might only be able to process certain events (timer, etc.) !!!
-      event.process(this, _state)
-    }
+    val event = pollInternal
+    if (event != null) event.process(this, _state)
   }
 
   def processNextEvent: Boolean = {
-    val event = eventQueue.poll
+    val event = this.poll
     if (event != null) {
       event.process(this, _state)
       true
@@ -348,11 +351,27 @@ class EventManager(_state: VMState) {
   // ***** Event Queue methods
   // *************************************
   def clear = eventQueue.synchronized { eventQueue.clear }
-  def poll: GlkEvent = eventQueue.synchronized { eventQueue.poll }
+  private def poll: GlkEvent = eventQueue.synchronized { eventQueue.poll }
+  
+  private def pollInternal: GlkEvent = {
+    val event = findInternal
+    // I do it this way because Scala has no break and I don't want to confuse
+    // the iteration
+    if (event != null) eventQueue.remove(event)
+    event
+  }
+  // This is to substitute the break, we need to exit early
+  private def findInternal: GlkEvent = {
+    for (event <- eventQueue) {
+      if (event.isInternal) return event
+    }
+    null
+  }
+
   def addTimerEvent {
     eventQueue.synchronized {
       if (!containsTimerEvent) {
-        eventQueue.add(new ValueEvent(GlkEventType.Timer, 0, 0, 0))
+        eventQueue.add(new ValueEvent(GlkEventType.Timer, 0, 0, 0, true))
       }
     }
   }
@@ -360,7 +379,7 @@ class EventManager(_state: VMState) {
   def addArrangeEvent {
     eventQueue.synchronized {
       if (!containsArrangeEvent) {
-        eventQueue.add(new ValueEvent(GlkEventType.Arrange, 0, 0, 0))
+        eventQueue.add(new ValueEvent(GlkEventType.Arrange, 0, 0, 0, true))
       }
     }
   }
@@ -382,6 +401,12 @@ class EventManager(_state: VMState) {
   def addMouseEvent(winId: Int, xpos: Int, ypos: Int) {
     eventQueue.synchronized {
       eventQueue.add(new ValueEvent(GlkEventType.MouseInput, winId, xpos, ypos))
+    }
+  }
+  
+  def addSoundNotifyEvent(soundnum: Int, notifyValue: Int) {
+    eventQueue.synchronized {
+      eventQueue.add(new ValueEvent(GlkEventType.SoundNotify, 0, soundnum, notifyValue))
     }
   }
 

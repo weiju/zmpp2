@@ -32,7 +32,7 @@ import java.util.logging._
 import org.zmpp.iff._
 
 trait NativeSoundChannel {
-  def play(soundnum: Int, repeats: Int, notify: Boolean): Boolean
+  def play(soundnum: Int, repeats: Int, notify: Int): Boolean
   def setVolume(volume: Int)
   def stop  
 }
@@ -49,7 +49,7 @@ class GlkSoundChannel(val id: Int, val rock: Int, nativeChannel: NativeSoundChan
     nativeChannel.setVolume(volume)
   }
 
-  def play(soundnum: Int, repeats: Int, notify: Boolean): Boolean = {
+  def play(soundnum: Int, repeats: Int, notify: Int): Boolean = {
     nativeChannel.play(soundnum, repeats, notify)
   }  
 }
@@ -57,7 +57,7 @@ class GlkSoundChannel(val id: Int, val rock: Int, nativeChannel: NativeSoundChan
 object NullSoundChannel extends GlkSoundChannel(0, 0, null) {
   override def stop { }
   override def setVolume(volume: Int) { }
-  override def play(soundnum: Int, repeats: Int, notify: Boolean) = false
+  override def play(soundnum: Int, repeats: Int, notify: Int) = false
 }
 
 
@@ -117,7 +117,7 @@ class GlkSoundSystem {
     channelWithId(channelId).setVolume(volume)
   }
   
-  def play(channelId: Int, soundnum: Int, repeats: Int, notify: Boolean): Int = {
+  def play(channelId: Int, soundnum: Int, repeats: Int, notify: Int): Int = {
     if (channelWithId(channelId).play(soundnum, repeats, notify)) 1 else 0
   }
 

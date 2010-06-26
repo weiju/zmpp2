@@ -320,10 +320,10 @@ class Glk(val eventManager: EventManager) {
     soundSystem.iterate(channelId)
   }
   def schannel_play(channelId: Int, soundNum: Int): Int = {
-    soundSystem.play(channelId, soundNum, 1, false)
+    soundSystem.play(channelId, soundNum, 1, 0)
   }
   def schannel_play_ext(channelId: Int, soundNum: Int, repeats: Int, notify: Int): Int = {
-    soundSystem.play(channelId, soundNum, repeats, notify != 0)
+    soundSystem.play(channelId, soundNum, repeats, notify)
   }
   def schannel_set_volume(channelId: Int, volume: Int) = soundSystem.setVolume(channelId, volume)
   def schannel_stop(channelId: Int) = soundSystem.stopChannel(channelId)
