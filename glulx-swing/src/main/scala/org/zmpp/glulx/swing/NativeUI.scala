@@ -124,8 +124,10 @@ class HyperLink(val id: Int) {
  * - Rearrange
  * - SoundNotify
  */
+/*
 class PollEvents(var timerEventAt: Long, var rearrangeEventAt: Long,
                  var soundNotifyAt: Long)
+*/
 
 trait SwingGlkScreenUI extends GlkScreenUI {
   val logger = Logger.getLogger("glk.ui")
@@ -133,7 +135,8 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   private val _fixedFont = getDefaultFixedFont
   private val _stdFont = getDefaultNormalFont
   private val TextGridExtraMargin = 3
-  private val _pollEvents = new PollEvents(0L, 0L, 0L)
+  //private val _pollEvents = new PollEvents(0L, 0L, 0L)
+  
   var lineHeightTextGrid   = 0
   var charWidthTextGrid    = 0
   var lineHeightStdFont    = 0
@@ -384,15 +387,6 @@ trait SwingGlkScreenUI extends GlkScreenUI {
     _windowUIs(windowId).cancelLineInput
   }
 
-  
-  def pollEvents = {
-    if (_pollEvents.timerEventAt != 0) {
-      _pollEvents.timerEventAt = 0L
-      GlkEventType.Timer
-    }
-    else GlkEventType.EventNone
-  }
-  
   var _timer: javax.swing.Timer = null
   def requestTimerInput(millis: Int) {
     logger.info("REQUESTING TIMER INPUT FOR %d MILLIS".format(millis))
@@ -400,19 +394,18 @@ trait SwingGlkScreenUI extends GlkScreenUI {
     if (millis != 0) {
       _timer = new javax.swing.Timer(millis, new ActionListener {
         def actionPerformed(event: ActionEvent) {
-          val timestamp = System.currentTimeMillis
-          if (_pollEvents.timerEventAt == 0) {
-            _pollEvents.timerEventAt = timestamp
-          }
-          if (vm.state.runState == VMRunStates.WaitForEvent &&
-              _pollEvents.timerEventAt != 0) {
-            _pollEvents.timerEventAt = 0
-            eventManager.resumeWithTimerEvent
-            ExecutionControl.executeTurn(vm)
-          }
+          eventManager.addTimerEvent
+          resumeWithNextEvent
         }
       })
       _timer.start
+    }
+  }
+  
+  private def resumeWithNextEvent {
+    if (vm.state.runState == VMRunStates.WaitForEvent &&
+        eventManager.processNextEvent) {
+      ExecutionControl.executeTurn(vm)   
     }
   }
 

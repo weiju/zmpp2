@@ -36,6 +36,7 @@ import java.awt.Graphics2D
 import java.awt.Color
 import java.awt.event._
 
+import org.zmpp.base._
 import org.zmpp.glk._
 
 /*
@@ -144,9 +145,12 @@ extends JComponent with SwingGlkWindowUI {
   }
 
   private def resumeWithMouseInput(xpos: Int, ypos: Int) {
-    eventManager.resumeWithMouseInput(glkWindow.id, xpos, ypos)
+    eventManager.addMouseEvent(glkWindow.id, xpos, ypos)
     waitForMouse = false
-    ExecutionControl.executeTurn(screenUI.vm)
+    if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
+      eventManager.processNextEvent) {
+      ExecutionControl.executeTurn(screenUI.vm)   
+    }
   }
 
   def mouseMoved(event: MouseEvent) { }

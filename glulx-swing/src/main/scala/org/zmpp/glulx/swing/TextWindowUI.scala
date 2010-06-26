@@ -36,6 +36,7 @@ import java.awt.event._
 
 import scala.collection.mutable.HashMap
 
+import org.zmpp.base._
 import org.zmpp.glk._
 
 object SwingTextWindowUI {
@@ -74,16 +75,22 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   def isCharInputMode = textInputMode == SwingTextWindowUI.InputModeChar
 
   protected def resumeWithLineInput(input: String) {
-    style = StyleType.Normal.id
-    eventManager.resumeWithLineInput(glkWindow.id, input)          
-    textInputMode = SwingTextWindowUI.InputModeNone
-    ExecutionControl.executeTurn(screenUI.vm)
+    eventManager.addLineInputEvent(glkWindow.id, input)
+    if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
+      eventManager.processNextEvent) {
+      style = StyleType.Normal.id
+      textInputMode = SwingTextWindowUI.InputModeNone
+      ExecutionControl.executeTurn(screenUI.vm)   
+    }
   }
-  
-  protected def resumeWithCharInput(c: Char) {
-    eventManager.resumeWithCharInput(glkWindow.id, c.toInt)          
-    textInputMode = SwingTextWindowUI.InputModeNone
-    ExecutionControl.executeTurn(screenUI.vm)
+
+  protected def resumeWithCharInput(charCode: Int) {
+    eventManager.addCharInputEvent(glkWindow.id, charCode)
+    if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
+      eventManager.processNextEvent) {
+      textInputMode = SwingTextWindowUI.InputModeNone
+      ExecutionControl.executeTurn(screenUI.vm)   
+    }
   }
 
   def keyPressed(event: KeyEvent) {
@@ -91,9 +98,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
       val keyCode = glkKeyCode(event.getKeyCode)
       if (keyCode != GlkKeyCodes.Unknown) {
         event.consume
-        eventManager.resumeWithCharInput(glkWindow.id, keyCode)
-        textInputMode = SwingTextWindowUI.InputModeNone
-        ExecutionControl.executeTurn(screenUI.vm)
+        resumeWithCharInput(keyCode)
       }
     } else if (isLineInputMode) {
       val doc = getDocument
@@ -125,7 +130,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   def keyTyped(event: KeyEvent) {
     if (isCharInputMode) {
       event.consume
-      resumeWithCharInput(event.getKeyChar)
+      resumeWithCharInput(event.getKeyChar.toInt)
     } else if (!isLineInputMode) {
       // not in input mode, eat all key events
       event.consume

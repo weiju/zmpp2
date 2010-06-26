@@ -1,5 +1,5 @@
 /*
- * Created on 2010/06/20
+ * Created on 2010/06/24
  * Copyright (c) 2010, Wei-ju Wu.
  * All rights reserved.
  *
@@ -26,7 +26,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glulx.swing
+package org.zmpp.glk
 
 import org.zmpp.glk._
 
@@ -39,10 +39,10 @@ object EventQueueSpecRunner extends ConsoleRunner(EventQueueSpec)
 
 object EventQueueSpec extends Specification with xUnit {
   "EventQueue" should {
-    var eventQueue: GlkEventQueue = null
+    var eventQueue: EventManager = null
     
     doBefore {
-      eventQueue = new GlkEventQueue
+      eventQueue = new EventManager(null)
     }
     
     "be initialized" in {

@@ -28,6 +28,11 @@
  */
 package org.zmpp.glk
 
+// Note: Only Scala 2.8 has this, now we can easily iterate over Java
+// collections as if they were Scala collections
+import scala.collection.JavaConversions._
+
+import java.util.LinkedList
 import java.util.logging._
 import scala.collection.mutable.Map
 import org.zmpp.base.VMState
@@ -73,19 +78,58 @@ object GlkKeyCodes {
   val Func12   = 0xffffffe4
 }
 
+// *************************************************************************
+// ***** Events
+// ***************************
+abstract class GlkEvent {
+  def eventType: GlkEventType.Value
+  def windowId : Int
+  def process(eventManager: EventManager, state: VMState)
+}
+
+class ValueEvent(val eventType: GlkEventType.Value,
+                 val windowId : Int,
+                 val value1   : Int,
+                 val value2   : Int) extends GlkEvent {
+  def process(eventManager: EventManager, state: VMState) {
+    eventManager.removeInputRequestInWindow(windowId, eventType)    
+    eventManager.setEventAndResume(eventType, windowId, value1, value2)
+  }
+}
+
+class LineInputEvent(val windowId: Int, input: String) extends GlkEvent {
+  def eventType = GlkEventType.LineInput
+  
+  def process(eventManager: EventManager, state: VMState) {
+    // TODO: This only works for 8-bit char input, unicode is not yet supported
+    val lineRequest = eventManager.lineRequestForWindow(windowId)
+    val buffer = lineRequest.buffer
+    for (i <- 0 until input.length) {
+      state.setMemByteAt(buffer + i, input.charAt(i))
+    }
+    eventManager.removeLineInputRequestInWindow(windowId)
+    eventManager.setEventAndResume(eventType, windowId, input.length, 0)
+  }
+}
+
+// *************************************************************************
+// ***** Event Requests
+// ***************************
+
 trait EventRequest
 
 /**
  * Event requests that are window-dependent
  */
-abstract class WindowEventRequest(val winId: Int) extends EventRequest {
+abstract class WindowEventRequest(val winId: Int,
+                                  val eventType: GlkEventType.Value) extends EventRequest {
   // use visitor pattern to set the window events in the native user interface
   // side
   def prepareWindow(screenUI: GlkScreenUI)
 }
 
 class LineInputRequest(winId: Int, val buffer: Int, val maxlen: Int, val initlen: Int)
-extends WindowEventRequest(winId) {
+extends WindowEventRequest(winId, GlkEventType.LineInput) {
   private var runOnce = false
   override def equals(that: Any): Boolean = that match {
     case other: LineInputRequest => winId == other.winId
@@ -102,7 +146,8 @@ extends WindowEventRequest(winId) {
   override def hashCode = winId
 }
 
-class CharInputRequest(winId: Int) extends WindowEventRequest(winId) {
+class CharInputRequest(winId: Int)
+extends WindowEventRequest(winId, GlkEventType.CharInput) {
   override def equals(that: Any): Boolean = that match {
     case other: CharInputRequest => winId == other.winId
     case _ => false
@@ -112,7 +157,8 @@ class CharInputRequest(winId: Int) extends WindowEventRequest(winId) {
   }
   override def hashCode = winId
 }
-class MouseInputRequest(winId: Int) extends WindowEventRequest(winId) {
+class MouseInputRequest(winId: Int)
+extends WindowEventRequest(winId, GlkEventType.MouseInput) {
   override def equals(that: Any): Boolean = that match {
     case other: MouseInputRequest => winId == other.winId
     case _ => false
@@ -123,11 +169,15 @@ class MouseInputRequest(winId: Int) extends WindowEventRequest(winId) {
   override def hashCode = winId
 }
 
+// *************************************************************************
+// ***** Event Manager
+// ***************************
 class EventManager(_state: VMState) {
   val logger = Logger.getLogger("glk")
   private var _eventPtr: Int = 0
   private var _windowEventRequests = Map[Int, List[WindowEventRequest]]()
   private var _screenUI: GlkScreenUI = null
+  private var eventQueue = new LinkedList[GlkEvent]
 
   //private var _otherEventRequests = Set[EventRequest]()
   private def addWindowEventRequest(request: WindowEventRequest) {
@@ -147,16 +197,14 @@ class EventManager(_state: VMState) {
     !(winReqs.filter((elem) => elem.isInstanceOf[CharInputRequest]).isEmpty)
   }
 
-  private def lineRequestForWindow(winId: Int) =
-    eventRequestsForWindow(winId).filter((elem) =>
-      elem.isInstanceOf[LineInputRequest]).head.asInstanceOf[LineInputRequest]
   private def charRequestForWindow(winId: Int) =
     eventRequestsForWindow(winId).filter((elem) =>
       elem.isInstanceOf[CharInputRequest]).head.asInstanceOf[CharInputRequest]
 
-  private def setEventStruct(eventPtr: Int, eventType: GlkEventType.Value,
-                             winId: Int,
-                             val1: Int, val2: Int) {
+  def setEventStruct(eventPtr: Int,
+                     eventType: GlkEventType.Value,
+                     winId: Int,
+                     val1: Int, val2: Int) {
     if (eventPtr == -1) {
       // On stack
       _state.pushInt(eventType.id)
@@ -175,6 +223,7 @@ class EventManager(_state: VMState) {
   }
 
   // removing event requests
+  /*
   def removeLineInputRequestsInAllWindows {
     for (winId <- _windowEventRequests.keys) {
       removeLineInputRequestInWindow(winId)
@@ -189,24 +238,17 @@ class EventManager(_state: VMState) {
     for (winId <- _windowEventRequests.keys) {
       removeMouseInputRequestInWindow(winId)
     }
-  }
+  }*/
 
   def removeLineInputRequestInWindow(winId: Int) {
     //logger.info("removeLineInputRequestInWindow(w: %d)".format(winId))
     val reqs = eventRequestsForWindow(winId)
-    _windowEventRequests(winId) = reqs.filterNot(req => req.isInstanceOf[LineInputRequest])
+    _windowEventRequests(winId) = reqs.filterNot(req => req.eventType == GlkEventType.LineInput)
   }
-  def removeCharInputRequestInWindow(winId: Int) {
-    //logger.info("removeCharInputRequestInWindow(w: %d)".format(winId))
+  def removeInputRequestInWindow(winId: Int, eventType: GlkEventType.Value) {
     val reqs = eventRequestsForWindow(winId)
-    _windowEventRequests(winId) = reqs.filterNot(req => req.isInstanceOf[CharInputRequest])
+    _windowEventRequests(winId) = reqs.filterNot(req => req.eventType == eventType)
   }
-  def removeMouseInputRequestInWindow(winId: Int) {
-    //logger.info("removeMouseInputRequestInWindow(w: %d)".format(winId))
-    val reqs = eventRequestsForWindow(winId)
-    _windowEventRequests(winId) = reqs.filterNot(req => req.isInstanceOf[MouseInputRequest])
-  }
-
   /*************************************************************************
    *
    * Public interface
@@ -251,40 +293,34 @@ class EventManager(_state: VMState) {
   def selectPoll(eventPtr: Int) {
     if (eventPtr == 0)
       throw new IllegalArgumentException("eventPtr can not be null in glk_select_poll()")
-    setEventStruct(eventPtr, screenUI.pollEvents, 0, 0, 0)
-  }
-
-  def resumeWithLineInput(winId: Int, line: String) {
-    logger.info("resumeWithLineInput(w: %d, line: '%s')".format(winId, line))
-    val lineRequest = lineRequestForWindow(winId)
-    val buffer = lineRequest.buffer
-    for (i <- 0 until line.length) {
-      _state.setMemByteAt(buffer + i, line.charAt(i))
+    // search for
+    // - timer
+    // - sound notify
+    // - arrange
+    val event = eventQueue.poll
+    if (event != null) {
+      // TODO: We might only be able to process certain events (timer, etc.) !!!
+      event.process(this, _state)
     }
-    setEventStruct(_eventPtr, GlkEventType.LineInput, winId, line.length, 0)    
-    removeLineInputRequestsInAllWindows
+  }
+
+  def processNextEvent: Boolean = {
+    val event = eventQueue.poll
+    if (event != null) {
+      event.process(this, _state)
+      true
+    } else false
+  }
+  
+  def setEventAndResume(eventType: GlkEventType.Value, windowId: Int,
+                        value1: Int, value2: Int) {
+    setEventStruct(_eventPtr, eventType, windowId, value1, value2)    
     _state.runState = VMRunStates.Running
   }
 
-  def resumeWithCharInput(winId: Int, keyCode: Int) {
-    logger.info("resumeWithCharInput(w: %d, keyCode: %d)".format(winId, keyCode))
-    setEventStruct(_eventPtr, GlkEventType.CharInput, winId, keyCode, 0)
-    removeCharInputRequestsInAllWindows
-    _state.runState = VMRunStates.Running
-  }
-  
-  def resumeWithMouseInput(winId: Int, xpos: Int, ypos: Int) {
-    logger.info("resumeWithMouseInput(w: %d, x: %d y: %d)".format(winId, xpos, ypos))
-    setEventStruct(_eventPtr, GlkEventType.MouseInput, winId, xpos, ypos)
-    removeMouseInputRequestsInAllWindows
-    _state.runState = VMRunStates.Running
-  }
-  
-  def resumeWithTimerEvent {
-    //logger.info("resumeWithTimerEvent")
-    setEventStruct(_eventPtr, GlkEventType.Timer, 0, 0, 0)
-    _state.runState = VMRunStates.Running
-  }
+  def lineRequestForWindow(winId: Int) =
+    eventRequestsForWindow(winId).filter((elem) =>
+      elem.isInstanceOf[LineInputRequest]).head.asInstanceOf[LineInputRequest]
 
   /*
    * This is almost like resumeWithLineInput(), but has no effect on VM state
@@ -306,6 +342,64 @@ class EventManager(_state: VMState) {
   
   def requestTimerEvents(millis: Int) {
     screenUI.requestTimerInput(millis)
+  }
+
+  // ***********************************************************************
+  // ***** Event Queue methods
+  // *************************************
+  def clear = eventQueue.synchronized { eventQueue.clear }
+  def poll: GlkEvent = eventQueue.synchronized { eventQueue.poll }
+  def addTimerEvent {
+    eventQueue.synchronized {
+      if (!containsTimerEvent) {
+        eventQueue.add(new ValueEvent(GlkEventType.Timer, 0, 0, 0))
+      }
+    }
+  }
+  
+  def addArrangeEvent {
+    eventQueue.synchronized {
+      if (!containsArrangeEvent) {
+        eventQueue.add(new ValueEvent(GlkEventType.Arrange, 0, 0, 0))
+      }
+    }
+  }
+  
+  def addCharInputEvent(winId: Int, charInputCode: Int) {
+    eventQueue.synchronized {
+      if (!containsKeyboardInputEvent(winId)) {
+        eventQueue.add(new ValueEvent(GlkEventType.CharInput, winId, charInputCode, 0))
+      }
+    }
+  }
+  def addLineInputEvent(winId: Int, input: String) {
+    eventQueue.synchronized {
+      if (!containsKeyboardInputEvent(winId)) {
+        eventQueue.add(new LineInputEvent(winId, input))
+      }
+    }
+  }
+  def addMouseEvent(winId: Int, xpos: Int, ypos: Int) {
+    eventQueue.synchronized {
+      eventQueue.add(new ValueEvent(GlkEventType.MouseInput, winId, xpos, ypos))
+    }
+  }
+
+  def length  = eventQueue.synchronized { eventQueue.size }
+  def isEmpty = eventQueue.synchronized { eventQueue.isEmpty }
+
+  private def containsTimerEvent: Boolean = containsEventOfType(GlkEventType.Timer, 0)
+  private def containsArrangeEvent: Boolean = containsEventOfType(GlkEventType.Arrange, 0)
+  private def containsKeyboardInputEvent(winId: Int): Boolean = {
+    containsEventOfType(GlkEventType.CharInput, winId) ||
+    containsEventOfType(GlkEventType.LineInput, winId)
+  }
+
+  private def containsEventOfType(eventType: GlkEventType.Value, winId: Int): Boolean = {
+    for (event <- eventQueue) {
+      if (event.eventType == eventType && event.windowId == winId) return true
+    }
+    false
   }
 }
 

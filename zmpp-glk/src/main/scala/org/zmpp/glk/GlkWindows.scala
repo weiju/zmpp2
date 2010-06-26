@@ -105,7 +105,6 @@ trait GlkScreenUI {
   def requestMouseInput(windowId: Int)  
   def requestTimerInput(millis: Int)
 
-  def pollEvents: GlkEventType.Value
   def cancelLineInput(windowId: Int): String
 }
 

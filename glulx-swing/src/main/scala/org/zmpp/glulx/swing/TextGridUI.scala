@@ -33,6 +33,7 @@ import javax.swing.text.StyleConstants
 import java.awt.Color
 import java.awt.event._
 
+import org.zmpp.base._
 import org.zmpp.glk._
 
 /**
@@ -80,16 +81,21 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     super.resumeWithLineInput(input)
     waitForMouse = false
   }
-  override protected def resumeWithCharInput(c: Char) {
-    super.resumeWithCharInput(c)
+  override protected def resumeWithCharInput(charCode: Int) {
+    super.resumeWithCharInput(charCode)
     waitForMouse = false
   }
+  
   private def resumeWithMouseInput(xpos: Int, ypos: Int) {
-    eventManager.resumeWithMouseInput(glkWindow.id, xpos, ypos)          
+    eventManager.addMouseEvent(glkWindow.id, xpos, ypos)
     textInputMode = SwingTextWindowUI.InputModeNone
-    waitForMouse  = false
-    ExecutionControl.executeTurn(screenUI.vm)
+    waitForMouse = false
+    if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
+      eventManager.processNextEvent) {
+      ExecutionControl.executeTurn(screenUI.vm)   
+    }
   }
+
 
   def _moveCursor(xpos: Int, ypos: Int) {
     _cursorx = xpos

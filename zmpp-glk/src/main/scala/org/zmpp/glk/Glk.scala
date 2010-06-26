@@ -258,7 +258,7 @@ class Glk(val eventManager: EventManager) {
   // Events
   def cancel_char_event(winId: Int) {
     logger.info("glk_cancel_char_event(%d)".format(winId))
-    eventManager.removeCharInputRequestInWindow(winId)
+    eventManager.removeInputRequestInWindow(winId, GlkEventType.CharInput)
   }
   def cancel_line_event(winId: Int, eventPtr: Int) {
     logger.info("glk_cancel_line_event(%d, $%02x)".format(winId, eventPtr))
@@ -266,7 +266,7 @@ class Glk(val eventManager: EventManager) {
   }
   def cancel_mouse_event(winId: Int) {
     logger.info("glk_cancel_mouse_event(%d)".format(winId))
-    eventManager.removeMouseInputRequestInWindow(winId)
+    eventManager.removeInputRequestInWindow(winId, GlkEventType.MouseInput)
   }
   def request_char_event(winId: Int) {
     logger.info("glk_request_char_event(%d)".format(winId))
