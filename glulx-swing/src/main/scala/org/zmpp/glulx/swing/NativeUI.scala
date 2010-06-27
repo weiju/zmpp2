@@ -117,25 +117,12 @@ class HyperLink(val id: Int) {
   var endPos  : Int = 0
 }
 
-/**
- * Events that are not directly user triggered and can be retrieved from
- * select_poll():
- * - Timer
- * - Rearrange
- * - SoundNotify
- */
-/*
-class PollEvents(var timerEventAt: Long, var rearrangeEventAt: Long,
-                 var soundNotifyAt: Long)
-*/
-
 trait SwingGlkScreenUI extends GlkScreenUI {
   val logger = Logger.getLogger("glk.ui")
   private val _windowUIs = new HashMap[Int, SwingGlkWindowUI]
   private val _fixedFont = getDefaultFixedFont
   private val _stdFont = getDefaultNormalFont
   private val TextGridExtraMargin = 3
-  //private val _pollEvents = new PollEvents(0L, 0L, 0L)
   
   var lineHeightTextGrid   = 0
   var charWidthTextGrid    = 0
@@ -282,6 +269,8 @@ trait SwingGlkScreenUI extends GlkScreenUI {
         getContentPane.invalidate
         getContentPane.add(viewAndSize._1, BorderLayout.CENTER)
         getContentPane.validate
+        // we also need to reset the text grids in order
+        // to pre-fill them with spaces
         _windowUIs.foreach(elem => if (elem._2.isInstanceOf[SwingTextGridUI]) {
           elem._2.asInstanceOf[SwingTextGridUI].reset
         })

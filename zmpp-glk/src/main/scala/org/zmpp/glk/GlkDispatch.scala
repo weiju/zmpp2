@@ -264,10 +264,12 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _put_buffer_stream(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_put_buffer_stream not supported yet")
+    glk.put_buffer_stream(_state, args(0), args(1), args(2))
+    0
   }
   private def _put_buffer_stream_uni(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_put_buffer_stream_uni not supported yet")
+    glk.put_buffer_stream_uni(_state, args(0), args(1), args(2))
+    0
   }
   private def _put_buffer_uni(args: Array[Int]): Int = {
     glk.put_buffer_uni(_state, args(0), args(1))
@@ -286,17 +288,20 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _put_char_stream_uni(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_put_char_stream_uni not supported yet")
+    glk.put_char_stream_uni(args(0), args(1))
+    0
   }
   private def _put_string(args: Array[Int]): Int = {
     glk.put_string(_state, args(0))
     0
   }
   private def _put_string_stream(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_put_string_stream not supported yet")
+    glk.put_string_stream(_state, args(0), args(1))
+    0
   }
   private def _put_string_stream_uni(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_put_string_stream_uni not supported yet")
+    glk.put_string_stream_uni(_state, args(0), args(1))
+    0
   }
   private def _put_string_uni(args: Array[Int]): Int = {
     glk.put_string_uni(_state, args(0))

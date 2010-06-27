@@ -92,6 +92,7 @@ class GlkIOSystem {
   def getPosition(id: Int) = streamWithId(id).position
   def setPosition(id: Int, pos: Int, seekmode: Int) = streamWithId(id).seek(pos, seekmode)
   def putChar(id: Int, c: Char) = streamWithId(id).putChar(c)
+  def putCharUni(id: Int, c: Int) = streamWithId(id).putCharUni(c)
   
   // control current stream
   def currentStream = _currentStream
@@ -103,7 +104,7 @@ class GlkIOSystem {
 
   def getRock(streamId: Int) = streamWithId(streamId).rock
 
-  def putChar(c: Char) = _currentStream.putChar(c)
+  def putChar(c: Char)   = _currentStream.putChar(c)
   def putCharUni(c: Int) = _currentStream.putCharUni(c)
   // For convenient output (debugging etc.)
   def putJavaString(str: String) = for (c <- str) putCharUni(c)

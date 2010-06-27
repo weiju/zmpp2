@@ -186,7 +186,33 @@ class Glk(val eventManager: EventManager) {
   }
 
   // Stream functions
-  def put_char_stream(streamId: Int, c: Char) = ioSystem.putChar(streamId, c)
+  def put_buffer_stream(state: VMState, streamId: Int, buf: Int, len: Int) {
+    for (i <- 0 until len) put_char_stream(streamId, state.memByteAt(buf + i).toChar)
+  }
+  def put_buffer_stream_uni(state: VMState, streamId: Int, buf: Int, len: Int) {
+    for (i <- 0 until len) put_char_stream_uni(streamId, state.memIntAt(buf + i * 4))
+  }
+  def put_char_stream(streamId: Int, c: Char)     = ioSystem.putChar(streamId, c)
+  def put_char_stream_uni(streamId: Int, c: Int)  = ioSystem.putCharUni(streamId, c)
+  def put_string_stream(state: VMState, streamId: Int, s: Int) = {
+    var strPtr = s
+    var currentChar = state.memByteAt(strPtr)
+    while (currentChar != 0) {
+      put_char_stream(streamId, (currentChar & 0xffff).asInstanceOf[Char])
+      strPtr += 1
+      currentChar = state.memByteAt(strPtr)
+    }
+  }
+  def put_string_stream_uni(state: VMState, streamId: Int, s: Int) = {
+    var strPtr = s
+    var currentChar = state.memIntAt(strPtr)
+    while (currentChar != 0) {
+      put_char_stream_uni(streamId, currentChar)
+      strPtr += 4
+      currentChar = state.memIntAt(strPtr)
+    }
+  }
+
   def set_style(value: Int) = ioSystem.currentStyle = value
   def stream_close(streamId: Int): GlkStreamCloseStruct = ioSystem.closeStream(streamId)
   def stream_get_current: Int = ioSystem.currentStreamId
