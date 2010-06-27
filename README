@@ -38,6 +38,8 @@ Known issues:
 - save/restore not implemented yet
 - several Glk functions still missing
 - no other supported Java environments yet
+- the Z-Machine core in this repository is very rudimentary, 1.x is still
+  the official version for Z-Machine ZMPP
 
 Acknowledgements:
 -----------------
