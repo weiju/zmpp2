@@ -87,7 +87,18 @@ object AudioStreamFactory {
   }
 }
 
-class PlaySoundTask(blorbData: BlorbData, channel: LineListener, 
+object PlaySoundTask {
+  def targetFormat(baseFormat: AudioFormat): AudioFormat = {
+    new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+      baseFormat.getSampleRate,
+      16,
+      baseFormat.getChannels,
+      baseFormat.getChannels * 2,
+      baseFormat.getSampleRate,
+      false)
+  }
+}
+class PlaySoundTask(blorbData: BlorbData, channel: JavaSeSoundChannel, 
                     soundnum: Int, repeats: Int)
 extends Callable[Boolean] {
   val logger = Logger.getLogger("zmppsound")
@@ -111,46 +122,36 @@ extends Callable[Boolean] {
     AudioStreamFactory.createAudioInputStream(subChunk.id, inputStream)
   }
 
+  // Note the anatomy of the playStream() method which is quite inefficient:
+  // On every repetition, the sound streams and lines are recreated.
+  // There seems to be a bug in JavaSound or the Vorbis SPI, which hangs
+  // on AudioInputStream.reset(). This is a workaround
   private def playStream(soundnum: Int): Boolean = {
-    val in = audioInputStream(soundnum)
-    val baseFormat = in.getFormat
-    val decodedFormat = new AudioFormat(
-      AudioFormat.Encoding.PCM_SIGNED,
-      baseFormat.getSampleRate,
-      16,
-      baseFormat.getChannels,
-      baseFormat.getChannels * 2,
-      baseFormat.getSampleRate,
-      false)
-    val decodedInputStream = AudioSystem.getAudioInputStream(decodedFormat, in)
-    val status = playDecoded(decodedFormat, decodedInputStream)
-    in.close
-    status
-  }
-
-  private def playDecoded(targetFormat: AudioFormat,
-                          decodedIn: AudioInputStream): Boolean = {
-    line = getLine(targetFormat)
-    if (line != null) {
-      line.addLineListener(channel)
-      line.start
-      decodedIn.mark(0) // for rewinding
-      if (repeats == -1) {
-        while (running) playDecodedOnce(line, decodedIn)
+    var repeatsLeft = repeats
+    while (running && repeatsLeft != 0) {
+      val encodedIn = audioInputStream(soundnum)
+      val targetFormat = PlaySoundTask.targetFormat(encodedIn.getFormat)
+      val decodedIn = AudioSystem.getAudioInputStream(targetFormat, encodedIn)
+      line = getLine(targetFormat)
+      if (line != null) {
+        line.start
+        playDecodedOnce(line, decodedIn)
+        line.stop
+        line.close
+        decodedIn.close
+        encodedIn.close
+        if (repeatsLeft > 0) repeatsLeft -= 1
       } else {
-        var repeatsLeft = repeats
-        while (running && repeatsLeft > 0) {
-          playDecodedOnce(line, decodedIn)
-          decodedIn.reset
-          repeatsLeft -= 1
-        }
+        logger.warning("CAN NOT PLAY SOUND %d - NO LINE AVAILABLE".format(soundnum))
+        return false
       }
-      line.stop
-      line.close
-      line.removeLineListener(channel)
-      decodedIn.close
-      true
-    } else false
+      logger.info("REPEAT SOUND %d AGAIN, REPEATS: %d".format(soundnum, repeatsLeft))
+    }
+    if (running) {
+      // only notify if not interrupted
+      channel.soundStopped
+    }
+    true
   }
   
   private def playDecodedOnce(line: SourceDataLine, decodedIn: AudioInputStream) {
@@ -161,12 +162,6 @@ extends Callable[Boolean] {
       if (nBytesRead != -1) nBytesWritten = line.write(data, 0, nBytesRead)
     }
     line.drain
-    // remove the line listener before the line.stop call to prevent the
-    // stop event being sent to the channel
-    if (!running) {
-      line.removeLineListener(channel)
-      logger.info("PLAY TASK INTERRUPTED !!!")
-    }
   }
   
   private def getLine(audioFormat: AudioFormat): SourceDataLine = {
@@ -203,7 +198,7 @@ extends Callable[Boolean] {
 }
 
 class JavaSeSoundChannel(blorbData: BlorbData, vm: GlulxVM)
-extends NativeSoundChannel with LineListener {
+extends NativeSoundChannel {
   val logger = Logger.getLogger("zmppsound")
   var currentTask: PlaySoundTask = null
   var currentFuture: Future[Boolean] = null
@@ -212,7 +207,7 @@ extends NativeSoundChannel with LineListener {
   var currentSoundNum = 0
 
   def play(soundnum: Int, repeats: Int, notify: Int): Boolean = {
-    logger.info("SoundChannel.play(%d) repeats: %d".format(soundnum, repeats))
+    logger.info("SoundChannel.play(%d) repeats: %d notify: %d".format(soundnum, repeats, notify))
     notifyOnStop    = notify
     currentSoundNum = soundnum
     stop
@@ -250,14 +245,11 @@ extends NativeSoundChannel with LineListener {
       currentTask.stop
     }
   }
-  def update(event: LineEvent) {
-    if (event.getType == LineEvent.Type.STOP) {
-      logger.info("SOUND STOPPED !!")
-      if (notifyOnStop != 0 && vm != null) {
-        logger.info("Send notification with notification value: %d".format(notifyOnStop))
-        vm.eventManager.addSoundNotifyEvent(currentSoundNum, notifyOnStop)
-        resumeWithNextEvent
-      }
+  def soundStopped {
+    if (notifyOnStop != 0 && vm != null) {
+      logger.info("Send notification with notification value: %d".format(notifyOnStop))
+      vm.eventManager.addSoundNotifyEvent(currentSoundNum, notifyOnStop)
+      resumeWithNextEvent
     }
   }
 
