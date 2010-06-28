@@ -71,7 +71,10 @@ extends JComponent with SwingGlkWindowUI {
     super.paintComponent(g)
     g.drawImage(buffer, 0, 0, null)
   }
-  def _clear = _fillRect(_backgroundColor, 0, 0, getWidth, getHeight)
+  def _clear = {
+    setBackground(new Color(_backgroundColor))
+    _fillRect(_backgroundColor, 0, 0, getWidth, getHeight)
+  }
   
   private def getOffscreenGraphics: Graphics2D = {
     if (buffer == null) {
@@ -82,6 +85,21 @@ extends JComponent with SwingGlkWindowUI {
       offscreenG2d.fillRect(0, 0, getWidth, getHeight)
     }
     offscreenG2d
+  }
+
+  def _eraseRect(left: Int, top: Int, width: Int, height: Int) {
+    val g2d = getOffscreenGraphics
+    g2d.setColor(new java.awt.Color(_backgroundColor))
+    g2d.fillRect(left, top, width, height)
+    repaint()
+  }
+  override def eraseRect(left: Int, top: Int, width: Int, height: Int) {
+    if (SwingUtilities.isEventDispatchThread) _eraseRect(left, top, width, height)
+    else {
+      SwingUtilities.invokeAndWait(new Runnable {
+        def run = _eraseRect(left, top, width, height)
+      })
+    }
   }
   
   def _fillRect(color: Int, left: Int, top: Int, width: Int, height: Int) {
