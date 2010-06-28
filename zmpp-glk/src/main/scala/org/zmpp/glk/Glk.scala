@@ -326,6 +326,9 @@ class Glk(val eventManager: EventManager) {
     windowSystem.imageSize(imageNum)
   }
 
+  def window_erase_rect(winId: Int, left: Int, top: Int, width: Int, height: Int) {
+    windowSystem.eraseRect(winId, left, top, width, height)
+  }
   def window_fill_rect(winId: Int, color: Int, left: Int, top: Int,
                            width: Int, height: Int) {
     windowSystem.fillRect(winId, color, left, top, width, height)

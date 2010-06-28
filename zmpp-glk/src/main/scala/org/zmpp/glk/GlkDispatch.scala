@@ -455,7 +455,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _window_erase_rect(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_window_erase_rect not supported yet")
+    glk.window_erase_rect(args(0), args(1), args(2), args(3), args(4))
+    0
   }
   private def _window_fill_rect(args: Array[Int]): Int = {
     glk.window_fill_rect(args(0), args(1), args(2), args(3), args(4), args(5))

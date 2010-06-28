@@ -70,6 +70,7 @@ trait GlkWindowUI {
   def moveCursor(xpos: Int, ypos: Int)
   def putChar(c: Char)
   def putCharUni(c: Int)
+  def eraseRect(left: Int, top: Int, width: Int, height: Int)
   def fillRect(color: Int, left: Int, top: Int, width: Int, height: Int)
   def drawScaledImage(resnum: Int, posx: Int, posy: Int, width: Int, height: Int)
   def drawImage(resnum: Int, posx: Int, posy: Int)
@@ -286,10 +287,13 @@ class GlkWindowSystem {
     windowWithId(winId).ui.drawScaledImage(resnum, posx, posy, width, height)
     1
   }
-  def imageSize(resnum: Int): GlkDimension = screenUI.imageSize(resnum)
+  def eraseRect(winId: Int, left: Int, top: Int, width: Int, height: Int) {
+    windowWithId(winId).ui.eraseRect(left, top, width, height)
+  }
   def fillRect(winId: Int, color: Int, left: Int, top: Int, width: Int, height: Int) {
     windowWithId(winId).ui.fillRect(color, left, top, width, height)
   }
+  def imageSize(resnum: Int): GlkDimension = screenUI.imageSize(resnum)
   def setBackgroundColor(winId: Int, color: Int) {
     windowWithId(winId).ui.setBackgroundColor(color)
   }
@@ -381,7 +385,7 @@ class GlkWindowSystem {
    */
   private def createLayoutTree(window: GlkWindow): GlkLayoutTreeNode = {
     if (window == null) return null
-    logger.info("REC CREATE LAYOUT TREE - WINDOW TYPE: " + window.typeName + " id = " + window.id)
+    //logger.info("REC CREATE LAYOUT TREE - WINDOW TYPE: " + window.typeName + " id = " + window.id)
     val node = new GlkLayoutTreeNode(window.id)
     node.size = window.size
     if (window.isInstanceOf[GlkGraphicsUIWindow]) node.isGraphics = true
