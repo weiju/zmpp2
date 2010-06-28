@@ -93,6 +93,9 @@ with MouseListener with MouseMotionListener {
       })
     }
   }
+  def eraseRect(left: Int, top: Int, width: Int, height: Int) {
+    throw new UnsupportedOperationException("fillRect() not supported for this window type")
+  }
   def fillRect(color: Int, left: Int, top: Int, width: Int, height: Int) {
     throw new UnsupportedOperationException("fillRect() not supported for this window type")
   }
@@ -220,7 +223,6 @@ trait SwingGlkScreenUI extends GlkScreenUI {
       // distribute the remainder side to the left subtree
       val leftSide = distributeRemainder(node.child0, remainderSize)
 
-//      val leftSide = makeLayout(node.child0, remainderSize)
       val leftSize = leftSide._2
       val pairPanel = if (node.isVertical) new Box(BoxLayout.Y_AXIS)
         else new Box(BoxLayout.X_AXIS)
@@ -228,9 +230,9 @@ trait SwingGlkScreenUI extends GlkScreenUI {
       if (node.isLeft || node.isAbove) {
         pairPanel.add(rightSide._1)
         pairPanel.add(leftSide._1)
-        val dir = if (node.isLeft) "LEFT" else "ABOVE"
         // Here we need to go down the tree and set the leaf node sizes
         /*
+        val dir = if (node.isLeft) "LEFT" else "ABOVE"
         logger.info("PAIR(%s) LEFT SIZE = (%d, %d) RIGHT SIZE: (%d, %d) REMAIN SIZE: (%d, %d)".format(
                     dir,
                     leftSize.width, leftSize.height,
@@ -240,9 +242,9 @@ trait SwingGlkScreenUI extends GlkScreenUI {
       } else {
         pairPanel.add(leftSide._1)
         pairPanel.add(rightSide._1)
-        val dir = if (node.isRight) "RIGHT" else "BELOW"
         // Here we need to go down the tree and set the leaf node sizes
         /*
+        val dir = if (node.isRight) "RIGHT" else "BELOW"
         logger.info("PAIR(%s) LEFT SIZE = (%d, %d) RIGHT SIZE: (%d, %d) REMAIN SIZE: (%d, %d)".format(
                     dir,
                     leftSize.width, leftSize.height,
