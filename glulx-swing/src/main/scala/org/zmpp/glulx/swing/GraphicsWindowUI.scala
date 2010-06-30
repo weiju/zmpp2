@@ -120,10 +120,14 @@ extends JComponent with SwingGlkWindowUI {
                        width: Int, height: Int) {
     logger.info("GRAPHICS WINDOW(%d), DRAWSCALEDIMAGE(%d)".format(glkWindow.id, resnum))
     val g2d = getOffscreenGraphics
-    val image = screenUI.getImage(resnum).getScaledInstance(
-      width, height, java.awt.Image.SCALE_SMOOTH)
-    g2d.drawImage(image, posx, posy, null)
-    repaint()
+    // TODO: we should return false to Glk if image does not exist !!
+    val image = screenUI.getImage(resnum)
+    if (image != null) {
+      val scaledImage = screenUI.getImage(resnum).getScaledInstance(
+        width, height, java.awt.Image.SCALE_SMOOTH)
+      g2d.drawImage(scaledImage, posx, posy, null)
+      repaint()
+    }
   }
   override def drawScaledImage(resnum: Int, posx: Int, posy: Int,
                                width: Int, height: Int) {

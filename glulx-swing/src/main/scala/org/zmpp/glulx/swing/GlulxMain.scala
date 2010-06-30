@@ -39,7 +39,6 @@ import org.zmpp.iff._
 import org.zmpp.glulx._
 import org.zmpp.glk.GlkScreenUI
 import org.zmpp.glk.GlkWindowUI
-import org.zmpp.glk.GlkLayoutTreeNode
 
 object Glulx {
   private var _vm : GlulxVM = null

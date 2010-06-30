@@ -155,121 +155,89 @@ trait SwingGlkScreenUI extends GlkScreenUI {
     prefFont
   }
 
-  private def proportionalSize(full: Int, size: Int): Int = {
-    (full.toDouble * size.toDouble / 100.0).toInt
+  private def proportionalSize(fullSize: Int, relSize: Int): Int = {
+    (fullSize.toDouble * relSize.toDouble / 100.0).toInt
   }
-  private def fixedHeight(node: GlkLayoutTreeNode) = {
-    if (node.isGraphics) node.size
-    else lineHeightTextGrid * node.size + TextGridExtraMargin
+  private def fixedHeight(pair: GlkPairWindow) = {
+    if (pair.keyWindow.isGraphics) pair.keyWindow.size
+    else lineHeightTextGrid * pair.keyWindow.size + TextGridExtraMargin
   }
-  private def fixedWidth(node: GlkLayoutTreeNode) = {
-    if (node.isGraphics) node.size
-    else charWidthTextGrid * node.size
+  private def fixedWidth(pair: GlkPairWindow) = {
+    if (pair.keyWindow.isGraphics) pair.keyWindow.size
+    else charWidthTextGrid * pair.keyWindow.size
   }
 
-  private def calculateHeight(full: Int, node: GlkLayoutTreeNode): Int = {
-    if (node.parent.isProportional) proportionalSize(full, node.size)
-    else fixedHeight(node)
+  private def calculateHeight(pair: GlkPairWindow, fullSize: Int): Int = {
+    if (pair.isProportional) proportionalSize(fullSize, pair.keyWindow.size)
+    else fixedHeight(pair)
   } 
-  private def calculateWidth(full: Int, node: GlkLayoutTreeNode): Int = {
-    if (node.parent.isProportional) proportionalSize(full, node.size)
-    else fixedWidth(node)
+  private def calculateWidth(pair: GlkPairWindow, fullSize: Int): Int = {
+    if (pair.isProportional) proportionalSize(fullSize, pair.keyWindow.size)
+    else fixedWidth(pair)
   } 
 
-  private def distributeRemainder(node: GlkLayoutTreeNode, remainSize: Dimension) = {
-    if (node.isLeaf) {
+  private def distributeRemainder(window: GlkWindow, remainSize: Dimension) = {
+    if (window.isLeaf) {
       // Leafs can always get the remainder size
-      _windowUIs(node.id).asInstanceOf[JComponent].setPreferredSize(remainSize)
-      (_windowUIs(node.id).container, remainSize)
+      _windowUIs(window.id).asInstanceOf[JComponent].setPreferredSize(remainSize)
+      (_windowUIs(window.id).container, remainSize)
     } else {
-      makeLayout(node, remainSize)
+      makeLayout(window, remainSize)
     }
   }
 
-  private def makeLayout(node: GlkLayoutTreeNode,
-                         currentSize: Dimension): (JComponent, Dimension) = {
-    if (node == null) {
+  private def makeLayout(window: GlkWindow,
+                         currentSize: Dimension): JComponent = {
+    if (window == null) {
       val emptyPanel = new JPanel
       emptyPanel.setPreferredSize(currentSize)
-      (emptyPanel, currentSize)
-    } else if (node.isLeaf) {
-      val componentSize =
-        if (node.parent != null && node.parent.isVertical) {
-          new Dimension(currentSize.width,
-                        calculateHeight(currentSize.height, node))                                   
-        } else if (node.parent != null && node.parent.isHorizontal) {
-          new Dimension(calculateWidth(currentSize.width, node),
-                        currentSize.height)
-        } else currentSize
-      //logger.info("At child: [%s], size = (%d, %d)".format(_windowUIs(node.id).getClass.getName,
-      //      componentSize.width, componentSize.height))
-      (_windowUIs(node.id).container, componentSize)
+      emptyPanel
+    } else if (window.isLeaf) {
+      val component = _windowUIs(window.id).container
+      component.setPreferredSize(currentSize)
+      component
     } else {
-      //logger.info("makeLayout at pair = %d, child0 = %d, child1 = %d [w = %d h = %d]".format(
-      //            node.id, node.child0.id, node.child1.id, currentSize.width, currentSize.height))
-      val rightSide = makeLayout(node.child1, currentSize)
-      val rightSize = rightSide._2
-
-      if (node.child1.isLeaf) {
-        // Right side leafs always have the correct size
-        _windowUIs(node.child1.id).asInstanceOf[JComponent].setPreferredSize(rightSize)
-      }
-      
-      val remainderSize = if (node.isHorizontal) {
-        new Dimension(currentSize.width - rightSize.width, currentSize.height)
+      val pair = window.asInstanceOf[GlkPairWindow]
+      var keyWidth  = 0
+      var keyHeight = 0
+      var leftSize: Dimension = null
+      if (pair.isVertical) {
+        keyWidth  = currentSize.width
+        keyHeight = calculateHeight(pair, currentSize.height)
+        leftSize  = new Dimension(currentSize.width, currentSize.height - keyHeight)
       } else {
-        new Dimension(currentSize.width, currentSize.height - rightSize.height)
+        keyWidth  = calculateWidth(pair, currentSize.width)
+        keyHeight = currentSize.height
+        leftSize  = new Dimension(currentSize.width - keyWidth, currentSize.height)
       }
-      // distribute the remainder side to the left subtree
-      val leftSide = distributeRemainder(node.child0, remainderSize)
+      val rightSize = new Dimension(keyWidth, keyHeight)
+      val leftComponent  = makeLayout(pair.child0, leftSize)
+      val rightComponent = makeLayout(pair.child1, rightSize)
 
-      val leftSize = leftSide._2
-      val pairPanel = if (node.isVertical) new Box(BoxLayout.Y_AXIS)
+      val pairPanel = if (pair.isVertical) new Box(BoxLayout.Y_AXIS)
         else new Box(BoxLayout.X_AXIS)
 
-      if (node.isLeft || node.isAbove) {
-        pairPanel.add(rightSide._1)
-        pairPanel.add(leftSide._1)
-        // Here we need to go down the tree and set the leaf node sizes
-        /*
-        val dir = if (node.isLeft) "LEFT" else "ABOVE"
-        logger.info("PAIR(%s) LEFT SIZE = (%d, %d) RIGHT SIZE: (%d, %d) REMAIN SIZE: (%d, %d)".format(
-                    dir,
-                    leftSize.width, leftSize.height,
-                    rightSize.width, rightSize.height,
-                    remainderSize.width, remainderSize.height))*/
+      if (pair.isLeft || pair.isAbove) {
+        pairPanel.add(rightComponent)
+        pairPanel.add(leftComponent)
         
       } else {
-        pairPanel.add(leftSide._1)
-        pairPanel.add(rightSide._1)
-        // Here we need to go down the tree and set the leaf node sizes
-        /*
-        val dir = if (node.isRight) "RIGHT" else "BELOW"
-        logger.info("PAIR(%s) LEFT SIZE = (%d, %d) RIGHT SIZE: (%d, %d) REMAIN SIZE: (%d, %d)".format(
-                    dir,
-                    leftSize.width, leftSize.height,
-                    rightSize.width, rightSize.height,
-                    remainderSize.width, remainderSize.height))*/
+        pairPanel.add(leftComponent)
+        pairPanel.add(rightComponent)
       }
-      if (node.isVertical) {
-        (pairPanel, new Dimension(remainderSize.width,
-                                  leftSize.height + rightSize.height))
-      } else {
-        (pairPanel, new Dimension(leftSize.width + rightSize.width,
-                                  remainderSize.height))
-      }
+      pairPanel
     }
   }
   
-  def updateLayout(root: GlkLayoutTreeNode) {
+  def updateLayout(root: GlkWindow) {
     //logger.info("UPDATE LAYOUT")
     val runnable = new Runnable {
       def run {
-        val viewAndSize = makeLayout(root, getSize)
+        val view = makeLayout(root, getSize)
         //logger.info("ADDING A: " + viewAndSize._1)
         getContentPane.removeAll
         getContentPane.invalidate
-        getContentPane.add(viewAndSize._1, BorderLayout.CENTER)
+        getContentPane.add(view, BorderLayout.CENTER)
         getContentPane.validate
         // we also need to reset the text grids in order
         // to pre-fill them with spaces

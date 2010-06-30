@@ -33,32 +33,6 @@ import java.util.logging._
 import org.zmpp.iff._
 
 /**
- * Pure data holder to contain layout information for windows.
- */
-class GlkLayoutTreeNode(_id: Int) {
-  def id = _id
-  var parent: GlkLayoutTreeNode = null
-  var child0: GlkLayoutTreeNode = null
-  var child1: GlkLayoutTreeNode = null
-  var size   = 0
-  var method = 0
-
-  def isLeaf = (child0 == null)
-  var isGraphics = false
-  def position = (method & GlkWindowPosition.Mask)
-  def division = (method & GlkWindowDivision.Mask)
-
-  def isProportional = division == GlkWindowDivision.Proportional
-  def isFixed = division == GlkWindowDivision.Fixed
-  def isVertical = isAbove || isBelow
-  def isHorizontal = isLeft || isRight
-  def isLeft = position == GlkWindowPosition.Left
-  def isRight = position == GlkWindowPosition.Right
-  def isAbove = position == GlkWindowPosition.Above
-  def isBelow = position == GlkWindowPosition.Below
-}
-
-/**
  * Interface to be implemented by the user interface, technology-dependent.
  * These are to access the representations of the visual window objects.
  */
@@ -86,9 +60,9 @@ trait GlkWindowUI {
  */
 trait GlkScreenUI {
   def imageSize(imageNum: Int): GlkDimension
-  def updateLayout(root: GlkLayoutTreeNode)
-  def createTextBufferUI(id: Int, glkWindow: GlkUIWindow): GlkWindowUI
-  def createTextGridUI(id: Int,   glkWindow: GlkUIWindow): GlkWindowUI
+  def updateLayout(root: GlkWindow)
+  def createTextBufferUI(id: Int, glkUiWindow: GlkUIWindow): GlkWindowUI
+  def createTextGridUI(id: Int,   glkUiWindow: GlkUIWindow): GlkWindowUI
   def createGraphicsUI(id: Int,   glkWindow: GlkWindow): GlkWindowUI
   
   def requestLineInput(windowId: Int)
@@ -113,11 +87,13 @@ trait GlkScreenUI {
  * Base class of Glk windows to implement the Composite pattern.
  */
 abstract class GlkWindow(val id: Int, var size: Int, val rock: Int) {
-  var ui: GlkWindowUI = null
-  var parent: GlkWindow = null
+  var ui           : GlkWindowUI = null
+  var parent       : GlkWindow = null
   def outputStream : GlkStream
-  def typeName: String
-  def wintype: Int
+  def typeName     : String
+  def wintype      : Int
+  def isGraphics   : Boolean = false
+  def isLeaf       : Boolean = true
 }
 
 /**
@@ -125,12 +101,25 @@ abstract class GlkWindow(val id: Int, var size: Int, val rock: Int) {
  * inner nodes of the layout tree they do not have an UI equivalent.
  */
 class GlkPairWindow(id: Int) extends GlkWindow(id, 0, 0) {
-  var child0: GlkWindow = null
-  var child1: GlkWindow = null // key window child
+  var child0       : GlkWindow = null
+  var child1       : GlkWindow = null
+  var keyWindow    : GlkWindow = null// key window child
   var outputStream = NilStream
-  var method = 0
-  def wintype = GlkWindowType.PairWindow.id
-  def typeName = "Pair"
+  var method       = 0
+  def wintype      = GlkWindowType.PairWindow.id
+  def typeName     = "Pair"
+
+  override def isLeaf = false
+  def position = (method & GlkWindowPosition.Mask)
+  def division = (method & GlkWindowDivision.Mask)
+  def isProportional = division == GlkWindowDivision.Proportional
+  def isFixed        = division == GlkWindowDivision.Fixed
+  def isLeft         = position == GlkWindowPosition.Left
+  def isRight        = position == GlkWindowPosition.Right
+  def isAbove        = position == GlkWindowPosition.Above
+  def isBelow        = position == GlkWindowPosition.Below
+  def isVertical     = isAbove || isBelow
+  def isHorizontal   = isLeft || isRight
 }
 
 /**
@@ -173,12 +162,14 @@ extends GlkWindow(id, size, rock) {
     def setHyperlink(linkval: Int) = ui.setHyperlink(linkval)
   }
 }
+
 class GlkGraphicsUIWindow(id: Int, size: Int, rock: Int)
 extends GlkWindow(id, size, rock) {
   var outputStream = NilStream
-  def wintype = GlkWindowType.Graphics.id
-  def styleHints = null
-  def typeName = "Graphics"
+  def wintype      = GlkWindowType.Graphics.id
+  def styleHints   = null
+  def typeName     = "Graphics"
+  override def isGraphics = true
 }
 
 /**
@@ -312,7 +303,7 @@ class GlkWindowSystem {
     if (split > 0) {
       splitWindow(windowWithId(split), newWindow, method)
     }
-    screenUI.updateLayout(createLayoutTree)
+    screenUI.updateLayout(_rootWindow)
     newWindow.id
   }
   def closeWindow(winId: Int): Int = {
@@ -340,19 +331,20 @@ class GlkWindowSystem {
       windowToClose.parent = null
     }
     if (windowToClose == _rootWindow) _rootWindow = null
-    screenUI.updateLayout(createLayoutTree)
+    screenUI.updateLayout(_rootWindow)
     writeCount
   }
+  
   def setArrangement(winId: Int, method: Int, size: Int, keywinId: Int) {
     val pair = windowWithId(winId).asInstanceOf[GlkPairWindow]
-    val keyWindow = if (keywinId == 0) pair.child1 else windowWithId(keywinId)
-    if (keyWindow != pair.child1) {
-      throw new IllegalArgumentException("key window is not key child of specified pair !")
+    val keyWindow = if (keywinId == 0) pair.keyWindow else windowWithId(keywinId)
+    if (keyWindow != pair.keyWindow) {
+      throw new IllegalArgumentException("keyWindow is not key window of specified pair !")
     } else {
-      pair.method = method
-      pair.child1.size = size
+      pair.method         = method
+      pair.keyWindow.size = size
       //logger.info("update window arrangement")
-      screenUI.updateLayout(createLayoutTree)
+      screenUI.updateLayout(_rootWindow)
     }
   }
   
@@ -370,36 +362,6 @@ class GlkWindowSystem {
   private def windowWithId(id: Int) = {
     _windows.filter(window => window.id == id).head
   }
-
-  /**
-   * Creates a tree containing only layout information of the current
-   * window hierarchy.
-   */
-  private def createLayoutTree: GlkLayoutTreeNode = {
-    createLayoutTree(_rootWindow)
-  }
-  
-  /**
-   * Recursively copy layout information from the window tree into a layout
-   * tree.
-   */
-  private def createLayoutTree(window: GlkWindow): GlkLayoutTreeNode = {
-    if (window == null) return null
-    //logger.info("REC CREATE LAYOUT TREE - WINDOW TYPE: " + window.typeName + " id = " + window.id)
-    val node = new GlkLayoutTreeNode(window.id)
-    node.size = window.size
-    if (window.isInstanceOf[GlkGraphicsUIWindow]) node.isGraphics = true
-    if (window.isInstanceOf[GlkPairWindow]) {
-      val pair = window.asInstanceOf[GlkPairWindow]
-      node.method = pair.method
-      node.child0 = createLayoutTree(pair.child0)
-      node.child1 = createLayoutTree(pair.child1)
-      if (node.child0 != null) node.child0.parent = node
-      if (node.child1 != null) node.child1.parent = node
-    }
-    node
-  }
-
   
   private def splitWindow(tosplit: GlkWindow, newWindow: GlkWindow,
                           method: Int) {
@@ -412,9 +374,10 @@ class GlkWindowSystem {
         if (tosplit == oldParent.child0) oldParent.child0 = newParent
         else oldParent.child1 = newParent
       }
-      newParent.child0   = tosplit
-      newParent.child1   = newWindow
-      newParent.method   = method
+      newParent.child0        = tosplit
+      newParent.child1        = newWindow
+      newParent.keyWindow     = newWindow
+      newParent.method        = method
       newParent.child0.parent = newParent
       newParent.child1.parent = newParent
       if (_rootWindow == newParent.child0) _rootWindow = newParent
