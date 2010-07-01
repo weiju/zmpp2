@@ -119,6 +119,8 @@ with MouseListener with MouseMotionListener {
 class HyperLink(val id: Int) {
   var startPos: Int = 0
   var endPos  : Int = 0
+  
+  def contains(pos: Int): Boolean = pos >= startPos && pos <= endPos
 }
 
 trait SwingGlkScreenUI extends GlkScreenUI {
@@ -156,13 +158,6 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   private def proportionalSize(fullSize: Int, relSize: Int): Int = {
     (fullSize.toDouble * relSize.toDouble / 100.0).toInt
   }
-/*  
-  object SwingTextBufferUI {
-  val MarginLeft   = 20
-  val MarginRight  = 20
-  val MarginTop    = 10
-  val MarginBottom = 10
-}*/
 
   private def fixedHeight(pair: GlkPairWindow) = {
     if (pair.keyWindow.isGraphics) pair.keyWindow.size
@@ -170,7 +165,10 @@ trait SwingGlkScreenUI extends GlkScreenUI {
       lineHeightStdFont * pair.keyWindow.size +
         SwingTextBufferUI.MarginTop + SwingTextBufferUI.MarginBottom
     }
-    else lineHeightTextGrid * pair.keyWindow.size + TextGridExtraMargin
+    else {
+      lineHeightTextGrid * pair.keyWindow.size +
+        SwingTextGridUI.MarginTop + SwingTextGridUI.MarginBottom
+    }
   }
   private def fixedWidth(pair: GlkPairWindow) = {
     if (pair.keyWindow.isGraphics) pair.keyWindow.size
@@ -178,7 +176,10 @@ trait SwingGlkScreenUI extends GlkScreenUI {
       charWidthStdFont * pair.keyWindow.size + SwingTextBufferUI.MarginLeft +
         SwingTextBufferUI.MarginRight
     }
-    else charWidthTextGrid * pair.keyWindow.size
+    else {
+      charWidthTextGrid * pair.keyWindow.size +
+        SwingTextGridUI.MarginLeft + SwingTextGridUI.MarginRight
+    }
   }
 
   private def calculateHeight(pair: GlkPairWindow, fullSize: Int): Int = {

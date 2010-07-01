@@ -72,8 +72,14 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     StyleConstants.setFontSize(attrs,   screenUI.fixedFont.getSize)
   }
 
-  protected def numCols = getWidth / screenUI.charWidthStdFont
-  protected def numRows = getHeight / screenUI.lineHeightStdFont
+  protected def numCols =
+    (getWidth - SwingTextBufferUI.MarginLeft - SwingTextBufferUI.MarginRight) /
+    screenUI.charWidthStdFont
+  protected def numRows =
+    (getHeight - SwingTextBufferUI.MarginTop - SwingTextBufferUI.MarginBottom) /
+    screenUI.lineHeightStdFont
+  protected def currentPos = getDocument.getLength
+
   val container = new JScrollPane(this, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                                   ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)
   def _moveCursor(xpos: Int, ypos: Int) { }
@@ -95,6 +101,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     buffer = new StringBuilder
   }
   override def _setStyle(style: Int) {
+    if (isHyperlinkMode) return // ignore style in hyperlink mode
     import StyleHintType._
     flush
     val attrs = getInputAttributes
@@ -102,16 +109,29 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     val isBold = if (glkWindow.styleHints.get(style, Weight.id) == 1) true else false
     val isItalic = if (glkWindow.styleHints.get(style, Oblique.id) == 1) true else false
     val isReverse = if (glkWindow.styleHints.get(style, ReverseColor.id) == 1) true else false
-    val backColor = if (isReverse) glkWindow.styleHints.get(style, TextColor.id)
-      else glkWindow.styleHints.get(style, BackColor.id)
-    val textColor = if (isReverse) glkWindow.styleHints.get(style, BackColor.id)
-      else glkWindow.styleHints.get(style, TextColor.id)
-    currentBackgroundColor = backColor
-    currentForegroundColor = textColor
+    var backColor = glkWindow.styleHints.get(style, BackColor.id)
+    var textColor = glkWindow.styleHints.get(style, TextColor.id)
+
+    if (backColor >= 0) {
+      currentBackgroundColor = backColor
+    } else {
+      backColor = currentBackgroundColor
+    }
+    if (textColor >= 0) {
+      currentForegroundColor = textColor
+    } else {
+      textColor = currentForegroundColor
+    }
+    if (isReverse) {
+      StyleConstants.setForeground(attrs, new Color(backColor))
+      StyleConstants.setBackground(attrs, new Color(textColor))
+    } else {
+      StyleConstants.setForeground(attrs, new Color(textColor))
+      StyleConstants.setBackground(attrs, new Color(backColor))
+    }
+
     StyleConstants.setBold(attrs, isBold)
     StyleConstants.setItalic(attrs, isItalic)
-    StyleConstants.setBackground(attrs, new Color(backColor))
-    StyleConstants.setForeground(attrs, new Color(textColor))
     StyleConstants.setUnderline(attrs, false)
     if (isProportional) setStandardFont
     else setFixedFont
@@ -148,40 +168,6 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   }
   def requestMouseInput {
     throw new UnsupportedOperationException("no mouse input in text buffers")
-  }
-
-  private def currentPos = getDocument.getLength
-
-  def _setHyperlink(linkval: Int) {
-    //throw new UnsupportedOperationException("no hyperlinks in text buffers")
-    //    logger.info("SET HYPERLINK LINKVAL = " + linkval)
-    if (linkval == 0) {
-      flush
-      // reset style to normal
-      style = StyleType.Normal.id
-      if (currentHyperLink != null) {
-        currentHyperLink.endPos = currentPos
-        hyperLinkMap(currentHyperLink.id) = currentHyperLink
-        // This output can generate BadLocationExceptions !!!
-        /*
-        val doc = getDocument
-        printf("ADDED HYPERLINK %d: start: %d end: %d text: '%s'\n",
-          currentHyperLink.id, currentHyperLink.startPos, currentHyperLink.endPos,
-          doc.getText(currentHyperLink.startPos, currentHyperLink.endPos))
-          */
-        currentHyperLink = null
-      }
-    } else {
-      flush
-      val attrs = getInputAttributes
-      StyleConstants.setBold(attrs, false)
-      StyleConstants.setItalic(attrs, false)
-      StyleConstants.setUnderline(attrs, true)
-      StyleConstants.setForeground(attrs, new Color(0x0000ff))
-      currentHyperLink = new HyperLink(linkval)
-      currentHyperLink.startPos = currentPos
-    }
-
   }
 
   def putChar(c: Char) {

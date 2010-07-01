@@ -82,8 +82,8 @@ object StyleHints {
       Weight          -> 0,
       Oblique         -> 0,
       Proportional    -> 1,
-      TextColor       -> 0,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       ),
     Emphasized -> Map(
@@ -94,8 +94,8 @@ object StyleHints {
       Weight          -> 1,
       Oblique         -> 0,
       Proportional    -> 1,
-      TextColor       -> 0,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       ),
     Preformatted -> Map(
@@ -106,8 +106,8 @@ object StyleHints {
       Weight          -> 0,
       Oblique         -> 0,
       Proportional    -> 0,
-      TextColor       -> 0,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       ),
     Header -> Map(
@@ -118,8 +118,8 @@ object StyleHints {
       Weight          -> 1,
       Oblique         -> 0,
       Proportional    -> 1,
-      TextColor       -> 0,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       ),
     Subheader -> Map(
@@ -130,8 +130,8 @@ object StyleHints {
       Weight          -> 1,
       Oblique         -> 1,
       Proportional    -> 1,
-      TextColor       -> 0,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       ),
     Alert -> Map(
@@ -142,8 +142,8 @@ object StyleHints {
       Weight          -> 0,
       Oblique         -> 0,
       Proportional    -> 1,
-      TextColor       -> 0x00ff0000,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       ),
     Note -> Map(
@@ -154,8 +154,8 @@ object StyleHints {
       Weight          -> 0,
       Oblique         -> 0,
       Proportional    -> 1,
-      TextColor       -> 0,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       ),
     BlockQuote -> Map(
@@ -166,8 +166,8 @@ object StyleHints {
       Weight          -> 0,
       Oblique         -> 0,
       Proportional    -> 1,
-      TextColor       -> 0,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       ),
     Input -> Map(
@@ -178,8 +178,8 @@ object StyleHints {
       Weight          -> 1,
       Oblique         -> 0,
       Proportional    -> 1,
-      TextColor       -> 0,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       ),
     User1 -> Map(
@@ -190,8 +190,8 @@ object StyleHints {
       Weight          -> 0,
       Oblique         -> 0,
       Proportional    -> 1,
-      TextColor       -> 0,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       ),
     User2 -> Map(
@@ -202,8 +202,8 @@ object StyleHints {
       Weight          -> 0,
       Oblique         -> 0,
       Proportional    -> 1,
-      TextColor       -> 0,
-      BackColor       -> 0x00ffffff,
+      TextColor       -> -1,
+      BackColor       -> -1,
       ReverseColor    -> 0
       )
   )

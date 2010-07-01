@@ -37,23 +37,40 @@ import org.zmpp.base._
 import org.zmpp.glk._
 
 /**
- * UI representation of a text buffer. We use EditorPane, which allows for
+ * UI representation of a text grid. We use EditorPane, which allows for
  * styled text.
  */
+object SwingTextGridUI {
+  val MarginLeft   = 5
+  val MarginRight  = 5
+  val MarginTop    = 3
+  val MarginBottom = 3
+}
+
 class SwingTextGridUI(screenUI: SwingGlkScreenUI, glkWindow: GlkUIWindow)
 extends SwingTextWindowUI(screenUI, glkWindow) {
-  private var waitForMouse  = false
-  private var _cursorx = 0
-  private var _cursory = 0
-  
-  protected def numCols = getWidth / screenUI.charWidthTextGrid
-  protected def numRows = getHeight / screenUI.lineHeightTextGrid
+
+  setMargin(new java.awt.Insets(SwingTextGridUI.MarginTop,
+                                SwingTextGridUI.MarginLeft,
+                                SwingTextGridUI.MarginBottom,
+                                SwingTextGridUI.MarginRight))
 
   setFont(screenUI.fixedFont)
   style = StyleType.Normal.id
   val attrs = getInputAttributes
   StyleConstants.setFontFamily(attrs, screenUI.fixedFont.getFamily)
   StyleConstants.setFontSize(attrs,   screenUI.fixedFont.getSize)  
+
+  private var waitForMouse  = false
+  private var _cursorx = 0
+  private var _cursory = 0
+  
+  protected def numCols =
+    (getWidth - SwingTextGridUI.MarginLeft - SwingTextGridUI.MarginRight) /
+    screenUI.charWidthTextGrid
+  protected def numRows =
+    (getHeight - SwingTextGridUI.MarginTop - SwingTextGridUI.MarginBottom) /
+    screenUI.lineHeightTextGrid
 
   def reset = _clear
   def _clear {
@@ -102,7 +119,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     _cursory = ypos
   }
   
-  def currentPos = _cursory * numCols + _cursorx
+  protected def currentPos = _cursory * numCols + _cursorx
   
   def _putChar(c: Char) {
     if (c == '\n') {
@@ -123,23 +140,37 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     }
   }
   override def _setStyle(style: Int) {
+    if (isHyperlinkMode) return // ignore style in hyperlink mode
     import StyleHintType._
     //logger.info("Setting TextGrid Style to: %s".format(StyleType(style).toString))
     flush
     val attrs = getInputAttributes
     val isBold = if (glkWindow.styleHints.get(style, Weight.id) == 1) true else false
     val isItalic = if (glkWindow.styleHints.get(style, Oblique.id) == 1) true else false
+
     val isReverse = if (glkWindow.styleHints.get(style, ReverseColor.id) == 1) true else false
-    val backColor = if (isReverse) glkWindow.styleHints.get(style, TextColor.id)
-      else glkWindow.styleHints.get(style, BackColor.id)
-    val textColor = if (isReverse) glkWindow.styleHints.get(style, BackColor.id)
-      else glkWindow.styleHints.get(style, TextColor.id)
-    currentBackgroundColor = backColor
-    currentForegroundColor = textColor
+    var backColor = glkWindow.styleHints.get(style, BackColor.id)
+    var textColor = glkWindow.styleHints.get(style, TextColor.id)
+
+    if (backColor >= 0) {
+      currentBackgroundColor = backColor
+    } else {
+      backColor = currentBackgroundColor
+    }
+    if (textColor >= 0) {
+      currentForegroundColor = textColor
+    } else {
+      textColor = currentForegroundColor
+    }
+    if (isReverse) {
+      StyleConstants.setForeground(attrs, new Color(backColor))
+      StyleConstants.setBackground(attrs, new Color(textColor))
+    } else {
+      StyleConstants.setForeground(attrs, new Color(textColor))
+      StyleConstants.setBackground(attrs, new Color(backColor))
+    }
     StyleConstants.setBold(attrs, isBold)
     StyleConstants.setItalic(attrs, isItalic)
-    StyleConstants.setBackground(attrs, new Color(backColor))
-    StyleConstants.setForeground(attrs, new Color(textColor))
     StyleConstants.setUnderline(attrs, false)
   }
   def requestMouseInput {
@@ -153,36 +184,6 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
       val x = pos % numCols
       logger.info("mouseClicked, POS = %d MAPPED TO X = %d Y = %d".format(pos, x, y))
       resumeWithMouseInput(x, y)
-    }
-  }
-
-  def _setHyperlink(linkval: Int) {
-    logger.info("SET HYPERLINK LINKVAL = " + linkval)
-    if (linkval == 0) {
-      flush
-      // reset style to normal
-      style = StyleType.Normal.id
-      if (currentHyperLink != null) {
-        currentHyperLink.endPos = currentPos
-        hyperLinkMap(currentHyperLink.id) = currentHyperLink
-        // This output can generate BadLocationExceptions !!!
-        /*
-        val doc = getDocument
-        printf("ADDED HYPERLINK %d: start: %d end: %d text: '%s'\n",
-          currentHyperLink.id, currentHyperLink.startPos, currentHyperLink.endPos,
-          doc.getText(currentHyperLink.startPos, currentHyperLink.endPos))
-          */
-        currentHyperLink = null
-      }
-    } else {
-      flush
-      val attrs = getInputAttributes
-      StyleConstants.setBold(attrs, false)
-      StyleConstants.setItalic(attrs, false)
-      StyleConstants.setUnderline(attrs, true)
-      StyleConstants.setForeground(attrs, new Color(0x0000ff))
-      currentHyperLink = new HyperLink(linkval)
-      currentHyperLink.startPos = currentPos
     }
   }
 

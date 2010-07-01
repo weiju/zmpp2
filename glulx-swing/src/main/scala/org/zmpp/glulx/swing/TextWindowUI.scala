@@ -32,6 +32,8 @@ import java.util.logging._
 import javax.swing._
 import javax.swing.text.StyleConstants
 import javax.swing.text.StyledDocument
+import java.awt.Color
+import java.awt.Cursor
 import java.awt.event._
 
 import scala.collection.mutable.HashMap
@@ -54,15 +56,18 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   var currentForegroundColor = 0x00000000
   
   // a map of hyperlinks, cleared when the screen is cleared
-  val hyperLinkMap = new HashMap[Int, HyperLink]
+  val hyperlinkMap = new HashMap[Int, HyperLink]
   var currentHyperLink: HyperLink = null
+  def isHyperlinkMode = currentHyperLink != null
   
   addKeyListener(this)
   addMouseListener(this)
   addMouseMotionListener(this)
 
-  protected def numCols: Int
-  protected def numRows: Int
+  protected def numCols    : Int
+  protected def numRows    : Int
+  protected def currentPos : Int
+  
   def eventManager = screenUI.vm.eventManager
   
   /** Always return a smaller width to Glk to avoid formatting issues */
@@ -75,6 +80,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   def isCharInputMode = textInputMode == SwingTextWindowUI.InputModeChar
 
   protected def resumeWithLineInput(input: String) {
+    logger.info("RESUME WITH LINE INPUT, WINDOW: %d".format(glkWindow.id))
     eventManager.addLineInputEvent(glkWindow.id, input)
     if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
       eventManager.processNextEvent) {
@@ -85,6 +91,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   }
 
   protected def resumeWithCharInput(charCode: Int) {
+    logger.info("RESUME WITH CHAR INPUT, WINDOW: %d".format(glkWindow.id))
     eventManager.addCharInputEvent(glkWindow.id, charCode)
     if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
       eventManager.processNextEvent) {
@@ -179,7 +186,41 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
     _incompleteInput
   }
 
-  def _setHyperlink(linkval: Int)
+  def _setHyperlink(linkval: Int) {
+    //throw new UnsupportedOperationException("no hyperlinks in text buffers")
+    logger.info("SET HYPERLINK LINKVAL = " + linkval)
+    if (linkval == 0) {
+      flush
+      // reset style to normal
+      style = StyleType.Normal.id
+      if (currentHyperLink != null) {
+        currentHyperLink.endPos = currentPos
+      logger.info("HYPERLINK ENDING AT: %d".format(currentPos))
+        hyperlinkMap(currentHyperLink.id) = currentHyperLink
+        // This output can generate BadLocationExceptions !!!
+        /*
+        val doc = getDocument
+        printf("ADDED HYPERLINK %d: start: %d end: %d text: '%s'\n",
+          currentHyperLink.id, currentHyperLink.startPos, currentHyperLink.endPos,
+          doc.getText(currentHyperLink.startPos, currentHyperLink.endPos))
+          */
+        currentHyperLink = null
+      }
+    } else {
+      logger.info("SETTING LINK STYLE")
+      flush
+      val attrs = getInputAttributes
+      StyleConstants.setBold(attrs, false)
+      StyleConstants.setItalic(attrs, false)
+      StyleConstants.setUnderline(attrs, true)
+      StyleConstants.setForeground(attrs, new Color(0x0000ff))
+      StyleConstants.setBackground(attrs, new Color(currentBackgroundColor))
+      currentHyperLink = new HyperLink(linkval)
+      currentHyperLink.startPos = currentPos
+      logger.info("HYPERLINK STARTING AT: %d".format(currentPos))
+    }
+  }
+
   
   def setHyperlink(linkval: Int) {
     if (SwingUtilities.isEventDispatchThread) _setHyperlink(linkval)
@@ -218,7 +259,17 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
     case _                     => GlkKeyCodes.Unknown
   }
   
-  def mouseMoved(event: MouseEvent) { }
+  def mouseMoved(event: MouseEvent) {
+    val pos = viewToModel(event.getPoint)
+    // now search the hyperlinks...
+    for (hyperlink <- hyperlinkMap.values) {
+      if (hyperlink.contains(pos)) {
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR))
+        return
+      }
+    }
+    setCursor(Cursor.getDefaultCursor)
+  }
   def mouseDragged(event: MouseEvent) { }
   def mouseExited(event: MouseEvent) { }
   def mouseEntered(event: MouseEvent) { }
