@@ -207,13 +207,6 @@ class EventManager(_state: VMState) {
       logger.warning("Event request[%s] already exists for window %d !!".format(request.eventType.toString, request.winId))
     }
   }
-/*  
-  private def isKeyboardInputRequestInQueueFor(winId: Int) = {
-    val winReqs = eventRequestsForWindow(winId)
-    !(winReqs.filter((elem) => elem.isInstanceOf[LineInputRequest]).isEmpty) ||
-    !(winReqs.filter((elem) => elem.isInstanceOf[CharInputRequest]).isEmpty)
-  }
-  */
   private def isCharInputRequestInQueueFor(winId: Int) = {
     val winReqs = eventRequestsForWindow(winId)
     !(winReqs.filter((elem) => elem.isInstanceOf[CharInputRequest]).isEmpty)
@@ -237,7 +230,7 @@ class EventManager(_state: VMState) {
       _state.pushInt(winId)
       _state.pushInt(val1)
       _state.pushInt(val2)
-    } else {
+    } else if (eventPtr > 0) {
       _state.setMemIntAt(eventPtr,      eventType.id)
       _state.setMemIntAt(eventPtr + 4,  winId)
       _state.setMemIntAt(eventPtr + 8,  val1)
@@ -286,7 +279,8 @@ class EventManager(_state: VMState) {
 
   def addCharInputRequest(winId: Int) {
     if (isLineInputRequestInQueueFor(winId)) {
-      throw new IllegalArgumentException("There is already a line input request in the queue for window: %d".format(winId))
+      removeLineInputRequestInWindow(winId)
+      logger.warning("There was already a line input request for window: %d - replaced with char input request".format(winId))
     }
     addWindowEventRequest(new CharInputRequest(winId))
   }
@@ -295,7 +289,8 @@ class EventManager(_state: VMState) {
   }
   def addLineInputRequest(winId: Int, buf: Int, maxlen: Int, initlen: Int) {
     if (isCharInputRequestInQueueFor(winId)) {
-      throw new IllegalArgumentException("There is already a char input request in the queue for window: %d".format(winId))
+      removeInputRequestInWindow(winId, GlkEventType.CharInput)
+      logger.warning("There was already a char input request for window: %d - replaced with line input request".format(winId))
     }
     addWindowEventRequest(new LineInputRequest(winId, buf, maxlen, initlen))
   }

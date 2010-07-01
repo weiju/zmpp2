@@ -31,7 +31,6 @@ package org.zmpp.zcode
 /*
  * String decoding/encoding functionality is found here.
  */
- 
 trait Alphabet {
   def lookup(zchar: Int): Char
   def name: String
@@ -50,6 +49,12 @@ class Alphabet2 extends Alphabet {
   val _table = " \n0123456789.,!?+#'\"/\\-:()"
   def lookup(zchar: Int): Char = _table(zchar - 6)
   def name = "A2" // just debugging
+}
+
+object ZsciiEncoding {
+  val NullChar = 0
+  
+  def zsciiCodeFor(c: Int) = c
 }
 
 class ZsciiEncoding(_state: VMState) {
@@ -140,3 +145,4 @@ class ZsciiEncoding(_state: VMState) {
     decodeZStringAtByteAddress(_state.header.unpackStringAddress(paddr), stream)
   }
 }
+

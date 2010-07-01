@@ -81,6 +81,7 @@ class GlulxVMState extends VMState {
     fp        = 0
     runState  = VMRunStates.Running
     setExtendedMem(header.endmem - header.extstart)
+    logger.info("VM INITIALIZED WITH EXT_START: %d END_MEM: %d".format(header.extstart, header.endmem))
   }
   def restart(originalRam: Array[Byte],
               protectionStart: Int, protectionLength: Int) {
@@ -210,6 +211,9 @@ class GlulxVMState extends VMState {
     else                       _memheap.byteAt(addr)
   }
   def setMemByteAt (addr: Int, value: Int) {
+    if (addr < header.ramstart) {
+      logger.warning("SETTING BYTE VALUE IN ROM %02x = %d !".format(addr, value))
+    }
     if      (inStoryMem(addr)) _story.setByteAt(addr, value)
     else if (inExtMem(addr))   _extMem.setByteAt(addr, value)
     else                       _memheap.setByteAt(addr, value)
@@ -220,6 +224,9 @@ class GlulxVMState extends VMState {
     else                       _memheap.shortAt(addr)
   }
   def setMemShortAt(addr: Int, value: Int) {
+    if (addr < header.ramstart) {
+      logger.warning("SETTING SHORT VALUE IN ROM %02x = %d !".format(addr, value))
+    }
     if      (inStoryMem(addr)) _story.setShortAt(addr, value)
     else if (inExtMem(addr))   _extMem.setShortAt(addr, value) 
     else                       _memheap.setShortAt(addr, value)
@@ -230,6 +237,9 @@ class GlulxVMState extends VMState {
     else                       _memheap.intAt(addr)
   }
   def setMemIntAt  (addr: Int, value: Int) {
+    if (addr < header.ramstart) {
+      logger.warning("SETTING INT VALUE IN ROM %02x = %d !".format(addr, value))
+    }
     if      (inStoryMem(addr)) _story.setIntAt(addr, value)
     else if (inExtMem(addr))   _extMem.setIntAt(addr, value)
     else                       _memheap.setIntAt(addr, value)

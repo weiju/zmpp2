@@ -59,7 +59,6 @@ class Machine {
   private var _numCallArgs = 0
   private var _currentArg  = 0
 
-
   var iterations  = 1
 
   def init(story: Memory, platformIO: PlatformIO) {
@@ -68,6 +67,8 @@ class Machine {
                   else new ModernObjectTable(this)
     _platformIO = platformIO // TODO: Put into io management system
   }
+
+  def version = state.header.version
   
   def doTurn {
     while (state.runState == VMRunStates.Running) {
@@ -75,19 +76,21 @@ class Machine {
     }
   }
 
+  // ***********************************************************************
+  // ******** PARSER SUPPORT
+  // **************************************  
+  //private def textBufferOffset = if (version < 5) 1 else 2
+
   def resumeWithLineInput(input: String) {
     state.runState = VMRunStates.Running
-    // TODO: Process input
-    // 1. lexical analysis
-    val maxTokens = state.byteAt(readLineInfo.parseBuffer)
-    printf("MAX TOKENS: %d\n", maxTokens)
-    val tokenizer = new StringTokenizer(input, ",") // TODO: take separators from dictionary
-    while (tokenizer.hasMoreTokens) {
-      val token = tokenizer.nextToken
-      printf("Token: [%s]\n", token)
-    }
+    val parserSupport =
+      new ParserHelper(state, readLineInfo.textBuffer, readLineInfo.parseBuffer, 0, false)
+    parserSupport.process(input)
   }
 
+  // ***********************************************************************
+  // ******** EVERYTHING ELSE
+  // **************************************  
   // Status (V1-V3)
   def statusLineObjectName: String = {
     val bufferStream = new StringBuilderOutputStream
