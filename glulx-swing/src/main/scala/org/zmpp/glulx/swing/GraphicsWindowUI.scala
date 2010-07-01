@@ -118,7 +118,7 @@ extends JComponent with SwingGlkWindowUI {
   }
   def _drawScaledImage(resnum: Int, posx: Int, posy: Int,
                        width: Int, height: Int) {
-    logger.info("GRAPHICS WINDOW(%d), DRAWSCALEDIMAGE(%d)".format(glkWindow.id, resnum))
+    //logger.info("GRAPHICS WINDOW(%d), DRAWSCALEDIMAGE(%d)".format(glkWindow.id, resnum))
     val g2d = getOffscreenGraphics
     // TODO: we should return false to Glk if image does not exist !!
     val image = screenUI.getImage(resnum)
@@ -139,7 +139,7 @@ extends JComponent with SwingGlkWindowUI {
     }
   }
   def _drawImage(resnum: Int, posx: Int, posy: Int) {
-    logger.info("GRAPHICS WINDOW(%d), DRAWIMAGE(%d)".format(glkWindow.id, resnum))
+    //logger.info("GRAPHICS WINDOW(%d), DRAWIMAGE(%d)".format(glkWindow.id, resnum))
     val g2d = getOffscreenGraphics
     val image = screenUI.getImage(resnum)
     g2d.drawImage(image, posx, posy, null)
@@ -164,6 +164,9 @@ extends JComponent with SwingGlkWindowUI {
   }
   def setHyperlink(linkval: Int) {
     throw new UnsupportedOperationException("SET HYPERLINK NOT SUPPORTED")
+  }
+  def requestHyperlinkEvent {
+    throw new UnsupportedOperationException("REQUEST HYPERLINK EVENT NOT SUPPORTED")
   }
 
   private def resumeWithMouseInput(xpos: Int, ypos: Int) {

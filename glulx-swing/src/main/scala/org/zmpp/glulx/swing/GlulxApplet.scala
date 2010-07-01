@@ -28,6 +28,7 @@
  */
 package org.zmpp.glulx.swing
 
+import java.awt.Dimension
 import javax.swing.JApplet
 import java.net.URL
 import org.zmpp.base._
@@ -40,7 +41,7 @@ class GlulxApplet extends JApplet with SwingGlkScreenUI {
   private def readFromUrl(url: URL) {
     val conn = url.openConnection
     val numBytes = conn.getContentLength
-    println("Content-Length = " + numBytes)
+    logger.info("Content-Length = " + numBytes)
     if (numBytes > 0) {
       val bytes = new Array[Byte](numBytes)
       val in = conn.getInputStream
@@ -62,13 +63,12 @@ class GlulxApplet extends JApplet with SwingGlkScreenUI {
         // BLORB
         val iffdata = new DefaultMemory(bytes)
         val formchunk = new DefaultFormChunk(iffdata)
-        logger.info("FORM, sub id: " + formchunk.subId)
         val blorbData = new BlorbData(formchunk)
         val story = formchunk.chunkDataForId("GLUL")
         _vm.init(story, blorbData) 
       }
     } else {
-      println("NOT INITIALIZED (CONTENTLENGTH UNKNOWN)")
+      logger.severe("NOT INITIALIZED (CONTENTLENGTH UNKNOWN)")
     }
   }
 
@@ -84,5 +84,7 @@ class GlulxApplet extends JApplet with SwingGlkScreenUI {
     println("Start")
     ExecutionControl.executeTurn(vm)
   }
+
+  def getClientSize = getContentPane.getSize
 }
 

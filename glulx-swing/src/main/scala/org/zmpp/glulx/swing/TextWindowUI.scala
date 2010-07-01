@@ -157,12 +157,16 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
     getCaret.setVisible(true)
     textInputMode = SwingTextWindowUI.InputModeChar
   }
+  def requestHyperlinkEvent {
+    // TODO
+    logger.warning("TODO: REQUEST LINE EVENT (TextWindowUI.scala)")
+  }
   
   var _incompleteInput: String = null
   def _cancelLineInput {
     val doc = getDocument
     _incompleteInput = doc.getText(inputStart, doc.getLength - inputStart)
-    printf("Canceled with input: '%s'\n", _incompleteInput)
+    logger.info("CANCELLED WITH LINE INPUT: '%s'\n".format(_incompleteInput))
   }
 
   def cancelLineInput: String = {

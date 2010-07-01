@@ -145,7 +145,7 @@ extends Callable[Boolean] {
         logger.warning("CAN NOT PLAY SOUND %d - NO LINE AVAILABLE".format(soundnum))
         return false
       }
-      logger.info("REPEAT SOUND %d AGAIN, REPEATS: %d".format(soundnum, repeatsLeft))
+      //logger.info("REPEAT SOUND %d AGAIN, REPEATS: %d".format(soundnum, repeatsLeft))
     }
     if (running) {
       // only notify if not interrupted
@@ -207,7 +207,7 @@ extends NativeSoundChannel {
   var currentSoundNum = 0
 
   def play(soundnum: Int, repeats: Int, notify: Int): Boolean = {
-    logger.info("SoundChannel.play(%d) repeats: %d notify: %d".format(soundnum, repeats, notify))
+    //logger.info("SoundChannel.play(%d) repeats: %d notify: %d".format(soundnum, repeats, notify))
     notifyOnStop    = notify
     currentSoundNum = soundnum
     stop
@@ -247,7 +247,7 @@ extends NativeSoundChannel {
   }
   def soundStopped {
     if (notifyOnStop != 0 && vm != null) {
-      logger.info("Send notification with notification value: %d".format(notifyOnStop))
+      //logger.info("Send notification with notification value: %d".format(notifyOnStop))
       vm.eventManager.addSoundNotifyEvent(currentSoundNum, notifyOnStop)
       resumeWithNextEvent
     }

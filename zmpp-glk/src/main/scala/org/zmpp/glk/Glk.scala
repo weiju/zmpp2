@@ -298,6 +298,10 @@ class Glk(val eventManager: EventManager) {
     logger.info("glk_request_char_event(%d)".format(winId))
     eventManager.addCharInputRequest(winId)
   }
+  def request_hyperlink_event(winId: Int) {
+    logger.info("glk_request_hyperlink_event(%d)".format(winId))
+    eventManager.addHyperlinkEventRequest(winId)
+  }
   def request_line_event(winId: Int, buf: Int, maxlen: Int, initlen: Int) {
     logger.info("glk_request_line_event(%d)".format(winId))
     eventManager.addLineInputRequest(winId, buf, maxlen, initlen)

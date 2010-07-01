@@ -105,14 +105,12 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   def currentPos = _cursory * numCols + _cursorx
   
   def _putChar(c: Char) {
-    //printf("TextGrid.putChar('%c')\n", c)
     if (c == '\n') {
       _cursorx  = 0
       if (_cursory < numRows - 1) _cursory += 1
     } else {
       val index = currentPos
       // write to the right position in the document
-      //_buffer.replace(index, index + 1, String.valueOf(c))
       val doc = getDocument
       doc.remove(index, 1)
       doc.insertString(index, String.valueOf(c), getInputAttributes)
@@ -122,7 +120,6 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
         _cursory += 1
         _cursorx = 0      
       }
-      //setText(_buffer.toString)
     }
   }
   override def _setStyle(style: Int) {

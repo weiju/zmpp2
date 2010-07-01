@@ -111,6 +111,7 @@ with MouseListener with MouseMotionListener {
   def requestLineInput
   def requestPreviousLineInput
   def requestCharInput
+  def requestHyperlinkEvent
   def requestMouseInput
   def cancelLineInput: String
 }
@@ -126,6 +127,7 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   private val _fixedFont = getDefaultFixedFont
   private val _stdFont = getDefaultNormalFont
   private val TextGridExtraMargin = 3
+  private val TextBufferExtraMargin = 3
   
   var lineHeightTextGrid   = 0
   var charWidthTextGrid    = 0
@@ -140,17 +142,13 @@ trait SwingGlkScreenUI extends GlkScreenUI {
 
   private def getDefaultFixedFont = {
     var prefFont = Font.decode("Inconsolata-PLAIN-14")
-    //println("GOT FONT: " + prefFont.getFamily)
     if (prefFont.getFamily == "Dialog") prefFont = Font.decode("Courier New-PLAIN-14")
-    //println("GOT FONT: " + prefFont.getFamily)
     if (prefFont.getFamily == "Dialog") prefFont = new Font("Monospaced", Font.PLAIN, 14)
     prefFont
   }
   private def getDefaultNormalFont = {
     var prefFont = Font.decode("American Typewriter-PLAIN-14")
-    //println("GOT FONT: " + prefFont.getFamily)
     if (prefFont.getFamily == "Dialog") prefFont = Font.decode("Times New Roman-PLAIN-14")
-    //println("GOT FONT: " + prefFont.getFamily)
     if (prefFont.getFamily == "Dialog") prefFont = new Font("Serif", Font.PLAIN, 14)
     prefFont
   }
@@ -158,12 +156,28 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   private def proportionalSize(fullSize: Int, relSize: Int): Int = {
     (fullSize.toDouble * relSize.toDouble / 100.0).toInt
   }
+/*  
+  object SwingTextBufferUI {
+  val MarginLeft   = 20
+  val MarginRight  = 20
+  val MarginTop    = 10
+  val MarginBottom = 10
+}*/
+
   private def fixedHeight(pair: GlkPairWindow) = {
     if (pair.keyWindow.isGraphics) pair.keyWindow.size
+    else if (pair.keyWindow.isTextBuffer) {
+      lineHeightStdFont * pair.keyWindow.size +
+        SwingTextBufferUI.MarginTop + SwingTextBufferUI.MarginBottom
+    }
     else lineHeightTextGrid * pair.keyWindow.size + TextGridExtraMargin
   }
   private def fixedWidth(pair: GlkPairWindow) = {
     if (pair.keyWindow.isGraphics) pair.keyWindow.size
+    else if (pair.keyWindow.isTextBuffer) {
+      charWidthStdFont * pair.keyWindow.size + SwingTextBufferUI.MarginLeft +
+        SwingTextBufferUI.MarginRight
+    }
     else charWidthTextGrid * pair.keyWindow.size
   }
 
@@ -230,11 +244,9 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   }
   
   def updateLayout(root: GlkWindow) {
-    //logger.info("UPDATE LAYOUT")
     val runnable = new Runnable {
       def run {
-        val view = makeLayout(root, getSize)
-        //logger.info("ADDING A: " + viewAndSize._1)
+        val view = makeLayout(root, getClientSize)
         getContentPane.removeAll
         getContentPane.invalidate
         getContentPane.add(view, BorderLayout.CENTER)
@@ -273,9 +285,11 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   
   def initMetrics {
     val g =  getGraphics
-    lineHeightTextGrid = g.getFontMetrics(_fixedFont).getHeight
+    val stdMetrics = g.getFontMetrics(_stdFont)
+    val fixedMetrics = g.getFontMetrics(_fixedFont)
+    lineHeightTextGrid = fixedMetrics.getMaxAscent + fixedMetrics.getMaxDescent
     charWidthTextGrid = g.getFontMetrics(_fixedFont).charWidth('0')
-    lineHeightStdFont = g.getFontMetrics(_stdFont).getHeight
+    lineHeightStdFont = stdMetrics.getMaxAscent + stdMetrics.getMaxDescent
     charWidthStdFont = g.getFontMetrics(_stdFont).charWidth('0')
   }
   
@@ -327,6 +341,20 @@ trait SwingGlkScreenUI extends GlkScreenUI {
     }
   }
   
+  def _requestHyperlinkEvent(windowId: Int) {
+    _windowUIs(windowId).flush
+    _windowUIs(windowId).requestHyperlinkEvent
+  }
+
+  def requestHyperlinkEvent(windowId: Int) {
+    if (SwingUtilities.isEventDispatchThread) _requestHyperlinkEvent(windowId)
+    else {
+      SwingUtilities.invokeAndWait(new Runnable {
+        def run = _requestHyperlinkEvent(windowId)
+      })
+    }
+  }
+  
   // Mouse input
   def _requestMouseInput(windowId: Int) {
     //logger.info("LISTEN TO MOUSE_INPUT(%d)".format(windowId))
@@ -348,7 +376,7 @@ trait SwingGlkScreenUI extends GlkScreenUI {
 
   var _timer: javax.swing.Timer = null
   def requestTimerInput(millis: Int) {
-    logger.info("REQUESTING TIMER INPUT FOR %d MILLIS".format(millis))
+    //logger.info("REQUESTING TIMER INPUT FOR %d MILLIS".format(millis))
     if (_timer != null) _timer.stop
     if (millis != 0) {
       _timer = new javax.swing.Timer(millis, new ActionListener {
@@ -370,7 +398,7 @@ trait SwingGlkScreenUI extends GlkScreenUI {
 
   def getContentPane: java.awt.Container
   def getGraphics: java.awt.Graphics
-  def getSize: java.awt.Dimension
+  def getClientSize: java.awt.Dimension
   
   // TODO: Cache images
   def getImage(resnum: Int): BufferedImage = {
@@ -380,7 +408,7 @@ trait SwingGlkScreenUI extends GlkScreenUI {
       val inputStream = blorbData.pictureInputStream(resnum)
       ImageIO.read(inputStream)
     } else {
-      logger.info("IMAGE NUM NOT FOUND: %d".format(resnum))
+      logger.warning("IMAGE NUM NOT FOUND: %d".format(resnum))
       null
     }
   }
@@ -392,6 +420,8 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   }
 }
 
-class GlkFrameUI extends JFrame with SwingGlkScreenUI
+class GlkFrameUI extends JFrame with SwingGlkScreenUI {
+  def getClientSize = getContentPane.getSize
+}
 
 

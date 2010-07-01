@@ -174,6 +174,17 @@ extends WindowEventRequest(winId, GlkEventType.MouseInput) {
   }
   override def hashCode = winId
 }
+class HyperlinkEventRequest(winId: Int)
+extends WindowEventRequest(winId, GlkEventType.Hyperlink) {
+  def prepareWindow(screenUI: GlkScreenUI) {
+    screenUI.requestHyperlinkEvent(winId)
+  }
+  override def equals(that: Any): Boolean = that match {
+    case other: HyperlinkEventRequest => winId == other.winId
+    case _ => false
+  }
+  override def hashCode = winId
+}
 
 // *************************************************************************
 // ***** Event Manager
@@ -185,21 +196,30 @@ class EventManager(_state: VMState) {
   private var _screenUI: GlkScreenUI = null
   private var eventQueue = new LinkedList[GlkEvent]
 
-  //private var _otherEventRequests = Set[EventRequest]()
   private def addWindowEventRequest(request: WindowEventRequest) {
     if (!(_windowEventRequests contains request.winId)) {
       _windowEventRequests(request.winId) = Nil
     }
     val requestList = _windowEventRequests(request.winId)
-    if (requestList contains request) {
-      throw new IllegalStateException("EVENT REQUEST ALREADY EXISTS IN THE QUEUE FOR WINDOW %d !!".format(request.winId))
+    if (!requestList.contains(request)) {
+      _windowEventRequests(request.winId) = request :: requestList
+    } else {
+      logger.warning("Event request[%s] already exists for window %d !!".format(request.eventType.toString, request.winId))
     }
-    _windowEventRequests(request.winId) = request :: requestList
   }
-  
+/*  
   private def isKeyboardInputRequestInQueueFor(winId: Int) = {
     val winReqs = eventRequestsForWindow(winId)
     !(winReqs.filter((elem) => elem.isInstanceOf[LineInputRequest]).isEmpty) ||
+    !(winReqs.filter((elem) => elem.isInstanceOf[CharInputRequest]).isEmpty)
+  }
+  */
+  private def isCharInputRequestInQueueFor(winId: Int) = {
+    val winReqs = eventRequestsForWindow(winId)
+    !(winReqs.filter((elem) => elem.isInstanceOf[CharInputRequest]).isEmpty)
+  }
+  private def isLineInputRequestInQueueFor(winId: Int) = {
+    val winReqs = eventRequestsForWindow(winId)
     !(winReqs.filter((elem) => elem.isInstanceOf[CharInputRequest]).isEmpty)
   }
 
@@ -265,14 +285,17 @@ class EventManager(_state: VMState) {
   def screenUI_=(ui: GlkScreenUI) { _screenUI = ui }
 
   def addCharInputRequest(winId: Int) {
-    if (isKeyboardInputRequestInQueueFor(winId)) {
-      throw new IllegalArgumentException("There is already an input request in the queue for window: %d".format(winId))
+    if (isLineInputRequestInQueueFor(winId)) {
+      throw new IllegalArgumentException("There is already a line input request in the queue for window: %d".format(winId))
     }
     addWindowEventRequest(new CharInputRequest(winId))
   }
+  def addHyperlinkEventRequest(winId: Int) {
+    addWindowEventRequest(new HyperlinkEventRequest(winId))
+  }
   def addLineInputRequest(winId: Int, buf: Int, maxlen: Int, initlen: Int) {
-    if (isKeyboardInputRequestInQueueFor(winId)) {
-      throw new IllegalArgumentException("There is already an input request in the queue for window: %d".format(winId))
+    if (isCharInputRequestInQueueFor(winId)) {
+      throw new IllegalArgumentException("There is already a char input request in the queue for window: %d".format(winId))
     }
     addWindowEventRequest(new LineInputRequest(winId, buf, maxlen, initlen))
   }

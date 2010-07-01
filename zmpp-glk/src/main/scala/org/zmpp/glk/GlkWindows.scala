@@ -79,6 +79,7 @@ trait GlkScreenUI {
   def requestCharInput(windowId: Int)
   def requestMouseInput(windowId: Int)  
   def requestTimerInput(millis: Int)
+  def requestHyperlinkEvent(windowId: Int)
 
   def cancelLineInput(windowId: Int): String
 }
@@ -94,6 +95,8 @@ abstract class GlkWindow(val id: Int, var size: Int, val rock: Int) {
   def wintype      : Int
   def isGraphics   : Boolean = false
   def isLeaf       : Boolean = true
+  def isTextBuffer : Boolean
+  def isTextGrid   : Boolean
 }
 
 /**
@@ -108,6 +111,8 @@ class GlkPairWindow(id: Int) extends GlkWindow(id, 0, 0) {
   var method       = 0
   def wintype      = GlkWindowType.PairWindow.id
   def typeName     = "Pair"
+  def isTextBuffer = false
+  def isTextGrid   = false
 
   override def isLeaf = false
   def position = (method & GlkWindowPosition.Mask)
@@ -170,6 +175,8 @@ extends GlkWindow(id, size, rock) {
   def styleHints   = null
   def typeName     = "Graphics"
   override def isGraphics = true
+  def isTextBuffer = false
+  def isTextGrid   = false
 }
 
 /**
@@ -235,7 +242,7 @@ class GlkWindowSystem {
   def clearWindow(winId: Int) = windowWithId(winId).ui.clear
   def createWindow(wintype: GlkWindowType.Value, size: Int, rock: Int) = {
     val id = nextId
-    logger.info("CREATED WINDOW WITH ID %d TYPE: %s SIZE: %d".format(id, wintype.toString, size))
+    //logger.info("CREATED WINDOW WITH ID %d TYPE: %s SIZE: %d".format(id, wintype.toString, size))
 
     import GlkWindowType._
     val newWindow: GlkWindow = wintype match {
@@ -244,14 +251,18 @@ class GlkWindowSystem {
           def wintype = GlkWindowType.TextBuffer.id
           def styleHints = _textbufferStyleHints
           def typeName = "TextBuffer"
+          def isTextBuffer = true
+          def isTextGrid   = false
         }
         window.ui = screenUI.createTextBufferUI(id, window)
         window
       case TextGrid   =>
         val window = new GlkUIWindow(id, size, rock) {
           def wintype = GlkWindowType.TextGrid.id
-          def styleHints = _textgridStyleHints
-          def typeName = "TextGrid"
+          def styleHints   = _textgridStyleHints
+          def typeName     = "TextGrid"
+          def isTextBuffer = false
+          def isTextGrid   = true
         }
         window.ui = screenUI.createTextGridUI(id, window)
         window
@@ -311,7 +322,7 @@ class GlkWindowSystem {
     val writeCount = windowToClose.outputStream.writeCount
     
     val winParentId = if (windowToClose.parent == null) -1 else windowToClose.parent.id
-    logger.info("CLOSING WINDOW WITH ID: %d (PARENT ID: %d)".format(winId, winParentId))
+    //logger.info("CLOSING WINDOW WITH ID: %d (PARENT ID: %d)".format(winId, winParentId))
 
     // remove window from its parent by replacing its parent with the sibling
     if (windowToClose.parent != null) {
@@ -381,9 +392,11 @@ class GlkWindowSystem {
       newParent.child0.parent = newParent
       newParent.child1.parent = newParent
       if (_rootWindow == newParent.child0) _rootWindow = newParent
+      /*
       logger.info("SPLITTING WINDOW WITH ID: %d SIZE: %d POS: %s DIV: %s PAIR PARENT: %d".format(
              tosplit.id, newWindow.size, GlkWindowPosition.name(method),
              GlkWindowDivision.name(method), if (oldParent == null) -1 else oldParent.id))
+      */
   }
 }
 

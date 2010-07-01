@@ -315,7 +315,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     throw new UnsupportedOperationException("@@glk_request_char_event_uni not supported yet")
   }
   private def _request_hyperlink_event(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_request_hyperlink_event not supported yet")
+    glk.request_hyperlink_event(args(0))
+    0
   }
   private def _request_line_event(args: Array[Int]): Int = {
     glk.request_line_event(args(0), args(1), args(2), args(3))
