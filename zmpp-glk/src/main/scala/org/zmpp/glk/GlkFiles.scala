@@ -131,17 +131,22 @@ class GlkFileStream(val rock: Int) extends GlkStream {
   }
 }
 
-class GlkBinaryFileOutputStream(filename: String, rock: Int) extends GlkFileStream(rock) {
+class GlkBinaryFileOutputStream(file: File, rock: Int) extends GlkFileStream(rock) {
   override def readCount: Int = throw new UnsupportedOperationException("can not read from output stream")
 }
-class GlkTextFileOutputStream(filename: String, rock: Int) extends GlkFileStream(rock) {
+class GlkTextFileOutputStream(file: File, rock: Int) extends GlkFileStream(rock) {
   override def readCount: Int = throw new UnsupportedOperationException("can not read from output stream")
 }
 
-class FileReference(val id: Int, _usageType: Int, val filename: String, val rock: Int) {
-  def isBinaryMode = (_usageType & 0x100) == 0
-  def isTextMode   = (_usageType & 0x100) == 0x100
-  def fileType = _usageType & FileUsageTypes.TypeMask
+class FileReference(val id        : Int,
+                    val usageType : Int,
+                    val filemode  : Int,
+                    val file      : File,
+                    val rock      : Int) {
+  def isBinaryMode = (usageType & 0x100) == 0
+  def isTextMode   = (usageType & 0x100) == 0x100
+  def fileType     = usageType & FileUsageTypes.TypeMask
+  def exists        = file.exists
 }
 
 class GlkFileSystem {
@@ -151,11 +156,24 @@ class GlkFileSystem {
   private def fileRefWithId(id: Int) = _fileRefs.filter(ref => ref.id == id).head
 
   def createFileRefByName(usageType: Int, name: String, rock: Int) = {
-    val fileref = new FileReference(_nextId, usageType, name, rock)
+    val fileref = new FileReference(_nextId, usageType, 0, new File(name), rock)
     _fileRefs = fileref :: _fileRefs
     _nextId += 1
     fileref.id
   }
+  def createFileRefByFile(usageType: Int, fmode: Int, file: File, rock: Int) = {
+    val fileref = new FileReference(_nextId, usageType, fmode, file, rock)
+    _fileRefs = fileref :: _fileRefs
+    _nextId += 1
+    fileref.id
+  }
+  
+  def destroy(fileRefId: Int) {
+    _fileRefs = _fileRefs.filterNot(fileRef => fileRef.id == fileRefId)
+  }
+  
+  def getRockForFileRef(fileRefId: Int) = fileRefWithId(fileRefId).rock
+  
   def iterate(id: Int): FileReference = {
     if (id == 0) if (_fileRefs.isEmpty) null else _fileRefs.head
     else {
@@ -166,14 +184,14 @@ class GlkFileSystem {
   }
   
   // TODO: This has to work whether Applet or not !!
-  def doesFileExist(fileRefId: Int): Boolean = false // new File(fileRefWithId(fileRefId).filename).exists
+  def doesFileExist(fileRefId: Int): Boolean = fileRefWithId(fileRefId).exists
   
   def openFile(fileRefId: Int, fmode: Int, rock: Int): GlkStream = {
     val fileref = fileRefWithId(fileRefId)
     val fp: GlkStream = fmode match {
       case FileModes.Write       =>
-        if (fileref.isBinaryMode) new GlkBinaryFileOutputStream(fileref.filename, rock)
-        else new GlkTextFileOutputStream(fileref.filename, rock)
+        if (fileref.isBinaryMode) new GlkBinaryFileOutputStream(fileref.file, rock)
+        else new GlkTextFileOutputStream(fileref.file, rock)
       case FileModes.Read        =>
         throw new UnsupportedOperationException("Read file mode not supported yet")
       case FileModes.ReadWrite   =>

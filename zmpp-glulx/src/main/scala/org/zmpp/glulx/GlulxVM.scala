@@ -1294,7 +1294,9 @@ class GlulxVM {
         }
       case Restart => restart
       case Restore =>
-        throw new UnsupportedOperationException("@restore not yet supported")
+        val streamId = getOperand(0)
+        logger.warning("@restore (streamId = %d) not yet supported".format(streamId))
+        storeAtOperand(1, 1) // fail for now
       case RestoreUndo =>
         if (_undoSnapshots != Nil) {
           state.readSnapshot(_undoSnapshots.head, _protectionStart, _protectionLength)
@@ -1306,7 +1308,9 @@ class GlulxVM {
         logger.info("RESTORED WITH PC: %02x AND FP: %d SP: %d".format(state.pc, state.fp, state.sp))
       case Return => popCallStub(getOperand(0))
       case Save =>
-        throw new UnsupportedOperationException("@save not yet supported")
+        val streamId = getOperand(0)
+        logger.warning("@save (streamId = %d) not yet supported".format(streamId))
+        storeAtOperand(1, 1) // fail for now
       case SaveUndo =>
         _undoSnapshots ::= state.createSnapshot(_operands(0))
         storeAtOperand(0, 0) // Always say SUCCEED

@@ -198,7 +198,7 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     glk.fileref_create_by_name(args(0), cstringAt(args(1)), args(2))
   }
   private def _fileref_create_by_prompt(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_fileref_create_by_prompt not supported yet")
+    glk.fileref_create_by_prompt(args(0), args(1), args(2))
   }
   private def _fileref_create_from_fileref(args: Array[Int]): Int = {
     throw new UnsupportedOperationException("@@glk_fileref_create_from_fileref not supported yet")
@@ -207,13 +207,14 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     throw new UnsupportedOperationException("@@glk_fileref_create_temp not supported yet")
   }
   private def _fileref_destroy(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_fileref_destroy not supported yet")
+    glk.fileref_destroy(args(0))
+    0
   }
   private def _fileref_does_file_exist(args: Array[Int]): Int = {
     glk.fileref_does_file_exist(args(0))
   }
   private def _fileref_get_rock(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_fileref_get_rock not supported yet")
+    glk.fileref_get_rock(args(0))
   }
   private def _fileref_iterate(args: Array[Int]): Int = {
     returnIterateResult(glk.fileref_iterate(args(0)), args(1))
@@ -469,12 +470,10 @@ class GlkDispatch(_state: VMState, glk: Glk) {
   private def _window_get_arrangement(args: Array[Int]): Int = {
     throw new UnsupportedOperationException("@@glk_window_get_arrangement not supported yet")
   }
-  private def _window_get_parent(args: Array[Int]): Int = glk.window_get_parent(args(0))
-  private def _window_get_rock(args: Array[Int]): Int = glk.window_get_rock(args(0))
-  private def _window_get_root(args: Array[Int]): Int = glk.window_get_root
-  private def _window_get_sibling(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_window_get_sibling not supported yet")
-  }
+  private def _window_get_parent(args: Array[Int])  = glk.window_get_parent(args(0))
+  private def _window_get_rock(args: Array[Int])    = glk.window_get_rock(args(0))
+  private def _window_get_root(args: Array[Int])    = glk.window_get_root
+  private def _window_get_sibling(args: Array[Int]) = glk.window_get_sibling(args(0))
   private def _window_get_size(args: Array[Int]): Int = {
     val dim = glk.window_get_size(args(0))
     val widthPtr  = args(1)
@@ -486,9 +485,7 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     else if (heightPtr != 0) _state.setMemIntAt(heightPtr, dim.height)
     0
   }
-  private def _window_get_stream(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_window_get_stream not supported yet")
-  }
+  private def _window_get_stream(args: Array[Int]): Int = glk.window_get_stream(args(0))
   private def _window_get_type(args: Array[Int]): Int = glk.window_get_type(args(0))
   private def _window_iterate(args: Array[Int]): Int = {
     returnIterateResult(glk.window_iterate(args(0)), args(1))

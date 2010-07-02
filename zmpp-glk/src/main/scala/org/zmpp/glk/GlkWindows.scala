@@ -28,6 +28,7 @@
  */
 package org.zmpp.glk
 
+import java.io.File
 import java.util.logging._
 
 import org.zmpp.iff._
@@ -82,6 +83,12 @@ trait GlkScreenUI {
   def requestHyperlinkEvent(windowId: Int)
 
   def cancelLineInput(windowId: Int): String
+  
+  /*
+   * Asks the user interface to have the user select a file. Returns null if
+   * cancelled, otherwise the full path to the file.
+   */
+  def selectFileByDialog(fmode: Int): File
 }
 
 /**
@@ -303,12 +310,22 @@ class GlkWindowSystem {
     if (winId == _rootWindow.id) 0
     else windowWithId(winId).parent.id
   }
-  def getRock(winId: Int): Int = windowWithId(winId).rock
-  def getSize(winId: Int): GlkDimension = windowWithId(winId).ui.glkSize
-  def getType(winId: Int) = windowWithId(winId).wintype
+  def getRock(winId: Int)     = windowWithId(winId).rock
+  def getSibling(winId: Int): Int  = {
+    if (winId == _rootWindow.id) 0
+    else {
+      val refWindow = windowWithId(winId)
+      val parent = refWindow.parent.asInstanceOf[GlkPairWindow]
+      if (refWindow == parent.child0) parent.child1.id
+      else parent.child0.id
+    }
+  }
+  def getSize(winId: Int)     = windowWithId(winId).ui.glkSize
+  def getStreamId(winId: Int) = windowWithId(winId).outputStream.id
+  def getType(winId: Int)     = windowWithId(winId).wintype
   def moveCursor(winId: Int, xpos: Int, ypos: Int) {
     windowWithId(winId).ui.moveCursor(xpos, ypos)
-  }  
+  }
   def open(split: Int, method: Int, size: Int, wintype: Int, rock: Int): Int = {
     val newWindow = createWindow(GlkWindowType(wintype), size, rock)
     if (split > 0) {

@@ -175,9 +175,16 @@ class Glk(val eventManager: EventManager) {
   def fileref_create_by_name(usage: Int, name: String, rock: Int): Int = {
     fileSystem.createFileRefByName(usage, name, rock)
   }
-  def fileref_does_file_exist(fileRefId: Int): Int = {
+  def fileref_create_by_prompt(usage: Int, fmode: Int, rock: Int): Int = {
+    val file = screenUI.selectFileByDialog(fmode)
+    if (file == null) 0
+    else fileSystem.createFileRefByFile(usage, fmode, file, rock)
+  }
+  def fileref_destroy(fileRefId: Int) = fileSystem.destroy(fileRefId)
+  def fileref_does_file_exist(fileRefId: Int) = {
     if (fileSystem.doesFileExist(fileRefId)) 1 else 0
   }
+  def fileref_get_rock(fileRefId: Int) = fileSystem.getRockForFileRef(fileRefId)
   def fileref_iterate(fref: Int): GlkIterateResult = {
     val fileRef = fileSystem.iterate(fref)
     val fileRefId = if (fileRef == null) 0 else fileRef.id
@@ -252,11 +259,9 @@ class Glk(val eventManager: EventManager) {
     ioSystem.currentStream = if (windowId == 0) null
       else windowSystem.outputStreamForWindow(windowId)
   }
-  def window_clear(winId: Int) {
-    windowSystem.clearWindow(winId)
-  }
+  def window_clear(winId: Int) = windowSystem.clearWindow(winId)
   def window_close(winId: Int) = windowSystem.closeWindow(winId)
-  def window_get_root: Int = windowSystem.rootWindowId
+  def window_get_root          = windowSystem.rootWindowId
 
   def window_iterate(winId: Int): GlkIterateResult = {
     val window = windowSystem.iterate(winId)
@@ -264,10 +269,12 @@ class Glk(val eventManager: EventManager) {
     val rock = if (window != null) window.rock else 0
     new GlkIterateResult(windowId, rock)
   }
-  def window_get_parent(winId: Int): Int = windowSystem.getParent(winId)
-  def window_get_rock(winId: Int): Int = windowSystem.getRock(winId)
-  def window_get_size(winId: Int): GlkDimension = windowSystem.getSize(winId)
-  def window_get_type(winId: Int) = windowSystem.getType(winId)
+  def window_get_parent(winId: Int)  = windowSystem.getParent(winId)
+  def window_get_rock(winId: Int)    = windowSystem.getRock(winId)
+  def window_get_sibling(winId: Int) = windowSystem.getSibling(winId)
+  def window_get_size(winId: Int)    = windowSystem.getSize(winId)
+  def window_get_stream(winId: Int)  = windowSystem.getStreamId(winId)
+  def window_get_type(winId: Int)    = windowSystem.getType(winId)
   def window_move_cursor(winId: Int, xpos: Int, ypos: Int) {
     windowSystem.moveCursor(winId, xpos, ypos)
   }
@@ -341,7 +348,6 @@ class Glk(val eventManager: EventManager) {
     windowSystem.setBackgroundColor(winId, color)
   }
   
-  // files
   // hyperlinks
   def set_hyperlink(linkval: Int) = ioSystem.setHyperlink(linkval)
   

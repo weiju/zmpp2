@@ -29,6 +29,7 @@
 package org.zmpp.glulx.swing
 
 import java.util.logging._
+import java.io.File
 
 import javax.swing._
 import java.awt.BorderLayout
@@ -418,6 +419,14 @@ trait SwingGlkScreenUI extends GlkScreenUI {
     val image = getImage(resnum)
     if (image == null) null
     else new GlkDimension(image.getWidth, image.getHeight)
+  }
+
+  def selectFileByDialog(fmode: Int): File = {
+    val fileChooser = new JFileChooser
+    val result = if (fmode == FileModes.Read) fileChooser.showOpenDialog(getContentPane)
+                 else fileChooser.showSaveDialog(getContentPane)
+    if (result == JFileChooser.APPROVE_OPTION) fileChooser.getSelectedFile
+    else null
   }
 }
 
