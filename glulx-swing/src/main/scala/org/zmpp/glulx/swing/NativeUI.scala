@@ -116,7 +116,7 @@ with MouseListener with MouseMotionListener {
   def cancelLineInput: String
 }
 
-class HyperLink(val id: Int) {
+class Hyperlink(val id: Int) {
   var startPos: Int = 0
   var endPos  : Int = 0
   

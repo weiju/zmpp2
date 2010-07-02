@@ -34,6 +34,7 @@ import javax.swing.text.StyleConstants
 import javax.swing.text.StyledDocument
 import java.awt.Color
 import java.awt.Cursor
+import java.awt.Point
 import java.awt.event._
 
 import scala.collection.mutable.HashMap
@@ -51,14 +52,15 @@ abstract class SwingTextWindowUI(val screenUI: SwingGlkScreenUI,
 extends JTextPane with SwingGlkWindowUI with KeyListener {
   val logger = Logger.getLogger("glk.ui")
   var textInputMode = SwingTextWindowUI.InputModeNone
+  var listenToHyperlinkEvents = false
   var inputStart = 0
   var currentBackgroundColor = 0x00ffffff
   var currentForegroundColor = 0x00000000
-  
+
   // a map of hyperlinks, cleared when the screen is cleared
-  val hyperlinkMap = new HashMap[Int, HyperLink]
-  var currentHyperLink: HyperLink = null
-  def isHyperlinkMode = currentHyperLink != null
+  val hyperlinkMap = new HashMap[Int, Hyperlink]
+  var currentHyperlink: Hyperlink = null
+  def isHyperlinkMode = currentHyperlink != null
   
   addKeyListener(this)
   addMouseListener(this)
@@ -78,26 +80,36 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   
   def isLineInputMode = textInputMode == SwingTextWindowUI.InputModeLine
   def isCharInputMode = textInputMode == SwingTextWindowUI.InputModeChar
+  
+  protected def stopSendingRequests {
+    textInputMode = SwingTextWindowUI.InputModeNone
+    listenToHyperlinkEvents = false
+  }
+
+  private def resumeExecution {
+    if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
+        eventManager.processNextEvent) {
+      style = StyleType.Normal.id
+      stopSendingRequests
+      ExecutionControl.executeTurn(screenUI.vm)   
+    }
+  }
 
   protected def resumeWithLineInput(input: String) {
     logger.info("RESUME WITH LINE INPUT, WINDOW: %d".format(glkWindow.id))
     eventManager.addLineInputEvent(glkWindow.id, input)
-    if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
-      eventManager.processNextEvent) {
-      style = StyleType.Normal.id
-      textInputMode = SwingTextWindowUI.InputModeNone
-      ExecutionControl.executeTurn(screenUI.vm)   
-    }
+    resumeExecution
   }
 
   protected def resumeWithCharInput(charCode: Int) {
     logger.info("RESUME WITH CHAR INPUT, WINDOW: %d".format(glkWindow.id))
     eventManager.addCharInputEvent(glkWindow.id, charCode)
-    if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
-      eventManager.processNextEvent) {
-      textInputMode = SwingTextWindowUI.InputModeNone
-      ExecutionControl.executeTurn(screenUI.vm)   
-    }
+    resumeExecution
+  }
+  
+  protected def resumeWithHyperlink(id: Int) {
+    eventManager.addHyperlinkEvent(glkWindow.id, id)
+    resumeExecution
   }
 
   def keyPressed(event: KeyEvent) {
@@ -165,8 +177,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
     textInputMode = SwingTextWindowUI.InputModeChar
   }
   def requestHyperlinkEvent {
-    // TODO
-    logger.warning("TODO: REQUEST LINE EVENT (TextWindowUI.scala)")
+    listenToHyperlinkEvents = true
   }
   
   var _incompleteInput: String = null
@@ -187,27 +198,23 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   }
 
   def _setHyperlink(linkval: Int) {
-    //throw new UnsupportedOperationException("no hyperlinks in text buffers")
-    logger.info("SET HYPERLINK LINKVAL = " + linkval)
     if (linkval == 0) {
       flush
       // reset style to normal
       style = StyleType.Normal.id
-      if (currentHyperLink != null) {
-        currentHyperLink.endPos = currentPos
-      logger.info("HYPERLINK ENDING AT: %d".format(currentPos))
-        hyperlinkMap(currentHyperLink.id) = currentHyperLink
+      if (currentHyperlink != null) {
+        currentHyperlink.endPos = currentPos
+        hyperlinkMap(currentHyperlink.id) = currentHyperlink
         // This output can generate BadLocationExceptions !!!
         /*
         val doc = getDocument
         printf("ADDED HYPERLINK %d: start: %d end: %d text: '%s'\n",
-          currentHyperLink.id, currentHyperLink.startPos, currentHyperLink.endPos,
-          doc.getText(currentHyperLink.startPos, currentHyperLink.endPos))
+          currentHyperlink.id, currentHyperlink.startPos, currentHyperlink.endPos,
+          doc.getText(currentHyperlink.startPos, currentHyperlink.endPos))
           */
-        currentHyperLink = null
+        currentHyperlink = null
       }
     } else {
-      logger.info("SETTING LINK STYLE")
       flush
       val attrs = getInputAttributes
       StyleConstants.setBold(attrs, false)
@@ -215,9 +222,8 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
       StyleConstants.setUnderline(attrs, true)
       StyleConstants.setForeground(attrs, new Color(0x0000ff))
       StyleConstants.setBackground(attrs, new Color(currentBackgroundColor))
-      currentHyperLink = new HyperLink(linkval)
-      currentHyperLink.startPos = currentPos
-      logger.info("HYPERLINK STARTING AT: %d".format(currentPos))
+      currentHyperlink = new Hyperlink(linkval)
+      currentHyperlink.startPos = currentPos
     }
   }
 
@@ -258,23 +264,35 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
     case KeyEvent.VK_F12       => GlkKeyCodes.Func12
     case _                     => GlkKeyCodes.Unknown
   }
-  
+
+  private def hyperlinkAtPos(pos: Int): Hyperlink = {
+    for (hyperlink <- hyperlinkMap.values) {
+      if (hyperlink.contains(pos)) return hyperlink
+    }
+    null
+  }
+
   def mouseMoved(event: MouseEvent) {
     val pos = viewToModel(event.getPoint)
-    // now search the hyperlinks...
-    for (hyperlink <- hyperlinkMap.values) {
-      if (hyperlink.contains(pos)) {
-        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR))
-        return
-      }
+    if (hyperlinkAtPos(pos) != null) {
+      setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR))
+    } else {
+      setCursor(Cursor.getDefaultCursor)
     }
-    setCursor(Cursor.getDefaultCursor)
   }
   def mouseDragged(event: MouseEvent) { }
   def mouseExited(event: MouseEvent) { }
   def mouseEntered(event: MouseEvent) { }
   def mouseReleased(event: MouseEvent) { }
   def mousePressed(event: MouseEvent) { }
-  def mouseClicked(event: MouseEvent) { }
+  def mouseClicked(event: MouseEvent) {
+    if (listenToHyperlinkEvents) {
+      val pos = viewToModel(event.getPoint)
+      val hyperlink = hyperlinkAtPos(pos)
+      if (hyperlink != null) {
+        resumeWithHyperlink(hyperlink.id)
+      }
+    }
+  }
 }
 

@@ -427,6 +427,12 @@ class EventManager(_state: VMState) {
       eventQueue.add(new ValueEvent(GlkEventType.SoundNotify, 0, soundnum, notifyValue))
     }
   }
+  
+  def addHyperlinkEvent(winId: Int, hyperlinkId: Int) {
+    eventQueue.synchronized {
+      eventQueue.add(new ValueEvent(GlkEventType.Hyperlink, winId, hyperlinkId, 0))
+    }
+  }
 
   def length  = eventQueue.synchronized { eventQueue.size }
   def isEmpty = eventQueue.synchronized { eventQueue.isEmpty }
