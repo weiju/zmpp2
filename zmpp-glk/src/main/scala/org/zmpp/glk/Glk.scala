@@ -176,7 +176,7 @@ class Glk(val eventManager: EventManager) {
     fileSystem.createFileRefByName(usage, name, rock)
   }
   def fileref_create_by_prompt(usage: Int, fmode: Int, rock: Int): Int = {
-    val file = screenUI.selectFileByDialog(fmode)
+    val file = screenUI.selectFileByDialog(usage, fmode)
     if (file == null) 0
     else fileSystem.createFileRefByFile(usage, fmode, file, rock)
   }

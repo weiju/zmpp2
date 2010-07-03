@@ -421,10 +421,21 @@ trait SwingGlkScreenUI extends GlkScreenUI {
     else new GlkDimension(image.getWidth, image.getHeight)
   }
 
-  def selectFileByDialog(fmode: Int): File = {
+  def selectFileByDialog(usage: Int, fmode: Int): File = {
+    val usageType = usage & FileUsageTypes.TypeMask
+    val fileTypeName = if (usageType == FileUsageTypes.SavedGame) "Game Save"
+      else if (usageType == FileUsageTypes.Transcript) "Transcript"
+      else if (usageType == FileUsageTypes.InputRecord) "Input Record"
+      else "Data"
+
     val fileChooser = new JFileChooser
-    val result = if (fmode == FileModes.Read) fileChooser.showOpenDialog(getContentPane)
-                 else fileChooser.showSaveDialog(getContentPane)
+    val result = if (fmode == FileModes.Read) {
+      fileChooser.setDialogTitle("Open %s File...".format(fileTypeName))
+      fileChooser.showDialog(getContentPane, "Open")
+    } else {
+      fileChooser.setDialogTitle("Save %s File...".format(fileTypeName))
+      fileChooser.showDialog(getContentPane, "Save")
+    }
     if (result == JFileChooser.APPROVE_OPTION) fileChooser.getSelectedFile
     else null
   }

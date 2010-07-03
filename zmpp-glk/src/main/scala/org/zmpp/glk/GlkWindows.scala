@@ -88,7 +88,7 @@ trait GlkScreenUI {
    * Asks the user interface to have the user select a file. Returns null if
    * cancelled, otherwise the full path to the file.
    */
-  def selectFileByDialog(fmode: Int): File
+  def selectFileByDialog(usage: Int, fmode: Int): File
 }
 
 /**
