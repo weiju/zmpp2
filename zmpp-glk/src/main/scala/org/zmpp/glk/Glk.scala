@@ -180,6 +180,12 @@ class Glk(val eventManager: EventManager) {
     if (file == null) 0
     else fileSystem.createFileRefByFile(usage, fmode, file, rock)
   }
+  def fileref_create_from_fileref(usage: Int, fileRefId: Int, rock: Int): Int = {
+    fileSystem.createFromFileRef(usage, fileRefId, rock)
+  }
+  def fileref_create_temp(usage: Int, rock: Int): Int = {
+    fileSystem.createTemp(usage, rock)
+  }
   def fileref_destroy(fileRefId: Int) = fileSystem.destroy(fileRefId)
   def fileref_does_file_exist(fileRefId: Int) = {
     if (fileSystem.doesFileExist(fileRefId)) 1 else 0
@@ -268,6 +274,10 @@ class Glk(val eventManager: EventManager) {
     val windowId = if (window == null) 0 else window.id
     val rock = if (window != null) window.rock else 0
     new GlkIterateResult(windowId, rock)
+  }
+  def window_get_echo_stream(winId: Int) = windowSystem.getEchoStream(winId)
+  def window_set_echo_stream(winId: Int, streamId: Int) {
+    windowSystem.setEchoStream(winId, streamId)
   }
   def window_get_parent(winId: Int)  = windowSystem.getParent(winId)
   def window_get_rock(winId: Int)    = windowSystem.getRock(winId)

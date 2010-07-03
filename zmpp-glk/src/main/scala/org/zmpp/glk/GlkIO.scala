@@ -63,7 +63,7 @@ class GlkIOSystem {
   private var _streams: List[GlkStream] = Nil
   private var _currentStream: GlkStream = NilStream
 
-  private def streamWithId(id: Int) = {
+  def streamWithId(id: Int) = {
     _streams.filter(stream => stream.id == id).head
   }
 

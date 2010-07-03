@@ -101,7 +101,7 @@ class GlkFileStream(val rock: Int) extends GlkStream {
       builder.append(_buffer(i).toChar)
     }
     logger.info("Buffer is: [%s]".format(builder.toString))
-    // TODO: Do something with te data in this file
+    // TODO: Do something with the data in this file
   }
   def putChar(c: Char) {
     resizeIfNecessary
@@ -139,13 +139,13 @@ class GlkTextFileOutputStream(file: File, rock: Int) extends GlkFileStream(rock)
 }
 
 class FileReference(val id        : Int,
-                    val usageType : Int,
-                    val filemode  : Int,
+                    val usage     : Int,
+                    val fmode     : Int,
                     val file      : File,
                     val rock      : Int) {
-  def isBinaryMode = (usageType & 0x100) == 0
-  def isTextMode   = (usageType & 0x100) == 0x100
-  def fileType     = usageType & FileUsageTypes.TypeMask
+  def isBinaryMode = (usage & 0x100) == 0
+  def isTextMode   = (usage & 0x100) == 0x100
+  def fileType     = usage & FileUsageTypes.TypeMask
   def exists        = file.exists
 }
 
@@ -154,20 +154,26 @@ class GlkFileSystem {
   private var _fileRefs: List[FileReference] = Nil
   
   private def fileRefWithId(id: Int) = _fileRefs.filter(ref => ref.id == id).head
-
-  def createFileRefByName(usageType: Int, name: String, rock: Int) = {
-    val fileref = new FileReference(_nextId, usageType, 0, new File(name), rock)
-    _fileRefs = fileref :: _fileRefs
-    _nextId += 1
-    fileref.id
-  }
-  def createFileRefByFile(usageType: Int, fmode: Int, file: File, rock: Int) = {
-    val fileref = new FileReference(_nextId, usageType, fmode, file, rock)
+  private def addFileRef(usage: Int, fmode: Int, file: File, rock: Int): Int = {
+    val fileref = new FileReference(_nextId, usage, fmode, file, rock)
     _fileRefs = fileref :: _fileRefs
     _nextId += 1
     fileref.id
   }
   
+  def createFileRefByName(usage: Int, name: String, rock: Int) = {
+    addFileRef(usage, 0, new File(name), rock)
+  }
+  def createFileRefByFile(usage: Int, fmode: Int, file: File, rock: Int) = {
+    addFileRef(usage, fmode, file, rock)
+  }
+  def createFromFileRef(usage: Int, fileRefId: Int, rock: Int) = {
+    val refFileRef = fileRefWithId(fileRefId)
+    addFileRef(usage, refFileRef.fmode, refFileRef.file, rock)
+  }
+  def createTemp(usage: Int, rock: Int) = {
+    addFileRef(usage, 0, File.createTempFile("zmpp-glk", "tmp"), rock)
+  }
   def destroy(fileRefId: Int) {
     _fileRefs = _fileRefs.filterNot(fileRef => fileRef.id == fileRefId)
   }

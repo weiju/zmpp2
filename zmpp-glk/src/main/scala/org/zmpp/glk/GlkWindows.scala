@@ -98,6 +98,8 @@ abstract class GlkWindow(val id: Int, var size: Int, val rock: Int) {
   var ui           : GlkWindowUI = null
   var parent       : GlkWindow = null
   def outputStream : GlkStream
+  def echoStream   : GlkStream
+  def echoStream_=(stream: GlkStream)
   def typeName     : String
   def wintype      : Int
   def isGraphics   : Boolean = false
@@ -120,7 +122,11 @@ class GlkPairWindow(id: Int) extends GlkWindow(id, 0, 0) {
   def typeName     = "Pair"
   def isTextBuffer = false
   def isTextGrid   = false
-
+  def echoStream   = null
+  def echoStream_=(stream: GlkStream) = {
+    throw new UnsupportedOperationException("Can not attach echo stream to pair window")
+  }
+ 
   override def isLeaf = false
   def position = (method & GlkWindowPosition.Mask)
   def division = (method & GlkWindowDivision.Mask)
@@ -146,6 +152,7 @@ extends GlkWindow(id, size, rock) {
   private var _buffer = new StringBuilder
   def styleHints: StyleHints
 
+  var echoStream: GlkStream = null
   val outputStream = new GlkStream {
     var id = 0
     def rock = 0
@@ -163,10 +170,16 @@ extends GlkWindow(id, size, rock) {
     def putChar(c: Char) {
       ui.putChar(c)
       _writeCount += 1
+      
+      // write to echo stream
+      if (echoStream != null) echoStream.putChar(c)
     }
     def putCharUni(c: Int) {
       ui.putCharUni(c)
       _writeCount += 1
+      
+      // write to echo stream
+      if (echoStream != null) echoStream.putCharUni(c)
     }
     def seek(newpos: Int, seekmode: Int) {
       throw new UnsupportedOperationException("WindowStream.seek() not supported")
@@ -184,6 +197,11 @@ extends GlkWindow(id, size, rock) {
   override def isGraphics = true
   def isTextBuffer = false
   def isTextGrid   = false
+
+  def echoStream   = null
+  def echoStream_=(stream: GlkStream) = {
+    throw new UnsupportedOperationException("Can not attach echo stream to pair window")
+  }
 }
 
 /**
@@ -249,7 +267,6 @@ class GlkWindowSystem {
   def clearWindow(winId: Int) = windowWithId(winId).ui.clear
   def createWindow(wintype: GlkWindowType.Value, size: Int, rock: Int) = {
     val id = nextId
-    //logger.info("CREATED WINDOW WITH ID %d TYPE: %s SIZE: %d".format(id, wintype.toString, size))
 
     import GlkWindowType._
     val newWindow: GlkWindow = wintype match {
@@ -339,7 +356,6 @@ class GlkWindowSystem {
     val writeCount = windowToClose.outputStream.writeCount
     
     val winParentId = if (windowToClose.parent == null) -1 else windowToClose.parent.id
-    //logger.info("CLOSING WINDOW WITH ID: %d (PARENT ID: %d)".format(winId, winParentId))
 
     // remove window from its parent by replacing its parent with the sibling
     if (windowToClose.parent != null) {
@@ -371,12 +387,20 @@ class GlkWindowSystem {
     } else {
       pair.method         = method
       pair.keyWindow.size = size
-      //logger.info("update window arrangement")
       screenUI.updateLayout(_rootWindow)
     }
   }
   
   def outputStreamForWindow(winId: Int) = windowWithId(winId).outputStream
+  def getEchoStream(winId: Int): Int = {
+    val window = windowWithId(winId)
+    if (window == null) 0
+    else if (window.echoStream == null) 0
+    else window.echoStream.id
+  }
+  def setEchoStream(winId: Int, streamId: Int) {
+    windowWithId(winId).echoStream = _ioSystem.streamWithId(streamId)
+  }
 
   // *********************************************************************
   // ***** Private methods
@@ -409,11 +433,6 @@ class GlkWindowSystem {
       newParent.child0.parent = newParent
       newParent.child1.parent = newParent
       if (_rootWindow == newParent.child0) _rootWindow = newParent
-      /*
-      logger.info("SPLITTING WINDOW WITH ID: %d SIZE: %d POS: %s DIV: %s PAIR PARENT: %d".format(
-             tosplit.id, newWindow.size, GlkWindowPosition.name(method),
-             GlkWindowDivision.name(method), if (oldParent == null) -1 else oldParent.id))
-      */
   }
 }
 

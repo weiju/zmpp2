@@ -201,10 +201,10 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     glk.fileref_create_by_prompt(args(0), args(1), args(2))
   }
   private def _fileref_create_from_fileref(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_fileref_create_from_fileref not supported yet")
+    glk.fileref_create_from_fileref(args(0), args(1), args(2))
   }
   private def _fileref_create_temp(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_fileref_create_temp not supported yet")
+    glk.fileref_create_temp(args(0), args(1))
   }
   private def _fileref_destroy(args: Array[Int]): Int = {
     glk.fileref_destroy(args(0))
@@ -506,10 +506,11 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _window_set_echo_stream(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_window_set_echo_stream not supported yet")
+    glk.window_set_echo_stream(args(0), args(1))
+    0
   }
   private def _window_get_echo_stream(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_window_get_echo_stream not supported yet")
+    glk.window_get_echo_stream(args(0))
   }
 
   // ***********************************************************************
