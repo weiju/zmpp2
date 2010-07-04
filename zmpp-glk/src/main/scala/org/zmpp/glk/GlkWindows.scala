@@ -158,7 +158,13 @@ extends GlkWindow(id, size, rock) {
     def rock = 0
     def close { }
     def readCount = {
-      throw new UnsupportedOperationException("MemoryOutputStream8 does not support readCount")
+      throw new UnsupportedOperationException("WindowStream does not support readCount")
+    }
+    def getChar = {
+      throw new UnsupportedOperationException("WindowStream does not support getChar")
+    }
+    def getCharUni = {
+      throw new UnsupportedOperationException("WindowStream does not support getCharUni")
     }
     def writeCount = _writeCount
     def position   = 0 // TODO

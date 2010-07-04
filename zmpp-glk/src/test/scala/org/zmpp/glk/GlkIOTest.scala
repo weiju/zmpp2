@@ -47,6 +47,12 @@ class DummyStream extends GlkStream {
   
   // input methods
   def readCount: Int = 0
+  def getChar = {
+    throw new UnsupportedOperationException("DummyStream does not support getChar")
+  }
+  def getCharUni = {
+    throw new UnsupportedOperationException("DummyStream does not support getCharUni")
+  }
 
   // output methods
   def writeCount: Int = 0

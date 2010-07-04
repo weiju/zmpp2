@@ -63,7 +63,7 @@ object SeekModes {
 }
 
 /**
- * Byte array based file stream.
+ * Byte array based file stream. TODO: Map to Java file streams and RandomAccessFile
  */
 object GlkFileStream {
   val InitialBufferSize  = 1024
@@ -129,6 +129,12 @@ class GlkFileStream(val rock: Int) extends GlkStream {
   def setHyperlink(linkval: Int) {
     throw new UnsupportedOperationException("setHyperlink not supported on file stream")
   }
+  def getChar = {
+    throw new UnsupportedOperationException("TODO: FileStream does not support getChar yet")
+  }
+  def getCharUni = {
+    throw new UnsupportedOperationException("TODO: FileStream does not support getCharUni yet")
+  }
 }
 
 class GlkBinaryFileOutputStream(file: File, rock: Int) extends GlkFileStream(rock) {
@@ -174,10 +180,15 @@ class GlkFileSystem {
   def createTemp(usage: Int, rock: Int) = {
     addFileRef(usage, 0, File.createTempFile("zmpp-glk", "tmp"), rock)
   }
+  def deleteFile(fileRefId: Int) {
+    val fileRef = fileRefWithId(fileRefId)
+    if (fileRef != null && fileRef.file.exists) {
+      fileRef.file.delete
+    }
+  }
   def destroy(fileRefId: Int) {
     _fileRefs = _fileRefs.filterNot(fileRef => fileRef.id == fileRefId)
   }
-  
   def getRockForFileRef(fileRefId: Int) = fileRefWithId(fileRefId).rock
   
   def iterate(id: Int): FileReference = {
@@ -189,7 +200,6 @@ class GlkFileSystem {
     }
   }
   
-  // TODO: This has to work whether Applet or not !!
   def doesFileExist(fileRefId: Int): Boolean = fileRefWithId(fileRefId).exists
   
   def openFile(fileRefId: Int, fmode: Int, rock: Int): GlkStream = {

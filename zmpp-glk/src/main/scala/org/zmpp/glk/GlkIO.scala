@@ -33,15 +33,17 @@ import org.zmpp.base.VMState
 import org.zmpp.base.Types
 
 trait GlkStream {
-  def id: Int
+  def id       : Int
   def id_=(anId: Int)
-  def rock: Int
-  def position: Int
+  def rock     : Int
+  def position : Int
   def seek(newpos: Int, seekmode: Int)
   def close
   
   // input methods
-  def readCount: Int
+  def readCount  : Int
+  def getChar    : Int
+  def getCharUni : Int
 
   // output methods
   def writeCount: Int
@@ -109,9 +111,15 @@ class GlkIOSystem {
   // For convenient output (debugging etc.)
   def putJavaString(str: String) = for (c <- str) putCharUni(c)
   def setHyperlink(linkval: Int) = _currentStream.setHyperlink(linkval)
-
+  def setHyperlinkStream(streamId: Int, linkval: Int) {
+    streamWithId(streamId).setHyperlink(linkval)
+  }
   def currentStyle = _currentStream.style
   def currentStyle_=(value: Int) = _currentStream.style = value
+  
+  def setStyle(streamId: Int, value: Int) {
+    streamWithId(streamId).style = value
+  }
 }
 
 /**
@@ -130,6 +138,12 @@ abstract class MemoryOutputStream(_state: VMState, _address: Int, _size: Int,
   }
   def readCount = {
     throw new UnsupportedOperationException("MemoryOutputStream does not support readCount")
+  }
+  def getChar = {
+    throw new UnsupportedOperationException("MemoryOutputStream does not support getChar")
+  }
+  def getCharUni = {
+    throw new UnsupportedOperationException("MemoryOutputStream does not support getCharUni")
   }
   def seek(newpos: Int, seekmode: Int) {
     throw new UnsupportedOperationException("MemoryOutputStream.seek() not supported yet")
@@ -195,7 +209,6 @@ object MemoryStreamFactory {
 
 object NilStream extends GlkStream {
   def rock       = 0
-  var readCount  = 0
   def id         = 0
   def id_=(anId: Int) {}
   def style      = 0
@@ -204,14 +217,28 @@ object NilStream extends GlkStream {
   def position   = 0
   def close {}
   def putChar(c: Char) { }
-  def putCharUni(c: Int) {}
+  def putCharUni(c: Int) { }
+  def readCount = {
+    throw new UnsupportedOperationException("NilStream does not support readCount")
+  }
+  def getChar = {
+    throw new UnsupportedOperationException("NilStream does not support getChar")
+  }
+  def getCharUni = {
+    throw new UnsupportedOperationException("NilStream does not support getCharUni")
+  }
+
   def seek(newpos: Int, seekmode: Int) { }
   def setHyperlink(linkval: Int) { }
 }
 
+/*
+ * This stream is not actually used, we just have it to emulate Glulxe's
+ * behavior of having the game file available as a stream. ZMPP does not
+ * open the game through Glk streams.
+ */
 class DummyStream extends GlkStream {
   def rock       = 0
-  var readCount  = 0
   var id         = 0
   def style      = 0
   def style_=(value: Int) { }
@@ -222,5 +249,14 @@ class DummyStream extends GlkStream {
   def putCharUni(c: Int) {}
   def seek(newpos: Int, seekmode: Int) { }
   def setHyperlink(linkval: Int) { }
+  def readCount = {
+    throw new UnsupportedOperationException("DummyStream does not support readCount")
+  }
+  def getChar = {
+    throw new UnsupportedOperationException("DummyStream does not support getChar")
+  }
+  def getCharUni = {
+    throw new UnsupportedOperationException("DummyStream does not support getCharUni")
+  }
 }
 

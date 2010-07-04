@@ -164,6 +164,14 @@ class Glk(val eventManager: EventManager) {
     }
   }
   // Styles
+  def set_style(value: Int) = ioSystem.currentStyle = value
+  def set_style_stream(streamId: Int, value: Int) = ioSystem.setStyle(streamId, value)
+  def style_distinguish(winId: Int, style1: Int, style2: Int): Int = {
+    // we assume that different styles are always distinguishable
+    // That's not entirely true of course. A future implementation should
+    // compare the hints (TODO)
+    if (style1 == style2) 0 else 1
+  }
   def stylehint_set(wintype: Int, style: Int, hint: Int, value: Int) {
     windowSystem.setStyleHint(GlkWindowType(wintype), style, hint, value)
   }
@@ -185,6 +193,9 @@ class Glk(val eventManager: EventManager) {
   }
   def fileref_create_temp(usage: Int, rock: Int): Int = {
     fileSystem.createTemp(usage, rock)
+  }
+  def fileref_delete_file(fileRefId: Int) {
+    fileSystem.deleteFile(fileRefId)
   }
   def fileref_destroy(fileRefId: Int) = fileSystem.destroy(fileRefId)
   def fileref_does_file_exist(fileRefId: Int) = {
@@ -226,7 +237,6 @@ class Glk(val eventManager: EventManager) {
     }
   }
 
-  def set_style(value: Int) = ioSystem.currentStyle = value
   def stream_close(streamId: Int): GlkStreamCloseStruct = ioSystem.closeStream(streamId)
   def stream_get_current: Int = ioSystem.currentStreamId
   def stream_get_position(streamId: Int) = ioSystem.getPosition(streamId)
@@ -303,6 +313,10 @@ class Glk(val eventManager: EventManager) {
     logger.info("glk_cancel_char_event(%d)".format(winId))
     eventManager.removeInputRequestInWindow(winId, GlkEventType.CharInput)
   }
+  def cancel_hyperlink_event(winId: Int) {
+    logger.info("glk_cancel_hyperlink_event(%d)".format(winId))
+    eventManager.removeInputRequestInWindow(winId, GlkEventType.Hyperlink)
+  }
   def cancel_line_event(winId: Int, eventPtr: Int) {
     logger.info("glk_cancel_line_event(%d, $%02x)".format(winId, eventPtr))
     eventManager.cancelLineEvent(winId, eventPtr)
@@ -360,7 +374,9 @@ class Glk(val eventManager: EventManager) {
   
   // hyperlinks
   def set_hyperlink(linkval: Int) = ioSystem.setHyperlink(linkval)
-  
+  def set_hyperlink_stream(streamId: Int, linkval: Int) {
+    ioSystem.setHyperlinkStream(streamId, linkval)
+  }  
   // sound
   def schannel_create(rock: Int): Int = soundSystem.createChannel(rock)
   def schannel_destroy(channelId: Int) = soundSystem.destroyChannel(channelId)

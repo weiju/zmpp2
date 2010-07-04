@@ -85,6 +85,7 @@ class GlkDispatch(_state: VMState, glk: Glk) {
       case FileRefDestroy           => _fileref_destroy(args)
       case FileRefIterate           => _fileref_iterate(args)
       case FileRefGetRock           => _fileref_get_rock(args)
+      case FileRefDeleteFile        => _fileref_delete_file(args)
       case FileRefDoesFileExist     => _fileref_does_file_exist(args)
       case FileRefCreateFromFileRef => _fileref_create_from_fileref(args)
       case PutChar                  => _put_char(args)
@@ -175,7 +176,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _cancel_hyperlink_event(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_cancel_hyperlink_event not supported yet")
+    glk.cancel_hyperlink_event(args(0))
+    0
   }
   private def _cancel_line_event(args: Array[Int]): Int = {
     glk.cancel_line_event(args(0), args(1))
@@ -205,6 +207,10 @@ class GlkDispatch(_state: VMState, glk: Glk) {
   }
   private def _fileref_create_temp(args: Array[Int]): Int = {
     glk.fileref_create_temp(args(0), args(1))
+  }
+  private def _fileref_delete_file(args: Array[Int]): Int = {
+    glk.fileref_delete_file(args(0))
+    0
   }
   private def _fileref_destroy(args: Array[Int]): Int = {
     glk.fileref_destroy(args(0))
@@ -368,7 +374,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _set_hyperlink_stream(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_set_hyperlink_stream not supported yet")
+    glk.set_hyperlink_stream(args(0), args(1))
+    0
   }
   private def _set_interrupt_handler(args: Array[Int]): Int = {
     throw new UnsupportedOperationException("@@glk_set_interrupt_handler not supported yet")
@@ -378,7 +385,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _set_style_stream(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_set_style_stream not supported yet")
+    glk.set_style_stream(args(0), args(1))
+    0
   }
   private def _set_window(args: Array[Int]): Int = {
     glk.set_window(args(0))
@@ -429,7 +437,7 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _style_distinguish(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_style_distinguish not supported yet")
+    glk.style_distinguish(args(0), args(1), args(2))
   }
   private def _style_measure(args: Array[Int]): Int = {
     throw new UnsupportedOperationException("@@glk_style_measure not supported yet")
