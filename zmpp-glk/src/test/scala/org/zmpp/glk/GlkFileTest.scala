@@ -44,7 +44,7 @@ object GlkFileSpec extends Specification {
     doBefore {
       val tmpfile = File.createTempFile("zmppfiletest", "tmp")
       val fileRef = new FileReference(1, 0, 1, tmpfile, 0)
-      fileStream = new GlkFileStream(fileRef, 1, 0)
+      fileStream = new GlkFileStream(fileRef, 1, 0, false)
     }
     doAfter {
       fileStream.close

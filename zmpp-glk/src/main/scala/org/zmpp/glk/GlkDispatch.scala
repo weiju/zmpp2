@@ -194,7 +194,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     glk.char_to_upper((args(0) & 0xff).asInstanceOf[Char])
   }
   private def _exit(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_exit not supported yet")
+    glk.exit(_state)
+    0
   }
   private def _fileref_create_by_name(args: Array[Int]): Int = {
     glk.fileref_create_by_name(args(0), cstringAt(args(1)), args(2))
@@ -232,10 +233,10 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     throw new UnsupportedOperationException("@@glk_gestalt_ext not supported yet")
   }
   private def _get_buffer_stream(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_get_buffer_stream not supported yet")
+    glk.get_buffer_stream(_state, args(0), args(1), args(2))
   }
   private def _get_buffer_stream_uni(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_get_buffer_stream_uni not supported yet")
+    glk.get_buffer_stream_uni(_state, args(0), args(1), args(2))
   }
   private def _get_char_stream(args: Array[Int]): Int = {
     glk.get_char_stream(args(0))
@@ -244,10 +245,10 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     glk.get_char_stream_uni(args(0))
   }
   private def _get_line_stream(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_get_line_stream not supported yet")
+    glk.get_line_stream(_state, args(0), args(1), args(2))
   }
   private def _get_line_stream_uni(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_get_line_stream_uni not supported yet")
+    glk.get_line_stream_uni(_state, args(0), args(1), args(2))
   }
   private def _image_draw(args: Array[Int]): Int = {
     glk.image_draw(args(0), args(1), args(2), args(3))
@@ -378,7 +379,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _set_interrupt_handler(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_set_interrupt_handler not supported yet")
+    glk.set_interrupt_handler(_state, args(0))
+    0
   }
   private def _set_style(args: Array[Int]): Int = {
     glk.set_style(args(0))
@@ -420,7 +422,7 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     glk.stream_open_file(args(0), args(1), args(2))
   }
   private def _stream_open_file_uni(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_stream_open_file_uni not supported yet")
+    glk.stream_open_file(args(0), args(1), args(2))
   }
   private def _stream_open_memory(args: Array[Int]) = {
     glk.stream_open_memory(_state, args(0), args(1), args(2), args(3))

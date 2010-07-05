@@ -158,26 +158,21 @@ class MemoryOutputStream8(state: VMState, address: Int, size: Int, mode: Int, ro
 extends MemoryOutputStream(state, address, size, mode, rock) {
 
   def putChar(c: Char) {
-    //println("MemoryStream PRINTCHAR: " + c)
     if (address != 0 && size > 0 && writeCount < size) {
       state.setMemByteAt(address + writeCount, c.asInstanceOf[Int])
     }
     writeCount += 1
   }
   def putCharUni(c: Int) {
-    putChar(c.asInstanceOf[Char])
-    //throw new UnsupportedOperationException("put_char_uni not allowed on byte memory stream")
+    if (c >= 255) putChar(0x3f)
+    else putChar(c.asInstanceOf[Char])
   }
 }
 
 class MemoryOutputStream32(state: VMState, address: Int, size: Int, mode: Int, rock: Int)
 extends MemoryOutputStream(state, address, size, mode, rock) {
-  def putChar(c: Char) {
-    //println("MemoryStream32 PRINTCHAR: " + c)
-    putCharUni(c.toInt)
-  }
+  def putChar(c: Char) = putCharUni(c.toInt)
   def putCharUni(c: Int) {
-    //println("MemoryStream32 PRINTCHAR_UNI: " + (c & 0xffff).asInstanceOf[Char])
     if (address != 0 && size > 0 && writeCount < size) {
       state.setMemIntAt(address + writeCount * Types.SizeInt, c)
     }

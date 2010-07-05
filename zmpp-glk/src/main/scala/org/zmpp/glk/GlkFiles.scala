@@ -67,12 +67,15 @@ object SeekModes {
  * File streams are based on RandomAccessFile, this is probably the only
  * way to allow for all the operations that streams require.
  */
-class GlkFileStream(fileRef: FileReference, val fmode: Int, val rock: Int) extends GlkStream {
+class GlkFileStream(fileRef: FileReference,
+                    val fmode: Int,
+                    val rock: Int,
+                    val isUnicode: Boolean) extends GlkStream {
   val logger = Logger.getLogger("glk")
   if (fileRef.fmode != 0 && fmode != fileRef.fmode) {
     logger.warning("FileStream FMODE != FileRef FMODE !!!")
   }
-  logger.info("Opening file with usage: %d and fmode: %d".format(fileRef.usage, fmode))
+  //logger.info("Opening file with usage: %d and fmode: %d".format(fileRef.usage, fmode))
   val realFile = new RandomAccessFile(fileRef.file, fileOpenMode)
   if (fileRef.isAppend) {
     realFile.seek(realFile.length)
@@ -92,7 +95,7 @@ class GlkFileStream(fileRef: FileReference, val fmode: Int, val rock: Int) exten
   def size       = realFile.length
   def position   = realFile.getFilePointer.asInstanceOf[Int]
   def close {
-    logger.info("CLOSING FILE !!!")
+    //logger.info("CLOSING FILE !!!")
     realFile.close
   }
   def writeCount = _writeCount
@@ -193,7 +196,10 @@ class GlkFileSystem {
   def doesFileExist(fileRefId: Int): Boolean = fileRefWithId(fileRefId).exists
   
   def openFile(fileRefId: Int, fmode: Int, rock: Int): GlkStream = {
-    new GlkFileStream(fileRefWithId(fileRefId), fmode, rock)
+    new GlkFileStream(fileRefWithId(fileRefId), fmode, rock, false)
+  }
+  def openFileUni(fileRefId: Int, fmode: Int, rock: Int): GlkStream = {
+    new GlkFileStream(fileRefWithId(fileRefId), fmode, rock, true)
   }
 }
 

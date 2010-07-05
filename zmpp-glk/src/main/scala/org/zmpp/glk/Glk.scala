@@ -84,6 +84,10 @@ class Glk(val eventManager: EventManager) {
   // ***********************************************************************
   // ***** glk_* Functions
   // **************************************
+  def exit(state: VMState) = state.runState = VMRunStates.Halted
+  def set_interrupt_handler(state: VMState, func: Int) {
+    logger.warning("glk_set_interrupt_handler() has no effect in ZMPP/Glk")
+  }
   def gestalt(selector: GestaltSelector.Value, arg: Int) : Int = {
     //logger.info("glk_gestalt(%s, %d)".format(selector.toString, arg))
     import GestaltSelector._
@@ -212,6 +216,54 @@ class Glk(val eventManager: EventManager) {
   // Stream functions
   def get_char_stream(streamId: Int) = ioSystem.getCharStream(streamId)
   def get_char_stream_uni(streamId: Int) = ioSystem.getCharStreamUni(streamId)
+  def get_buffer_stream(state: VMState, streamId: Int, buf: Int, len: Int): Int = {
+    var charIndex = 0
+    while (charIndex < len) {
+      val c = get_char_stream(streamId)
+      if (c == -1) return charIndex
+      state.setMemByteAt(buf + charIndex, c)
+      charIndex += 1
+    }
+    charIndex
+  }
+  def get_buffer_stream_uni(state: VMState, streamId: Int, buf: Int, len: Int): Int = {
+    var charIndex = 0
+    while (charIndex < len) {
+      val c = get_char_stream_uni(streamId)
+      if (c == -1) return charIndex
+      state.setMemIntAt(buf + charIndex * 4, c)
+      charIndex += 1
+    }
+    charIndex
+  }
+  def get_line_stream(state: VMState, streamId: Int, buf: Int, len: Int): Int = {
+    var charIndex = 0
+    var continueLoop = true
+    while (charIndex < len - 1 && continueLoop) {
+      val c = get_char_stream(streamId)
+      if (c == -1) continueLoop = false
+      state.setMemByteAt(buf + charIndex, c)
+      charIndex += 1
+      // putting the check here includes '\n' in the buffer
+      if (c == '\n') continueLoop = false
+    }
+    state.setMemByteAt(buf + charIndex, 0)
+    charIndex
+  }
+  def get_line_stream_uni(state: VMState, streamId: Int, buf: Int, len: Int): Int = {
+    var charIndex = 0
+    var continueLoop = true
+    while (charIndex < len - 1 && continueLoop) {
+      val c = get_char_stream_uni(streamId)
+      if (c == -1) continueLoop = false
+      state.setMemIntAt(buf + charIndex * 4, c)
+      charIndex += 1
+      // putting the check here includes '\n' in the buffer
+      if (c == '\n') continueLoop = false
+    }
+    state.setMemIntAt(buf + charIndex * 4, 0)
+    charIndex
+  }
   
   def put_buffer_stream(state: VMState, streamId: Int, buf: Int, len: Int) {
     for (i <- 0 until len) put_char_stream(streamId, state.memByteAt(buf + i).toChar)
@@ -255,6 +307,14 @@ class Glk(val eventManager: EventManager) {
       "glk_stream_open_file, fileRefId = %d, fmode = #$%02x, rock = %d".format(
            fileRefId, fmode, rock))
     val fileStream = fileSystem.openFile(fileRefId, fmode, rock)
+    if (fileStream != null) ioSystem.registerStream(fileStream)
+    else 0
+  }
+  def stream_open_file_uni(fileRefId: Int, fmode: Int, rock: Int) = {
+    logger.info(
+      "glk_stream_open_file_uni, fileRefId = %d, fmode = #$%02x, rock = %d".format(
+           fileRefId, fmode, rock))
+    val fileStream = fileSystem.openFileUni(fileRefId, fmode, rock)
     if (fileStream != null) ioSystem.registerStream(fileStream)
     else 0
   }
