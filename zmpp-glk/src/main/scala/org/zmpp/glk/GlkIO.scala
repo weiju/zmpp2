@@ -89,7 +89,7 @@ class GlkIOSystem {
     _streams = _streams.filterNot(stream => stream.id == id)
     stream.close
     if (stream == _currentStream) _currentStream = NilStream
-    new GlkStreamCloseStruct(stream.writeCount, 0)
+    new GlkStreamCloseStruct(stream.writeCount, stream.readCount)
   }
   def getPosition(id: Int) = streamWithId(id).position
   def setPosition(id: Int, pos: Int, seekmode: Int) = streamWithId(id).seek(pos, seekmode)
@@ -120,6 +120,9 @@ class GlkIOSystem {
   def setStyle(streamId: Int, value: Int) {
     streamWithId(streamId).style = value
   }
+  // reading
+  def getCharStream(streamId: Int)    = streamWithId(streamId).getChar
+  def getCharStreamUni(streamId: Int) = streamWithId(streamId).getCharUni
 }
 
 /**
@@ -136,9 +139,7 @@ abstract class MemoryOutputStream(_state: VMState, _address: Int, _size: Int,
     //logger.info(
     //  "CLOSING MEMORY STREAM ID = %d WRITECOUNT = %d".format(id, writeCount))
   }
-  def readCount = {
-    throw new UnsupportedOperationException("MemoryOutputStream does not support readCount")
-  }
+  def readCount = 0
   def getChar = {
     throw new UnsupportedOperationException("MemoryOutputStream does not support getChar")
   }
@@ -218,9 +219,7 @@ object NilStream extends GlkStream {
   def close {}
   def putChar(c: Char) { }
   def putCharUni(c: Int) { }
-  def readCount = {
-    throw new UnsupportedOperationException("NilStream does not support readCount")
-  }
+  def readCount = 0
   def getChar = {
     throw new UnsupportedOperationException("NilStream does not support getChar")
   }
@@ -249,9 +248,7 @@ class DummyStream extends GlkStream {
   def putCharUni(c: Int) {}
   def seek(newpos: Int, seekmode: Int) { }
   def setHyperlink(linkval: Int) { }
-  def readCount = {
-    throw new UnsupportedOperationException("DummyStream does not support readCount")
-  }
+  def readCount = 0
   def getChar = {
     throw new UnsupportedOperationException("DummyStream does not support getChar")
   }

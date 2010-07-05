@@ -210,6 +210,9 @@ class Glk(val eventManager: EventManager) {
   }
 
   // Stream functions
+  def get_char_stream(streamId: Int) = ioSystem.getCharStream(streamId)
+  def get_char_stream_uni(streamId: Int) = ioSystem.getCharStreamUni(streamId)
+  
   def put_buffer_stream(state: VMState, streamId: Int, buf: Int, len: Int) {
     for (i <- 0 until len) put_char_stream(streamId, state.memByteAt(buf + i).toChar)
   }

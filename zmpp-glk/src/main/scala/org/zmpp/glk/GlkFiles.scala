@@ -30,6 +30,7 @@ package org.zmpp.glk
 
 import java.util.logging._
 import java.io.File
+import java.io.RandomAccessFile
 import scala.collection.mutable._
 
 /*
@@ -63,85 +64,70 @@ object SeekModes {
 }
 
 /**
- * Byte array based file stream. TODO: Map to Java file streams and RandomAccessFile
+ * File streams are based on RandomAccessFile, this is probably the only
+ * way to allow for all the operations that streams require.
  */
-object GlkFileStream {
-  val InitialBufferSize  = 1024
-  val BufferIncreaseSize = 1024
-}
-
-class GlkFileStream(val rock: Int) extends GlkStream {
+class GlkFileStream(fileRef: FileReference, val fmode: Int, val rock: Int) extends GlkStream {
   val logger = Logger.getLogger("glk")
-  private var _buffer = new Array[Byte](GlkFileStream.InitialBufferSize)
-  private def resizeIfNecessary {
-    if (position >= _buffer.length) {
-      val newbuffer = new Array[Byte](_buffer.length + GlkFileStream.BufferIncreaseSize)
-      System.arraycopy(_buffer, 0, newbuffer, 0, _buffer.length)
-      _buffer = newbuffer
-    }
+  if (fileRef.fmode != 0 && fmode != fileRef.fmode) {
+    logger.warning("FileStream FMODE != FileRef FMODE !!!")
+  }
+  logger.info("Opening file with usage: %d and fmode: %d".format(fileRef.usage, fmode))
+  val realFile = new RandomAccessFile(fileRef.file, fileOpenMode)
+  if (fileRef.isAppend) {
+    realFile.seek(realFile.length)
   }
 
+  private def fileOpenMode = {
+    if (fileRef.isReadOnly) "r"
+    else "rw"
+  }
   def style: Int = throw new UnsupportedOperationException("can not read style from file stream")
   def style_=(s:Int) = throw new UnsupportedOperationException("can not set style in file stream")
 
   protected var _readCount  = 0
   protected var _writeCount = 0
-  protected var _pos        = 0
-  protected var _size       = 0
 
   var id         = 0
-  def writeCount = _writeCount
-  def readCount  = _readCount
-  def size       = _size
-  def position   = _pos
+  def size       = realFile.length
+  def position   = realFile.getFilePointer.asInstanceOf[Int]
   def close {
     logger.info("CLOSING FILE !!!")
-    val builder = new StringBuilder
-    for (i <- 0 until size) {
-      builder.append(_buffer(i).toChar)
-    }
-    logger.info("Buffer is: [%s]".format(builder.toString))
-    // TODO: Do something with the data in this file
+    realFile.close
   }
+  def writeCount = _writeCount
   def putChar(c: Char) {
-    resizeIfNecessary
-    if (c > 255) _buffer(_pos)  = '?'.toByte
-    else _buffer(_pos) = (c & 0xff).toByte
-
+    realFile.writeByte(c & 0xff)
     _writeCount += 1
-    _pos        += 1
-    if (_pos > _size) _size = _pos
   }
   def putCharUni(c: Int) {
-    throw new UnsupportedOperationException("put_char_uni not yet supported on file stream")
+    realFile.writeChar(c)
+    _writeCount += 1
   }
   
   def seek(newpos: Int, seekmode: Int) {
     seekmode match {
-      case SeekModes.Start   => _pos  = newpos
-      case SeekModes.Current => _pos += newpos
-      case SeekModes.End     => _pos  = size + newpos
+      case SeekModes.Start   => realFile.seek(newpos)
+      case SeekModes.Current => realFile.seek(position + newpos)
+      case SeekModes.End     => realFile.seek(size + newpos)
       case _                 =>
         throw new IllegalArgumentException("Unknown file seek mode: %d".format(seekmode))
     }
-    if (_pos > _size) _size = _pos
   }
   def setHyperlink(linkval: Int) {
     throw new UnsupportedOperationException("setHyperlink not supported on file stream")
   }
-  def getChar = {
-    throw new UnsupportedOperationException("TODO: FileStream does not support getChar yet")
+  def readCount = _readCount
+  def getChar : Int = {
+    if (position >= realFile.length) return -1
+    _readCount += 1
+    realFile.readByte.asInstanceOf[Int]
   }
-  def getCharUni = {
-    throw new UnsupportedOperationException("TODO: FileStream does not support getCharUni yet")
+  def getCharUni : Int = {
+    if (position >= realFile.length) return -1
+    _readCount += 1
+    realFile.readChar.asInstanceOf[Int]
   }
-}
-
-class GlkBinaryFileOutputStream(file: File, rock: Int) extends GlkFileStream(rock) {
-  override def readCount: Int = throw new UnsupportedOperationException("can not read from output stream")
-}
-class GlkTextFileOutputStream(file: File, rock: Int) extends GlkFileStream(rock) {
-  override def readCount: Int = throw new UnsupportedOperationException("can not read from output stream")
 }
 
 class FileReference(val id        : Int,
@@ -152,7 +138,11 @@ class FileReference(val id        : Int,
   def isBinaryMode = (usage & 0x100) == 0
   def isTextMode   = (usage & 0x100) == 0x100
   def fileType     = usage & FileUsageTypes.TypeMask
-  def exists        = file.exists
+  def exists       = file.exists
+  def isReadOnly   = fmode == FileModes.Read
+  def isWriteOnly  = isAppend || fmode == FileModes.Write
+  def isReadWrite  = fmode == FileModes.ReadWrite
+  def isAppend     = fmode == FileModes.WriteAppend
 }
 
 class GlkFileSystem {
@@ -203,21 +193,7 @@ class GlkFileSystem {
   def doesFileExist(fileRefId: Int): Boolean = fileRefWithId(fileRefId).exists
   
   def openFile(fileRefId: Int, fmode: Int, rock: Int): GlkStream = {
-    val fileref = fileRefWithId(fileRefId)
-    val fp: GlkStream = fmode match {
-      case FileModes.Write       =>
-        if (fileref.isBinaryMode) new GlkBinaryFileOutputStream(fileref.file, rock)
-        else new GlkTextFileOutputStream(fileref.file, rock)
-      case FileModes.Read        =>
-        throw new UnsupportedOperationException("Read file mode not supported yet")
-      case FileModes.ReadWrite   =>
-        throw new UnsupportedOperationException("ReadWrite file mode not supported yet")
-      case FileModes.WriteAppend =>
-        throw new UnsupportedOperationException("WriteAppend file mode not supported yet")
-      case _               =>
-        throw new IllegalArgumentException("Unknown file mode: %d".format(fmode))
-    }
-    fp
+    new GlkFileStream(fileRefWithId(fileRefId), fmode, rock)
   }
 }
 

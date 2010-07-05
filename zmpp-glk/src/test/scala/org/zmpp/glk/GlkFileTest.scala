@@ -39,15 +39,24 @@ object GlkFileSpecRunner extends ConsoleRunner(GlkFileSpec)
 object GlkFileSpec extends Specification {
 
   "GlkFileStream" should {
+    var fileStream: GlkFileStream = null
+
+    doBefore {
+      val tmpfile = File.createTempFile("zmppfiletest", "tmp")
+      val fileRef = new FileReference(1, 0, 1, tmpfile, 0)
+      fileStream = new GlkFileStream(fileRef, 1, 0)
+    }
+    doAfter {
+      fileStream.close
+    }
+
     "be initialized" in {
-      val fileStream = new GlkFileStream(0)
       fileStream.id         must_== 0
       fileStream.writeCount must_== 0
       fileStream.readCount  must_== 0
       fileStream.size       must_== 0
     }
     "put a character" in {
-      val fileStream = new GlkFileStream(0)
       fileStream.putChar('a')
       fileStream.readCount  must_== 0
       fileStream.writeCount must_== 1
@@ -55,14 +64,12 @@ object GlkFileSpec extends Specification {
     }
     "resize buffer" in {
       val numToWrite = 2000
-      val fileStream = new GlkFileStream(0)
       for (i <- 0 until numToWrite) fileStream.putChar('a')
       fileStream.size       must_== numToWrite
       fileStream.writeCount must_== numToWrite
       fileStream.position   must_== numToWrite
     }
     "seek from start" in {
-      val fileStream = new GlkFileStream(0)
       for (i <- 0 until 5) fileStream.putChar('a')
       fileStream.seek(3, SeekModes.Start)
       fileStream.size       must_== 5
@@ -70,19 +77,17 @@ object GlkFileSpec extends Specification {
       fileStream.position   must_== 3
     }
     "seek from current" in {
-      val fileStream = new GlkFileStream(0)
       for (i <- 0 until 5) fileStream.putChar('a')
       fileStream.seek(3, SeekModes.Current)
-      fileStream.size       must_== 8
+      fileStream.size       must_== 5
       fileStream.writeCount must_== 5
       fileStream.position   must_== 8
     }
     "seek from end" in {
-      val fileStream = new GlkFileStream(0)
       for (i <- 0 until 5) fileStream.putChar('a')
       fileStream.seek(0, SeekModes.Start)
       fileStream.seek(3, SeekModes.End)
-      fileStream.size       must_== 8
+      fileStream.size       must_== 5
       fileStream.writeCount must_== 5
       fileStream.position   must_== 8
     }

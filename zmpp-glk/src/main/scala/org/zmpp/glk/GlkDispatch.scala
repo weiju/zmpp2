@@ -238,10 +238,10 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     throw new UnsupportedOperationException("@@glk_get_buffer_stream_uni not supported yet")
   }
   private def _get_char_stream(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_get_char_stream not supported yet")
+    glk.get_char_stream(args(0))
   }
   private def _get_char_stream_uni(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_get_char_stream_uni not supported yet")
+    glk.get_char_stream_uni(args(0))
   }
   private def _get_line_stream(args: Array[Int]): Int = {
     throw new UnsupportedOperationException("@@glk_get_line_stream not supported yet")
