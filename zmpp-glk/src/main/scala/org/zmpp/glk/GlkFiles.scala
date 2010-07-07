@@ -75,10 +75,14 @@ class GlkFileStream(fileRef: FileReference,
   if (fileRef.fmode != 0 && fmode != fileRef.fmode) {
     logger.warning("FileStream FMODE != FileRef FMODE !!!")
   }
-  //logger.info("Opening file with usage: %d and fmode: %d".format(fileRef.usage, fmode))
+  logger.info("Opening file '%s' with usage: %d and fmode: %d".format(
+              fileRef.file.getName, fileRef.usage, fmode))
   val realFile = new RandomAccessFile(fileRef.file, fileOpenMode)
-  if (fileRef.isAppend) {
+  if (fmode == FileModes.WriteAppend) {
     realFile.seek(realFile.length)
+  } else if (fmode == FileModes.Write) {
+    // overwrite everything
+    realFile.setLength(0)
   }
 
   private def fileOpenMode = {
@@ -94,10 +98,7 @@ class GlkFileStream(fileRef: FileReference,
   var id         = 0
   def size       = realFile.length
   def position   = realFile.getFilePointer.asInstanceOf[Int]
-  def close {
-    //logger.info("CLOSING FILE !!!")
-    realFile.close
-  }
+  def close = realFile.close
   def writeCount = _writeCount
   def putChar(c: Char) {
     realFile.writeByte(c & 0xff)
@@ -199,7 +200,8 @@ class GlkFileSystem {
     new GlkFileStream(fileRefWithId(fileRefId), fmode, rock, false)
   }
   def openFileUni(fileRefId: Int, fmode: Int, rock: Int): GlkStream = {
-    new GlkFileStream(fileRefWithId(fileRefId), fmode, rock, true)
+    throw new UnsupportedOperationException("Unicode files not supported yet")
+    // new GlkFileStream(fileRefWithId(fileRefId), fmode, rock, true)
   }
 }
 

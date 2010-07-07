@@ -128,79 +128,100 @@ class GlkIOSystem {
 /**
  * Byte-based memory stream
  */
-abstract class MemoryOutputStream(_state: VMState, _address: Int, _size: Int,
-                                  _mode: Int, val rock: Int) extends GlkStream {
+abstract class MemoryStream(val state: VMState, val address: Int, val size: Int,
+                            val fmode: Int, val rock: Int) extends GlkStream {
   val logger = Logger.getLogger("glk")
+  //logger.info("CREATE MEMORYSTREAM, fmode: %02x size: %d".format(fmode, size))
   var id         = 0
   var style      = 0
   var writeCount = 0
-  def position   = writeCount // for now
-  def close {
-    //logger.info(
-    //  "CLOSING MEMORY STREAM ID = %d WRITECOUNT = %d".format(id, writeCount))
+  var readCount  = 0
+  var position   = 0
+  // append mode
+  if (fmode == FileModes.WriteAppend) seekToEnd
+  
+  private def positionExceedsSize = position >= size
+  protected def indexToPos(index: Int) : Int
+  protected def setCurrentChar(value: Int)
+  protected def currentChar : Int
+
+  private def seekToEnd {
+    position = 0
+    var endFound = false
+    while (!endFound && position < size) {
+      if (currentChar == 0) endFound = true
+      else position += 1
+    }
   }
-  def readCount = 0
-  def getChar = {
-    throw new UnsupportedOperationException("MemoryOutputStream does not support getChar")
+
+  def close { }
+  
+  def putCharGeneric(c: Int) {
+    if (address != 0 && size > 0 && !positionExceedsSize) {
+      setCurrentChar(c)
+      position += 1
+    }
+    writeCount += 1
   }
-  def getCharUni = {
-    throw new UnsupportedOperationException("MemoryOutputStream does not support getCharUni")
+  def putChar(c: Char)   = putCharGeneric(c.asInstanceOf[Int])
+  def putCharUni(c: Int) = putCharGeneric(c)
+
+  def getCharGeneric : Int = {
+    if (positionExceedsSize) -1
+    else {
+      readCount += 1
+      val retval = currentChar
+      position  += 1
+      retval
+    }
   }
+  def getChar    = {
+    val retval = getCharGeneric
+    if (retval > 255) 0x3f
+    else retval
+  }
+  def getCharUni = getCharGeneric
+
   def seek(newpos: Int, seekmode: Int) {
-    throw new UnsupportedOperationException("MemoryOutputStream.seek() not supported yet")
+    seekmode match {
+      case SeekModes.Start   => position = newpos
+      case SeekModes.Current => position += newpos
+      case SeekModes.End     =>
+        seekToEnd
+        position += newpos
+      case _                 =>
+        throw new IllegalArgumentException("Unknown file seek mode: %d".format(seekmode))
+    }
   }
   def setHyperlink(linkval: Int) {
     throw new UnsupportedOperationException("setHyperlink not supported on memory stream")
   }
 }
 
-class MemoryOutputStream8(state: VMState, address: Int, size: Int, mode: Int, rock: Int)
-extends MemoryOutputStream(state, address, size, mode, rock) {
+class MemoryStream8(state: VMState, address: Int, size: Int, fmode: Int, rock: Int)
+extends MemoryStream(state, address, size, fmode, rock) {
+  protected def indexToPos(index : Int) = index
+  private def bufferAddress = address + position
+  protected def setCurrentChar(value: Int) = state.setMemByteAt(bufferAddress, value)
+  protected def currentChar = state.memByteAt(bufferAddress)
 
-  def putChar(c: Char) {
-    if (address != 0 && size > 0 && writeCount < size) {
-      state.setMemByteAt(address + writeCount, c.asInstanceOf[Int])
-    }
-    writeCount += 1
-  }
-  def putCharUni(c: Int) {
+  override def putCharUni(c: Int) {
     if (c >= 255) putChar(0x3f)
     else putChar(c.asInstanceOf[Char])
   }
-}
-
-class MemoryOutputStream32(state: VMState, address: Int, size: Int, mode: Int, rock: Int)
-extends MemoryOutputStream(state, address, size, mode, rock) {
-  def putChar(c: Char) = putCharUni(c.toInt)
-  def putCharUni(c: Int) {
-    if (address != 0 && size > 0 && writeCount < size) {
-      state.setMemIntAt(address + writeCount * Types.SizeInt, c)
-    }
-    writeCount += 1
+  override def getCharUni: Int = {
+    throw new UnsupportedOperationException("getCharUni not supported on MemoryStream8")
   }
 }
 
-object MemoryStreamFactory {
-  def createMemoryStream8(state: VMState, buf: Int, buflen: Int, fmode: Int,
-                          rock: Int): GlkStream = {
-    if (fmode == FileModes.Read || fmode == FileModes.ReadWrite) {
-      throw new UnsupportedOperationException("read and read/write not supported yet for memory streams")
-    }
-    if (fmode == FileModes.WriteAppend) {
-      throw new IllegalArgumentException("illegal file mode for memory stream: WriteAppend")
-    }
-    new MemoryOutputStream8(state, buf, buflen, fmode, rock)
-  }
-  def createMemoryStream32(state: VMState, buf: Int, buflen: Int, fmode: Int,
-                           rock: Int): GlkStream = {
-    if (fmode == FileModes.Read || fmode == FileModes.ReadWrite) {
-      throw new UnsupportedOperationException("read and read/write not supported yet for memory streams")
-    }
-    if (fmode == FileModes.WriteAppend) {
-      throw new IllegalArgumentException("illegal file mode for memory stream: WriteAppend")
-    }
-    new MemoryOutputStream32(state, buf, buflen, fmode, rock)
-  }
+class MemoryStream32(state: VMState, address: Int, size: Int, fmode: Int, rock: Int)
+extends MemoryStream(state, address, size, fmode, rock) {
+  protected def indexToPos(index : Int) = index / Types.SizeInt
+  protected def setCurrentChar(value: Int) = state.setMemIntAt(bufferAddress, value)
+  protected def currentChar = state.memIntAt(bufferAddress)
+
+  private def bufferIndex(pos : Int) = pos * Types.SizeInt
+  private def bufferAddress = address + bufferIndex(position)
 }
 
 object NilStream extends GlkStream {

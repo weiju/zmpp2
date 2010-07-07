@@ -24,19 +24,20 @@ how I think an IF VM should look like on the Java Virtual Machine:
 Current features:
 
 - Glulx 3.1.1 core almost feature complete (see known issues)
-- majority of Glk 0.7.0 functionality implemented
+- Glk 0.7.0 almost feature complete (see known issues)
 - run as applet or application (Java SE)
 - runs a number of games already
 - supports graphics
 - multiple undo
 - styles
 - timer events
+- file access
 - complete sound support (Ogg Vorbis, MOD, AIFF through JavaSound SPIs)
 
 Known issues:
 
 - save/restore not implemented yet
-- several Glk functions still missing
+- a handful Glk functions still missing
 - no other supported Java environments yet
 - the Z-Machine core in this repository is very rudimentary, 1.x is still
   the official version for Z-Machine ZMPP

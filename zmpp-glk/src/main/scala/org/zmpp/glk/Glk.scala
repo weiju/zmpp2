@@ -319,12 +319,10 @@ class Glk(val eventManager: EventManager) {
     else 0
   }
   def stream_open_memory(state: VMState, buf: Int, buflen: Int, fmode: Int, rock: Int) = {
-    ioSystem.registerStream(
-      MemoryStreamFactory.createMemoryStream8(state, buf, buflen, fmode, rock))
+    ioSystem.registerStream(new MemoryStream8(state, buf, buflen, fmode, rock))
   }
   def stream_open_memory_uni(state: VMState, buf: Int, buflen: Int, fmode: Int, rock: Int) = {
-    ioSystem.registerStream(
-      MemoryStreamFactory.createMemoryStream32(state, buf, buflen, fmode, rock))
+    ioSystem.registerStream(new MemoryStream32(state, buf, buflen, fmode, rock))
   }
   def stream_set_current(streamId: Int) {
     ioSystem.currentStreamId = streamId
