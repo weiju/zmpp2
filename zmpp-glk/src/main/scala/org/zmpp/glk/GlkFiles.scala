@@ -89,8 +89,10 @@ class GlkFileStream(fileRef: FileReference,
     if (fileRef.isReadOnly) "r"
     else "rw"
   }
-  def style: Int = throw new UnsupportedOperationException("can not read style from file stream")
-  def style_=(s:Int) = throw new UnsupportedOperationException("can not set style in file stream")
+  def style: Int =
+    throw new UnsupportedOperationException("can not read style from file stream")
+  def style_=(s:Int) =
+    throw new UnsupportedOperationException("can not set style in file stream")
 
   protected var _readCount  = 0
   protected var _writeCount = 0
@@ -115,7 +117,8 @@ class GlkFileStream(fileRef: FileReference,
       case SeekModes.Current => realFile.seek(position + newpos)
       case SeekModes.End     => realFile.seek(size + newpos)
       case _                 =>
-        throw new IllegalArgumentException("Unknown file seek mode: %d".format(seekmode))
+        throw new IllegalArgumentException("Unknown file seek mode: %d".format(
+          seekmode))
     }
   }
   def setHyperlink(linkval: Int) {

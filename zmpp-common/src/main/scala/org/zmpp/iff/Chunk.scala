@@ -70,13 +70,11 @@ trait FormChunk extends Chunk {
   def chunkDataSizeAtAddress(chunkAddr: Int): Int
 }
 
-class DefaultFormChunk(_mem: Memory) extends DefaultChunk(_mem, 0)
-with FormChunk {
+class DefaultFormChunk(_mem: Memory) extends DefaultChunk(_mem, 0) with FormChunk {
   if (!idAtAddressEquals(0, "FORM")) {
     throw new java.io.IOException("not a valid IFF format (ID was '%s')".format(id))
   }
-  private def idAtAddressEquals(address: Int, anId: String)
-    : Boolean = {
+  private def idAtAddressEquals(address: Int, anId: String) : Boolean = {
     for (i <- 0 until Chunk.IdLength) {
       if (_mem.byteAt(address + i).toInt != anId.charAt(i).toInt) return false
     }
@@ -88,7 +86,8 @@ with FormChunk {
     val len = size
     while (currentAddr < len) {
       if (idAtAddressEquals(currentAddr, chunkId)) return currentAddr
-      var chunkTotalSize = Chunk.HeaderLength + _mem.intAt(currentAddr + Chunk.IdLength)
+      var chunkTotalSize = Chunk.HeaderLength +
+                           _mem.intAt(currentAddr + Chunk.IdLength)
       chunkTotalSize += (chunkTotalSize % 2) // pad to even if necessary
       currentAddr += chunkTotalSize
     }

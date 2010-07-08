@@ -95,19 +95,24 @@ with MouseListener with MouseMotionListener {
     }
   }
   def eraseRect(left: Int, top: Int, width: Int, height: Int) {
-    throw new UnsupportedOperationException("fillRect() not supported for this window type")
+    throw new UnsupportedOperationException(
+      "fillRect() not supported for this window type")
   }
   def fillRect(color: Int, left: Int, top: Int, width: Int, height: Int) {
-    throw new UnsupportedOperationException("fillRect() not supported for this window type")
+    throw new UnsupportedOperationException(
+      "fillRect() not supported for this window type")
   }
   def setBackgroundColor(color: Int) {
-    throw new UnsupportedOperationException("setBackground() not supported for this window type")
+    throw new UnsupportedOperationException(
+      "setBackground() not supported for this window type")
   }
   def drawScaledImage(resnum: Int, posx: Int, posy: Int, width: Int, height: Int) {
-    throw new UnsupportedOperationException("This window does not support drawing images")
+    throw new UnsupportedOperationException(
+      "This window does not support drawing images")
   }
   def drawImage(resnum: Int, posx: Int, posy: Int) {
-    throw new UnsupportedOperationException("This window does not support drawing images")
+    throw new UnsupportedOperationException(
+      "This window does not support drawing images")
   }
   def requestLineInput
   def requestPreviousLineInput

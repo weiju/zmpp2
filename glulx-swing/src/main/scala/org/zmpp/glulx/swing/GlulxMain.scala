@@ -113,7 +113,8 @@ object GlulxMain {
       // FileChooser
       val fileChooser = new JFileChooser
       val result = fileChooser.showOpenDialog(null)
-      if (result == JFileChooser.APPROVE_OPTION) fileChooser.getSelectedFile.getAbsolutePath
+      if (result == JFileChooser.APPROVE_OPTION)
+        fileChooser.getSelectedFile.getAbsolutePath
       else null
     } else args(0)
     val frame = new GlkFrameUI

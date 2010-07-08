@@ -58,7 +58,8 @@ extends JComponent with SwingGlkWindowUI {
   def container = this
   def glkSize = new GlkDimension(getWidth, getHeight)
   def glkSize_=(size: GlkDimension) {
-    throw new UnsupportedOperationException("Setting Graphics window size not supported")
+    throw new UnsupportedOperationException(
+      "Setting Graphics window size not supported")
   }
 
   // Stream methods that are not implemented
@@ -78,7 +79,6 @@ extends JComponent with SwingGlkWindowUI {
   
   private def getOffscreenGraphics: Graphics2D = {
     if (buffer == null) {
-      //logger.info("Make OFFSCREEN BUFFER W = %d H = %d".format(getWidth, getHeight))
       buffer = new BufferedImage(getWidth, getHeight, BufferedImage.TYPE_INT_ARGB)
       offscreenG2d = buffer.createGraphics
       offscreenG2d.setColor(Color.WHITE)
@@ -118,7 +118,6 @@ extends JComponent with SwingGlkWindowUI {
   }
   def _drawScaledImage(resnum: Int, posx: Int, posy: Int,
                        width: Int, height: Int) {
-    //logger.info("GRAPHICS WINDOW(%d), DRAWSCALEDIMAGE(%d)".format(glkWindow.id, resnum))
     val g2d = getOffscreenGraphics
     // TODO: we should return false to Glk if image does not exist !!
     val image = screenUI.getImage(resnum)
@@ -139,7 +138,6 @@ extends JComponent with SwingGlkWindowUI {
     }
   }
   def _drawImage(resnum: Int, posx: Int, posy: Int) {
-    //logger.info("GRAPHICS WINDOW(%d), DRAWIMAGE(%d)".format(glkWindow.id, resnum))
     val g2d = getOffscreenGraphics
     val image = screenUI.getImage(resnum)
     g2d.drawImage(image, posx, posy, null)
@@ -190,7 +188,8 @@ extends JComponent with SwingGlkWindowUI {
     }
   }
   def cancelLineInput: String = {
-    throw new UnsupportedOperationException("cancel line input not supported in graphics windows")
+    throw new UnsupportedOperationException(
+      "cancel line input not supported in graphics windows")
   }
 }
 

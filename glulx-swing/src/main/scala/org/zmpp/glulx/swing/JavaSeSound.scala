@@ -63,15 +63,20 @@ object AudioStreamFactory {
 
   aiffReader = createReaderInstance("com.sun.media.sound.AiffFileReader", "AIFF")
   oggVorbisReader =
-    createReaderInstance("javazoom.spi.vorbis.sampled.file.VorbisAudioFileReader", "Vorbis")
-  modReader = createReaderInstance("org.muforge.musound.muxm.spi.ModuleFileReader", "MOD")
+    createReaderInstance("javazoom.spi.vorbis.sampled.file.VorbisAudioFileReader",
+                         "Vorbis")
+  modReader = createReaderInstance("org.muforge.musound.muxm.spi.ModuleFileReader",
+                                   "MOD")
   
-  private def createReaderInstance(className: String, soundType: String): AudioFileReader = {
+  private def createReaderInstance(className: String,
+                                   soundType: String): AudioFileReader = {
     try {
       val readerClass = Class.forName(className)
       return readerClass.newInstance().asInstanceOf[AudioFileReader]
     } catch {
-      case _ => logger.warning("No %s reader found in the classpath (library missing)".format(soundType))
+      case _ =>
+        logger.warning(
+          "No %s reader found in the classpath (library missing)".format(soundType))
     }
     null
   }
@@ -189,7 +194,6 @@ extends Callable[Boolean] {
         val units = gainRange / MAX_VOLUME
         (minimumGain + units * volume).asInstanceOf[Float] 
       }
-      //logger.info("SoundChannel.setVolume(%d) -> gain = %f".format(volume, gain))
       gainControl.setValue(gain)
     } else {
       logger.warning("SET_VOLUME() - NO LINE AVAILABLE")
@@ -207,7 +211,6 @@ extends NativeSoundChannel {
   var currentSoundNum = 0
 
   def play(soundnum: Int, repeats: Int, notify: Int): Boolean = {
-    //logger.info("SoundChannel.play(%d) repeats: %d notify: %d".format(soundnum, repeats, notify))
     notifyOnStop    = notify
     currentSoundNum = soundnum
     stop
@@ -238,7 +241,6 @@ extends NativeSoundChannel {
     }
   }
   def stop {
-    //logger.info("SoundChannel.stop")
     if (currentFuture != null && !currentFuture.isDone) {
       // interrupt previous sound playing if necessary. We do not wait for
       // the task to finish, to improve reponsiveness
@@ -247,7 +249,6 @@ extends NativeSoundChannel {
   }
   def soundStopped {
     if (notifyOnStop != 0 && vm != null) {
-      //logger.info("Send notification with notification value: %d".format(notifyOnStop))
       vm.eventManager.addSoundNotifyEvent(currentSoundNum, notifyOnStop)
       resumeWithNextEvent
     }

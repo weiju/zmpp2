@@ -80,7 +80,8 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     screenUI.lineHeightStdFont
   protected def currentPos = getDocument.getLength
 
-  val container = new JScrollPane(this, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+  val container = new JScrollPane(this,
+                                  ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                                   ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)
   def _moveCursor(xpos: Int, ypos: Int) { }
   def _putChar(c: Char) {
@@ -105,10 +106,14 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     import StyleHintType._
     flush
     val attrs = getInputAttributes
-    val isProportional = if (glkWindow.styleHints.get(style, Proportional.id) == 1) true else false
-    val isBold = if (glkWindow.styleHints.get(style, Weight.id) == 1) true else false
-    val isItalic = if (glkWindow.styleHints.get(style, Oblique.id) == 1) true else false
-    val isReverse = if (glkWindow.styleHints.get(style, ReverseColor.id) == 1) true else false
+    val isProportional =
+      if (glkWindow.styleHints.get(style, Proportional.id) == 1) true else false
+    val isBold =
+      if (glkWindow.styleHints.get(style, Weight.id) == 1) true else false
+    val isItalic =
+      if (glkWindow.styleHints.get(style, Oblique.id) == 1) true else false
+    val isReverse =
+      if (glkWindow.styleHints.get(style, ReverseColor.id) == 1) true else false
     var backColor = glkWindow.styleHints.get(style, BackColor.id)
     var textColor = glkWindow.styleHints.get(style, TextColor.id)
 
@@ -141,8 +146,10 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     container.setPreferredSize(size)
   }
 
-  override def drawScaledImage(resnum: Int, posx: Int, posy: Int, width: Int, height: Int) {
-    throw new UnsupportedOperationException("This window does not support drawing scaled images")
+  override def drawScaledImage(resnum: Int, posx: Int, posy: Int, width: Int,
+                               height: Int) {
+    throw new UnsupportedOperationException(
+      "This window does not support drawing scaled images")
   }
   def _drawImage(resnum: Int, alignId: Int) {
     _flush
@@ -151,7 +158,6 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     } else {
       logger.warning("INVALID ALIGNMENT ID: %d".format(alignId))
     }
-    //logger.info("ALIGNMENT = %s\n".format(align.toString))
     val image = screenUI.getImage(resnum)
     val doc = getDocument.asInstanceOf[StyledDocument]
     val imgStyle = doc.addStyle("imgstyle", null)
@@ -187,4 +193,3 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     }
   }
 }
-

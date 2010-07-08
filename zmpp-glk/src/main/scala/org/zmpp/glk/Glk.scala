@@ -115,21 +115,42 @@ class Glk(val eventManager: EventManager) {
 
   def char_to_lower(c: Char): Char = Character.toLowerCase(c)
   def char_to_upper(c: Char): Char = Character.toUpperCase(c)
-  def buffer_to_lower_case_uni(state: VMState, buf: Int, len: Int, numchars: Int): Int = {
+  
+  def bufferToJavaString(state: VMState, buf: Int, numchars: Int): String = {
+    val builder = new StringBuffer
     for (i <- 0 until numchars) {
       val addr = buf + i * 4
-      state.setMemIntAt(addr, Character.toLowerCase(state.memIntAt(addr).toChar))
+      builder.appendCodePoint(state.memIntAt(addr))
     }
-    numchars
+    builder.toString
   }
-  def buffer_to_upper_case_uni(state: VMState, buf: Int, len: Int, numchars: Int): Int = {
-    for (i <- 0 until numchars) {
+  def buffer_to_lower_case_uni(state: VMState, buf: Int, len: Int,
+                               numchars: Int): Int = {
+    val lowerCased = bufferToJavaString(state, buf, numchars).toLowerCase
+    val numResultChars = java.lang.Math.min(lowerCased.length, len)
+    logger.info("buffer_to_lower_case_uni, buf = %02x, len = %d numchars = %d numResultChars = %d".format(
+                buf, len, numchars, lowerCased.length))
+    for (i <- 0 until numResultChars) {
       val addr = buf + i * 4
-      state.setMemIntAt(addr, Character.toUpperCase(state.memIntAt(addr).toChar))
+      state.setMemIntAt(addr, lowerCased.charAt(i).asInstanceOf[Int])
     }
-    numchars
+    lowerCased.length
   }
-  def buffer_to_title_case_uni(state: VMState, buf: Int, len: Int, numchars: Int, lowerrest: Int): Int = {
+  def buffer_to_upper_case_uni(state: VMState, buf: Int, len: Int,
+                               numchars: Int): Int = {
+    val upperCased = bufferToJavaString(state, buf, numchars).toUpperCase
+    val numResultChars = java.lang.Math.min(upperCased.length, len)
+    logger.info("buffer_to_upper_case_uni, buf = %02x, len = %d numchars = %d numResultChars = %d".format(
+                buf, len, numchars, upperCased.length))
+    for (i <- 0 until numResultChars) {
+      val addr = buf + i * 4
+      state.setMemIntAt(addr, upperCased.charAt(i).asInstanceOf[Int])
+    }
+    upperCased.length
+  }
+  def buffer_to_title_case_uni(state: VMState, buf: Int, len: Int, numchars: Int,
+                               lowerrest: Int): Int = {
+    // TODO
     state.setMemIntAt(buf, Character.toUpperCase(state.memIntAt(buf).toChar))
     if (lowerrest != 0) {
       for (i <- 1 until numchars) {
@@ -169,7 +190,8 @@ class Glk(val eventManager: EventManager) {
   }
   // Styles
   def set_style(value: Int) = ioSystem.currentStyle = value
-  def set_style_stream(streamId: Int, value: Int) = ioSystem.setStyle(streamId, value)
+  def set_style_stream(streamId: Int, value: Int) = ioSystem.setStyle(streamId,
+                                                                      value)
   def style_distinguish(winId: Int, style1: Int, style2: Int): Int = {
     // we assume that different styles are always distinguishable
     // That's not entirely true of course. A future implementation should
@@ -250,7 +272,8 @@ class Glk(val eventManager: EventManager) {
     state.setMemByteAt(buf + charIndex, 0)
     charIndex
   }
-  def get_line_stream_uni(state: VMState, streamId: Int, buf: Int, len: Int): Int = {
+  def get_line_stream_uni(state: VMState, streamId: Int, buf: Int,
+                          len: Int): Int = {
     var charIndex = 0
     var continueLoop = true
     while (charIndex < len - 1 && continueLoop) {
@@ -266,10 +289,12 @@ class Glk(val eventManager: EventManager) {
   }
   
   def put_buffer_stream(state: VMState, streamId: Int, buf: Int, len: Int) {
-    for (i <- 0 until len) put_char_stream(streamId, state.memByteAt(buf + i).toChar)
+    for (i <- 0 until len)
+      put_char_stream(streamId, state.memByteAt(buf + i).toChar)
   }
   def put_buffer_stream_uni(state: VMState, streamId: Int, buf: Int, len: Int) {
-    for (i <- 0 until len) put_char_stream_uni(streamId, state.memIntAt(buf + i * 4))
+    for (i <- 0 until len)
+      put_char_stream_uni(streamId, state.memIntAt(buf + i * 4))
   }
   def put_char_stream(streamId: Int, c: Char)     = ioSystem.putChar(streamId, c)
   def put_char_stream_uni(streamId: Int, c: Int)  = ioSystem.putCharUni(streamId, c)
@@ -292,7 +317,8 @@ class Glk(val eventManager: EventManager) {
     }
   }
 
-  def stream_close(streamId: Int): GlkStreamCloseStruct = ioSystem.closeStream(streamId)
+  def stream_close(streamId: Int): GlkStreamCloseStruct =
+    ioSystem.closeStream(streamId)
   def stream_get_current: Int = ioSystem.currentStreamId
   def stream_get_position(streamId: Int) = ioSystem.getPosition(streamId)
   def stream_get_rock(streamId: Int) = ioSystem.getRock(streamId)
@@ -448,10 +474,12 @@ class Glk(val eventManager: EventManager) {
   def schannel_play(channelId: Int, soundNum: Int): Int = {
     soundSystem.play(channelId, soundNum, 1, 0)
   }
-  def schannel_play_ext(channelId: Int, soundNum: Int, repeats: Int, notify: Int): Int = {
+  def schannel_play_ext(channelId: Int, soundNum: Int, repeats: Int,
+                        notify: Int): Int = {
     soundSystem.play(channelId, soundNum, repeats, notify)
   }
-  def schannel_set_volume(channelId: Int, volume: Int) = soundSystem.setVolume(channelId, volume)
+  def schannel_set_volume(channelId: Int, volume: Int) =
+    soundSystem.setVolume(channelId, volume)
   def schannel_stop(channelId: Int) = soundSystem.stopChannel(channelId)
   def sound_load_hint(soundNum: Int, flag: Int) {
     // ignored

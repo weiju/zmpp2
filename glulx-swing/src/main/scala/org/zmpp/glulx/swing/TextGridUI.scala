@@ -142,13 +142,15 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   override def _setStyle(style: Int) {
     if (isHyperlinkMode) return // ignore style in hyperlink mode
     import StyleHintType._
-    //logger.info("Setting TextGrid Style to: %s".format(StyleType(style).toString))
     flush
     val attrs = getInputAttributes
-    val isBold = if (glkWindow.styleHints.get(style, Weight.id) == 1) true else false
-    val isItalic = if (glkWindow.styleHints.get(style, Oblique.id) == 1) true else false
+    val isBold =
+      if (glkWindow.styleHints.get(style, Weight.id) == 1) true else false
+    val isItalic =
+      if (glkWindow.styleHints.get(style, Oblique.id) == 1) true else false
 
-    val isReverse = if (glkWindow.styleHints.get(style, ReverseColor.id) == 1) true else false
+    val isReverse =
+      if (glkWindow.styleHints.get(style, ReverseColor.id) == 1) true else false
     var backColor = glkWindow.styleHints.get(style, BackColor.id)
     var textColor = glkWindow.styleHints.get(style, TextColor.id)
 
@@ -182,7 +184,8 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
       val pos = viewToModel(new java.awt.Point(event.getPoint))
       val y = pos / numCols
       val x = pos % numCols
-      logger.info("mouseClicked, POS = %d MAPPED TO X = %d Y = %d".format(pos, x, y))
+      logger.info("mouseClicked, POS = %d MAPPED TO X = %d Y = %d".format(pos,
+                                                                          x, y))
       resumeWithMouseInput(x, y)
     }
   }

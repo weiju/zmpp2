@@ -92,7 +92,8 @@ class GlkIOSystem {
     new GlkStreamCloseStruct(stream.writeCount, stream.readCount)
   }
   def getPosition(id: Int) = streamWithId(id).position
-  def setPosition(id: Int, pos: Int, seekmode: Int) = streamWithId(id).seek(pos, seekmode)
+  def setPosition(id: Int, pos: Int, seekmode: Int) =
+    streamWithId(id).seek(pos, seekmode)
   def putChar(id: Int, c: Char) = streamWithId(id).putChar(c)
   def putCharUni(id: Int, c: Int) = streamWithId(id).putCharUni(c)
   
@@ -154,7 +155,10 @@ abstract class MemoryStream(val state: VMState, val address: Int, val size: Int,
     }
   }
 
-  def close { }
+  def close {
+    logger.info("Closing memory stream, WRITE COUNT = %d, READ COUNT = %d".format(
+                writeCount, readCount))
+  }
   
   def putCharGeneric(c: Int) {
     if (address != 0 && size > 0 && !positionExceedsSize) {
@@ -190,11 +194,13 @@ abstract class MemoryStream(val state: VMState, val address: Int, val size: Int,
         seekToEnd
         position += newpos
       case _                 =>
-        throw new IllegalArgumentException("Unknown file seek mode: %d".format(seekmode))
+        throw new IllegalArgumentException("Unknown file seek mode: %d".format(
+          seekmode))
     }
   }
   def setHyperlink(linkval: Int) {
-    throw new UnsupportedOperationException("setHyperlink not supported on memory stream")
+    throw new UnsupportedOperationException(
+      "setHyperlink not supported on memory stream")
   }
 }
 
@@ -202,7 +208,8 @@ class MemoryStream8(state: VMState, address: Int, size: Int, fmode: Int, rock: I
 extends MemoryStream(state, address, size, fmode, rock) {
   protected def indexToPos(index : Int) = index
   private def bufferAddress = address + position
-  protected def setCurrentChar(value: Int) = state.setMemByteAt(bufferAddress, value)
+  protected def setCurrentChar(value: Int) = state.setMemByteAt(bufferAddress,
+                                                                value)
   protected def currentChar = state.memByteAt(bufferAddress)
 
   override def putCharUni(c: Int) {
@@ -210,7 +217,8 @@ extends MemoryStream(state, address, size, fmode, rock) {
     else putChar(c.asInstanceOf[Char])
   }
   override def getCharUni: Int = {
-    throw new UnsupportedOperationException("getCharUni not supported on MemoryStream8")
+    throw new UnsupportedOperationException(
+      "getCharUni not supported on MemoryStream8")
   }
 }
 
@@ -269,7 +277,8 @@ class DummyStream extends GlkStream {
     throw new UnsupportedOperationException("DummyStream does not support getChar")
   }
   def getCharUni = {
-    throw new UnsupportedOperationException("DummyStream does not support getCharUni")
+    throw new UnsupportedOperationException(
+      "DummyStream does not support getCharUni")
   }
 }
 
