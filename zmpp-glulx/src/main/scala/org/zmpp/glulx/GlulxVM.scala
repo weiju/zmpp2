@@ -73,14 +73,14 @@ class GlulxVMState extends VMState {
   var runState = VMRunStates.Running
   
   def init(story: Memory) {
-    _story    = story
-    _header   = new GlulxStoryHeader(story)
-    stack    = new Stack(_header.stacksize)
-    _memheap  = new MemoryHeap(_header.endmem)
-    pc        = 0
-    fp        = 0
-    runState  = VMRunStates.Running
-    setExtendedMem(header.endmem - header.extstart)
+    _story     = story
+    _header    = new GlulxStoryHeader(story)
+    stack      = new Stack(_header.stacksize)
+    _memheap   = new MemoryHeap(_header.endmem)
+    pc         = 0
+    fp         = 0
+    runState   = VMRunStates.Running
+    memsize    = header.endmem
     logger.info("VM INITIALIZED WITH EXT_START: %d END_MEM: %d".format(
                 header.extstart, header.endmem))
   }
@@ -90,12 +90,12 @@ class GlulxVMState extends VMState {
                 protectionStart, protectionLength))
     logger.info("HEAP ACTIVE: %b EXT_START: $%02x EXT_END: $%02x".format(
                 _memheap.active, _header.extstart, _extEnd))
-    stack    = new Stack(_header.stacksize)
-    _memheap  = new MemoryHeap(_header.endmem)
-    setExtendedMem(header.endmem - header.extstart)
-    pc        = 0
-    fp        = 0
-    runState  = VMRunStates.Running
+    stack      = new Stack(_header.stacksize)
+    _memheap   = new MemoryHeap(_header.endmem)
+    memsize    = header.endmem
+    pc         = 0
+    fp         = 0
+    runState   = VMRunStates.Running
     
     // reset bytes in ram
     val ramsize = _header.extstart - _header.ramstart
@@ -120,7 +120,7 @@ class GlulxVMState extends VMState {
     }
   }
 
-  def setExtendedMem(size: Int) {
+  private def _setExtendedMem(size: Int) {
     val currentExtSize = if (_extMem == null) 0 else _extEnd - header.extstart
     // note: we actually do not need to "shrink" extended memory, we only
     // need to extend it
@@ -136,9 +136,10 @@ class GlulxVMState extends VMState {
     _extEnd = header.extstart + size
   }
 
-  def story  = _story
-  def header = _header
+  def story        = _story
+  def header       = _header
   def heapIsActive = _memheap.active
+  def ramSize      = memsize - header.ramstart
 
   private def inStoryMem(addr: Int) = addr < header.extstart
   private def inExtMem(addr: Int) =
@@ -252,7 +253,6 @@ class GlulxVMState extends VMState {
     else                       _memheap.setIntAt(addr, value)
   }
 
-  def ramSize = _extEnd - header.ramstart
   def ramByteAt    (address : Int) : Int =
     memByteAt(header.ramstart + address)
   def setRamByteAt (address : Int, value : Int) =
@@ -285,7 +285,7 @@ class GlulxVMState extends VMState {
     for (i <- 0 until numBytes) setMemByteAt(addr + i, 0)
   }
   def memsize   = if (_memheap.active) _memheap.maxAddress else _extEnd
-  def memsize_=(newSize: Int) = setExtendedMem(newSize - header.extstart)
+  def memsize_=(newSize: Int) = _setExtendedMem(newSize - header.extstart)
   def heapStart = if (_memheap.active) _extEnd else 0
 
   // Pushes a call stub, given an operand

@@ -70,15 +70,22 @@ class SaveGameLoader(glk: Glk, streamId: Int, vmState: GlulxVMState,
   }
   private def isQuetzalFile(formChunk: FormChunk) = formChunk.subId == "IFZS"
   private def readCMemChunk(cmemChunk: Chunk) {
-    var offset = Chunk.HeaderLength
-    logger.info("Compressed memory, SIZE = %d".format(cmemChunk.size))
+    logger.info("Compressed memory, CHUNKSIZE = %d".format(cmemChunk.size))
     var ramAddress = 0
-    val chunkSize = cmemChunk.size + Chunk.HeaderLength
-    while (offset < chunkSize) {
+    val chunkEnd = cmemChunk.dataStart + cmemChunk.size
+    var offset = cmemChunk.dataStart
+
+    // read new memory size and adjust VM state's memory size
+    val memsize = cmemChunk.memory.intAt(offset)
+    logger.info("NEW MEMSIZE = %d [OFFSET = %d]".format(memsize, offset))
+    vmState.memsize = cmemChunk.memory.intAt(offset)
+    offset += 4
+
+    while (offset < chunkEnd) {
       val b = cmemChunk.memory.byteAt(offset)
       offset += 1
       if (b == 0) {
-        if (offset < chunkSize) {
+        if (offset < chunkEnd) {
           val len = cmemChunk.memory.byteAt(offset) + 1
           offset += 1        
           ramAddress += len
@@ -94,10 +101,12 @@ class SaveGameLoader(glk: Glk, streamId: Int, vmState: GlulxVMState,
   }
   private def readUMemChunk(umemChunk: Chunk) {
     logger.info("Uncompressed memory, SIZE = %d".format(umemChunk.size))
-    var offset = Chunk.HeaderLength
+    var offset = umemChunk.dataStart
     var ramAddress = 0
-    val chunkSize = umemChunk.size + Chunk.HeaderLength
-    while (offset < chunkSize) {
+    val chunkEnd = umemChunk.dataStart + umemChunk.size
+    vmState.memsize = umemChunk.memory.intAt(offset)
+    offset += 4
+    while (offset < chunkEnd) {
       vmState.setRamByteAt(ramAddress, umemChunk.memory.byteAt(offset))
       ramAddress += 1
       offset += 1
@@ -107,8 +116,6 @@ class SaveGameLoader(glk: Glk, streamId: Int, vmState: GlulxVMState,
   private def readStksChunk(stksChunk: Chunk) {
     val stackSize = stksChunk.size
     logger.info("Uncompressed memory, SIZE = %d".format(stackSize))
-    var offset = Chunk.HeaderLength
-    var ramAddress = 0
     val stackValues = new Array[Byte](stackSize)
     stksChunk.memory.copyBytesTo(stackValues, stksChunk.dataStart, stackSize)
     vmState.stack.initFromByteArray(stackValues)
@@ -194,16 +201,19 @@ class SaveGameWriter(glk: Glk, streamId: Int, vmState: GlulxVMState,
   }
 
   private def writeUMemChunk {
-    val ramSize = vmState.ramSize
-    val destRam = new Array[Byte](ramSize)
+    val ramSize   = vmState.ramSize
+    val chunkSize = ramSize + 4
+    val destRam   = new Array[Byte](ramSize)
     writeByteArray("UMem".getBytes)
-    writeInt(ramSize)
+    writeInt(chunkSize)
+    writeInt(vmState.memsize)
     for (i <- 0 until ramSize) {
       glk.put_char_stream(streamId,
                           vmState.ramByteAt(i).asInstanceOf[Char])
     }
-    bytesWritten += ramSize + 8
+    bytesWritten += ramSize + 12
   }
+
   private def writeStksChunk {
     vmState.pushCallStub(storeLocation)
     val stackValues = vmState.stack.cloneValues

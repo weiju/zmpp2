@@ -23,7 +23,7 @@ how I think an IF VM should look like on the Java Virtual Machine:
 
 Current features:
 
-- Glulx 3.1.1 core almost feature complete (see known issues)
+- Glulx 3.1.1 supported
 - Glk 0.7.0 almost feature complete (see known issues)
 - run as applet or application (Java SE)
 - runs a number of games already
@@ -36,7 +36,6 @@ Current features:
 
 Known issues:
 
-- save/restore not implemented yet
 - a handful Glk functions still missing
 - no other supported Java environments yet
 - the Z-Machine core in this repository is very rudimentary, 1.x is still
