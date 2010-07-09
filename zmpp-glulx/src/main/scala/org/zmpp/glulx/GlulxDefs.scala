@@ -428,6 +428,7 @@ object GlulxGestalt {
  * makes sense, to keep things in a simpler data structure for undo and
  * similar things.
  */
-class Snapshot(val ram: Array[Byte], val stack: Array[Byte], val extMem: Array[Byte]) {
+class Snapshot(val ram: Array[Byte], val stack: Array[Byte],
+               val extMem: Array[Byte]) {
 }
 

@@ -65,7 +65,8 @@ trait Memory {
   def copyBytesTo(dest: Array[Byte], srcOffset: Int, numBytes: Int)
   def copyBytesTo(dstOffset: Int, srcOffset: Int, numBytes: Int)
   
-  def copyBytesFrom(src: Array[Byte], srcOffset: Int, destOffset: Int, numBytes: Int)
+  def copyBytesFrom(src: Array[Byte], srcOffset: Int, destOffset: Int,
+                    numBytes: Int)
 }
 
 trait VMState {
@@ -91,4 +92,3 @@ trait VMState {
   def topInt : Int
   def popInt : Int
 }
-

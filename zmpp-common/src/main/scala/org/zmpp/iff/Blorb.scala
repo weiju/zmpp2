@@ -50,7 +50,8 @@ class ResourceInfo(val usage: Int, val number: Int, val start: Int) {
     case UsageTypes.Snd  => ResourceTypes.Sound
     case UsageTypes.Exec => ResourceTypes.Exec
     case _               =>
-      throw new IllegalArgumentException("Unknown usage type: %04x\n".format(usage))
+      throw new IllegalArgumentException("Unknown usage type: %04x\n".format(
+        usage))
   }
   def isPicture = resourceType == ResourceTypes.Picture
   def isSound   = resourceType == ResourceTypes.Sound
@@ -84,7 +85,8 @@ class BlorbData(val formChunk: FormChunk) {
                       i * BlorbData.ResourceIndexEntrySize
       val entry = new ResourceInfo(ridxChunk.intAt(entryAddr),
                                    ridxChunk.intAt(entryAddr + Types.SizeInt),
-                                   ridxChunk.intAt(entryAddr + 2 * Types.SizeInt))
+                                   ridxChunk.intAt(entryAddr +
+                                                   2 * Types.SizeInt))
       result ::= entry
     }
     result.reverse
@@ -97,21 +99,22 @@ class BlorbData(val formChunk: FormChunk) {
     else list.head
   }
   
-  def execResource(num: Int): ResourceInfo = resourceWithNum(num,
-                                                             ResourceTypes.Exec)
-  def soundResource(num: Int): ResourceInfo = resourceWithNum(num,
-                                                              ResourceTypes.Sound)
+  def execResource(num: Int): ResourceInfo =
+    resourceWithNum(num, ResourceTypes.Exec)
+  def soundResource(num: Int): ResourceInfo =
+    resourceWithNum(num, ResourceTypes.Sound)
   def pictureResource(num: Int): ResourceInfo =
     resourceWithNum(num, ResourceTypes.Picture)
   
-  private def inputStreamForResource(num: Int, resourceType: Int): InputStream = {
+  private def inputStreamForResource(num: Int,
+                                     resourceType: Int): InputStream = {
     val resource = resourceWithNum(num, resourceType)
     val chunk = formChunk.chunkAtAddress(resource.start)
     if (resourceType == ResourceTypes.Sound && chunk.id == "FORM") {
-      //logger.info("INPUTSTREAM FOR AIFF AT RESNUM: %d".format(num))
       new MemoryInputStream(formChunk.memory, resource.start, chunk.size)
     } else {
-      new MemoryInputStream(formChunk.memory, resource.start + Chunk.HeaderLength,
+      new MemoryInputStream(formChunk.memory,
+                            resource.start + Chunk.HeaderLength,
                             chunk.size)
     }
   }
@@ -126,7 +129,8 @@ class BlorbData(val formChunk: FormChunk) {
 
   def listResources {
     for (res <- resources) {
-      logger.info("res #%d, usage: %02x start: %02x".format(res.number, res.usage,
+      logger.info("res #%d, usage: %02x start: %02x".format(res.number,
+                                                            res.usage,
                                                             res.start))
       if (res.resourceType == ResourceTypes.Sound) {        
         val chunk = formChunk.chunkAtAddress(res.start)

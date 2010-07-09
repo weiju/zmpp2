@@ -40,7 +40,7 @@ import org.zmpp.glk._
  ****
  **** VM state
  ****
- ****************************************************************************/
+ ***************************************************************************/
 
 object GlulxVMState {
   val OffsetLocalsPos     = 4
@@ -52,8 +52,8 @@ object GlulxVMState {
  * - story memory
  * - RAM access
  * - stack access
- *   - local variables
- *   - functions
+ *  - local variables
+ *  - functions
  */
 class GlulxVMState extends VMState {
   val logger = Logger.getLogger("glulx")
@@ -252,7 +252,9 @@ class GlulxVMState extends VMState {
     else                       _memheap.setIntAt(addr, value)
   }
 
-  def ramByteAt    (address : Int) : Int = memByteAt(header.ramstart + address)
+  def ramSize = _extEnd - header.ramstart
+  def ramByteAt    (address : Int) : Int =
+    memByteAt(header.ramstart + address)
   def setRamByteAt (address : Int, value : Int) =
     setMemByteAt(header.ramstart + address, value)
   def ramShortAt   (address : Int) : Int =
@@ -260,7 +262,9 @@ class GlulxVMState extends VMState {
   def setRamShortAt(address : Int, value : Int) =
     setMemShortAt(header.ramstart + address, value)
   def ramIntAt     (address : Int) : Int = memIntAt(header.ramstart + address)
-  def setRamIntAt  (address : Int, value : Int) = setMemIntAt(header.ramstart + address, value)
+  def setRamIntAt  (address : Int, value : Int) =
+    setMemIntAt(header.ramstart + address, value)
+
   def malloc(size: Int) = _memheap.allocate(size)
   def mfree(addr: Int)  = _memheap.free(addr)
   
@@ -449,7 +453,6 @@ class GlulxVMState extends VMState {
   // do not implement if for now  
   def verify: Int = 0
 
-  // TOSTRING  
   override def toString = {
     val builder = new StringBuilder
     builder.append("pc = $%02x stackframe = $%02x\n".format(pc, fp))
@@ -487,11 +490,9 @@ class GlulxVMState extends VMState {
   // ***********************************************************************
   // ***** State Serialization
   // *************************************************************
-  def readSnapshot(snapshot: Snapshot, protectionStart: Int, protectionLength: Int) {
+  def readSnapshot(snapshot: Snapshot, protectionStart: Int,
+                   protectionLength: Int) {
     val ramsize = header.extstart - header.ramstart
-    /*
-    _story.copyBytesFrom(snapshot.ram, 0, header.ramstart, ramsize)
-    */
     protectedMemRestore(snapshot.ram, 0, _header.ramstart, ramsize,
                         protectionStart, protectionLength)
     stack.initFromByteArray(snapshot.stack)
@@ -501,7 +502,8 @@ class GlulxVMState extends VMState {
   
   def createSnapshot(storeLocation: Operand): Snapshot = {
     val ram         = cloneRam
-    logger.info("CREATE_SNAPSHOT, PC = $%02x FP = %d SP: %d".format(pc, fp, sp))
+    logger.info("CREATE_SNAPSHOT, PC = $%02x FP = %d SP: %d".format(pc,
+                                                                    fp, sp))
     pushCallStub(storeLocation)
     val stackValues = stack.cloneValues
     val extmem: Array[Byte] = null
@@ -1332,9 +1334,10 @@ class GlulxVM {
       case Restart => restart
       case Restore =>
         val streamId = getOperand(0)
-        logger.warning(
-          "@restore (streamId = %d) not yet supported".format(streamId))
-        storeAtOperand(1, 1) // fail for now
+        val loader = new SaveGameLoader(_glk, streamId, state, _originalRam)
+        if (loader.loadGame) {
+          state.popCallStubThrow(-1)
+        } else storeAtOperand(1, 1) // fail for now
       case RestoreUndo =>
         if (_undoSnapshots != Nil) {
           state.readSnapshot(_undoSnapshots.head, _protectionStart,
@@ -1344,14 +1347,17 @@ class GlulxVM {
         } else {
           storeAtOperand(0, 1) // fail
         }
-        logger.info("RESTORED WITH PC: %02x AND FP: %d SP: %d".format(state.pc,
-                                                                      state.fp,
-                                                                      state.sp))
+        logger.info(
+          "RESTORED WITH PC: %02x AND FP: %d SP: %d".format(state.pc,
+                                                            state.fp,
+                                                            state.sp))
       case Return => popCallStub(getOperand(0))
       case Save =>
         val streamId = getOperand(0)
-        logger.warning("@save (streamId = %d) not yet supported".format(streamId))
-        storeAtOperand(1, 1) // fail for now
+        val writer = new SaveGameWriter(_glk, streamId, state, _operands(1))
+        val result = writer.writeGameFile
+        if (result) storeAtOperand(1, 0)
+        else storeAtOperand(1, 1)
       case SaveUndo =>
         _undoSnapshots ::= state.createSnapshot(_operands(0))
         storeAtOperand(0, 0) // Always say SUCCEED

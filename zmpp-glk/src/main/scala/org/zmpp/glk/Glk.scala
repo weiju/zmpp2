@@ -248,7 +248,8 @@ class Glk(val eventManager: EventManager) {
     }
     charIndex
   }
-  def get_buffer_stream_uni(state: VMState, streamId: Int, buf: Int, len: Int): Int = {
+  def get_buffer_stream_uni(state: VMState, streamId: Int, buf: Int,
+                            len: Int): Int = {
     var charIndex = 0
     while (charIndex < len) {
       val c = get_char_stream_uni(streamId)
@@ -390,8 +391,6 @@ class Glk(val eventManager: EventManager) {
     windowSystem.open(split, method, size, wintype, rock)
   }
   def window_set_arrangement(winId: Int, method: Int, size: Int, keywin: Int) {
-    //printf("window_set_arrangement win: %d, method: %d, size: %d, keywin: %d\n",
-    //  winId, method, size, keywin)
     windowSystem.setArrangement(winId, method, size, keywin)
   }
 

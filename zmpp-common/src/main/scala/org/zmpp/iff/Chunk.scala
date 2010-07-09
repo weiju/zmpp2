@@ -40,10 +40,11 @@ object Chunk {
   val HeaderLength   = IdLength + SizeWordLength
 }
 trait Chunk {
-  def id      : String
-  def size    : Int
-  def memory  : Memory
-  def address : Int
+  def id        : String
+  def size      : Int
+  def memory    : Memory
+  def address   : Int
+  def dataStart : Int
 }
 
 protected class DefaultChunk(val memory: Memory, val address: Int) extends Chunk {
@@ -105,6 +106,10 @@ class DefaultFormChunk(_mem: Memory) extends DefaultChunk(_mem, 0) with FormChun
     chunkAtAddress(chunkAddr).size
   }
 
+  def subChunk(chunkId: String): Chunk = {
+    if (hasSubChunk(chunkId)) chunkAtAddress(subChunkAddress(chunkId))
+    else null
+  }
   def chunkDataForId(chunkId: String): Memory = {
     val subChunk = chunkAtAddress(subChunkAddress(chunkId))
     new DefaultMemory(_mem.buffer, 0, subChunk.size, subChunk.dataStart)
