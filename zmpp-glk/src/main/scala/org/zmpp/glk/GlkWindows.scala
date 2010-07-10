@@ -279,11 +279,11 @@ class GlkWindowSystem {
     val window = windowWithId(winId)
     if (window != null) {
       window.wintype match {
-        case GlkWindowType.TextBuffer => 0
+        case GlkWindowType.TextBuffer =>
           val value = _textbufferStyleHints.get(style, hint)
           if (resultPtr != 0) state.setMemIntAt(resultPtr, value)
           return 1
-        case GlkWindowType.TextGrid   => 0
+        case GlkWindowType.TextGrid   =>
           val value = _textgridStyleHints.get(style, hint)
           if (resultPtr != 0) state.setMemIntAt(resultPtr, value)
           return 1
@@ -291,6 +291,19 @@ class GlkWindowSystem {
       }
     }
     0
+  }
+  def styleDistinguish(winId: Int, style1: Int, style2: Int): Int = {
+    val window = windowWithId(winId)
+    if (window != null) {
+      window.wintype match {
+        case GlkWindowType.TextBuffer =>
+          return if (_textbufferStyleHints.distinguishable(style1, style2)) 1 else 0
+        case GlkWindowType.TextGrid   =>
+          return if (_textgridStyleHints.distinguishable(style1, style2)) 1 else 0
+        case _ => // do nothing
+      }
+    }
+    return 0
   }
 
   def rootWindowId = if (_rootWindow == null) 0 else _rootWindow.id

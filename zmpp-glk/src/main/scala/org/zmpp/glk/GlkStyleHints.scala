@@ -220,13 +220,32 @@ class StyleHints {
       }
     }
   }
-  def get(styleNum: Int, hintNum: Int): Int = _hints(styleNum)(hintNum)
+  def get(styleNum: Int, hintNum: Int): Int = {
+    if (styleNum >= 0 && styleNum < StyleType.Num &&
+        hintNum >= 0 && hintNum < StyleHintType.Num) {
+      _hints(styleNum)(hintNum)
+    } else -1
+  }
   def set(styleNum: Int, hintNum: Int, value: Int) {
-    _hints(styleNum)(hintNum) = value
+    if (styleNum >= 0 && styleNum < StyleType.Num &&
+        hintNum >= 0 && hintNum < StyleHintType.Num) {
+      _hints(styleNum)(hintNum) = value
+    }
   }
   def reset(styleNum: Int, hintNum: Int) {
-    _hints(styleNum)(hintNum) = StyleHints.Defaults(StyleType(styleNum))(StyleHintType(hintNum))
-  }  
+    _hints(styleNum)(hintNum) =
+      StyleHints.Defaults(StyleType(styleNum))(StyleHintType(hintNum))
+  }
+
+  def distinguishable(style1: Int, style2: Int): Boolean = {
+    if (style1 == style2) false
+    else if (style1 < 0 || style2 < 0 ||
+             style1 >= StyleType.Num || style2 >= StyleType.Num) false
+    else {
+      for (hintNum <- 0 until StyleHintType.Num) {
+        if (_hints(style1)(hintNum) != _hints(style2)(hintNum)) return true
+      }
+      false
+    }
+  }
 }
-
-

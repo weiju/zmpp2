@@ -136,7 +136,8 @@ class Glk(val eventManager: EventManager) {
                                numchars: Int): Int = {
     val lowerCased = bufferToJavaString(state, buf, numchars).toLowerCase
     val numResultChars = java.lang.Math.min(lowerCased.length, len)
-    logger.info("buffer_to_lower_case_uni, buf = %02x, len = %d numchars = %d numResultChars = %d".format(
+    logger.info("buffer_to_lower_case_uni, buf = %02x, len = %d " +
+                "numchars = %d numResultChars = %d".format(
                 buf, len, numchars, lowerCased.length))
     for (i <- 0 until numResultChars) {
       val addr = buf + i * 4
@@ -148,7 +149,8 @@ class Glk(val eventManager: EventManager) {
                                numchars: Int): Int = {
     val upperCased = bufferToJavaString(state, buf, numchars).toUpperCase
     val numResultChars = java.lang.Math.min(upperCased.length, len)
-    logger.info("buffer_to_upper_case_uni, buf = %02x, len = %d numchars = %d numResultChars = %d".format(
+    logger.info("buffer_to_upper_case_uni, buf = %02x, len = %d " + 
+                "numchars = %d numResultChars = %d".format(
                 buf, len, numchars, upperCased.length))
     for (i <- 0 until numResultChars) {
       val addr = buf + i * 4
@@ -158,7 +160,7 @@ class Glk(val eventManager: EventManager) {
   }
   def buffer_to_title_case_uni(state: VMState, buf: Int, len: Int, numchars: Int,
                                lowerrest: Int): Int = {
-    // TODO
+    // TODO: Apply 32-bit code point for the first character
     state.setMemIntAt(buf, Character.toUpperCase(state.memIntAt(buf).toChar))
     if (lowerrest != 0) {
       for (i <- 1 until numchars) {
@@ -201,10 +203,7 @@ class Glk(val eventManager: EventManager) {
   def set_style_stream(streamId: Int, value: Int) = ioSystem.setStyle(streamId,
                                                                       value)
   def style_distinguish(winId: Int, style1: Int, style2: Int): Int = {
-    // we assume that different styles are always distinguishable
-    // That's not entirely true of course. A future implementation should
-    // compare the hints (TODO)
-    if (style1 == style2) 0 else 1
+    windowSystem.styleDistinguish(winId, style1, style2)
   }
   def style_measure(state: VMState, winId: Int, style: Int, hint: Int,
                     resultPtr: Int): Int = {
