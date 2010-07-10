@@ -31,6 +31,7 @@ package org.zmpp.glk
 import java.io.File
 import java.util.logging._
 
+import org.zmpp.base._
 import org.zmpp.iff._
 
 /**
@@ -273,6 +274,24 @@ class GlkWindowSystem {
       case _ => // do nothing
     }
   }
+  def styleMeasure(state: VMState, winId: Int, style: Int, hint: Int,
+                   resultPtr: Int): Int = {
+    val window = windowWithId(winId)
+    if (window != null) {
+      window.wintype match {
+        case GlkWindowType.TextBuffer => 0
+          val value = _textbufferStyleHints.get(style, hint)
+          if (resultPtr != 0) state.setMemIntAt(resultPtr, value)
+          return 1
+        case GlkWindowType.TextGrid   => 0
+          val value = _textgridStyleHints.get(style, hint)
+          if (resultPtr != 0) state.setMemIntAt(resultPtr, value)
+          return 1
+        case _ => // do nothing
+      }
+    }
+    0
+  }
 
   def rootWindowId = if (_rootWindow == null) 0 else _rootWindow.id
   def clearWindow(winId: Int) = windowWithId(winId).ui.clear
@@ -403,6 +422,18 @@ class GlkWindowSystem {
       pair.keyWindow.size = size
       screenUI.updateLayout(_rootWindow)
     }
+  }
+
+  def getArrangement(state: VMState, winId: Int, methodPtr: Int, sizePtr: Int,
+                     keyWinPtr: Int) {
+    val pair = windowWithId(winId).asInstanceOf[GlkPairWindow]
+    state.setMemIntAt(methodPtr, pair.method)
+    state.setMemIntAt(sizePtr, pair.keyWindow.size)
+    state.setMemIntAt(keyWinPtr, pair.keyWindow.id)
+  }
+
+  def flowBreak(winId: Int) {
+    logger.info("WINDOW.FLOW_BREAK, WINDOW = %d (NOT IMPLEMENTED)".format(winId))
   }
   
   def outputStreamForWindow(winId: Int) = windowWithId(winId).outputStream

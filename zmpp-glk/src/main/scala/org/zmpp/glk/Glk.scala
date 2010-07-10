@@ -89,9 +89,12 @@ class Glk(val eventManager: EventManager) {
     logger.warning("glk_set_interrupt_handler() has no effect in ZMPP/Glk")
   }
   def gestalt(selector: GestaltSelector.Value, arg: Int) : Int = {
-    //logger.info("glk_gestalt(%s, %d)".format(selector.toString, arg))
+    gestalt_ext(null, selector, arg, 0, 0)
+  }
+  def gestalt_ext(state: VMState, selector: GestaltSelector.Value, arg: Int,
+                  arrPtr: Int, arrlen: Int): Int = {
     import GestaltSelector._
-    selector match {
+    val  result = selector match {
       case Version              => 0x00000700
       case CharInput            => 1
       case LineInput            => 1
@@ -111,6 +114,11 @@ class Glk(val eventManager: EventManager) {
       case _                    =>
         throw new IllegalArgumentException("unknown selector: " + selector.toString)
     }
+    if (arrPtr != 0 && arrlen > 0) {
+      // no support for array arguments for now.
+      logger.info("Array argument for glk_gestalt_ext() set, not supported")
+    }
+    result
   }
 
   def char_to_lower(c: Char): Char = Character.toLowerCase(c)
@@ -198,6 +206,11 @@ class Glk(val eventManager: EventManager) {
     // compare the hints (TODO)
     if (style1 == style2) 0 else 1
   }
+  def style_measure(state: VMState, winId: Int, style: Int, hint: Int,
+                    resultPtr: Int): Int = {
+    windowSystem.styleMeasure(state, winId, style, hint, resultPtr)
+  }
+
   def stylehint_set(wintype: Int, style: Int, hint: Int, value: Int) {
     windowSystem.setStyleHint(GlkWindowType(wintype), style, hint, value)
   }
@@ -393,6 +406,13 @@ class Glk(val eventManager: EventManager) {
   def window_set_arrangement(winId: Int, method: Int, size: Int, keywin: Int) {
     windowSystem.setArrangement(winId, method, size, keywin)
   }
+  def window_get_arrangement(state: VMState, winId: Int, methodPtr: Int,
+                             sizePtr: Int, keyWinPtr: Int) {
+    windowSystem.getArrangement(state, winId, methodPtr, sizePtr, keyWinPtr)
+  }
+  def window_flow_break(winId: Int) {
+    windowSystem.flowBreak(winId)
+  }
 
   // Events
   def cancel_char_event(winId: Int) {
@@ -465,7 +485,7 @@ class Glk(val eventManager: EventManager) {
   def window_set_background_color(winId: Int, color: Int) {
     windowSystem.setBackgroundColor(winId, color)
   }
-  
+
   // hyperlinks
   def set_hyperlink(linkval: Int) = ioSystem.setHyperlink(linkval)
   def set_hyperlink_stream(streamId: Int, linkval: Int) {

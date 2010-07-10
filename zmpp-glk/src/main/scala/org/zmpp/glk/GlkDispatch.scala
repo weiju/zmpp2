@@ -230,7 +230,7 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     glk.gestalt(GestaltSelector(args(0)), args(1))
   }
   private def _gestalt_ext(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_gestalt_ext not supported yet")
+    glk.gestalt_ext(_state, GestaltSelector(args(0)), args(1), args(2), args(3))
   }
   private def _get_buffer_stream(args: Array[Int]): Int = {
     glk.get_buffer_stream(_state, args(0), args(1), args(2))
@@ -444,7 +444,7 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     glk.style_distinguish(args(0), args(1), args(2))
   }
   private def _style_measure(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_style_measure not supported yet")
+    glk.style_measure(_state, args(0), args(1), args(2), args(3))
   }
   private def _stylehint_clear(args: Array[Int]): Int = {
     glk.stylehint_clear(args(0), args(1), args(2))
@@ -477,10 +477,12 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _window_flow_break(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_window_flow_break not supported yet")
+    glk.window_flow_break(args(0))
+    0
   }
   private def _window_get_arrangement(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_window_get_arrangement not supported yet")
+    glk.window_get_arrangement(_state, args(0), args(1), args(2), args(3))
+    0
   }
   private def _window_get_parent(args: Array[Int])  = glk.window_get_parent(args(0))
   private def _window_get_rock(args: Array[Int])    = glk.window_get_rock(args(0))
@@ -539,7 +541,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     val builder = new StringBuilder
     var c = _state.memByteAt(address)
     if (c != 0xe0) {
-      throw new IllegalArgumentException("only uncompressed C Strings allowed in Glk")
+      throw new IllegalArgumentException(
+        "only uncompressed C Strings allowed in Glk")
     }
     var offset = 1
     while (c != 0) {
@@ -547,7 +550,6 @@ class GlkDispatch(_state: VMState, glk: Glk) {
       builder.append(c.toChar)
       offset += 1
     }
-    //printf("CString at $%02x = '%s'\n", address, builder.toString)
     builder.toString
   }
 }
