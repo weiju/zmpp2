@@ -124,7 +124,8 @@ class GlkPairWindow(id: Int) extends GlkWindow(id, 0, 0) {
   def isTextGrid   = false
   def echoStream   = null
   def echoStream_=(stream: GlkStream) = {
-    throw new UnsupportedOperationException("Can not attach echo stream to pair window")
+    throw new UnsupportedOperationException(
+      "Can not attach echo stream to pair window")
   }
  
   override def isLeaf = false
@@ -158,16 +159,19 @@ extends GlkWindow(id, size, rock) {
     def rock = 0
     def close { }
     def readCount = {
-      throw new UnsupportedOperationException("WindowStream does not support readCount")
+      throw new UnsupportedOperationException(
+        "WindowStream does not support readCount")
     }
     def getChar = {
-      throw new UnsupportedOperationException("WindowStream does not support getChar")
+      throw new UnsupportedOperationException(
+        "WindowStream does not support getChar")
     }
     def getCharUni = {
-      throw new UnsupportedOperationException("WindowStream does not support getCharUni")
+      throw new UnsupportedOperationException(
+        "WindowStream does not support getCharUni")
     }
     def writeCount = _writeCount
-    def position   = 0 // TODO
+    def position   = 0
     def style = _style
     def style_=(value: Int) = {
       _style = value
@@ -256,7 +260,8 @@ class GlkWindowSystem {
       case _ => // do nothing
     }
   }
-  def setStyleHint(wintype: GlkWindowType.Value, styleNum: Int, hintNum: Int, value: Int) {
+  def setStyleHint(wintype: GlkWindowType.Value, styleNum: Int, hintNum: Int,
+                   value: Int) {
     wintype match {
       case GlkWindowType.TextBuffer =>
         _textbufferStyleHints.set(styleNum, hintNum, value)
@@ -303,7 +308,8 @@ class GlkWindowSystem {
       case PairWindow =>
         new GlkPairWindow(id)
       case _ =>
-        throw new IllegalArgumentException("unknown window type: %s\n".format(wintype.toString))
+        throw new IllegalArgumentException(
+          "unknown window type: %s\n".format(wintype.toString))
     }
     _ioSystem.registerStream(newWindow.outputStream)
     _windows ::= newWindow
@@ -361,7 +367,8 @@ class GlkWindowSystem {
     val windowToClose = windowWithId(winId)
     val writeCount = windowToClose.outputStream.writeCount
     
-    val winParentId = if (windowToClose.parent == null) -1 else windowToClose.parent.id
+    val winParentId = if (windowToClose.parent == null) -1
+                      else windowToClose.parent.id
 
     // remove window from its parent by replacing its parent with the sibling
     if (windowToClose.parent != null) {
@@ -389,7 +396,8 @@ class GlkWindowSystem {
     val pair = windowWithId(winId).asInstanceOf[GlkPairWindow]
     val keyWindow = if (keywinId == 0) pair.keyWindow else windowWithId(keywinId)
     if (keyWindow != pair.keyWindow) {
-      throw new IllegalArgumentException("keyWindow is not key window of specified pair !")
+      throw new IllegalArgumentException(
+        "keyWindow is not key window of specified pair !")
     } else {
       pair.method         = method
       pair.keyWindow.size = size

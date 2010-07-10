@@ -320,7 +320,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _request_char_event_uni(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_request_char_event_uni not supported yet")
+    glk.request_char_event_uni(args(0))
+    0
   }
   private def _request_hyperlink_event(args: Array[Int]): Int = {
     glk.request_hyperlink_event(args(0))
@@ -331,7 +332,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     0
   }
   private def _request_line_event_uni(args: Array[Int]): Int = {
-    throw new UnsupportedOperationException("@@glk_request_line_event_uni not supported yet")
+    glk.request_line_event_uni(args(0), args(1), args(2), args(3))
+    0
   }
   private def _request_mouse_event(args: Array[Int]): Int = {
     glk.request_mouse_event(args(0))

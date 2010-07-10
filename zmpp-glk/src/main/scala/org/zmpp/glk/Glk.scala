@@ -52,7 +52,7 @@ import org.zmpp.base._
  *
  * - GlkScreenUI (GlkWindowUI): implement the UI peers to represent windows and
  *   screens
- * - GlkSoundSystem TODO
+ * - GlkSoundSystem
  */
 class Glk(val eventManager: EventManager) {
   val logger = Logger.getLogger("glk")
@@ -413,7 +413,11 @@ class Glk(val eventManager: EventManager) {
   }
   def request_char_event(winId: Int) {
     logger.info("glk_request_char_event(%d)".format(winId))
-    eventManager.addCharInputRequest(winId)
+    eventManager.addCharInputRequest(winId, false)
+  }
+  def request_char_event_uni(winId: Int) {
+    logger.info("glk_request_char_event_uni(%d)".format(winId))
+    eventManager.addCharInputRequest(winId, true)
   }
   def request_hyperlink_event(winId: Int) {
     logger.info("glk_request_hyperlink_event(%d)".format(winId))
@@ -421,7 +425,11 @@ class Glk(val eventManager: EventManager) {
   }
   def request_line_event(winId: Int, buf: Int, maxlen: Int, initlen: Int) {
     logger.info("glk_request_line_event(%d)".format(winId))
-    eventManager.addLineInputRequest(winId, buf, maxlen, initlen)
+    eventManager.addLineInputRequest(winId, buf, maxlen, initlen, false)
+  }
+  def request_line_event_uni(winId: Int, buf: Int, maxlen: Int, initlen: Int) {
+    logger.info("glk_request_line_event_uni(%d)".format(winId))
+    eventManager.addLineInputRequest(winId, buf, maxlen, initlen, true)
   }
   def request_mouse_event(winId: Int) {
     logger.info("glk_request_mouse_event(%d)".format(winId))
