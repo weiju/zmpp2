@@ -156,8 +156,8 @@ abstract class MemoryStream(val state: VMState, val address: Int, val size: Int,
   }
 
   def close {
-    logger.info("Closing memory stream, WRITE COUNT = %d, READ COUNT = %d".format(
-                writeCount, readCount))
+    //logger.info("Closing memory stream, WRITE COUNT = %d, READ COUNT = %d".format(
+    //            writeCount, readCount))
   }
   
   def putCharGeneric(c: Int) {
