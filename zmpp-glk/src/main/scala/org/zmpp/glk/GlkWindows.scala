@@ -381,7 +381,11 @@ class GlkWindowSystem {
       else parent.child0.id
     }
   }
-  def getSize(winId: Int)     = windowWithId(winId).ui.glkSize
+  def getSize(winId: Int)     = {
+    val window = windowWithId(winId)
+    if (window != null) window.ui.glkSize
+    else new GlkDimension(0, 0)
+  }
   def getStreamId(winId: Int) = windowWithId(winId).outputStream.id
   def getType(winId: Int)     = windowWithId(winId).wintype
   def moveCursor(winId: Int, xpos: Int, ypos: Int) {
@@ -397,6 +401,7 @@ class GlkWindowSystem {
   }
   def closeWindow(winId: Int): Int = {
     val windowToClose = windowWithId(winId)
+    if (windowToClose == null) return 0
     val writeCount = windowToClose.outputStream.writeCount
     
     val winParentId = if (windowToClose.parent == null) -1
@@ -470,7 +475,12 @@ class GlkWindowSystem {
   }
   
   private def windowWithId(id: Int) = {
-    _windows.filter(window => window.id == id).head
+    val resultList = _windows.filter(window => window.id == id)
+    if (!resultList.isEmpty) resultList.head
+    else {
+      logger.warning("Window #%d not found in window list !!".format(id))
+      null
+    }
   }
   
   private def splitWindow(tosplit: GlkWindow, newWindow: GlkWindow,

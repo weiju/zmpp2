@@ -72,10 +72,13 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   
   def eventManager = screenUI.vm.eventManager
   
+  def setBackgroundColor(color: Int) = currentBackgroundColor = color
+
   /** Always return a smaller width to Glk to avoid formatting issues */
   def glkSize = new GlkDimension(numCols - 1, numRows)
   def glkSize_=(size: GlkDimension) {
-    throw new UnsupportedOperationException("Setting text buffer window size not supported")
+    throw new UnsupportedOperationException(
+      "Setting text buffer window size not supported")
   }
   
   def isLineInputMode = textInputMode == SwingTextWindowUI.InputModeLine
@@ -200,20 +203,14 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   def _setHyperlink(linkval: Int) {
     if (linkval == 0) {
       flush
-      // reset style to normal
-      style = StyleType.Normal.id
       if (currentHyperlink != null) {
         currentHyperlink.endPos = currentPos
         hyperlinkMap(currentHyperlink.id) = currentHyperlink
-        // This output can generate BadLocationExceptions !!!
-        /*
-        val doc = getDocument
-        printf("ADDED HYPERLINK %d: start: %d end: %d text: '%s'\n",
-          currentHyperlink.id, currentHyperlink.startPos, currentHyperlink.endPos,
-          doc.getText(currentHyperlink.startPos, currentHyperlink.endPos))
-          */
         currentHyperlink = null
       }
+      // reset style to normal, we have to set this AFTER setting the
+      // link to NULL (the order is important) !!
+      style = StyleType.Normal.id
     } else {
       flush
       val attrs = getInputAttributes

@@ -102,11 +102,8 @@ with MouseListener with MouseMotionListener {
     throw new UnsupportedOperationException(
       "fillRect() not supported for this window type")
   }
-  def setBackgroundColor(color: Int) {
-    throw new UnsupportedOperationException(
-      "setBackground() not supported for this window type")
-  }
-  def drawScaledImage(resnum: Int, posx: Int, posy: Int, width: Int, height: Int) {
+  def drawScaledImage(resnum: Int, posx: Int, posy: Int, width: Int,
+                      height: Int) {
     throw new UnsupportedOperationException(
       "This window does not support drawing images")
   }
