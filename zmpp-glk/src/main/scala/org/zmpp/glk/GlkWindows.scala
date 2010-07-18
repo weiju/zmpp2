@@ -309,6 +309,8 @@ class GlkWindowSystem {
   def rootWindowId = if (_rootWindow == null) 0 else _rootWindow.id
   def clearWindow(winId: Int) = windowWithId(winId).ui.clear
   def createWindow(wintype: GlkWindowType.Value, size: Int, rock: Int) = {
+    logger.info("createWindow type: %s size: %d rock: %d".format(wintype, size,
+                                                                 rock))
     val id = nextId
 
     import GlkWindowType._
@@ -392,6 +394,7 @@ class GlkWindowSystem {
     windowWithId(winId).ui.moveCursor(xpos, ypos)
   }
   def open(split: Int, method: Int, size: Int, wintype: Int, rock: Int): Int = {
+    logger.info("open(), split: %d method: %d, size: %d, wintype: %d, rock: %d".format(split, method, size, wintype, rock))
     val newWindow = createWindow(GlkWindowType(wintype), size, rock)
     if (split > 0) {
       splitWindow(windowWithId(split), newWindow, method)

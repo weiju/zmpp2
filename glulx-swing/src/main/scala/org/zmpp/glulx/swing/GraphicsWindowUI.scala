@@ -163,10 +163,10 @@ extends JComponent with SwingGlkWindowUI {
     waitForMouse = true
   }
   def setHyperlink(linkval: Int) {
-    throw new UnsupportedOperationException("SET HYPERLINK NOT SUPPORTED")
+    logger.warning("SET HYPERLINK NOT SUPPORTED")
   }
   def requestHyperlinkEvent {
-    throw new UnsupportedOperationException("REQUEST HYPERLINK EVENT NOT SUPPORTED")
+    logger.warning("REQUEST HYPERLINK EVENT NOT SUPPORTED")
   }
 
   private def resumeWithMouseInput(xpos: Int, ypos: Int) {

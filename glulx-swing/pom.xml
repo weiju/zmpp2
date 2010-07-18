@@ -22,11 +22,6 @@
       <url>http://scala-tools.org/repo-releases</url>
     </repository>
     <repository>
-      <id>scala-tools-snapshots.org</id>
-      <name>Scala-Tools Maven2 Snapshot Repository</name>
-      <url>http://scala-tools.org/repo-snapshots</url>
-    </repository>
-    <repository>
       <id>zmpp.sourceforge.net</id>
       <name>ZMPP Maven2 Repository</name>
       <url>http://zmpp.sourceforge.net/maven2</url>

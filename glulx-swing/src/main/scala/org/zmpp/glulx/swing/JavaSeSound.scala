@@ -102,13 +102,13 @@ object PlaySoundTask {
       baseFormat.getSampleRate,
       false)
   }
+  val MAX_VOLUME = 0x10000
 }
 class PlaySoundTask(blorbData: BlorbData, channel: JavaSeSoundChannel, 
                     soundnum: Int, repeats: Int)
 extends Callable[Boolean] {
   val logger = Logger.getLogger("zmppsound")
   
-  val MAX_VOLUME: Float = 0x10000.asInstanceOf[Float]
 
   @volatile
   var running = true
@@ -186,13 +186,12 @@ extends Callable[Boolean] {
       val gainControl =
         line.getControl(FloatControl.Type.MASTER_GAIN).asInstanceOf[FloatControl]
       val minimumGain = gainControl.getMinimum
-      val maximumGain = gainControl.getMaximum
-      val gain = if (volume == 0) minimumGain
-      else {
+      var gain = 0.0f
+      if (volume <= 0) gain = minimumGain
+      else if (volume < PlaySoundTask.MAX_VOLUME) {
         // scale the volume value of 0x00000-0x10000 to the sound system's gain
-        val gainRange = maximumGain - minimumGain
-        val units = gainRange / MAX_VOLUME
-        (minimumGain + units * volume).asInstanceOf[Float] 
+        val unit = minimumGain / PlaySoundTask.MAX_VOLUME.asInstanceOf[Float]
+        gain = unit * ((PlaySoundTask.MAX_VOLUME - volume) / 3.5f)
       }
       gainControl.setValue(gain)
     } else {
