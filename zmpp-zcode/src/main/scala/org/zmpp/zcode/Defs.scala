@@ -169,7 +169,7 @@ class VMState {
     pc += 2
     _story.shortAt(pc - 2)
   }
-  
+  def stackEmpty = _stack.sp == 0
   def variableValue(varnum: Int) = {
     if (varnum == 0) _stack.pop
     else if (varnum >= 1 && varnum <= 15) {

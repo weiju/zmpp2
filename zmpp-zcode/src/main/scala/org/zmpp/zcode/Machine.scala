@@ -227,6 +227,10 @@ class Machine {
       case 0x06 => // dec
         val varnum = nextOperand
         state.setVariableValue(varnum, (state.variableValue(varnum) - 1) & 0xffff)
+      case 0x08 => // call_1s
+        val packedAddr = nextOperand
+        val storeVar = state.nextByte
+        state.call(packedAddr, _callArgs, storeVar, 0)
       case 0x0a => // print_obj
         printObject(nextOperand, currentOutputStream)
       case 0x0b => state.returnFromRoutine(nextOperand) // ret
@@ -350,6 +354,9 @@ class Machine {
         currentOutputStream.printNum(nextSignedOperand)
       case 0x08 => // push
         state.setVariableValue(0, nextOperand)
+      case 0x09 => // pull
+        if (state.stackEmpty) fatal("Stack underflow !")
+        else storeResult(state.variableValue(0))
       case 0x19 => // call_vn
         val packedAddr = nextOperand
         _numCallArgs = _decodeInfo.numOperands - 1
