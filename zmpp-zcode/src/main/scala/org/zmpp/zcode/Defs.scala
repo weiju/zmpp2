@@ -112,7 +112,7 @@ class Stack {
   def top = _values(sp - 1)
   // there is only one single case where we need this function: return
   // PCs.
-  def value32At(index: Int) = _values(index) & 0xffff
+  def value32At(index: Int) = _values(index)
   def valueAt(index: Int) = _values(index) & 0xffff // truncate to 16 bit
   def setValueAt(index: Int, value: Int) = _values(index) = value
   override def toString = {
@@ -123,8 +123,13 @@ class Stack {
     builder.toString
   }
 }
-object VMState {
-  val FrameOffsetLocals = 3
+
+object FrameOffset {
+  val ReturnPC = 0
+  val OldFP    = 1
+  val StoreVar = 2
+  val NumArgs  = 3
+  val Locals   = 4
 }
 class VMState {
   private var _story : Memory = null
@@ -141,7 +146,7 @@ class VMState {
   def reset(story: Memory) {
     _story = story
     header = new StoryHeader(_story)
-    if (header.version == 3) {
+    if (header.version != 6) {
       pc = header.startPC
     }
     encoding.reset
@@ -170,7 +175,7 @@ class VMState {
     else if (varnum >= 1 && varnum <= 15) {
       // local
       //printf("Access Local L%02x\n", (varnum - 1))
-      _stack.valueAt(fp + VMState.FrameOffsetLocals + (varnum - 1))
+      _stack.valueAt(fp + FrameOffset.Locals + (varnum - 1))
     } else {
       // global
       //printf("Access global: G%02x\n", varnum - 0x10)
@@ -182,11 +187,12 @@ class VMState {
     else if (varnum >= 1 && varnum <= 15) {
       // local
       //printf("Write local: L%02x = %d\n", varnum - 1, value)
-      _stack.setValueAt(fp + VMState.FrameOffsetLocals + (varnum - 1), value)
-    } else {
+      _stack.setValueAt(fp + FrameOffset.Locals + (varnum - 1), value)
+    } else if (varnum >= 16) {
       // global
       _story.setShortAt(header.globalVars + ((varnum - 0x10) << 1), value)
     }
+    // => throw away varnums < 0
   }
 
   def nextOperand(operandType: Int) = {
@@ -202,7 +208,8 @@ class VMState {
         pc += 1
         variableValue(_story.byteAt(pc - 1))
       case _ =>
-        throw new UnsupportedOperationException("unknown operand type: " + operandType)
+        throw new UnsupportedOperationException(
+          "unknown operand type: " + operandType)
     }
   }
 
@@ -230,6 +237,7 @@ class VMState {
       _stack.push(pc) // return address
       _stack.push(oldfp)
       _stack.push(storeVar)
+      _stack.push(numArgs)
       pc = routineAddr + 1 // place PC after routine header
       if (header.version <= 4) {
         for (i <- 0 until numLocals) _stack.push(nextShort)
@@ -239,21 +247,23 @@ class VMState {
       // set arguments to locals, throw away excess parameters (6.4.4.1)
       val numParams = if (numArgs <= numLocals) numArgs else numLocals
       for (i <- 0 until numParams) {
-        _stack.setValueAt(fp + VMState.FrameOffsetLocals + i, args(i))
+        _stack.setValueAt(fp + FrameOffset.Locals + i, args(i))
       }
       //printf("# locals: %d PC IS: $%02x\n", numLocals, pc)
     }
   }
   def returnFromRoutine(retval: Int) {
-    val retpc    = _stack.value32At(fp)
-    val oldfp    = _stack.valueAt(fp + 1)
-    val storeVar = _stack.valueAt(fp + 2)
+    val retpc    = _stack.value32At(fp + FrameOffset.ReturnPC)
+    val oldfp    = _stack.valueAt(fp + FrameOffset.OldFP)
+    val storeVar = _stack.valueAt(fp + FrameOffset.StoreVar)
     _stack.sp = fp
     fp = oldfp
     pc = retpc
     //printf("RET #$%02x -> VAR[%d]\n", retval, storeVar)
     setVariableValue(storeVar, retval)
   }
+
+  def numArgsCurrentRoutine = _stack.valueAt(fp + FrameOffset.NumArgs)
 }
 
 object Instruction {

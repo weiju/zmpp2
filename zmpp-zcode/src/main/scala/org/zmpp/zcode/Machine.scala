@@ -84,7 +84,8 @@ class Machine {
   def resumeWithLineInput(input: String) {
     state.runState = VMRunStates.Running
     val parserSupport =
-      new ParserHelper(state, readLineInfo.textBuffer, readLineInfo.parseBuffer, 0, false)
+      new ParserHelper(state, readLineInfo.textBuffer, readLineInfo.parseBuffer,
+                       0, false)
     parserSupport.process(input)
   }
 
@@ -133,8 +134,8 @@ class Machine {
   // *****************************
   
   private def printObject(obj: Int, outputStream: OutputStream) {
-    state.encoding.decodeZStringAtByteAddress(objectTable.propertyTableAddress(obj) + 1,
-                                              outputStream)
+    state.encoding.decodeZStringAtByteAddress(
+      objectTable.propertyTableAddress(obj) + 1, outputStream)
   }
   
   private def executeInstruction {
@@ -150,7 +151,8 @@ class Machine {
       case 2 => execute2Op
       case OperandCountVar => executeVar
       case _ =>
-        throw new UnsupportedOperationException("form not supported: %s\n".format(_decodeInfo.toString))
+        throw new UnsupportedOperationException(
+          "form not supported: %s\n".format(_decodeInfo.toString))
     }
     iterations += 1
   }
@@ -167,7 +169,8 @@ class Machine {
     state.nextOperand(_decodeInfo.types(_currentArg - 1))
   }
   private def nextSignedOperand = signExtend16(nextOperand)
-  private def storeResult(result: Int) = state.setVariableValue(state.nextByte, result)
+  private def storeResult(result: Int) = state.setVariableValue(state.nextByte,
+                                                                result)
 
   private def doBranch(branchOffset: Int) {
     //printf("BRANCH_OFFSET: %d\n", branchOffset)
@@ -201,7 +204,8 @@ class Machine {
         state.returnFromRoutine(state.variableValue(0))
       case 0x0b => currentOutputStream.printChar('\n') // new_line
       case _ =>
-        throw new UnsupportedOperationException("0OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
+        throw new UnsupportedOperationException(
+          "0OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
     }
   }
   private def execute1Op {
@@ -230,9 +234,11 @@ class Machine {
         val offset = nextSignedOperand
         state.pc += offset - 2 // address
       case 0x0d => // print_paddr
-        state.encoding.decodeZStringAtPackedAddress(nextOperand, currentOutputStream)
+        state.encoding.decodeZStringAtPackedAddress(nextOperand,
+                                                    currentOutputStream)
       case _ =>
-        throw new UnsupportedOperationException("1OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
+        throw new UnsupportedOperationException(
+          "1OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
     }
   }
   private def execute2Op {
@@ -285,12 +291,38 @@ class Machine {
         storeResult(state.byteAt(array + byteIndex))
       case 0x11 => // get_prop
         storeResult(objectTable.propertyValue(nextOperand, nextOperand))
+      case 0x12 => // get_prop_addr
+        val obj = nextOperand
+        val property = nextOperand
+        if (obj > 0) {
+          storeResult(objectTable.propertyAddress(obj, property) & 0xffff)
+        } else {
+          warn("@get_prop_addr illegal access to object " + obj)
+        }
       case 0x14 => // add
         storeResult(nextSignedOperand + nextSignedOperand)
       case 0x15 => // sub
         storeResult(nextSignedOperand - nextSignedOperand)
+      case 0x16 => // mul
+        storeResult(nextSignedOperand * nextSignedOperand)
+      case 0x17 => // div
+        val op1 = nextSignedOperand
+        val op2 = nextSignedOperand
+        if (op2 == 0) fatal("@div division by zero")
+        else storeResult(op1 / op2)
+      case 0x18 => // mod
+        val op1 = nextSignedOperand
+        val op2 = nextSignedOperand
+        if (op2 == 0) fatal("@mod division by zero")
+        else storeResult(op1 % op2)
+      case 0x19 => // call_2s
+        val packedAddr = nextOperand
+        _callArgs(0) = nextOperand
+        val storeVar = state.nextByte
+        state.call(packedAddr, _callArgs, storeVar, 1)
       case _ =>
-        throw new UnsupportedOperationException("2OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
+        throw new UnsupportedOperationException(
+          "2OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
     }
   }
   private def executeVar {
@@ -316,8 +348,21 @@ class Machine {
         currentOutputStream.printChar(nextOperand.asInstanceOf[Char])
       case 0x06 => // print_num
         currentOutputStream.printNum(nextSignedOperand)
+      case 0x08 => // push
+        state.setVariableValue(0, nextOperand)
+      case 0x19 => // call_vn
+        val packedAddr = nextOperand
+        _numCallArgs = _decodeInfo.numOperands - 1
+        for (i <- 0 until _numCallArgs) {
+          _callArgs(i) = nextOperand
+        }
+        state.call(packedAddr, _callArgs, -1, _numCallArgs)
+      case 0x1f => // check_arg_count
+        val argNum = nextOperand
+        decideBranch(argNum <= state.numArgsCurrentRoutine)
       case _ =>
-        throw new UnsupportedOperationException("VAR opcode not supported: 0x%02x\n".format(_decodeInfo.opnum))
+        throw new UnsupportedOperationException(
+          "VAR opcode not supported: 0x%02x\n".format(_decodeInfo.opnum))
     }
   }
   private def decodeVarTypes {

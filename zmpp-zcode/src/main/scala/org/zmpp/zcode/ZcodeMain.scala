@@ -240,10 +240,11 @@ object ZcodeMain {
   def main(args: Array[String]) {
     _frame = new ZcodeFrame
     _frame.setVisible(true)
-
-    val vm = readZcodeFile(new File("minizork.z3"))
-    println("Zcode ZMPP")
-    
+    val vm = if (args.length == 0) {
+      readZcodeFile(new File("minizork.z3"))
+    } else {
+      readZcodeFile(new File(args(0)))
+    }
     // do in thread
     //while (_vm.state) {
       _vm.doTurn

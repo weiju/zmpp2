@@ -61,17 +61,19 @@ abstract class ObjectTable(protected val _vm: Machine) {
     val value = _vm.state.byteAt(attrAddress)
     _vm.state.setByteAt(attrAddress, value | (0x80 >> (attr & 7)))
   }
-  def propertyTableAddress(obj: Int) = _vm.state.shortAt(objectAddress(obj) + objectEntrySize - 2)
+  def propertyTableAddress(obj: Int) = _vm.state.shortAt(objectAddress(obj) +
+                                                         objectEntrySize - 2)
   def propertyValue(obj: Int, prop: Int): Int = {
     val propAddr = propertyAddress(obj, prop)
     if (propAddr == 0) propertyDefault(prop)
     else {
       if (propertyLength(propAddr) == 1) _vm.state.byteAt(propAddr)
-      else _vm.state.shortAt(propAddr) // 2 is assumed if longer, we just write two bytes
+      // 2 is assumed if longer, we just write two bytes
+      else _vm.state.shortAt(propAddr)
     }
   }
 
-  private def propertyAddress(obj: Int, prop: Int): Int = {
+  def propertyAddress(obj: Int, prop: Int): Int = {
     var propAddr = propertyEntriesStart(obj)
     while (true) {
       val propnum = propertyNum(propAddr)
