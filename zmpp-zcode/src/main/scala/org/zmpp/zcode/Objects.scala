@@ -28,6 +28,8 @@
  */
 package org.zmpp.zcode
 
+class PropertyDoesNotExistException extends Exception
+
 /**
  * The object table is basically an updatable view into the Z-Machine's memory.
  * The concept separating into V1-V3 and V4-V8 object tables is kept from
@@ -56,7 +58,6 @@ abstract class ObjectTable(protected val _vm: Machine) {
   }
   
   def setAttribute(obj: Int, attr: Int) {
-    //throw new UnsupportedOperationException("objectTable.setAttribute() not implemented yet")
     val attrAddress = attributeAddress(obj, attr)
     val value = _vm.state.byteAt(attrAddress)
     _vm.state.setByteAt(attrAddress, value | (0x80 >> (attr & 7)))
@@ -70,6 +71,18 @@ abstract class ObjectTable(protected val _vm: Machine) {
       if (propertyLength(propAddr) == 1) _vm.state.byteAt(propAddr)
       // 2 is assumed if longer, we just write two bytes
       else _vm.state.shortAt(propAddr)
+    }
+  }
+
+  def setPropertyValue(obj: Int, prop: Int, value: Int) {
+    val propAddr = propertyAddress(obj, prop)
+    if (propAddr == 0) throw new PropertyDoesNotExistException
+    else {
+      if (propertyLength(propAddr) == 1) {
+        _vm.state.setByteAt(propAddr, value & 0xff)
+      } else {
+        _vm.state.setShortAt(propAddr, value & 0xffff)
+      }
     }
   }
 
@@ -89,33 +102,18 @@ abstract class ObjectTable(protected val _vm: Machine) {
     val propTableAddr = propertyTableAddress(obj)
     propTableAddr + (_vm.state.byteAt(propTableAddr) << 1) + 1
   }
-
-  /*
-  public int getPropertyAddress(final int objectNum, final int property) {
-    int propAddr = getPropertyEntriesStart(objectNum);
-    while (true) {
-      int propnum = getPropertyNum(propAddr);
-      if (propnum == 0) return 0; // not found
-      if (propnum == property) {
-        return propAddr + getNumPropertySizeBytes(propAddr);
-      }
-      int numPropBytes =  getNumPropertySizeBytes(propAddr);
-      propAddr += numPropBytes + getPropertyLength(propAddr + numPropBytes);
-    }
-  }
-
-  */
   
   // Protected members
   protected def objectTreeStart = objectTableAddress + propertyDefaultTableSize
   protected def objectTableAddress = _vm.state.header.objectTable
-  protected def objectAddress(obj: Int) = objectTreeStart + (obj - 1) * objectEntrySize
+  protected def objectAddress(obj: Int) =
+    objectTreeStart + (obj - 1) * objectEntrySize
 
   // abstract members
+  def propertyLength(propDataAddr: Int): Int
   protected def propertyDefaultTableSize: Int
   protected def objectEntrySize: Int
   protected def propertyNum(propAddr: Int): Int
-  protected def propertyLength(propDataAddr: Int): Int
   protected def numPropertySizeBytes(propAddr: Int): Int
   
   // Private members
@@ -145,7 +143,7 @@ class ClassicObjectTable(vm: Machine) extends ObjectTable(vm) {
   protected def propertyNum(propAddr: Int) = {
     _vm.state.byteAt(propAddr) - 32 * (propertyLength(propAddr + 1) - 1)
   }  
-  protected def propertyLength(propDataAddr: Int) = {
+  def propertyLength(propDataAddr: Int) = {
     if (propDataAddr == 0) 0 // Note: defined in Z-Machine Standard 1.1
     else {
       // The size byte is always the byte before the property data in any
@@ -154,26 +152,6 @@ class ClassicObjectTable(vm: Machine) extends ObjectTable(vm) {
     }
   }
   protected def numPropertySizeBytes(propAddr: Int) = 1
-/*  
-  protected int getPropertyNum(final int propertyAddress) {
-    final int sizeByte = getMemory().readUnsigned8(propertyAddress);
-    return sizeByte - 32 * (getPropertyLength(propertyAddress + 1) - 1);
-  }
-  
-    private static int getPropertyLengthAtData(final Memory memaccess,
-                                             final int addressOfPropertyData) {
-    if (addressOfPropertyData == 0) {
-      return 0; // see standard 1.1
-    }
-
-    // The size byte is always the byte before the property data in any
-    // version, so this is consistent
-    final char sizebyte =
-      memaccess.readUnsigned8(addressOfPropertyData - 1);
-
-    return sizebyte / 32 + 1;
-  }
-*/
 }
 
 class ModernObjectTable(vm: Machine) extends ObjectTable(vm) {
@@ -194,7 +172,7 @@ class ModernObjectTable(vm: Machine) extends ObjectTable(vm) {
   protected def objectEntrySize          = 14
   
   protected def propertyNum(propAddr: Int) = _vm.state.byteAt(propAddr) & 0x3f
-  protected def propertyLength(propDataAddr: Int) = {
+  def propertyLength(propDataAddr: Int) = {
     if (propDataAddr == 0) 0 // Z-Machine Standard 1.1
     else {
       val sizeByte = _vm.state.byteAt(propDataAddr - 1)
@@ -210,42 +188,5 @@ class ModernObjectTable(vm: Machine) extends ObjectTable(vm) {
   protected def numPropertySizeBytes(propAddr: Int) = {
     if ((_vm.state.byteAt(propAddr) & 0x80) == 0x80) 2 else 1
   }
-
-  /*
-  protected int getPropertyNum(final int propertyAddress) {
-    // Version >= 4 - take the lower 5 bit of the first size byte
-    return getMemory().readUnsigned8(propertyAddress) & 0x3f;
-  }
-
-  protected int getNumPropertySizeBytes(final int propertyAddress) {
-    // if bit 7 is set, there are two size bytes, one otherwise
-    final char first = getMemory().readUnsigned8(propertyAddress);
-    return ((first & 0x80) > 0) ? 2 : 1;
-  }
-
-  private static int getPropertyLengthAtData(final Memory memory,
-                                            final int addressOfPropertyData) {
-    if (addressOfPropertyData == 0) {
-      return 0; // see standard 1.1
-    }
-    // The size byte is always the byte before the property data in any
-    // version, so this is consistent
-    final char sizebyte =
-      memory.readUnsigned8(addressOfPropertyData - 1);
-
-    // Bit 7 set => this is the second size byte
-    if ((sizebyte & 0x80) > 0) {
-      int proplen = sizebyte & 0x3f;
-      if (proplen == 0) {
-        proplen = 64; // Std. doc. 1.0, S 12.4.2.1.1
-      }
-      return proplen;
-    } else {
-      // Bit 7 clear => there is only one size byte, so if bit 6 is set,
-      // the size is 2, else it is 1
-      return (sizebyte & 0x40) > 0 ? 2 : 1;
-    }
-  }
-   */
 }
 

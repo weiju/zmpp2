@@ -56,7 +56,6 @@ class Machine {
   // Decode information end
   // transient information, current routine decoding data
   private val _callArgs    = new Array[Int](8)
-  private var _numCallArgs = 0
   private var _currentArg  = 0
 
   var iterations  = 1
@@ -173,7 +172,6 @@ class Machine {
                                                                 result)
 
   private def doBranch(branchOffset: Int) {
-    //printf("BRANCH_OFFSET: %d\n", branchOffset)
     if (branchOffset == 0)      state.returnFromRoutine(0)
     else if (branchOffset == 1) state.returnFromRoutine(1)
     else                        state.pc += branchOffset - 2
@@ -185,15 +183,29 @@ class Machine {
       else {
         val branchByte1 = state.nextByte
         val branchOffsetVal = ((branchByte0 & 0x3f) << 8) | branchByte1
-        //printf("BRANCHOFFSET 14BIT: %02x b1: %02x b2: %02x\n",
-        //  branchOffsetVal, branchByte0, branchByte1)
+
         // 14 bit sign extend
         if ((branchOffsetVal & 0x2000) == 0x2000) branchOffsetVal | 0xffffc000
         else branchOffsetVal
       }
-    //printf("BRANCH, branchOnTrue: %b cond: %b offset: #$%02x\n", branchOnTrue, cond, branchOffset)
     if (branchOnTrue && cond || !branchOnTrue && !cond) doBranch(branchOffset)
   }
+  private def callWithoutReturnValue(numCallArgs: Int) {
+    val packedAddr = nextOperand
+    for (i <- 0 until numCallArgs) {
+      _callArgs(i) = nextOperand
+    }
+    state.call(packedAddr, _callArgs, -1, numCallArgs)
+  }
+  private def callWithReturnValue(numCallArgs: Int) {
+    val packedAddr = nextOperand
+    for (i <- 0 until numCallArgs) {
+      _callArgs(i) = nextOperand
+    }
+    val storeVar = state.nextByte
+    state.call(packedAddr, _callArgs, storeVar, numCallArgs)
+  }
+
   private def execute0Op {
     _decodeInfo.opnum match {
       case 0x00 => state.returnFromRoutine(1) // rtrue
@@ -221,6 +233,8 @@ class Machine {
         decideBranch(child != 0)
       case 0x03 => // get_parent
         storeResult(objectTable.parent(nextOperand))
+      case 0x04 => // get_prop_len
+        storeResult(objectTable.propertyLength(nextOperand))
       case 0x05 => // inc
         val varnum = nextOperand
         state.setVariableValue(varnum, state.variableValue(varnum) + 1)
@@ -228,9 +242,7 @@ class Machine {
         val varnum = nextOperand
         state.setVariableValue(varnum, (state.variableValue(varnum) - 1) & 0xffff)
       case 0x08 => // call_1s
-        val packedAddr = nextOperand
-        val storeVar = state.nextByte
-        state.call(packedAddr, _callArgs, storeVar, 0)
+        callWithReturnValue(0)
       case 0x0a => // print_obj
         printObject(nextOperand, currentOutputStream)
       case 0x0b => state.returnFromRoutine(nextOperand) // ret
@@ -240,6 +252,9 @@ class Machine {
       case 0x0d => // print_paddr
         state.encoding.decodeZStringAtPackedAddress(nextOperand,
                                                     currentOutputStream)
+      case 0x0f => // 1-4 -> not, > 5 -> call_1n
+        if (version <= 4) storeResult((~nextOperand) & 0xffff)
+        else state.call(nextOperand, _callArgs, -1, 0)
       case _ =>
         throw new UnsupportedOperationException(
           "1OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
@@ -268,6 +283,8 @@ class Machine {
         val obj1 = nextOperand
         val obj2 = nextOperand
         decideBranch(objectTable.parent(obj1) == obj2)
+      case 0x08 => // or
+        storeResult(nextOperand | nextOperand)
       case 0x09 => // and
         storeResult(nextOperand & nextOperand)
       case 0x0a => // test_attr
@@ -320,10 +337,9 @@ class Machine {
         if (op2 == 0) fatal("@mod division by zero")
         else storeResult(op1 % op2)
       case 0x19 => // call_2s
-        val packedAddr = nextOperand
-        _callArgs(0) = nextOperand
-        val storeVar = state.nextByte
-        state.call(packedAddr, _callArgs, storeVar, 1)
+        callWithReturnValue(1)
+      case 0x1a => // call_2n
+        callWithoutReturnValue(1)
       case _ =>
         throw new UnsupportedOperationException(
           "2OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
@@ -332,20 +348,35 @@ class Machine {
   private def executeVar {
     _decodeInfo.opnum match {
       case 0x00 => // call
-        val packedAddr = nextOperand
-        //printf("@CALL, # operands = %d\n", _decodeInfo.numOperands)
-        _numCallArgs = _decodeInfo.numOperands - 1
-        for (i <- 0 until _numCallArgs) {
-          _callArgs(i) = nextOperand
-        }
-        val storeVar = state.nextByte
-        state.call(packedAddr, _callArgs, storeVar, _numCallArgs)
+        callWithReturnValue(_decodeInfo.numOperands - 1)
       case 0x01 => // storew
         val array     = nextOperand
         val wordIndex = nextOperand
         val value     = nextOperand
         //printf("storew $%02x %d %d\n", array, wordIndex, value)
         state.setShortAt(array + (wordIndex << 1), value)
+      case 0x02 => // storeb
+        val array     = nextOperand
+        val byteIndex = nextOperand
+        val value     = nextOperand
+        state.setByteAt(array + byteIndex, value)
+      case 0x03 => // put_prop
+        val obj      = nextOperand
+        val property = nextOperand
+        val value    = nextOperand
+        if (obj > 0) {
+          try {
+            objectTable.setPropertyValue(obj, property, value)
+          } catch {
+            case noprop: PropertyDoesNotExistException =>
+              fatal("Property %d of Object %d does not exist.".format(obj,
+                                                                      property))
+            case e: Exception =>
+              fatal("Unknown Exception: %s".format(e.getMessage))
+          }
+        } else {
+          warn("@put_prop illegal access to object %d".format(obj))
+        }
       case 0x04 => // sread V1-V3
         val terminator = readLine(nextOperand, nextOperand)
       case 0x05 => // print_char
@@ -357,13 +388,15 @@ class Machine {
       case 0x09 => // pull
         if (state.stackEmpty) fatal("Stack underflow !")
         else storeResult(state.variableValue(0))
+      case 0x0c => // call_vs2
+        callWithReturnValue(_decodeInfo.numOperands - 1)
+      case 0x11 => // set_text_style
+        val style = nextOperand
+        printf("@set_text_style %d not implemented yet\n", style)
       case 0x19 => // call_vn
-        val packedAddr = nextOperand
-        _numCallArgs = _decodeInfo.numOperands - 1
-        for (i <- 0 until _numCallArgs) {
-          _callArgs(i) = nextOperand
-        }
-        state.call(packedAddr, _callArgs, -1, _numCallArgs)
+        callWithoutReturnValue(_decodeInfo.numOperands - 1)
+      case 0x1a => // call_vn2
+        callWithoutReturnValue(_decodeInfo.numOperands - 1)
       case 0x1f => // check_arg_count
         val argNum = nextOperand
         decideBranch(argNum <= state.numArgsCurrentRoutine)
@@ -373,18 +406,26 @@ class Machine {
     }
   }
   private def decodeVarTypes {
-    val typeByte = state.nextByte
+    var typeByte = state.nextByte
     var hasMoreTypes = true
     var index = 0
+    var offset = 0 // offset for more than 4 parameters (call_vs2/call_vn2)
+
     while (hasMoreTypes) {
       val optype = (typeByte >> (6 - (index << 1))) & 0x03
-      _decodeInfo.types(index) = optype
-      // TODO: when implementing the instructions with more than 4 operands,
-      // change this here
+      _decodeInfo.types(index + offset) = optype
+
+      // one of CALL_VN2/CALL_VS2, there is an additional type byte
+      if (_decodeInfo.isCallVx2 && index == 4 && offset == 0) {
+        index = 0
+        typeByte = state.nextByte
+        offset = 4
+      }
+
       if (optype == OperandTypes.Omitted || index == 4) hasMoreTypes = false
       else index += 1
     }
-    _decodeInfo.numOperands = index
+    _decodeInfo.numOperands = index + offset
   }
   private def decodeLongTypes {
     _decodeInfo.numOperands = 2
@@ -412,7 +453,8 @@ class Machine {
       case FormVar   => decodeVarTypes
       case FormExt   => decodeVarTypes
       case _ =>
-        throw new UnsupportedOperationException("form not supported: %s\n".format(_decodeInfo.toString))
+        throw new UnsupportedOperationException(
+          "form not supported: %s\n".format(_decodeInfo.toString))
     }
   }
 

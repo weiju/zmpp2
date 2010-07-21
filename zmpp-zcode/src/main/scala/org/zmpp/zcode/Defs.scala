@@ -97,7 +97,7 @@ class StoryHeader(story: Memory) {
 // value that might get stored is the return address in the call frame
 // (only happens on a push).
 class Stack {
-  private val _values = new Array[Int](100) // 100 for now
+  private val _values = new Array[Int](300) // 300 for now
 
   var sp = 0
   
@@ -188,7 +188,7 @@ class VMState {
       // local
       //printf("Write local: L%02x = %d\n", varnum - 1, value)
       _stack.setValueAt(fp + FrameOffset.Locals + (varnum - 1), value)
-    } else if (varnum >= 16) {
+    } else if (varnum >= 16 && varnum <= 255) {
       // global
       _story.setShortAt(header.globalVars + ((varnum - 0x10) << 1), value)
     }
@@ -302,7 +302,8 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
     this
   }
   override def toString = {
-    "[%s, %s, OPNUM: 0x%02x, OPCODE: 0x%02x]".format(formName, opCount, opnum, opcode)
+    "[%s, %s, OPNUM: 0x%02x, OPCODE: 0x%02x]".format(formName, opCount,
+                                                     opnum, opcode)
   }
   private def formName = {
     import Instruction._
@@ -317,6 +318,9 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
   private def opCount = {
     if (operandCount == Instruction.OperandCountVar) "Var"
     else "%dOP".format(operandCount)
+  }
+  def isCallVx2 = {
+    form == Instruction.FormVar && (opnum == 0x1a || opnum == 0x0c)
   }
 }
 
