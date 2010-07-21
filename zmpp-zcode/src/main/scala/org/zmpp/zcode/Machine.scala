@@ -212,6 +212,10 @@ class Machine {
       case 0x01 => state.returnFromRoutine(0) // rfalse
       case 0x02 => // print
         state.encoding.decodeZString(currentOutputStream)
+      case 0x03 => // print_ret
+        state.encoding.decodeZString(currentOutputStream)
+        currentOutputStream.printChar('\n')
+        state.returnFromRoutine(1)
       case 0x08 => // ret_popped
         state.returnFromRoutine(state.variableValue(0))
       case 0x0b => currentOutputStream.printChar('\n') // new_line
@@ -292,9 +296,9 @@ class Machine {
         val attr = nextOperand
         decideBranch(objectTable.isAttributeSet(obj, attr))
       case 0x0b => // set_attr
-        val obj  = nextOperand
-        val attr = nextOperand
-        objectTable.setAttribute(obj, attr)
+        objectTable.setAttribute(nextOperand, nextOperand)
+      case 0x0c => // clear_attr
+        objectTable.clearAttribute(nextOperand, nextOperand)
       case 0x0d => // store
         state.setVariableValue(nextOperand, nextOperand)
       case 0x0e => // insert_obj

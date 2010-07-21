@@ -62,6 +62,12 @@ abstract class ObjectTable(protected val _vm: Machine) {
     val value = _vm.state.byteAt(attrAddress)
     _vm.state.setByteAt(attrAddress, value | (0x80 >> (attr & 7)))
   }
+  def clearAttribute(obj: Int, attr: Int) {
+    val attrAddress = attributeAddress(obj, attr)
+    val value = _vm.state.byteAt(attrAddress)
+    _vm.state.setByteAt(attrAddress, value & ~(0x80 >> (attr & 7)))
+  }
+
   def propertyTableAddress(obj: Int) = _vm.state.shortAt(objectAddress(obj) +
                                                          objectEntrySize - 2)
   def propertyValue(obj: Int, prop: Int): Int = {
