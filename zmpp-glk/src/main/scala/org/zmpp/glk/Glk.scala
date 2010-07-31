@@ -219,25 +219,69 @@ class Glk(val eventManager: EventManager) {
 
   // file references
   def fileref_create_by_name(usage: Int, name: String, rock: Int): Int = {
-    fileSystem.createFileRefByName(usage, name, rock)
+    try {
+      fileSystem.createFileRefByName(usage, name, rock)
+    } catch {
+      case e =>
+        logger.warning("Exception in fileref_create_by_name: " + e.toString)
+        0
+    }
   }
   def fileref_create_by_prompt(usage: Int, fmode: Int, rock: Int): Int = {
-    val file = screenUI.selectFileByDialog(usage, fmode)
-    if (file == null) 0
-    else fileSystem.createFileRefByFile(usage, fmode, file, rock)
+    try {
+      val file = screenUI.selectFileByDialog(usage, fmode)
+      if (file == null) 0
+      else fileSystem.createFileRefByFile(usage, fmode, file, rock)
+    } catch {
+      case e =>
+        logger.warning("Exception in fileref_create_by_prompt: " + e.toString)
+        0
+    }
   }
-  def fileref_create_from_fileref(usage: Int, fileRefId: Int, rock: Int): Int = {
-    fileSystem.createFromFileRef(usage, fileRefId, rock)
+  def fileref_create_from_fileref(usage: Int, fileRefId: Int,
+                                  rock: Int): Int = {
+    try {
+      fileSystem.createFromFileRef(usage, fileRefId, rock)
+    } catch {
+      case e =>
+        logger.warning("Exception in fileref_create_from_fileref: " +
+                       e.toString)
+        0
+    }
   }
   def fileref_create_temp(usage: Int, rock: Int): Int = {
-    fileSystem.createTemp(usage, rock)
+    try {
+      fileSystem.createTemp(usage, rock)
+    } catch {
+      case e =>
+        logger.warning("Exception in fileref_create_temp: " + e.toString)
+        0
+    }
   }
   def fileref_delete_file(fileRefId: Int) {
-    fileSystem.deleteFile(fileRefId)
+    try {
+      fileSystem.deleteFile(fileRefId)
+    } catch {
+      case e =>
+        logger.warning("Exception in fileref_delete_file: " + e.toString)
+    }
   }
-  def fileref_destroy(fileRefId: Int) = fileSystem.destroy(fileRefId)
+  def fileref_destroy(fileRefId: Int) {
+    try {
+      fileSystem.destroy(fileRefId)
+    } catch {
+      case e =>
+        logger.warning("Exception in fileref_destroy: " + e.toString)
+    }
+  }
   def fileref_does_file_exist(fileRefId: Int) = {
-    if (fileSystem.doesFileExist(fileRefId)) 1 else 0
+    try {
+      if (fileSystem.doesFileExist(fileRefId)) 1 else 0
+    } catch {
+      case e =>
+        logger.warning("Exception in fileref_does_file_exist: " + e.toString)
+        0
+    }
   }
   def fileref_get_rock(fileRefId: Int) = fileSystem.getRockForFileRef(fileRefId)
   def fileref_iterate(fref: Int): GlkIterateResult = {
@@ -250,7 +294,8 @@ class Glk(val eventManager: EventManager) {
   // Stream functions
   def get_char_stream(streamId: Int) = ioSystem.getCharStream(streamId)
   def get_char_stream_uni(streamId: Int) = ioSystem.getCharStreamUni(streamId)
-  def get_buffer_stream(state: VMState, streamId: Int, buf: Int, len: Int): Int = {
+  def get_buffer_stream(state: VMState, streamId: Int, buf: Int,
+                        len: Int): Int = {
     var charIndex = 0
     while (charIndex < len) {
       val c = get_char_stream(streamId)
@@ -271,7 +316,8 @@ class Glk(val eventManager: EventManager) {
     }
     charIndex
   }
-  def get_line_stream(state: VMState, streamId: Int, buf: Int, len: Int): Int = {
+  def get_line_stream(state: VMState, streamId: Int, buf: Int,
+                      len: Int): Int = {
     var charIndex = 0
     var continueLoop = true
     while (charIndex < len - 1 && continueLoop) {
@@ -309,8 +355,9 @@ class Glk(val eventManager: EventManager) {
     for (i <- 0 until len)
       put_char_stream_uni(streamId, state.memIntAt(buf + i * 4))
   }
-  def put_char_stream(streamId: Int, c: Char)     = ioSystem.putChar(streamId, c)
-  def put_char_stream_uni(streamId: Int, c: Int)  = ioSystem.putCharUni(streamId, c)
+  def put_char_stream(streamId: Int, c: Char) = ioSystem.putChar(streamId, c)
+  def put_char_stream_uni(streamId: Int, c: Int)  =
+    ioSystem.putCharUni(streamId, c)
   def put_string_stream(state: VMState, streamId: Int, s: Int) = {
     var strPtr = s
     var currentChar = state.memByteAt(strPtr)
@@ -345,17 +392,29 @@ class Glk(val eventManager: EventManager) {
     logger.info(
       "glk_stream_open_file, fileRefId = %d, fmode = #$%02x, rock = %d".format(
            fileRefId, fmode, rock))
-    val fileStream = fileSystem.openFile(fileRefId, fmode, rock)
-    if (fileStream != null) ioSystem.registerStream(fileStream)
-    else 0
+    try {
+      val fileStream = fileSystem.openFile(fileRefId, fmode, rock)
+      if (fileStream != null) ioSystem.registerStream(fileStream)
+      else 0
+    } catch {
+      case e =>
+        logger.warning("Exception in stream_open_file: " + e.toString)
+        0
+    }
   }
   def stream_open_file_uni(fileRefId: Int, fmode: Int, rock: Int) = {
     logger.info(
-      "glk_stream_open_file_uni, fileRefId = %d, fmode = #$%02x, rock = %d".format(
-           fileRefId, fmode, rock))
-    val fileStream = fileSystem.openFileUni(fileRefId, fmode, rock)
-    if (fileStream != null) ioSystem.registerStream(fileStream)
-    else 0
+      "glk_stream_open_file_uni, fileRefId = %d, fmode = #$%02x, rock = %d"
+      .format(fileRefId, fmode, rock))
+    try {
+      val fileStream = fileSystem.openFileUni(fileRefId, fmode, rock)
+      if (fileStream != null) ioSystem.registerStream(fileStream)
+      else 0
+    } catch {
+      case e =>
+        logger.warning("Exception in stream_open_file_uni: " + e.toString)
+        0
+    }
   }
   def stream_open_memory(state: VMState, buf: Int, buflen: Int, fmode: Int, rock: Int) = {
     ioSystem.registerStream(new MemoryStream8(state, buf, buflen, fmode, rock))

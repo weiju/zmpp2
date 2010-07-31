@@ -159,6 +159,8 @@ extends WindowEventRequest(winId, GlkEventType.LineInput) {
     case _ => false
   }
   def prepareWindow(screenUI: GlkScreenUI) {
+    // Line input requests can interfere with timed input interrupts.
+    // We need to save the mark until the program prints out input
     if (runOnce) {
       screenUI.requestPreviousLineInput(winId)
     } else {
