@@ -31,11 +31,11 @@ package org.zmpp.glulx
 import java.util.logging._
 import org.zmpp.base.Memory
 
-/*************************************************************************
- ***** Glulx Definitions
- ***** Rather than defining enumerations for everything, we define
- ***** frequently used constants as simple int values
- *************************************************************************/
+// *************************************************************************
+// ***** Glulx Definitions
+// ***** Rather than defining enumerations for everything, we define
+// ***** frequently used constants as simple int values
+// *************************************************************************
 
 object AddressModes {
   val ConstZero        = 0
@@ -82,7 +82,8 @@ object DestTypes {
     case AddressModes.Ram0000_FFFF     => DestTypes.Ram
     case AddressModes.RamAny           => DestTypes.Ram
     case _ =>
-      throw new IllegalArgumentException("unknown address mode: %02x".format(addressMode))
+      throw new IllegalArgumentException(
+        "unknown address mode: %02x".format(addressMode))
   }  
 }
 
