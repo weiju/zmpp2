@@ -29,6 +29,7 @@
 package org.zmpp.glulx.swing
 
 import java.awt.Dimension
+import java.awt.Font
 import javax.swing.JApplet
 import java.net.URL
 import org.zmpp.base._
@@ -71,8 +72,21 @@ class GlulxApplet extends JApplet with SwingGlkScreenUI {
       logger.severe("NOT INITIALIZED (CONTENTLENGTH UNKNOWN)")
     }
   }
+  
+  def getFontFromParameter(paramName: String): Font = {
+    val fontName = getParameter(paramName)
+    val fontSize = getParameter(paramName + "-size")
+    if (fontName != null && fontSize != null) {
+      new Font(fontName, Font.PLAIN, Integer.parseInt(fontSize))
+    } else null
+  }
 
   override def init {
+    val appletStdFont = getFontFromParameter("stdfont")
+    val appletFixedFont = getFontFromParameter("fixedfont")
+    if (appletStdFont != null) standardFont = appletStdFont
+    if (appletFixedFont != null) fixedFont = appletFixedFont
+
     val storyUrl = new java.net.URL(getDocumentBase, getParameter("story-file"))
     readFromUrl(storyUrl)
     _vm.screenUI = this

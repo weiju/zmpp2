@@ -129,10 +129,10 @@ class Hyperlink(val id: Int) {
 trait SwingGlkScreenUI extends GlkScreenUI {
   val logger = Logger.getLogger("glk.ui")
   private val _windowUIs = new HashMap[Int, SwingGlkWindowUI]
-  private val _fixedFont = getDefaultFixedFont
-  private val _stdFont = getDefaultNormalFont
   private val TextGridExtraMargin = 3
   private val TextBufferExtraMargin = 3
+  var fixedFont = getDefaultFixedFont
+  var standardFont = getDefaultNormalFont
   
   var lineHeightTextGrid   = 0
   var charWidthTextGrid    = 0
@@ -142,19 +142,21 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   
   def eventManager = vm.eventManager
   def blorbData   = vm.blorbData
-  def fixedFont    = _fixedFont
-  def standardFont = _stdFont
 
   private def getDefaultFixedFont = {
     var prefFont = Font.decode("Inconsolata-PLAIN-14")
-    if (prefFont.getFamily == "Dialog") prefFont = Font.decode("Courier New-PLAIN-14")
-    if (prefFont.getFamily == "Dialog") prefFont = new Font("Monospaced", Font.PLAIN, 14)
+    if (prefFont.getFamily == "Dialog")
+      prefFont = Font.decode("Courier New-PLAIN-14")
+    if (prefFont.getFamily == "Dialog")
+      prefFont = new Font("Monospaced", Font.PLAIN, 14)
     prefFont
   }
   private def getDefaultNormalFont = {
     var prefFont = Font.decode("American Typewriter-PLAIN-14")
-    if (prefFont.getFamily == "Dialog") prefFont = Font.decode("Times New Roman-PLAIN-14")
-    if (prefFont.getFamily == "Dialog") prefFont = new Font("Serif", Font.PLAIN, 14)
+    if (prefFont.getFamily == "Dialog")
+      prefFont = Font.decode("Times New Roman-PLAIN-14")
+    if (prefFont.getFamily == "Dialog")
+      prefFont = new Font("Serif", Font.PLAIN, 14)
     prefFont
   }
 
@@ -197,7 +199,8 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   private def distributeRemainder(window: GlkWindow, remainSize: Dimension) = {
     if (window.isLeaf) {
       // Leafs can always get the remainder size
-      _windowUIs(window.id).asInstanceOf[JComponent].setPreferredSize(remainSize)
+      _windowUIs(window.id).asInstanceOf[JComponent]
+        .setPreferredSize(remainSize)
       (_windowUIs(window.id).container, remainSize)
     } else {
       makeLayout(window, remainSize)
@@ -222,11 +225,13 @@ trait SwingGlkScreenUI extends GlkScreenUI {
       if (pair.isVertical) {
         keyWidth  = currentSize.width
         keyHeight = calculateHeight(pair, currentSize.height)
-        leftSize  = new Dimension(currentSize.width, currentSize.height - keyHeight)
+        leftSize  = new Dimension(currentSize.width,
+                                  currentSize.height - keyHeight)
       } else {
         keyWidth  = calculateWidth(pair, currentSize.width)
         keyHeight = currentSize.height
-        leftSize  = new Dimension(currentSize.width - keyWidth, currentSize.height)
+        leftSize  = new Dimension(currentSize.width - keyWidth,
+                                  currentSize.height)
       }
       val rightSize = new Dimension(keyWidth, keyHeight)
       val leftComponent  = makeLayout(pair.child0, leftSize)
@@ -289,12 +294,12 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   
   def initMetrics {
     val g =  getGraphics
-    val stdMetrics = g.getFontMetrics(_stdFont)
-    val fixedMetrics = g.getFontMetrics(_fixedFont)
+    val stdMetrics = g.getFontMetrics(standardFont)
+    val fixedMetrics = g.getFontMetrics(fixedFont)
     lineHeightTextGrid = fixedMetrics.getMaxAscent + fixedMetrics.getMaxDescent
-    charWidthTextGrid = g.getFontMetrics(_fixedFont).charWidth('0')
+    charWidthTextGrid = g.getFontMetrics(fixedFont).charWidth('0')
     lineHeightStdFont = stdMetrics.getMaxAscent + stdMetrics.getMaxDescent
-    charWidthStdFont = g.getFontMetrics(_stdFont).charWidth('0')
+    charWidthStdFont = g.getFontMetrics(standardFont).charWidth('0')
   }
   
   // Line input
