@@ -170,26 +170,21 @@ class VMState {
     _story.shortAt(pc - 2)
   }
   def stackEmpty = _stack.sp == 0
+  def stackTop = _stack.top
   def variableValue(varnum: Int) = {
     if (varnum == 0) _stack.pop
-    else if (varnum >= 1 && varnum <= 15) {
-      // local
-      //printf("Access Local L%02x\n", (varnum - 1))
+    else if (varnum >= 1 && varnum <= 15) { // local
       _stack.valueAt(fp + FrameOffset.Locals + (varnum - 1))
-    } else {
-      // global
-      //printf("Access global: G%02x\n", varnum - 0x10)
+    } else { // global
       _story.shortAt(header.globalVars + ((varnum - 0x10) << 1))
     }
   }
   def setVariableValue(varnum: Int, value: Int) {
     if (varnum == 0) _stack.push(value)
-    else if (varnum >= 1 && varnum <= 15) {
-      // local
-      //printf("Write local: L%02x = %d\n", varnum - 1, value)
+    else if (varnum >= 1 && varnum <= 15) { // local
+      printf("SET L%02x TO %02x\n", varnum, value)
       _stack.setValueAt(fp + FrameOffset.Locals + (varnum - 1), value)
-    } else if (varnum >= 16 && varnum <= 255) {
-      // global
+    } else if (varnum >= 16 && varnum <= 255) { // global
       _story.setShortAt(header.globalVars + ((varnum - 0x10) << 1), value)
     }
     // => throw away varnums < 0
@@ -214,27 +209,21 @@ class VMState {
   }
 
   def call(packedAddr: Int, args: Array[Int], storeVar: Int, numArgs: Int) {
-    //printf("CALL PACKED ADDR: $%02x storevar: %d\n", packedAddr, storeVar)
     if (packedAddr == 0) setVariableValue(storeVar, 0)
     else {
       val routineAddr = header.unpackRoutineAddress(packedAddr)
       val numLocals = _story.byteAt(routineAddr)
-      
-      //debug
-      /*
-      val builder = new StringBuilder
-      builder.append("call $%02x ".format(routineAddr))
+      printf("@call $%02x ARGS = ", routineAddr)
       for (i <- 0 until numArgs) {
-        builder.append("#$%02x ".format(args(i)))
+        printf("%02x, ", args(i))
       }
-      builder.append(" -> %d".format(storeVar))
-      printf("%s\n", builder.toString)*/
-      //debug
+      printf(" -> VAR %02x\n", storeVar)
     
       // create a call frame
       val oldfp = fp
       fp = sp // current frame pointer
       _stack.push(pc) // return address
+      printf("PUSHED RETURN ADDRESS: %02x\n", pc)
       _stack.push(oldfp)
       _stack.push(storeVar)
       _stack.push(numArgs)
@@ -249,7 +238,6 @@ class VMState {
       for (i <- 0 until numParams) {
         _stack.setValueAt(fp + FrameOffset.Locals + i, args(i))
       }
-      //printf("# locals: %d PC IS: $%02x\n", numLocals, pc)
     }
   }
   def returnFromRoutine(retval: Int) {
@@ -259,7 +247,6 @@ class VMState {
     _stack.sp = fp
     fp = oldfp
     pc = retpc
-    //printf("RET #$%02x -> VAR[%d]\n", retval, storeVar)
     setVariableValue(storeVar, retval)
   }
 
@@ -302,16 +289,14 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
     this
   }
   override def toString = {
-    "[%s, %s, OPNUM: 0x%02x, OPCODE: 0x%02x]".format(formName, opCount,
-                                                     opnum, opcode)
+    opcodeName(5)
   }
   private def formName = {
-    import Instruction._
     form match {
-      case FormLong  => "Long"
-      case FormShort => "Short"
-      case FormVar   => "Var"
-      case FormExt   => "Ext"
+      case Instruction.FormLong  => "Long"
+      case Instruction.FormShort => "Short"
+      case Instruction.FormVar   => "Var"
+      case Instruction.FormExt   => "Ext"
       case _         => "???"
     }
   }
@@ -321,6 +306,16 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
   }
   def isCallVx2 = {
     form == Instruction.FormVar && (opnum == 0x1a || opnum == 0x0c)
+  }
+
+  def opcodeName(version: Int) = {
+    operandCount match {
+      case 0 => Oc0Op.opcodeName(opnum, version)
+      case 1 => Oc1Op.opcodeName(opnum, version)
+      case 2 => Oc2Op.opcodeName(opnum, version)
+      case Instruction.OperandCountVar => OcVar.opcodeName(opnum, version)
+      case _         => "???"
+    }
   }
 }
 
@@ -353,3 +348,131 @@ class ReadLineInfo {
   var maxInputChars: Int = 0
 }
 
+object Oc2Op extends Enumeration {
+  val Je          = Value(0x01, "JE")
+  val Jl          = Value(0x02, "JL")
+  val Jg          = Value(0x03, "JG")
+  val DecChk      = Value(0x04, "DEC_CHK")
+  val IncChk      = Value(0x05, "INC_CHK")
+  val Jin         = Value(0x06, "JIN")
+  val Test        = Value(0x07, "TEST")
+  val Or          = Value(0x08, "OR")
+  val And         = Value(0x09, "AND")
+  val TestAttr    = Value(0x0a, "TEST_ATTR")
+  val SetAttr     = Value(0x0b, "SET_ATTR")
+  val ClearAttr   = Value(0x0c, "CLEAR_ATTR")
+  val Store       = Value(0x0d, "STORE")
+  val InsertObj   = Value(0x0e, "INSERT_OBJ")
+  val Loadw       = Value(0x0f, "LOADW")
+  val Loadb       = Value(0x10, "LOADB")
+  val GetProp     = Value(0x11, "GET_PROP")
+  val GetPropAddr = Value(0x12, "GET_PROP_ADDR")
+  val GetNextProp = Value(0x13, "GET_NEXT_PROP")
+  val Add         = Value(0x14, "ADD")
+  val Sub         = Value(0x15, "SUB")
+  val Mul         = Value(0x16, "MUL")
+  val Div         = Value(0x17, "DIV")
+  val Mod         = Value(0x18, "MOD")
+  val Call2S      = Value(0x19, "CALL_2S")
+  val Call2N      = Value(0x1a, "CALL_2N")
+  val SetColour   = Value(0x1b, "SET_COLOUR")
+  val Throw       = Value(0x1c, "THROW")
+
+  def opcodeName(opnum: Int, version: Int) = {
+    try {
+      Oc2Op(opnum).toString
+    } catch {
+      case e: Exception => "(unknown 2OP opnum %02x)".format(opnum)
+    }
+  }
+}
+
+object Oc1Op extends Enumeration {
+  val Jz         = Value(0x00, "JZ")
+  val GetSibling = Value(0x01, "GET_SIBLING")
+  val GetChild   = Value(0x02, "GET_CHILD")
+  val GetParent  = Value(0x03, "GET_PARENT")
+  val GetPropLen = Value(0x04, "GET_PROP_LEN")
+  val Inc        = Value(0x05, "INC")
+  val Dec        = Value(0x06, "DEC")
+  val PrintAddr  = Value(0x07, "PRINT_ADDR")
+  val Call1S     = Value(0x08, "CALL_1S")
+  val RemoveObj  = Value(0x09, "REMOVE_OBJ")
+  val PrintObj   = Value(0x0a, "PRINT_OBJ")
+  val Ret        = Value(0x0b, "RET")
+  val Jump       = Value(0x0c, "JUMP")
+  val PrintPaddr = Value(0x0d, "PRINT_PADDR")
+  val Load       = Value(0x0e, "LOAD")
+  val Not        = Value(0x0f, "NOT")
+  def opcodeName(opnum: Int, version: Int) = {
+    if (version >= 5 && opnum == 0x0f) "CALL_1N"
+    else Oc1Op(opnum).toString
+  }
+}
+
+object Oc0Op extends Enumeration {
+  val RTrue      = Value(0x00, "RTRUE")
+  val RFalse     = Value(0x01, "RFALSE")
+  val Print      = Value(0x02, "PRINT")
+  val PrintRet   = Value(0x03, "PRINT_RET")
+  val Nop        = Value(0x04, "NOP")
+  val Save       = Value(0x05, "SAVE")
+  val Restore    = Value(0x06, "RESTORE")
+  val Restart    = Value(0x07, "RESTART")
+  val RetPopped  = Value(0x08, "RET_POPPED")
+  val Pop        = Value(0x09, "POP")
+  val Quit       = Value(0x0a, "QUIT")
+  val NewLine    = Value(0x0b, "NEW_LINE")
+  val ShowStatus = Value(0x0c, "SHOW_STATUS")
+  val Verify     = Value(0x0d, "VERIFY")
+  val Piracy     = Value(0x0f, "PIRACY")
+  def opcodeName(opnum: Int, version: Int) = {
+    if (version >= 5 && opnum == 0x09) "CATCH"
+    else Oc0Op(opnum).toString
+  }
+}
+
+object OcVar extends Enumeration {
+  val Call          = Value(0x00, "CALL")
+  val Storew        = Value(0x01, "STOREW")
+  val Storeb        = Value(0x02, "STOREB")
+  val PutProp       = Value(0x03, "PUT_PROP")
+  val Sread         = Value(0x04, "SREAD")
+  val PrintChar     = Value(0x05, "PRINT_CHAR")
+  val PrintNum      = Value(0x06, "PRINT_NUM")
+  val Random        = Value(0x07, "RANDOM")
+  val Push          = Value(0x08, "PUSH")
+  val Pull          = Value(0x09, "PULL")
+  val SplitWindow   = Value(0x0a, "SPLIT_WINDOW")
+  val SetWindow     = Value(0x0b, "SET_WINDOW")
+  val CallVs2       = Value(0x0c, "CALL_VS2")
+  val EraseWindow   = Value(0x0d, "ERASE_WINDOW")
+  val EraseLine     = Value(0x0e, "ERASE_LINE")
+  val SetCursor     = Value(0x0f, "SET_CURSOR")
+  val GetCursor     = Value(0x10, "GET_CURSOR")
+  val SetTextStyle  = Value(0x11, "SET_TEXT_STYLE")
+  val BufferMode    = Value(0x12, "BUFFER_MODE")
+  val OutputStream  = Value(0x13, "OUTPUT_STREAM")
+  val InputStream   = Value(0x14, "INPUT_STREAM")
+  val SoundEffect   = Value(0x15, "SOUND_EFFECT")
+  val ReadChar      = Value(0x16, "READ_CHAR")
+  val ScanTable     = Value(0x17, "SCAN_TABLE")
+  val Not           = Value(0x18, "NOT")
+  val CallVn        = Value(0x19, "CALL_VN")
+  val CallVn2       = Value(0x1a, "CALL_VN2")
+  val Tokenise      = Value(0x1b, "TOKENISE")
+  val EncodeText    = Value(0x1c, "ENCODE_TEXT")
+  val CopyTable     = Value(0x1d, "COPY_TABLE")
+  val PrintTable    = Value(0x1e, "PRINT_TABLE")
+  val CheckArgCount = Value(0x1f, "CHECK_ARG_COUNT")
+  def opcodeName(opnum: Int, version: Int) = {
+    OcVar(opnum).toString
+  }
+}
+
+object OcExt extends Enumeration {
+  val Save = Value(0x00, "SAVE")
+  def opcodeName(opnum: Int, version: Int) = {
+    OcExt(opnum).toString
+  }
+}

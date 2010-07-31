@@ -91,10 +91,15 @@
 	      <id>stdrun</id>
 	      <mainClass>org.zmpp.zcode.ZcodeMain</mainClass>
 	      <args>
-		      <arg>someoption</arg>
+		      <arg>/Users/weiju/Games/Inform/shade.z5</arg>
+          <!--
+		      <arg>minizork.z3</arg>
+          -->
 	      </args>
 	      <jvmArgs>
 		      <jvmArg>-Xmx512m</jvmArg>
+	    	  <jvmArg>-Djava.util.logging.config.file=logging.properties</jvmArg>
+	    	  <jvmArg>-Dapple.awt.graphics.UseQuartz=true</jvmArg>
 	      </jvmArgs>
 	    </launcher>
 	  </launchers>

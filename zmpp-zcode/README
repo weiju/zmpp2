@@ -2,3 +2,67 @@ Z-machine implementation
 
 Known issues:
 
+Missing:
+01. @save
+02. @restore
+03. @restart
+04. @pop/@catch
+05. @quit
+06. @show_status
+07. @verify
+08. @piracy
+09. @print_addr
+10. @remove_obj
+11. @load
+12. @test
+13. @get_next_prop
+14. @set_colour
+15. @throw
+16. @random
+17. @split_window
+18. @set_window
+19. @erase_window
+20. @erase_line
+21. @set_cursor
+22. @get_cursor
+23. @buffer_mode
+24. @output_stream
+25. @input_stream
+26. @sound_effect
+27. @read_char
+28. @scan_table
+29. @not (5/6)
+30. @tokenise
+31. @encode_text
+32. @copy_table
+33. @print_table
+
+ext:
+
+35. @save
+36. @restore
+37. @log_shift
+38. @art_shift
+39. @set_font
+40. @draw_picture
+41. @picture_data
+42. @erase_picture
+43. @set_margins
+44. @save_undo
+45. @restore_undo
+46. @print_unicode
+47. @check_unicode
+48. @move_window
+49. @window_size
+50. @window_style
+51. @get_wind_prop
+52. @scroll_window
+53. @pop_stack
+54. @read_mouse
+55. @mouse_window
+56. @push_stack
+57. @put_wind_prop
+58. @print_form
+59. @make_menu
+60. @picture_table
+

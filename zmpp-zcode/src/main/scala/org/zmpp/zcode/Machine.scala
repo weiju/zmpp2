@@ -123,7 +123,8 @@ class Machine {
   def readLine(text: Int, parse: Int) = {
     currentOutputStream.flush
     readLineInfo.maxInputChars =
-      if (state.header.version <= 4) state.byteAt(text) - 1 else state.byteAt(text)
+      if (state.header.version <= 4) state.byteAt(text) - 1
+      else state.byteAt(text)
     readLineInfo.textBuffer  = text
     readLineInfo.parseBuffer = parse
     state.runState = VMRunStates.WaitForEvent
@@ -136,12 +137,40 @@ class Machine {
     state.encoding.decodeZStringAtByteAddress(
       objectTable.propertyTableAddress(obj) + 1, outputStream)
   }
+
+  private def makeOperandString = {
+    val builder = new StringBuilder
+    var operandAddress = state.pc
+    for (i <- 0 until _decodeInfo.numOperands) {
+      if (i > 0) builder.append(", ")
+      val optype = _decodeInfo.types(i)
+      if (optype == OperandTypes.LargeConstant) {
+        builder.append("#$%02x".format(state.shortAt(operandAddress)))
+        operandAddress += 2
+      } else if (optype == OperandTypes.SmallConstant) {
+        builder.append("#$%02x".format(state.byteAt(operandAddress)))
+        operandAddress += 1
+      } else if (optype == OperandTypes.Variable) {
+        val varnum = state.byteAt(operandAddress)
+        val varname = if (varnum == 0) "(SP)"
+                      else if (varnum <= 0x0f) "L%02x".format(varnum - 1)
+                      else if (varnum >= 0x10) "G%02x".format(varnum - 0x10)
+                      else "???"
+        val varvalue = if (varnum == 0) state.stackTop
+                       else state.variableValue(varnum)
+        builder.append("%s[#$%02x]".format(varname, varvalue))
+        operandAddress += 1
+      }
+    }
+    builder.toString
+  }
   
   private def executeInstruction {
     val oldpc = state.pc
     decodeInstruction
     decodeForm
-    printf("%d - $%02x: %s\n", iterations, oldpc, _decodeInfo.toString)
+    printf("%05d - $%06x: %s %s\n", iterations, oldpc,
+           _decodeInfo.opcodeName(version), makeOperandString)
     // execute
     import Instruction._
     _decodeInfo.operandCount match {
@@ -205,6 +234,21 @@ class Machine {
     val storeVar = state.nextByte
     state.call(packedAddr, _callArgs, storeVar, numCallArgs)
   }
+  private def callWithReturnValueVs2(numCallArgs: Int) {
+    printf("CALL_VS2 #ARGS = %d PC = %02x\n", numCallArgs, state.pc)
+    val packedAddr = nextOperand
+    for (i <- 0 until numCallArgs) {
+      val argnum  = _currentArg - 1
+      val vartype = _decodeInfo.types(argnum)
+      _callArgs(i) = nextOperand
+      printf("ARG(%d) = %02x, TYPE = %d, ", argnum, _callArgs(i), vartype)
+    }
+    println
+    printf("CALL_VS2 PC AFTER ARGS = %02x\n", state.pc)
+    val storeVar = state.nextByte
+    printf("CALL_VS2 PC AFTER STOREVAR = %02x PC = %02x\n", storeVar, state.pc)
+    state.call(packedAddr, _callArgs, storeVar, numCallArgs)
+  }
 
   private def execute0Op {
     _decodeInfo.opnum match {
@@ -216,6 +260,7 @@ class Machine {
         state.encoding.decodeZString(currentOutputStream)
         currentOutputStream.printChar('\n')
         state.returnFromRoutine(1)
+      case 0x04 => // nop
       case 0x08 => // ret_popped
         state.returnFromRoutine(state.variableValue(0))
       case 0x0b => currentOutputStream.printChar('\n') // new_line
@@ -244,7 +289,8 @@ class Machine {
         state.setVariableValue(varnum, state.variableValue(varnum) + 1)
       case 0x06 => // dec
         val varnum = nextOperand
-        state.setVariableValue(varnum, (state.variableValue(varnum) - 1) & 0xffff)
+        state.setVariableValue(varnum,
+                               (state.variableValue(varnum) - 1) & 0xffff)
       case 0x08 => // call_1s
         callWithReturnValue(0)
       case 0x0a => // print_obj
@@ -277,6 +323,12 @@ class Machine {
         decideBranch(nextSignedOperand < nextSignedOperand)
       case 0x03 => // jg
         decideBranch(nextSignedOperand > nextSignedOperand)
+      case 0x04 => // dec_chk
+        val varnum   = nextOperand
+        val value    = nextSignedOperand
+        val newValue = signExtend16(state.variableValue(varnum)) - 1
+        state.setVariableValue(varnum, newValue)
+        decideBranch(newValue < value)
       case 0x05 => // inc_chk
         val varnum = nextOperand
         val value  = nextSignedOperand
@@ -393,7 +445,7 @@ class Machine {
         if (state.stackEmpty) fatal("Stack underflow !")
         else storeResult(state.variableValue(0))
       case 0x0c => // call_vs2
-        callWithReturnValue(_decodeInfo.numOperands - 1)
+        callWithReturnValueVs2(_decodeInfo.numOperands - 1)
       case 0x11 => // set_text_style
         val style = nextOperand
         printf("@set_text_style %d not implemented yet\n", style)
@@ -411,19 +463,29 @@ class Machine {
   }
   private def decodeVarTypes {
     var typeByte = state.nextByte
+
+    if (_decodeInfo.isCallVx2)
+      printf("CALL_VS2, FIRST TYPE BYTE IS: %02x\n", typeByte)
+
     var hasMoreTypes = true
     var index = 0
     var offset = 0 // offset for more than 4 parameters (call_vs2/call_vn2)
 
     while (hasMoreTypes) {
       val optype = (typeByte >> (6 - (index << 1))) & 0x03
+
+      if (_decodeInfo.isCallVx2)
+        printf("OPTYPE[%d] = %d\n", index + offset, optype)
+
       _decodeInfo.types(index + offset) = optype
 
       // one of CALL_VN2/CALL_VS2, there is an additional type byte
-      if (_decodeInfo.isCallVx2 && index == 4 && offset == 0) {
+      if (_decodeInfo.isCallVx2 && index == 3 && offset == 0) {
         index = 0
         typeByte = state.nextByte
         offset = 4
+
+        printf("CALL_VS2, SECOND TYPE BYTE IS: %02x\n", typeByte)
       }
 
       if (optype == OperandTypes.Omitted || index == 4) hasMoreTypes = false
@@ -450,12 +512,11 @@ class Machine {
   }
 
   private def decodeForm {
-    import Instruction._
     _decodeInfo.form match {
-      case FormShort => decodeShortTypes
-      case FormLong  => decodeLongTypes
-      case FormVar   => decodeVarTypes
-      case FormExt   => decodeVarTypes
+      case Instruction.FormShort => decodeShortTypes
+      case Instruction.FormLong  => decodeLongTypes
+      case Instruction.FormVar   => decodeVarTypes
+      case Instruction.FormExt   => decodeVarTypes
       case _ =>
         throw new UnsupportedOperationException(
           "form not supported: %s\n".format(_decodeInfo.toString))

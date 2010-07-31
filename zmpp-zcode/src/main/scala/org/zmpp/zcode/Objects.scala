@@ -53,8 +53,6 @@ abstract class ObjectTable(protected val _vm: Machine) {
   def isAttributeSet(obj: Int, attr: Int) = {
     val value = _vm.state.byteAt(attributeAddress(obj, attr))
     (value & (0x80 >> (attr & 7))) > 0
-    //printf("testAttr obj: %d attr: %d objAddr = $%02x attrAddr = $%02x val = %d [%b] tableAddr = $%02x\n",
-    //  obj, attr, objectAddress(obj), attributeAddress(obj, attr), value, result, objectTableAddress)
   }
   
   def setAttribute(obj: Int, attr: Int) {
@@ -125,7 +123,7 @@ abstract class ObjectTable(protected val _vm: Machine) {
   // Private members
   private def attributeAddress(obj: Int, attr: Int) = objectAddress(obj) + attr / 8
   private def propertyDefault(prop: Int) = {
-    _vm.state.shortAt(objectTableAddress + (prop << 1))
+    _vm.state.shortAt(objectTableAddress + ((prop - 1) << 1))
   }
 }
 
