@@ -68,7 +68,8 @@ extends Memory with Comparable[DefaultMemory] {
   }
 
   def copyBytesTo(dest: Array[Byte], srcOffset: Int, numBytes: Int) {
-    if (dest.length < numBytes) throw new IllegalArgumentException("data array size too small")
+    if (dest.length < numBytes)
+      throw new IllegalArgumentException("data array size too small")
     System.arraycopy(buffer, indexForAddress(srcOffset), dest, 0, numBytes)
   }
   def copyBytesTo(dstOffset: Int, srcOffset: Int, numBytes: Int) {
@@ -79,11 +80,13 @@ extends Memory with Comparable[DefaultMemory] {
       throw new IllegalArgumentException("copying over bounds")
     System.arraycopy(buffer, srcIndex, buffer, destIndex, numBytes)
   }
-  def copyBytesFrom(src: Array[Byte], srcOffset: Int, destOffset: Int, numBytes: Int) {
+  def copyBytesFrom(src: Array[Byte], srcOffset: Int, destOffset: Int,
+                    numBytes: Int) {
     System.arraycopy(src, srcOffset, buffer, indexForAddress(destOffset), numBytes)
   }
 
-  def containsAddress(addr: Int): Boolean = addr >= address && addr < address + size
+  def containsAddress(addr: Int): Boolean =
+    addr >= address && addr < address + size
   def compareTo(other: DefaultMemory) = address - other.address
   def littleEndian = {
     _byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
@@ -92,7 +95,8 @@ extends Memory with Comparable[DefaultMemory] {
 }
 
 object DefaultMemory {
-  def create(address: Int, size: Int) = new DefaultMemory(new Array[Byte](size), address, size, 0)
+  def create(address: Int, size: Int) =
+    new DefaultMemory(new Array[Byte](size), address, size, 0)
 }
 
 class MemoryInputStream(_mem: Memory, offset: Int, val size: Int)
