@@ -81,6 +81,7 @@
           <args>
             <arg>-target:jvm-1.5</arg>
             <arg>-deprecation</arg>
+            <arg>-optimise</arg>
           </args>
         </configuration>
       </plugin>

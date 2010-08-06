@@ -307,7 +307,10 @@ class GlkWindowSystem {
   }
 
   def rootWindowId = if (_rootWindow == null) 0 else _rootWindow.id
-  def clearWindow(winId: Int) = windowWithId(winId).ui.clear
+  def clearWindow(winId: Int) {
+    val win = windowWithId(winId)
+    if (win != null) win.ui.clear
+  }
   def createWindow(wintype: GlkWindowType.Value, size: Int, rock: Int) = {
     logger.info("createWindow type: %s size: %d rock: %d".format(wintype, size,
                                                                  rock))

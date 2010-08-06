@@ -370,9 +370,16 @@ class EventManager(_state: VMState) {
     _state.runState = VMRunStates.Running
   }
 
-  def lineRequestForWindow(winId: Int) =
-    eventRequestsForWindow(winId).filter((elem) =>
-      elem.isInstanceOf[LineInputRequest]).head.asInstanceOf[LineInputRequest]
+  def lineRequestForWindow(winId: Int) = {
+    val eventRequests = eventRequestsForWindow(winId)
+    if (eventRequests == null) null
+    else {
+      val lineRequests = eventRequestsForWindow(winId).filter((elem) =>
+        elem.isInstanceOf[LineInputRequest])
+      if (lineRequests.isEmpty) null
+      else lineRequests.head.asInstanceOf[LineInputRequest]
+    }
+  }
   def charRequestForWindow(winId: Int) =
     eventRequestsForWindow(winId).filter((elem) =>
       elem.isInstanceOf[CharInputRequest]).head.asInstanceOf[CharInputRequest]
