@@ -56,7 +56,8 @@ object TextInputMode extends Enumeration {
   val ReadChar  = Value("ReadChar")
 } 
 
-class TextBuffer(screenModel: SwingScreenModel) extends JTextPane with KeyListener {
+class TextBuffer(screenModel: SwingScreenModel)
+extends JTextPane with KeyListener {
   setMargin(new java.awt.Insets(TextBuffer.MarginTop,
                                 TextBuffer.MarginLeft,
                                 TextBuffer.MarginBottom,
@@ -70,11 +71,8 @@ class TextBuffer(screenModel: SwingScreenModel) extends JTextPane with KeyListen
   private var inputStart    = 0
   private var maxInputChars = 0
   
-  def printChar(c: Char) {
+  def putChar(c: Char) {
     builder.append(c)
-  }
-  def printNum(num: Int) {
-    builder.append(num)
   }
   def flush {
     val doc = getDocument
@@ -167,11 +165,8 @@ with PlatformIO with OutputStream with InputStream {
   add(statusBar, BorderLayout.NORTH)
   add(scrollPane, BorderLayout.CENTER)
 
-  def printChar(c: Char) {
-    textbuffer.printChar(c)
-  }
-  def printNum(num: Int) {
-    textbuffer.printNum(num)
+  def putChar(c: Char) {
+    textbuffer.putChar(c)
   }
   def _flush {
     textbuffer.flush

@@ -31,6 +31,7 @@ package org.zmpp.zcode
 import org.zmpp.base.VMRunStates
 import org.zmpp.base.Memory
 import java.util.StringTokenizer
+import java.util.Random
 
 /**
  * This is the control part of the Z-Machine. Opposed to the first generation
@@ -39,12 +40,13 @@ import java.util.StringTokenizer
  * efficient.
  */
 class Machine {
-  val state = new VMState
-  var _platformIO: PlatformIO = null
-  val readLineInfo = new ReadLineInfo
+  val state                   = new VMState
+  var ioSystem                = new IoSystem
+  val readLineInfo            = new ReadLineInfo
+  val randomGenerator         = new Random
 
-  def currentOutputStream  = _platformIO.screenOutputStream
-  def keyboardStream       = _platformIO.keyboardStream
+  def currentOutputStream  = ioSystem.currentOutputStream
+  //def keyboardStream       = _platformIO.keyboardStream
 
   var objectTable: ObjectTable = null
 
@@ -64,7 +66,7 @@ class Machine {
     state.reset(story)
     objectTable = if (state.header.version <= 3) new ClassicObjectTable(this)
                   else new ModernObjectTable(this)
-    _platformIO = platformIO // TODO: Put into io management system
+    ioSystem.reset(platformIO)
   }
 
   def version = state.header.version
@@ -121,7 +123,7 @@ class Machine {
   }
 
   def readLine(text: Int, parse: Int) = {
-    currentOutputStream.flush
+    ioSystem.flush
     readLineInfo.maxInputChars =
       if (state.header.version <= 4) state.byteAt(text) - 1
       else state.byteAt(text)
@@ -145,10 +147,10 @@ class Machine {
       if (i > 0) builder.append(", ")
       val optype = _decodeInfo.types(i)
       if (optype == OperandTypes.LargeConstant) {
-        builder.append("#$%02x".format(state.shortAt(operandAddress)))
+        builder.append("$%02x".format(state.shortAt(operandAddress)))
         operandAddress += 2
       } else if (optype == OperandTypes.SmallConstant) {
-        builder.append("#$%02x".format(state.byteAt(operandAddress)))
+        builder.append("$%02x".format(state.byteAt(operandAddress)))
         operandAddress += 1
       } else if (optype == OperandTypes.Variable) {
         val varnum = state.byteAt(operandAddress)
@@ -163,26 +165,6 @@ class Machine {
       }
     }
     builder.toString
-  }
-  
-  private def executeInstruction {
-    val oldpc = state.pc
-    decodeInstruction
-    decodeForm
-    printf("%05d - $%06x: %s %s\n", iterations, oldpc,
-           _decodeInfo.opcodeName(version), makeOperandString)
-    // execute
-    import Instruction._
-    _decodeInfo.operandCount match {
-      case 0 => execute0Op
-      case 1 => execute1Op
-      case 2 => execute2Op
-      case OperandCountVar => executeVar
-      case _ =>
-        throw new UnsupportedOperationException(
-          "form not supported: %s\n".format(_decodeInfo.toString))
-    }
-    iterations += 1
   }
   
   private def signExtend8(value: Int) = {
@@ -258,12 +240,12 @@ class Machine {
         state.encoding.decodeZString(currentOutputStream)
       case 0x03 => // print_ret
         state.encoding.decodeZString(currentOutputStream)
-        currentOutputStream.printChar('\n')
+        ioSystem.putChar('\n')
         state.returnFromRoutine(1)
       case 0x04 => // nop
       case 0x08 => // ret_popped
         state.returnFromRoutine(state.variableValue(0))
-      case 0x0b => currentOutputStream.printChar('\n') // new_line
+      case 0x0b => currentOutputStream.putChar('\n') // new_line
       case _ =>
         throw new UnsupportedOperationException(
           "0OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
@@ -436,9 +418,11 @@ class Machine {
       case 0x04 => // sread V1-V3
         val terminator = readLine(nextOperand, nextOperand)
       case 0x05 => // print_char
-        currentOutputStream.printChar(nextOperand.asInstanceOf[Char])
+        currentOutputStream.putChar(nextOperand.asInstanceOf[Char])
       case 0x06 => // print_num
-        currentOutputStream.printNum(nextSignedOperand)
+        ioSystem.printNum(nextSignedOperand)
+      case 0x07 => // random
+        storeResult(random(nextSignedOperand))
       case 0x08 => // push
         state.setVariableValue(0, nextOperand)
       case 0x09 => // pull
@@ -461,22 +445,36 @@ class Machine {
           "VAR opcode not supported: 0x%02x\n".format(_decodeInfo.opnum))
     }
   }
+
+  private def random(range: Int): Int = {
+    if (range < 0) {
+      randomGenerator.setSeed(-range)
+      0
+    } else if (range == 0) {
+      randomGenerator.setSeed(System.currentTimeMillis)
+      0
+    } else {
+      // nextInt(range) returns [0, range[, but we need [1, range]
+      randomGenerator.nextInt(range) + 1
+    }
+  }
+
   private def decodeVarTypes {
     var typeByte = state.nextByte
-
-    if (_decodeInfo.isCallVx2)
-      printf("CALL_VS2, FIRST TYPE BYTE IS: %02x\n", typeByte)
-
     var hasMoreTypes = true
     var index = 0
     var offset = 0 // offset for more than 4 parameters (call_vs2/call_vn2)
 
     while (hasMoreTypes) {
-      val optype = (typeByte >> (6 - (index << 1))) & 0x03
-
-      if (_decodeInfo.isCallVx2)
-        printf("OPTYPE[%d] = %d\n", index + offset, optype)
-
+      // Type extraction is a little complicated, because we can have up
+      // to two type bytes.
+      // Th type bytes are arranged in this way:
+      // 00112233, so we shift like this
+      // typeByte >> 6 & 0x03
+      // typeByte >> 4 & 0x03
+      // typeByte >> 2 & 0x03
+      // typeByte >> 0 & 0x03
+      val optype = (typeByte >> (6 - ((index & 0x03) << 1))) & 0x03
       _decodeInfo.types(index + offset) = optype
 
       // one of CALL_VN2/CALL_VS2, there is an additional type byte
@@ -484,12 +482,10 @@ class Machine {
         index = 0
         typeByte = state.nextByte
         offset = 4
-
-        printf("CALL_VS2, SECOND TYPE BYTE IS: %02x\n", typeByte)
+      } else {
+        if (optype == OperandTypes.Omitted || index == 4) hasMoreTypes = false
+        else index += 1
       }
-
-      if (optype == OperandTypes.Omitted || index == 4) hasMoreTypes = false
-      else index += 1
     }
     _decodeInfo.numOperands = index + offset
   }
@@ -553,5 +549,25 @@ class Machine {
     _decodeInfo.set(form, operandCount, opcode, byte0)
     _currentArg = 0
   }
+
+  private def executeInstruction {
+    val oldpc = state.pc
+    decodeInstruction
+    decodeForm
+    printf("%04d - $%05x: %s %s\n", iterations, oldpc,
+           _decodeInfo.opcodeName(version), makeOperandString)
+    // execute
+    import Instruction._
+    _decodeInfo.operandCount match {
+      case 0 => execute0Op
+      case 1 => execute1Op
+      case 2 => execute2Op
+      case OperandCountVar => executeVar
+      case _ =>
+        throw new UnsupportedOperationException(
+          "form not supported: %s\n".format(_decodeInfo.toString))
+    }
+    iterations += 1
+  }  
 }
 

@@ -88,16 +88,16 @@ class ZsciiEncoding(_state: VMState) {
         // second half of decode 10 bit
         val char10 = (decode10bitFirst << 5) | zchar 
         decode10bit = false
-        printf("END 10 bit decoding, second: %02x, merged: %02x\n", zchar, char10)
-        stream.printChar(char10.asInstanceOf[Char])
+        //printf("END 10 bit decoding, second: %02x, merged: %02x\n", zchar, char10)
+        stream.putChar(char10.asInstanceOf[Char])
       } else {
         decode10bitFirst = zchar
         decode10bitStage += 1
-        printf("IN 10 bit decoding, first: %02x\n", zchar)
+        //printf("IN 10 bit decoding, first: %02x\n", zchar)
       }
     }
     else if (zchar == 0) {
-      stream.printChar(' ')
+      stream.putChar(' ')
     }
     else if (zchar >= 1 && zchar <= 3) {
       if (currentAbbreviation == 0) currentAbbreviation = zchar
@@ -106,12 +106,12 @@ class ZsciiEncoding(_state: VMState) {
     else if (zchar == 5) currentAlphabet = A2
     else if (zchar == 6 && currentAlphabet == A2) {
       // 10-bit mode
-      println("START 10bit MODE")
+      //println("START 10 bit MODE")
       decode10bit      = true
       decode10bitStage = 1
     }
     else if (zchar > 5) {
-      stream.printChar(currentAlphabet.lookup(zchar))
+      stream.putChar(currentAlphabet.lookup(zchar))
     }
     // always reset the alphabet if not shift
     if (zchar != 4 && zchar != 5) currentAlphabet = A0

@@ -182,7 +182,7 @@ class VMState {
   def setVariableValue(varnum: Int, value: Int) {
     if (varnum == 0) _stack.push(value)
     else if (varnum >= 1 && varnum <= 15) { // local
-      printf("SET L%02x TO %02x\n", varnum, value)
+      //printf("SET L%02x TO %02x\n", varnum, value)
       _stack.setValueAt(fp + FrameOffset.Locals + (varnum - 1), value)
     } else if (varnum >= 16 && varnum <= 255) { // global
       _story.setShortAt(header.globalVars + ((varnum - 0x10) << 1), value)
@@ -213,17 +213,22 @@ class VMState {
     else {
       val routineAddr = header.unpackRoutineAddress(packedAddr)
       val numLocals = _story.byteAt(routineAddr)
+
+      // debug
+      /*
       printf("@call $%02x ARGS = ", routineAddr)
       for (i <- 0 until numArgs) {
         printf("%02x, ", args(i))
       }
       printf(" -> VAR %02x\n", storeVar)
+      */
+      // end debug
     
       // create a call frame
       val oldfp = fp
       fp = sp // current frame pointer
       _stack.push(pc) // return address
-      printf("PUSHED RETURN ADDRESS: %02x\n", pc)
+      //printf("PUSHED RETURN ADDRESS: %02x\n", pc)
       _stack.push(oldfp)
       _stack.push(storeVar)
       _stack.push(numArgs)
@@ -305,7 +310,8 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
     else "%dOP".format(operandCount)
   }
   def isCallVx2 = {
-    form == Instruction.FormVar && (opnum == 0x1a || opnum == 0x0c)
+    operandCount == Instruction.OperandCountVar &&
+    (opnum == 0x1a || opnum == 0x0c)
   }
 
   def opcodeName(version: Int) = {
@@ -319,25 +325,9 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
   }
 }
 
-trait OutputStream {
-  def printChar(c: Char)
-  def printNum(num: Int)
-  def flush
-}
-
-trait InputStream {
-  def readLine: Int
-}
-
-trait PlatformIO {
-  def screenOutputStream: OutputStream
-  def keyboardStream: InputStream
-}
-
 class StringBuilderOutputStream extends OutputStream {
   val builder = new StringBuilder
-  def printChar(c: Char) = builder.append(c)
-  def printNum(num: Int) = builder.append(num)
+  def putChar(c: Char) = builder.append(c)
   def flush {}
   override def toString = builder.toString
 }
