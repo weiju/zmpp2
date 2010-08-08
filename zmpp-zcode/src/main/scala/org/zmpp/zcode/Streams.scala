@@ -28,19 +28,11 @@
  */
 package org.zmpp.zcode
 
-/*
 trait OutputStream {
   def putChar(c: Char)
-}
-
-trait InputStream {
-  def readChar: Char
-}
-*/
-trait OutputStream {
-  def putChar(c: Char)
-  //def printNum(num: Int)
   def flush
+  def select(flag: Boolean)
+  def isSelected: Boolean
 }
 
 trait InputStream {
@@ -50,11 +42,58 @@ trait InputStream {
 trait PlatformIO {
   def screenOutputStream : OutputStream
   def keyboardStream     : InputStream
+  def screenModel        : ScreenModel
 }
 
-/*
-class MemoryOutputStream extends OutputStream {
-}*/
+class MemoryOutputStream(state: VMState)
+extends OutputStream {
+  private var tableAddr = 0
+  private var selected = false
+  private var pos: Int = 0
+
+  def table = tableAddr
+  def table_=(addr: Int) {
+    if (selected) {
+      // nesting should actually be supported
+      throw new IllegalStateException("can not change table address while " +
+                                      "selected - nesting not supported")
+    } else {
+      tableAddr = addr
+      selected  = true
+      pos       = 0
+    }
+  }
+  def putChar(c: Char) {
+    state.setByteAt(tableAddr + 2 + pos, c & 0xff)
+    pos += 1
+  }
+  def flush { }
+  def select(flag: Boolean) {
+    // write num written
+    if (!flag) state.setShortAt(tableAddr, pos)
+    selected = flag
+  }
+  def isSelected = selected
+}
+
+class NullOutputStream extends OutputStream {
+  def putChar(c: Char) { }
+  def flush { }
+  def select(flag: Boolean) { }
+  def isSelected = false
+}
+class NullInputStream extends InputStream {
+  def readLine = 0
+}
+
+class StringBuilderOutputStream extends OutputStream {
+  val builder = new StringBuilder
+  def putChar(c: Char) = builder.append(c)
+  def flush { }
+  def select(flag: Boolean) { }
+  def isSelected = false
+  override def toString = builder.toString
+}
 
 /**
  * Output Streams
@@ -68,26 +107,32 @@ class MemoryOutputStream extends OutputStream {
  * 0: Keyboard
  * 1: Script File (stream output stream 4)
  */
-class IoSystem {
-  private val outputStreams = new Array[OutputStream](3)
+class IoSystem(state: VMState) extends OutputStream {
+  private val outputStreams = new Array[OutputStream](4)
   private val inputStreams  = new Array[InputStream](2)
-  private var _currentOutputStreamId    = 0
+  private val NullOut = new NullOutputStream
   private var _currentInputStreamId     = 0
   private var _platformIO: PlatformIO = null
 
   def reset(platformIO: PlatformIO) {
     outputStreams(0)       = platformIO.screenOutputStream
+    outputStreams(1)       = NullOut
+    outputStreams(2)       = new MemoryOutputStream(state)
+    outputStreams(3)       = NullOut
     inputStreams(0)        = platformIO.keyboardStream
-    _currentOutputStreamId = 0
+    inputStreams(1)        = new NullInputStream
     _currentInputStreamId  = 0
   }
-  def currentOutputStream = outputStreams(_currentOutputStreamId)
-  def currentOutputStreamId = _currentOutputStreamId + 1
-  def currentOutputStreamId_=(streamId: Int) {
+  def selectOutputStream(streamId: Int, flag: Boolean) {
     if (streamId < 1 || streamId > 4) {
       printError("Can't set current output stream to id: %d " +
                  "(Only 1-4 are allowed)".format(streamId))
-    } else _currentOutputStreamId = streamId - 1
+    } else {
+      outputStreams(streamId - 1).select(flag)
+    }
+  }
+  def createAndSelectMemoryStream(table: Int) {
+    outputStreams(2).asInstanceOf[MemoryOutputStream].table = table
   }
 
   def currentInputStreamId = _currentInputStreamId
@@ -95,20 +140,29 @@ class IoSystem {
     if (streamId != 0 && streamId != 1) {
       printError("Can't set current input stream to id: %d " +
                  "(only 0 and 1 are allowed).".format(streamId))
-    } else _currentOutputStreamId = streamId - 1
+    } else _currentInputStreamId = streamId - 1
   }
 
+  // ********************************************************************
+  // ***** OUTPUT
+  // ********************************************************************
   def printError(msg: String) {
     printf("ERROR: %s", msg)
-  }
-  def putChar(c: Char) {
-    outputStreams(_currentOutputStreamId).putChar(c)
   }
   def printNum(num: Int) {
     val numString = "%d".format(num)
     for (c <- numString) putChar(c)
   }
-  def flush {
-    outputStreams(_currentOutputStreamId).flush
+  def putChar(c: Char) {
+    for (s <- outputStreams) {
+      if (s.isSelected) s.putChar(c)
+    }
   }
+  def flush {
+    for (s <- outputStreams) {
+      if (s.isSelected) s.flush
+    }
+  }
+  def select(flag: Boolean) { }
+  def isSelected = true
 }

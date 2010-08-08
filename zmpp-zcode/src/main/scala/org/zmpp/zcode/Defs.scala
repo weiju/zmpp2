@@ -325,13 +325,6 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
   }
 }
 
-class StringBuilderOutputStream extends OutputStream {
-  val builder = new StringBuilder
-  def putChar(c: Char) = builder.append(c)
-  def flush {}
-  override def toString = builder.toString
-}
-
 class ReadLineInfo {
   var textBuffer: Int    = 0
   var parseBuffer: Int   = 0

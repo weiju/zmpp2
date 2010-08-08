@@ -41,12 +41,10 @@ import java.util.Random
  */
 class Machine {
   val state                   = new VMState
-  var ioSystem                = new IoSystem
+  var ioSystem                = new IoSystem(state)
   val readLineInfo            = new ReadLineInfo
   val randomGenerator         = new Random
-
-  def currentOutputStream  = ioSystem.currentOutputStream
-  //def keyboardStream       = _platformIO.keyboardStream
+  var platformIO : PlatformIO = null
 
   var objectTable: ObjectTable = null
 
@@ -66,6 +64,7 @@ class Machine {
     state.reset(story)
     objectTable = if (state.header.version <= 3) new ClassicObjectTable(this)
                   else new ModernObjectTable(this)
+    this.platformIO = platformIO
     ioSystem.reset(platformIO)
   }
 
@@ -237,15 +236,15 @@ class Machine {
       case 0x00 => state.returnFromRoutine(1) // rtrue
       case 0x01 => state.returnFromRoutine(0) // rfalse
       case 0x02 => // print
-        state.encoding.decodeZString(currentOutputStream)
+        state.encoding.decodeZString(ioSystem)
       case 0x03 => // print_ret
-        state.encoding.decodeZString(currentOutputStream)
+        state.encoding.decodeZString(ioSystem)
         ioSystem.putChar('\n')
         state.returnFromRoutine(1)
       case 0x04 => // nop
       case 0x08 => // ret_popped
         state.returnFromRoutine(state.variableValue(0))
-      case 0x0b => currentOutputStream.putChar('\n') // new_line
+      case 0x0b => ioSystem.putChar('\n') // new_line
       case _ =>
         throw new UnsupportedOperationException(
           "0OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
@@ -276,14 +275,14 @@ class Machine {
       case 0x08 => // call_1s
         callWithReturnValue(0)
       case 0x0a => // print_obj
-        printObject(nextOperand, currentOutputStream)
+        printObject(nextOperand, ioSystem)
       case 0x0b => state.returnFromRoutine(nextOperand) // ret
       case 0x0c => // jump
         val offset = nextSignedOperand
         state.pc += offset - 2 // address
       case 0x0d => // print_paddr
         state.encoding.decodeZStringAtPackedAddress(nextOperand,
-                                                    currentOutputStream)
+                                                    ioSystem)
       case 0x0f => // 1-4 -> not, > 5 -> call_1n
         if (version <= 4) storeResult((~nextOperand) & 0xffff)
         else state.call(nextOperand, _callArgs, -1, 0)
@@ -418,7 +417,7 @@ class Machine {
       case 0x04 => // sread V1-V3
         val terminator = readLine(nextOperand, nextOperand)
       case 0x05 => // print_char
-        currentOutputStream.putChar(nextOperand.asInstanceOf[Char])
+        ioSystem.putChar(nextOperand.asInstanceOf[Char])
       case 0x06 => // print_num
         ioSystem.printNum(nextSignedOperand)
       case 0x07 => // random
@@ -428,11 +427,24 @@ class Machine {
       case 0x09 => // pull
         if (state.stackEmpty) fatal("Stack underflow !")
         else storeResult(state.variableValue(0))
+      case 0x0a => // split_window
+        if (platformIO != null) platformIO.screenModel.splitWindow(nextOperand)
+        else warn("@split_window, platformIO not set")
+      case 0x0b => // set_window
+        if (platformIO != null) platformIO.screenModel.setWindow(nextOperand)
+        else warn("@set_window, platformIO not set")
       case 0x0c => // call_vs2
         callWithReturnValueVs2(_decodeInfo.numOperands - 1)
+      case 0x0f => // set_cursor
+        val line   = nextOperand
+        val column = nextOperand
+        if (platformIO != null) platformIO.screenModel.setCursor(line, column)
+        else warn("@set_window, platformIO not set")
       case 0x11 => // set_text_style
         val style = nextOperand
         printf("@set_text_style %d not implemented yet\n", style)
+      case 0x13 => // output_stream
+        outputStream(nextSignedOperand)
       case 0x19 => // call_vn
         callWithoutReturnValue(_decodeInfo.numOperands - 1)
       case 0x1a => // call_vn2
@@ -443,6 +455,19 @@ class Machine {
       case _ =>
         throw new UnsupportedOperationException(
           "VAR opcode not supported: 0x%02x\n".format(_decodeInfo.opnum))
+    }
+  }
+
+  private def outputStream(streamnum: Int) {
+    if (streamnum == 0) return
+    else if (streamnum < 0) ioSystem.selectOutputStream(-streamnum, false)
+    else if (streamnum == 3) {
+      if (version == 6) {
+        throw new UnsupportedOperationException("VERSION 6 NOT SUPPORTED YET")
+      }
+      ioSystem.createAndSelectMemoryStream(nextOperand)
+    } else {
+      ioSystem.selectOutputStream(streamnum, true)
     }
   }
 

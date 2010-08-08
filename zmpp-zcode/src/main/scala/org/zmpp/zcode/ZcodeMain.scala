@@ -156,7 +156,7 @@ extends JTextPane with KeyListener {
 }
 
 class SwingScreenModel extends JPanel(new BorderLayout)
-with PlatformIO with OutputStream with InputStream {
+with PlatformIO with OutputStream with InputStream with ScreenModel {
   var vm: Machine = null
   val statusBar = new StatusBar
   val textbuffer = new TextBuffer(this)
@@ -165,6 +165,9 @@ with PlatformIO with OutputStream with InputStream {
   add(statusBar, BorderLayout.NORTH)
   add(scrollPane, BorderLayout.CENTER)
 
+  private var selected: Boolean = true
+  def isSelected = selected
+  def select(flag: Boolean) = selected = flag
   def putChar(c: Char) {
     textbuffer.putChar(c)
   }
@@ -197,15 +200,25 @@ with PlatformIO with OutputStream with InputStream {
   }
   
   def screenOutputStream = this
-  def keyboardStream = this
+  def keyboardStream     = this
+  def screenModel        = this
+  def splitWindow(lines: Int) {
+    printf("SPLIT_WINDOW(%d) NOT YET SUPPORTED\n", lines)
+  }
+  def setWindow(windowId: Int) {
+    printf("SET_WINDOW(%d), NOT YET SUPPORTED\n", windowId)
+  }
+  def setCursor(line: Int, column: Int) {
+    printf("SET_CURSOR(%d, %d), NOT YET SUPPORTED\n", line, column)
+  }
 }
 
 class ZcodeFrame extends JFrame("ZMPP 2.0 Prototype") {
   val screenModel = new SwingScreenModel
   getContentPane.add(screenModel, BorderLayout.CENTER)
   pack
-
 }
+
 object ZcodeMain {
   private var _vm : Machine = null
   private var _frame: ZcodeFrame = null
