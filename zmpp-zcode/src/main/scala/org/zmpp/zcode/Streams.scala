@@ -39,12 +39,6 @@ trait InputStream {
   def readLine: Int
 }
 
-trait PlatformIO {
-  def screenOutputStream : OutputStream
-  def keyboardStream     : InputStream
-  def screenModel        : ScreenModel
-}
-
 class MemoryOutputStream(state: VMState)
 extends OutputStream {
   private var tableAddr = 0
@@ -112,14 +106,14 @@ class IoSystem(state: VMState) extends OutputStream {
   private val inputStreams  = new Array[InputStream](2)
   private val NullOut = new NullOutputStream
   private var _currentInputStreamId     = 0
-  private var _platformIO: PlatformIO = null
+  private var _screenModel: ScreenModel = null
 
-  def reset(platformIO: PlatformIO) {
-    outputStreams(0)       = platformIO.screenOutputStream
+  def reset(screenModel: ScreenModel) {
+    outputStreams(0)       = screenModel.screenOutputStream
     outputStreams(1)       = NullOut
     outputStreams(2)       = new MemoryOutputStream(state)
     outputStreams(3)       = NullOut
-    inputStreams(0)        = platformIO.keyboardStream
+    inputStreams(0)        = screenModel.keyboardStream
     inputStreams(1)        = new NullInputStream
     _currentInputStreamId  = 0
   }
@@ -127,9 +121,7 @@ class IoSystem(state: VMState) extends OutputStream {
     if (streamId < 1 || streamId > 4) {
       printError("Can't set current output stream to id: %d " +
                  "(Only 1-4 are allowed)".format(streamId))
-    } else {
-      outputStreams(streamId - 1).select(flag)
-    }
+    } else outputStreams(streamId - 1).select(flag)
   }
   def createAndSelectMemoryStream(table: Int) {
     outputStreams(2).asInstanceOf[MemoryOutputStream].table = table
@@ -146,23 +138,15 @@ class IoSystem(state: VMState) extends OutputStream {
   // ********************************************************************
   // ***** OUTPUT
   // ********************************************************************
-  def printError(msg: String) {
-    printf("ERROR: %s", msg)
-  }
-  def printNum(num: Int) {
-    val numString = "%d".format(num)
-    for (c <- numString) putChar(c)
-  }
+  def printMessage(msg: String) = msg.map(c => putChar(c))
+  def printError(msg: String) = printMessage("ERROR: %s".format(msg))
+  def printNum(num: Int) = "%d".format(num).map{c => putChar(c)}
   def putChar(c: Char) {
-    for (s <- outputStreams) {
-      if (s.isSelected) s.putChar(c)
-    }
+    // if stream 3 is selected, only write to that one
+    if (outputStreams(2).isSelected) outputStreams(2).putChar(c)
+    else outputStreams.filter{s => s.isSelected}.map{s => s.putChar(c)}
   }
-  def flush {
-    for (s <- outputStreams) {
-      if (s.isSelected) s.flush
-    }
-  }
+  def flush = outputStreams.filter{s => s.isSelected}.map{s => s.flush}
   def select(flag: Boolean) { }
   def isSelected = true
 }

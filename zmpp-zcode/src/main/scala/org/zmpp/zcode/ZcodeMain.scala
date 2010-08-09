@@ -40,7 +40,85 @@ import javax.swing._
 import java.awt._
 import java.awt.event._
 
-class StatusBar extends JLabel(" ") {
+// The V1-V3 status bar. This is implemented as a label, because
+// there is at least 1 game (Seastalker) which has both status
+// bar and two windows
+class StatusBar extends JLabel(" ")
+
+// A class to implement the top window. In Swing, the top window sits
+// in the glass pane. This is done to implement the tricky behaviour
+// of the Z-machine screen model of overlaying bottom window in a
+// possibly overlapping way.
+// The standard layout containers either don't overlap or do not
+// show the stacked components below. This is also one of the reasons
+// why the Glk can't fully implement the Z-machine screen model, V6
+// is a another story.
+class TextGrid extends JTextPane {
+  private var numLines     = 0
+  private var _cursorPos   = (1, 1)
+  // TODO: Use annotated characters
+  private var buffer : Array[Array[Char]] = null
+  var totalLines   = 0
+  var charsPerLine = 0
+
+  setOpaque(false)
+
+  def windowSize = numLines
+  def windowSize_=(numLines: Int) {
+    this.numLines = numLines
+  }
+  def cursorPos = _cursorPos
+  def cursorPos_=(pos: (Int, Int)) = {
+    // TODO: check boundaries, if outside set to column 1 of current line
+    _cursorPos = pos
+  }
+  def putChar(c: Char) {
+    if (c == '\n') moveCursorToNextLine
+    else {
+      val col  = _cursorPos._2
+      val line = _cursorPos._1
+      //printf("PUT CHARACTER TO POS (%d, %d)\n", line, col)
+      // save the state in the buffer
+      buffer(line - 1)(col - 1) = c
+      // and also set it in the window
+      val offset = (line - 1) * (charsPerLine + 1) + (col - 1)
+      getDocument.remove(offset, 1)
+      getDocument.insertString(offset, String.valueOf(c), null)
+
+      if (col < charsPerLine) _cursorPos = (line, col + 1)
+      else moveCursorToNextLine
+    }
+  }
+  private def moveCursorToNextLine {
+    val nextLine = java.lang.Math.min(numLines, _cursorPos._1 + 1)
+    _cursorPos = (nextLine, 0)
+  }
+
+  def clear {
+    getDocument.remove(0, getDocument.getLength)
+    for (line <- 0 until totalLines) {
+      for (col <- 0 until charsPerLine) {
+        getDocument.insertString(getDocument.getLength,
+                                 String.valueOf(buffer(line)(col)),
+                                 null)
+      }
+      getDocument.insertString(getDocument.getLength, "\n", null)
+    }
+  }
+
+  def reset {
+    val currentSize: Dimension = getSize
+    val fontMetrics = getGraphics.getFontMetrics(getFont)
+    charsPerLine  = currentSize.width / fontMetrics.charWidth('0')
+    totalLines    = currentSize.height / fontMetrics.getHeight
+    printf("SCREEN SIZE: %d LINES %d COLS\n", totalLines, charsPerLine)
+    buffer = new Array[Array[Char]](totalLines)
+    for (line <- 0 until totalLines) {
+      buffer(line) = new Array[Char](charsPerLine)
+      for (col <- 0 until charsPerLine) buffer(line)(col) = ' '
+    }
+    clear
+  }
 }
 
 object TextBuffer {
@@ -63,7 +141,6 @@ extends JTextPane with KeyListener {
                                 TextBuffer.MarginBottom,
                                 TextBuffer.MarginRight))
   addKeyListener(this)
-
   var builder = new StringBuilder
   var inputMode = TextInputMode.InputNone
   def isCharInputMode = inputMode == TextInputMode.ReadChar
@@ -83,15 +160,7 @@ extends JTextPane with KeyListener {
   // ****** KeyListener ******
   def keyPressed(event: KeyEvent) {
     if (isCharInputMode) {
-      /*
-      val keyCode = glkKeyCode(event.getKeyCode)
-      if (keyCode != GlkKeyCodes.Unknown) {
-        event.consume
-        _screenUI.vm.resumeWithCharInput(glkWindow.id, keyCode)
-        inputMode = SwingTextWindowUI.InputModeNone
-        ExecutionControl.executeTurn(_screenUI.vm)
-      }
-      */
+      // TODO
     } else if (isLineInputMode) {
       val doc = getDocument
       val caretPos = getCaret.getDot
@@ -121,12 +190,8 @@ extends JTextPane with KeyListener {
   }
   def keyTyped(event: KeyEvent) {
     if (isCharInputMode) {
-      /*
       event.consume
-      _screenUI.vm.resumeWithCharInput(glkWindow.id, event.getKeyChar.toInt)          
-      inputMode = SwingTextWindowUI.InputModeNone
-      ExecutionControl.executeTurn(_screenUI.vm)
-      */
+      // TODO
     } else if (!isLineInputMode) {
       // not in input mode, eat all key events
       event.consume
@@ -155,29 +220,49 @@ extends JTextPane with KeyListener {
   }
 }
 
-class SwingScreenModel extends JPanel(new BorderLayout)
-with PlatformIO with OutputStream with InputStream with ScreenModel {
-  var vm: Machine = null
-  val statusBar = new StatusBar
-  val textbuffer = new TextBuffer(this)
-  val scrollPane = new JScrollPane(textbuffer)
-  textbuffer.setPreferredSize(new Dimension(640, 480))
-  add(statusBar, BorderLayout.NORTH)
-  add(scrollPane, BorderLayout.CENTER)
+class SwingScreenModel(topWindow: TextGrid) extends JPanel(new BorderLayout)
+with OutputStream with InputStream with ScreenModel with FocusListener {
+  var vm: Machine  = null
+  var activeWindow = 0
+  val statusBar    = new StatusBar
+  val mainPane     = new JPanel(new BorderLayout)
+  val bottomWindow = new TextBuffer(this)
+  val scrollPane   = new JScrollPane(bottomWindow)
+  scrollPane.setPreferredSize(new Dimension(640, 480))
+  mainPane.add(scrollPane, BorderLayout.CENTER)
+  add(mainPane, BorderLayout.CENTER)
+  topWindow.addFocusListener(this)
+
+  def connect(aVm: Machine) {
+    vm = aVm
+    remove(statusBar)
+    if (vm.version <= 3) {
+      add(statusBar, BorderLayout.NORTH)
+    }
+  }
 
   private var selected: Boolean = true
   def isSelected = selected
   def select(flag: Boolean) = selected = flag
   def putChar(c: Char) {
-    textbuffer.putChar(c)
+    if (SwingUtilities.isEventDispatchThread) _putChar(c)
+    else {
+      SwingUtilities.invokeAndWait(new Runnable {
+        def run = _putChar(c)
+      })
+    }
+  }
+  def _putChar(c: Char) {
+    if (activeWindow == 0) bottomWindow.putChar(c)
+    else topWindow.putChar(c)
   }
   def _flush {
-    textbuffer.flush
+    if (activeWindow == 0) bottomWindow.flush
   }
   def flush {
     if (SwingUtilities.isEventDispatchThread) _flush
     else {
-      SwingUtilities.invokeLater(new Runnable {
+      SwingUtilities.invokeAndWait(new Runnable {
         def run = _flush
       })
     }
@@ -191,7 +276,7 @@ with PlatformIO with OutputStream with InputStream with ScreenModel {
     val objectName  = vm.statusLineObjectName
     val scoreOrTime = vm.statusLineScoreOrTime
     statusBar.setText(objectName + " " + scoreOrTime)
-    textbuffer.requestLineInput(maxChars)
+    bottomWindow.requestLineInput(maxChars)
     0
   }
   def resumeWithLineInput(input: String) {
@@ -203,26 +288,72 @@ with PlatformIO with OutputStream with InputStream with ScreenModel {
   def keyboardStream     = this
   def screenModel        = this
   def splitWindow(lines: Int) {
-    printf("SPLIT_WINDOW(%d) NOT YET SUPPORTED\n", lines)
+    topWindow.windowSize = lines
+    if (vm.version == 3) topWindow.clear
   }
   def setWindow(windowId: Int) {
-    printf("SET_WINDOW(%d), NOT YET SUPPORTED\n", windowId)
+    if (windowId == 0 || windowId == 1) {
+      activeWindow = windowId
+      printf("Setting active window to: %d\n", activeWindow)
+    } else {
+      throw new IllegalArgumentException(
+        "@set_window illegal window: %d".format(windowId))
+    }
   }
   def setCursor(line: Int, column: Int) {
-    printf("SET_CURSOR(%d, %d), NOT YET SUPPORTED\n", line, column)
+    if (activeWindow == 1) {
+      topWindow.cursorPos = (line, column)
+    } else {
+      throw new UnsupportedOperationException(
+        "Can not set cursor in bottom window")
+    }   
   }
+
+  def initUI {
+    println("INITIALIZE THE UI !!!")
+    topWindow.setFont(new Font("Courier New", Font.PLAIN, 14))
+    bottomWindow.setFont(new Font("American Typewriter", Font.PLAIN, 14))
+    topWindow.reset
+
+    // now the top window "knows" how large the screen is, so we can set
+    // the dimensions and font sizes to the VM
+    vm.setFontSizeInUnits(1, 1)
+    vm.setScreenSizeInUnits(topWindow.charsPerLine, topWindow.totalLines)
+  }
+
+  // For now, this is just an approximation, we just prevent that
+  // the cursor is caught in the glass pane while we actually want to have
+  // input focus in the bottom window in the normal case.
+  // E.g. "Deadline" will not look as good with this approach, a better one
+  // would take into account how large the top window is and allow focus
+  // in case the cursor is set in the visible area of the top window
+  def focusGained(e: FocusEvent) = bottomWindow.requestFocusInWindow
+  def focusLost(e: FocusEvent) { }
 }
 
-class ZcodeFrame extends JFrame("ZMPP 2.0 Prototype") {
-  val screenModel = new SwingScreenModel
+class ZcodeFrame extends JFrame("ZMPP 2.0 Prototype") with WindowListener {
+  val topWindow = new TextGrid
+  val screenModel = new SwingScreenModel(topWindow)
   getContentPane.add(screenModel, BorderLayout.CENTER)
+  getRootPane.getGlassPane.setVisible(true)
+  getRootPane.setGlassPane(topWindow)
   pack
+  addWindowListener(this)
+
+  // WindowListener
+  def windowOpened(event: WindowEvent) {
+    // UI exists now, sizes can be initialized
+    screenModel.initUI
+  }
+  def windowActivated(event: WindowEvent) { }
+  def windowDeactivated(event: WindowEvent) { }
+  def windowDeiconified(event: WindowEvent) { }
+  def windowIconified(event: WindowEvent) { }
+  def windowClosed(event: WindowEvent) { }
+  def windowClosing(event: WindowEvent) { }
 }
 
 object ZcodeMain {
-  private var _vm : Machine = null
-  private var _frame: ZcodeFrame = null
-
   def readFileData(file: File) = {
     val filebytes = new Array[Byte](file.length.toInt)
     var fileIs : FileInputStream = null
@@ -237,30 +368,41 @@ object ZcodeMain {
     }
     filebytes
   }
-  def readZcodeFile(file : File) = {
+  def readZcodeFile(file : File, screenModel: ScreenModel) = {
     val story = new DefaultMemory(readFileData(file))
-    _vm = new Machine
-    _vm.init(story, _frame.screenModel)
-    _frame.screenModel.vm = _vm
-    _vm
+    val vm = new Machine
+    vm.init(story, screenModel)
+    vm
   }
   
   def main(args: Array[String]) {
-    _frame = new ZcodeFrame
-    _frame.setVisible(true)
-    val vm = if (args.length == 0) {
-      readZcodeFile(new File("minizork.z3"))
+    val frame = new ZcodeFrame
+    if (SwingUtilities.isEventDispatchThread) {
+      frame.setVisible(true)
     } else {
-      readZcodeFile(new File(args(0)))
+      SwingUtilities.invokeAndWait(new Runnable {
+        def run = frame.setVisible(true)
+      })
     }
+    val vm = if (args.length == 0) {
+      readZcodeFile(new File("minizork.z3"), frame.screenModel)
+    } else {
+      readZcodeFile(new File(args(0)), frame.screenModel)
+    }
+    frame.screenModel.connect(vm)
     // do in thread
     //while (_vm.state) {
-      _vm.doTurn
+      vm.doTurn
       // TODO: not only line input
-      if (_vm.state.runState == VMRunStates.WaitForEvent) {
-        _frame.screenModel.readLine
+      if (vm.state.runState == VMRunStates.WaitForEvent) {
+        if (SwingUtilities.isEventDispatchThread) {
+          frame.screenModel.readLine
+        } else {
+          SwingUtilities.invokeAndWait(new Runnable {
+            def run = frame.screenModel.readLine
+          })
+        }
       }
     //}
   }
 }
-

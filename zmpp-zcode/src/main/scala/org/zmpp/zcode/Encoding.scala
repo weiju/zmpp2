@@ -88,7 +88,8 @@ class ZsciiEncoding(_state: VMState) {
         // second half of decode 10 bit
         val char10 = (decode10bitFirst << 5) | zchar 
         decode10bit = false
-        //printf("END 10 bit decoding, second: %02x, merged: %02x\n", zchar, char10)
+        //printf("END 10 bit decoding, second: %02x, merged: %02x (%c)\n",
+        //       zchar, char10, char10)
         stream.putChar(char10.asInstanceOf[Char])
       } else {
         decode10bitFirst = zchar
@@ -98,6 +99,7 @@ class ZsciiEncoding(_state: VMState) {
     }
     else if (zchar == 0) {
       stream.putChar(' ')
+      //println("decoded ZCHAR [SPACE]")
     }
     else if (zchar >= 1 && zchar <= 3) {
       if (currentAbbreviation == 0) currentAbbreviation = zchar
@@ -112,6 +114,7 @@ class ZsciiEncoding(_state: VMState) {
     }
     else if (zchar > 5) {
       stream.putChar(currentAlphabet.lookup(zchar))
+      //printf("decoded ZCHAR '%c'\n", currentAlphabet.lookup(zchar))
     }
     // always reset the alphabet if not shift
     if (zchar != 4 && zchar != 5) currentAlphabet = A0
@@ -126,7 +129,8 @@ class ZsciiEncoding(_state: VMState) {
 
     while (!endofText) {
       numBytesDecoded += 2
-      //printf("CURRENT WORD: %02x\n", currentWord)
+      //printf("CURRENT WORD: %02x (Alphabet: %s)\n", currentWord,
+      //       currentAlphabet.name)
       val zchar0 = (currentWord >> 10) & 0x1f
       val zchar1 = (currentWord >>  5) & 0x1f
       val zchar2 = currentWord & 0x1f
@@ -139,6 +143,9 @@ class ZsciiEncoding(_state: VMState) {
         currentWord = _state.shortAt(addr + numBytesDecoded)
       }
     }
+    // not sure if we should always reset the decoder, but it seems to work
+    // what happens in nested invocations (abbreviations ?)
+    reset
     numBytesDecoded
   }
   def decodeZStringAtPackedAddress(paddr: Int, stream: OutputStream) {

@@ -40,11 +40,11 @@ import java.util.Random
  * efficient.
  */
 class Machine {
-  val state                   = new VMState
-  var ioSystem                = new IoSystem(state)
-  val readLineInfo            = new ReadLineInfo
-  val randomGenerator         = new Random
-  var platformIO : PlatformIO = null
+  val state                     = new VMState
+  var ioSystem                  = new IoSystem(state)
+  val readLineInfo              = new ReadLineInfo
+  val randomGenerator           = new Random
+  var screenModel : ScreenModel = null
 
   var objectTable: ObjectTable = null
 
@@ -57,19 +57,16 @@ class Machine {
   // transient information, current routine decoding data
   private val _callArgs    = new Array[Int](8)
   private var _currentArg  = 0
-
   var iterations  = 1
 
-  def init(story: Memory, platformIO: PlatformIO) {
+  def init(story: Memory, screenModel: ScreenModel) {
     state.reset(story)
     objectTable = if (state.header.version <= 3) new ClassicObjectTable(this)
                   else new ModernObjectTable(this)
-    this.platformIO = platformIO
-    ioSystem.reset(platformIO)
+    this.screenModel = screenModel
+    ioSystem.reset(screenModel)
   }
-
-  def version = state.header.version
-  
+  def version = state.header.version 
   def doTurn {
     while (state.runState == VMRunStates.Running) {
       executeInstruction
@@ -78,7 +75,7 @@ class Machine {
 
   // ***********************************************************************
   // ******** PARSER SUPPORT
-  // **************************************  
+  // **************************************
   //private def textBufferOffset = if (version < 5) 1 else 2
 
   def resumeWithLineInput(input: String) {
@@ -112,12 +109,9 @@ class Machine {
   // **********************************************************************
   // ***** error/warning
   // *****************************
-  def warn(msg: String) {
-    printf("WARNING: %s", msg)
-  }
- 
+  def warn(msg: String) = ioSystem.printMessage("WARNING: %s".format(msg)) 
   def fatal(msg: String) {
-    printf("FATAL: %s", msg)
+    ioSystem.printMessage("FATAL: %s".format(msg))
     state.runState = VMRunStates.Halted
   }
 
@@ -428,17 +422,17 @@ class Machine {
         if (state.stackEmpty) fatal("Stack underflow !")
         else storeResult(state.variableValue(0))
       case 0x0a => // split_window
-        if (platformIO != null) platformIO.screenModel.splitWindow(nextOperand)
+        if (screenModel != null) screenModel.splitWindow(nextOperand)
         else warn("@split_window, platformIO not set")
       case 0x0b => // set_window
-        if (platformIO != null) platformIO.screenModel.setWindow(nextOperand)
+        if (screenModel != null) screenModel.setWindow(nextOperand)
         else warn("@set_window, platformIO not set")
       case 0x0c => // call_vs2
         callWithReturnValueVs2(_decodeInfo.numOperands - 1)
       case 0x0f => // set_cursor
         val line   = nextOperand
         val column = nextOperand
-        if (platformIO != null) platformIO.screenModel.setCursor(line, column)
+        if (screenModel != null) screenModel.setCursor(line, column)
         else warn("@set_window, platformIO not set")
       case 0x11 => // set_text_style
         val style = nextOperand
@@ -593,6 +587,27 @@ class Machine {
           "form not supported: %s\n".format(_decodeInfo.toString))
     }
     iterations += 1
-  }  
+  }
+
+  def setFontSizeInUnits(width: Int, height: Int) {
+    if (version == 6) {
+      state.setByteAt(0x26, height)
+      state.setByteAt(0x27, width)
+    } else if (version >= 5) {
+      state.setByteAt(0x26, width)
+      state.setByteAt(0x27, height)
+    }
+  }
+
+  def setScreenSizeInUnits(width: Int, height: Int) {
+    if (version >= 4) {
+      state.setByteAt(0x20, height)
+      state.setByteAt(0x21, width)
+    }
+    if (version >= 5) {
+      state.setShortAt(0x22, width)
+      state.setShortAt(0x24, height)
+    }
+  }
 }
 

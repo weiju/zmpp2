@@ -29,7 +29,11 @@
 package org.zmpp.zcode
 
 trait ScreenModel {
+  def screenOutputStream : OutputStream
+  def keyboardStream     : InputStream
+
   def splitWindow(lines: Int)
   def setWindow(windowId: Int)
   def setCursor(line: Int, column: Int)
+  def connect(vm: Machine)
 }
