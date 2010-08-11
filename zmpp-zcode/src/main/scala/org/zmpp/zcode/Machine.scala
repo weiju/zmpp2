@@ -28,6 +28,7 @@
  */
 package org.zmpp.zcode
 
+import org.zmpp.base.Types
 import org.zmpp.base.VMRunStates
 import org.zmpp.base.Memory
 import java.util.StringTokenizer
@@ -84,6 +85,10 @@ class Machine {
       new ParserHelper(state, readLineInfo.textBuffer, readLineInfo.parseBuffer,
                        0, false)
     parserSupport.process(input)
+    if (version >= 5) {
+      storeResult(10) // store terminator
+    }
+    doTurn
   }
 
   // ***********************************************************************
@@ -100,7 +105,7 @@ class Machine {
     val global2 = state.variableValue(0x11)
     val global3 = state.variableValue(0x12)
     if (state.header.isScoreGame) {
-      "%d/%d".format(signExtend16(global2), global3)
+      "%d/%d".format(Types.signExtend16(global2), global3)
     } else {
       "%d:%d".format(global2, global3)
     }
@@ -159,19 +164,12 @@ class Machine {
     }
     builder.toString
   }
-  
-  private def signExtend8(value: Int) = {
-    if ((value & 0x80) == 0x80) value | 0xffffff00 else value
-  }
-  private def signExtend16(value: Int) = {
-    if ((value & 0x8000) == 0x8000) value | 0xffff0000 else value
-  }
 
   private def nextOperand = {
     _currentArg += 1
     state.nextOperand(_decodeInfo.types(_currentArg - 1))
   }
-  private def nextSignedOperand = signExtend16(nextOperand)
+  private def nextSignedOperand = Types.signExtend16(nextOperand)
   private def storeResult(result: Int) = state.setVariableValue(state.nextByte,
                                                                 result)
 
@@ -301,19 +299,23 @@ class Machine {
       case 0x04 => // dec_chk
         val varnum   = nextOperand
         val value    = nextSignedOperand
-        val newValue = signExtend16(state.variableValue(varnum)) - 1
+        val newValue = Types.signExtend16(state.variableValue(varnum)) - 1
         state.setVariableValue(varnum, newValue)
         decideBranch(newValue < value)
       case 0x05 => // inc_chk
         val varnum = nextOperand
         val value  = nextSignedOperand
-        val newValue = signExtend16(state.variableValue(varnum)) + 1
+        val newValue = Types.signExtend16(state.variableValue(varnum)) + 1
         state.setVariableValue(varnum, newValue)
         decideBranch(newValue > value)
       case 0x06 => // jin
         val obj1 = nextOperand
         val obj2 = nextOperand
         decideBranch(objectTable.parent(obj1) == obj2)
+      case 0x07 => // test
+        val op1 = nextOperand
+        val op2 = nextOperand
+        decideBranch((op1 & op2) == op2)
       case 0x08 => // or
         storeResult(nextOperand | nextOperand)
       case 0x09 => // and
@@ -409,7 +411,13 @@ class Machine {
           warn("@put_prop illegal access to object %d".format(obj))
         }
       case 0x04 => // sread V1-V3
-        val terminator = readLine(nextOperand, nextOperand)
+        val textBuffer = nextOperand
+        val parseBuffer = nextOperand
+        if (version >= 4) {
+          val time = if (_decodeInfo.numOperands > 2) nextOperand else 0
+          val routine = if (_decodeInfo.numOperands > 3) nextOperand else 0
+        }
+        val terminator = readLine(textBuffer, parseBuffer)
       case 0x05 => // print_char
         ioSystem.putChar(nextOperand.asInstanceOf[Char])
       case 0x06 => // print_num
@@ -443,6 +451,19 @@ class Machine {
         callWithoutReturnValue(_decodeInfo.numOperands - 1)
       case 0x1a => // call_vn2
         callWithoutReturnValue(_decodeInfo.numOperands - 1)
+      case 0x1b => // tokenise
+        val textBuffer = nextOperand
+        val parseBuffer = nextOperand
+        val userDictionary =
+          if (_decodeInfo.numOperands > 2) nextOperand else 0
+        if (userDictionary != 0) {
+          throw new UnsupportedOperationException("user dictionaries not " +
+                                                  "supported yet")
+        }
+        val flag = if (_decodeInfo.numOperands > 3) nextOperand else 0
+        val parserHelper = new ParserHelper(state, textBuffer, parseBuffer,
+                                            userDictionary, flag != 0)
+        parserHelper.tokenize
       case 0x1f => // check_arg_count
         val argNum = nextOperand
         decideBranch(argNum <= state.numArgsCurrentRoutine)

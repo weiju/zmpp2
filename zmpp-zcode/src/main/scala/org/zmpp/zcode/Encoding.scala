@@ -31,23 +31,27 @@ package org.zmpp.zcode
 /*
  * String decoding/encoding functionality is found here.
  */
-trait Alphabet {
-  def lookup(zchar: Int): Char
+abstract class Alphabet {
+  def table: String
+  def lookup(zchar: Int): Char = table(zchar - 6)
   def name: String
+
+  def charCodeFor(c: Char): Int = {
+    for (i <- 0 until table.length) if (table(i) == c) return i + 6
+    throw new IllegalArgumentException("Character '%c' not found".format(c))
+  }
+  def contains(c: Char) = table.filter{tableChar => c == tableChar}.length > 0
 }
 class Alphabet0 extends Alphabet {
-  val _table = "abcdefghijklmnopqrstuvwxyz"
-  def lookup(zchar: Int): Char = _table(zchar - 6)
+  val table = "abcdefghijklmnopqrstuvwxyz"
   def name = "A0" // debugging
 }
 class Alphabet1 extends Alphabet {
-  val _table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  def lookup(zchar: Int): Char = _table(zchar - 6)
+  val table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   def name = "A1" // debugging
 }
 class Alphabet2 extends Alphabet {
-  val _table = " \n0123456789.,!?+#'\"/\\-:()"
-  def lookup(zchar: Int): Char = _table(zchar - 6)
+  val table = " \n0123456789.,!?+#'\"/\\-:()"
   def name = "A2" // just debugging
 }
 
@@ -150,6 +154,27 @@ class ZsciiEncoding(_state: VMState) {
   }
   def decodeZStringAtPackedAddress(paddr: Int, stream: OutputStream) {
     decodeZStringAtByteAddress(_state.header.unpackStringAddress(paddr), stream)
+  }
+
+  // This function returns the shift code:
+  // 0: no shift needed - it's A0
+  // 4: A1
+  // 5: A2
+  // -1 not in any alphabet -> 10bit code 
+  def shiftCodeFor(c: Char): Int = {
+    if (A0.contains(c)) 0
+    else if (A1.contains(c)) 4
+    else if (A2.contains(c)) 5
+    else -1
+  }
+
+  def charCodeFor(c: Char): Int = {
+    if (A0.contains(c)) A0.charCodeFor(c)
+    else if (A1.contains(c)) A1.charCodeFor(c)
+    else if (A2.contains(c)) A2.charCodeFor(c)
+    else {
+      throw new IllegalArgumentException("char not found in alphabet")
+    }
   }
 }
 

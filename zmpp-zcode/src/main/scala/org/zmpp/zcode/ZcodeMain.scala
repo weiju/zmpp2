@@ -90,7 +90,7 @@ class TextGrid extends JTextPane {
     }
   }
   private def moveCursorToNextLine {
-    val nextLine = java.lang.Math.min(numLines, _cursorPos._1 + 1)
+    val nextLine = math.min(numLines, _cursorPos._1 + 1)
     _cursorPos = (nextLine, 0)
   }
 
@@ -169,9 +169,10 @@ extends JTextPane with KeyListener {
       if (event.getKeyCode == KeyEvent.VK_ENTER) {
         event.consume
         val input = doc.getText(inputStart, doc.getLength - inputStart)
+        doc.insertString(doc.getLength, "\n", null)
         //println("Input was: " + input)
         //printChar('\n')
-        screenModel.resumeWithLineInput(input)          
+        screenModel.resumeWithLineInput(input + "\n")          
         inputMode = TextInputMode.InputNone
         //ExecutionControl.executeTurn(_screenUI.vm)
       } else if (event.getKeyCode == KeyEvent.VK_BACK_SPACE ||
@@ -391,18 +392,16 @@ object ZcodeMain {
     }
     frame.screenModel.connect(vm)
     // do in thread
-    //while (_vm.state) {
-      vm.doTurn
-      // TODO: not only line input
-      if (vm.state.runState == VMRunStates.WaitForEvent) {
-        if (SwingUtilities.isEventDispatchThread) {
-          frame.screenModel.readLine
-        } else {
-          SwingUtilities.invokeAndWait(new Runnable {
-            def run = frame.screenModel.readLine
-          })
-        }
+    vm.doTurn
+    // TODO: not only line input
+    if (vm.state.runState == VMRunStates.WaitForEvent) {
+      if (SwingUtilities.isEventDispatchThread) {
+        frame.screenModel.readLine
+      } else {
+        SwingUtilities.invokeAndWait(new Runnable {
+          def run = frame.screenModel.readLine
+        })
       }
-    //}
+    }
   }
 }

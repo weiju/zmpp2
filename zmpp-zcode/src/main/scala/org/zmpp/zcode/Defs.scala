@@ -136,7 +136,7 @@ class VMState {
   private val _stack = new Stack
 
   var header     : StoryHeader   = null
-  var encoding = new ZsciiEncoding(this)
+  val encoding = new ZsciiEncoding(this)
   var runState = VMRunStates.Running
 
   var pc       = 0
