@@ -36,11 +36,11 @@ import org.zmpp.base._
 import org.zmpp.iff._
 import org.zmpp.glk._
 
-/****************************************************************************
- ****
- **** VM state
- ****
- ***************************************************************************/
+// ***************************************************************************
+// ****
+// **** VM state
+// ****
+// ***************************************************************************
 
 object GlulxVMState {
   val OffsetLocalsPos     = 4
@@ -753,20 +753,11 @@ class GlulxVM {
     }
   }
   
-  private def signExtend8(value : Int) : Int = {
-    if ((value & 0x80) == 0x80) value | 0xffffff00
-    else value & 0x000000ff
-  }
-  private def signExtend16(value : Int) : Int = {
-    if ((value & 0x8000) == 0x8000) value | 0xffff0000
-    else value & 0x0000ffff
-  }
-  
   private def getOperand(pos : Int) :Int = {
     _operands(pos).addressMode match {
       case AddressModes.ConstZero       => 0
-      case AddressModes.ConstByte       => signExtend8(_operands(pos).value)
-      case AddressModes.ConstShort      => signExtend16(_operands(pos).value)
+      case AddressModes.ConstByte       => Types.signExtend8(_operands(pos).value)
+      case AddressModes.ConstShort      => Types.signExtend16(_operands(pos).value)
       case AddressModes.ConstInt        => _operands(pos).value
       case AddressModes.AddressAny      => state.memIntAt(_operands(pos).value)
       case AddressModes.Stack           => state.popInt
@@ -797,8 +788,8 @@ class GlulxVM {
   private def getOperand8(pos : Int) :Int = {
     _operands(pos).addressMode match {
       case AddressModes.ConstZero        => 0
-      case AddressModes.ConstByte        => signExtend8(_operands(pos).value)
-      case AddressModes.ConstShort       => signExtend16(_operands(pos).value)
+      case AddressModes.ConstByte        => Types.signExtend8(_operands(pos).value)
+      case AddressModes.ConstShort       => Types.signExtend16(_operands(pos).value)
       case AddressModes.ConstInt         => _operands(pos).value
       case AddressModes.Address00_FF     =>
         state.memByteAt(_operands(pos).value)
@@ -829,8 +820,8 @@ class GlulxVM {
   private def getOperand16(pos : Int) :Int = {
     _operands(pos).addressMode match {
       case AddressModes.ConstZero        => 0
-      case AddressModes.ConstByte        => signExtend8(_operands(pos).value)
-      case AddressModes.ConstShort       => signExtend16(_operands(pos).value)
+      case AddressModes.ConstByte        => Types.signExtend8(_operands(pos).value)
+      case AddressModes.ConstShort       => Types.signExtend16(_operands(pos).value)
       case AddressModes.ConstInt         => _operands(pos).value
       case AddressModes.Address00_FF     =>
         state.memShortAt(_operands(pos).value)
@@ -1391,8 +1382,8 @@ class GlulxVM {
         currentDecodingTable = newDecodingTable
         if (newDecodingTable == 0)
           logger.warning("CUSTOM DECODING TABLE SET TO 0 !!!")
-      case Sexb => storeAtOperand(1, signExtend8(getOperand(0)))
-      case Sexs => storeAtOperand(1, signExtend16(getOperand(0)))
+      case Sexb => storeAtOperand(1, Types.signExtend8(getOperand(0)))
+      case Sexs => storeAtOperand(1, Types.signExtend16(getOperand(0)))
       case ShiftL =>
         val value    = getOperand(0)
         val numShift = getOperand(1)

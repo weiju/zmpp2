@@ -43,6 +43,14 @@ object Types {
 
   def isValidType(valtype : Int) =
     valtype == ByteType | valtype == ShortType || valtype == IntType
+
+  def signExtend8(value : Int) : Int = {
+    if ((value & 0x80) == 0x80) value | 0xffffff00 else value & 0xff
+  }
+
+  def signExtend16(value : Int) : Int = {
+    if ((value & 0x8000) == 0x8000) value | 0xffff0000 else value & 0xffff
+  }
 }
 
 object VMRunStates {
