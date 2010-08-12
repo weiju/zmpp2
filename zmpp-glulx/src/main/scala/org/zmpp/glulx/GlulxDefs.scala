@@ -175,19 +175,53 @@ object Opcodes {
   val Mfree         = 0x179
   val AccelFunc     = 0x180
   val AccelParam    = 0x181
+
+  val NumToF        = 0x190
+  val FtoNumZ       = 0x191
+  val FtoNumN       = 0x192
+  val Ceil          = 0x198
+  val Floor         = 0x199
+  val Fadd          = 0x1a0
+  val Fsub          = 0x1a1
+  val Fmul          = 0x1a2
+  val Fdiv          = 0x1a3
+  val Fmod          = 0x1a4
+  val Sqrt          = 0x1a8
+  val Exp           = 0x1a9
+  val Log           = 0x1aa
+  val Pow           = 0x1ab
+  val Sin           = 0x1b0
+  val Cos           = 0x1b1
+  val Tan           = 0x1b2
+  val Asin          = 0x1b3
+  val Acos          = 0x1b4
+  val Atan          = 0x1b5
+  val Atan2         = 0x1b6
+  val Jfeq          = 0x1c0
+  val Jfne          = 0x1c1
+  val Jflt          = 0x1c2
+  val Jfle          = 0x1c3
+  val Jfgt          = 0x1c4
+  val Jfge          = 0x1c5
+  val JisNaN        = 0x1c8
+  val JisInf        = 0x1c9
   
   def name(opcodeNum: Int) = opcodeNum match {
     case AccelFunc     => "accelfunc"
     case AccelParam    => "accelparam"
+    case Acos          => "acos"
     case Add           => "add"
     case Aload         => "aload"
     case Aloadb        => "aloadb"
     case AloadBit      => "aloadbit"
     case Aloads        => "aloads"
+    case Asin          => "asin"
     case Astore        => "astore"
     case Astoreb       => "astoreb"
     case AstoreBit     => "astorebit"
     case Astores       => "astores"
+    case Atan          => "atan"
+    case Atan2         => "atan2"
     case BinarySearch  => "binarysearch"
     case Bitand        => "bitand"
     case Bitnot        => "bitnot"
@@ -199,21 +233,40 @@ object Opcodes {
     case Callfii       => "callfii"
     case Callfiii      => "callfiii"
     case Catch         => "catch"
+    case Ceil          => "ceil"
     case Copy          => "copy"
     case Copyb         => "copyb"
     case Copys         => "copys"
+    case Cos           => "cos"
     case DebugTrap     => "debugtrap"
     case Div           => "div"
+    case Exp           => "exp"
+    case Fadd          => "fadd"
+    case Fdiv          => "fdiv"
+    case Floor         => "floor"
+    case Fmod          => "fmod"
+    case Fmul          => "fmul"
+    case Fsub          => "fsub"
+    case FtoNumZ       => "ftonumz"
+    case FtoNumN       => "ftonumn"
     case Gestalt       => "gestalt"
     case GetIOSys      => "getiosys"
     case GetMemSize    => "getmemsize"
     case GetStringTbl  => "getstringtbl"
     case Glk           => "glk"
     case Jeq           => "jeq"
+    case Jfeq          => "jfeq"
+    case Jfge          => "jfge"
+    case Jfgt          => "jfgt"
+    case Jfle          => "jfle"
+    case Jflt          => "jflt"
+    case Jfne          => "jfne"
     case Jge           => "jge"
     case Jgeu          => "jgeu"
     case Jgt           => "jgt"
     case Jgtu          => "jgtu"
+    case JisNaN        => "jisnan"
+    case JisInf        => "jisinf"
     case Jle           => "jle"
     case Jleu          => "jleu"
     case Jlt           => "jlt"
@@ -225,6 +278,7 @@ object Opcodes {
     case Jz            => "jz"
     case LinearSearch  => "linearsearch"
     case LinkedSearch  => "linkedsearch"
+    case Log           => "log"
     case Malloc        => "malloc"
     case Mcopy         => "mcopy"
     case Mfree         => "mfree"
@@ -233,6 +287,8 @@ object Opcodes {
     case Mod           => "mod"
     case Neg           => "neg"
     case Nop           => "nop"
+    case NumToF        => "numtof"
+    case Pow           => "pow"
     case Protect       => "protect"
     case Quit          => "quit"
     case Random        => "random"
@@ -249,6 +305,8 @@ object Opcodes {
     case Sexb          => "sexb"
     case Sexs          => "sexs"
     case ShiftL        => "shiftl"
+    case Sin           => "sin"
+    case Sqrt          => "sqrt"
     case SShiftR       => "sshiftr"
     case StkCopy       => "stkcopy"
     case StkCount      => "stkcount"
@@ -261,6 +319,7 @@ object Opcodes {
     case StreamUniChar => "streamunichar"
     case Sub           => "sub"
     case TailCall      => "tailcall"
+    case Tan           => "tan"
     case Throw         => "throw"
     case UShiftR       => "ushiftr"
     case Verify        => "verify"
@@ -297,6 +356,9 @@ object Opcodes {
     case Copys         => 2
     case DebugTrap     => 1
     case Div           => 3
+    case Fadd          => 3
+    case FtoNumN       => 2
+    case FtoNumZ       => 2
     case Gestalt       => 3
     case GetIOSys      => 2
     case GetMemSize    => 1
@@ -326,6 +388,7 @@ object Opcodes {
     case Mul           => 3
     case Neg           => 2
     case Nop           => 0
+    case NumToF        => 2
     case Protect       => 2
     case Quit          => 0
     case Random        => 2
@@ -405,6 +468,7 @@ object GlulxGestalt {
   val MAllocHeap   = 8
   val Acceleration = 9
   val AccelFunc    = 10
+  val GlulxFloat   = 11
   def gestalt(selector: Int, param: Int): Int = {
     logger.info("Glulx.gestalt(#$%02x, #$%02x)".format(selector, param))
     selector match {
@@ -418,6 +482,7 @@ object GlulxGestalt {
       case MAlloc       => 1
       case Acceleration => 1
       case AccelFunc    => if (param >= 1 && param <= 7) 1 else 0
+      case GlulxFloat   => 1
       case _               => 0
     }
   }
@@ -433,3 +498,45 @@ class Snapshot(val ram: Array[Byte], val stack: Array[Byte],
                val extMem: Array[Byte]) {
 }
 
+// This object implements most of the Glulx floating point functionality
+object FloatHelper {
+  private def mantissa(intValue: Int) = intValue & 0x7fffff
+  private def exponent(intValue: Int) = intValue & 0x7f800000
+  def isNaN(intValue: Int) = {
+    exponent(intValue) == 0x7f800000 && mantissa(intValue) != 0
+  }
+  def isPositiveNaN(intValue: Int) = intValue >= 0 && isNaN(intValue)
+  def isNegativeNaN(intValue: Int) = intValue < 0 && isNaN(intValue)
+  def isPositiveInfinity(intValue: Int) = intValue == 0x7F800000
+  def isNegativeInfinity(intValue: Int) = intValue == 0xFF800000
+  def isPositiveZero(intValue: Int) = intValue == 0
+  def isNegativeZero(intValue: Int) = intValue == 0x80000000
+  def ftonumz(intValue: Int): Int = {
+    val floatValue = java.lang.Float.intBitsToFloat(intValue)
+    if (isNegativeNaN(intValue) || isNegativeInfinity(intValue)) {
+      0x80000000
+    } else if (isPositiveNaN(intValue) || isPositiveInfinity(intValue)) {
+      0x7FFFFFFF
+    } else if (floatValue < 0) {
+      scala.math.ceil(floatValue).asInstanceOf[Int]
+    } else {
+      scala.math.floor(floatValue).asInstanceOf[Int]
+    }
+  }
+  def ftonumn(intValue: Int): Int = {
+    val floatValue = java.lang.Float.intBitsToFloat(intValue)
+    if (isNegativeNaN(intValue) || isNegativeInfinity(intValue)) {
+      0x80000000
+    } else if (isPositiveNaN(intValue) || isPositiveInfinity(intValue)) {
+      0x7FFFFFFF
+    } else {
+      scala.math.round(floatValue).asInstanceOf[Int]
+    }
+  }
+  def fadd(intValue1: Int, intValue2: Int): Int = {
+    val floatValue1 = java.lang.Float.intBitsToFloat(intValue1)
+    val floatValue2 = java.lang.Float.intBitsToFloat(intValue2)
+    val result = floatValue1 + floatValue2
+    java.lang.Float.floatToRawIntBits(result)
+  }
+}

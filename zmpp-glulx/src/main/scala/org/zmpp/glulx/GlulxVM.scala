@@ -1228,6 +1228,12 @@ class GlulxVM {
       case DebugTrap =>
         fatal("[** ERROR, VM HALTED WITH CODE %d **]".format(getOperand(0)))
       case Div => storeAtOperand(2, getSignedOperand(0) / getSignedOperand(1))
+      case Fadd =>
+        storeAtOperand(2, FloatHelper.fadd(getOperand(0), getOperand(1)))
+      case FtoNumN =>
+        storeAtOperand(1, FloatHelper.ftonumn(getOperand(0)))
+      case FtoNumZ =>
+        storeAtOperand(1, FloatHelper.ftonumz(getOperand(0)))
       case Gestalt =>
         val selector = getOperand(0)
         val arg      = getOperand(1)
@@ -1307,6 +1313,9 @@ class GlulxVM {
       case Mzero => state.mzero(getOperand(0), getOperand(1))
       case Neg   => storeAtOperand(1, -(getOperand(0)))
       case Nop   => // do nothing
+      case NumToF =>
+        val operand1 = getOperand(0).asInstanceOf[Float]
+        storeAtOperand(1, java.lang.Float.floatToRawIntBits(operand1))
       case Protect =>
         _protectionStart  = getOperand(0)
         _protectionLength = getOperand(1)
@@ -1425,11 +1434,13 @@ class GlulxVM {
         state.sp = catchToken
         logger.info("@throw, SP is now: %d\n".format(state.sp))
         state.popCallStubThrow(storeVal)
-        logger.info("@throw, after popCallStub SP is now: %d\n".format(state.sp))
+        logger.info("@throw, after popCallStub SP is now: %d\n"
+                    .format(state.sp))
       case UShiftR    =>
         val value    = getOperand(0)
         val numShift = getOperand(1)
-        val result   = if (numShift >= 32 || numShift < 0) 0 else value >>> numShift
+        val result   = if (numShift >= 32 || numShift < 0) 0
+                       else value >>> numShift
         storeAtOperand(2, result)
       case Verify     => storeAtOperand(0, state.verify)
       case _ => throw new IllegalArgumentException(
