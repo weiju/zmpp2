@@ -1119,6 +1119,8 @@ class GlulxVM {
         _accelSystem.setFunction(getOperand(0), getOperand(1))
       case AccelParam  =>
         _accelSystem.setParameter(getOperand(0), getOperand(1))
+      case Acos =>
+        storeAtOperand(1, GlulxFloat.acos(getOperand(0)))
       case Add  =>
         storeAtOperand(2, getOperand(0) + getOperand(1))
       case Aload =>
@@ -1147,6 +1149,8 @@ class GlulxVM {
         val arr = getOperand(0)
         val index = getSignedOperand(1)
         storeAtOperand(2, state.memShortAt(arr + index * 2))
+      case Asin =>
+        storeAtOperand(1, GlulxFloat.asin(getOperand(0)))
       case Astore =>
         val arr = getOperand(0)
         val index = getSignedOperand(1)
@@ -1176,6 +1180,10 @@ class GlulxVM {
         val arr = getOperand(0)
         val index = getSignedOperand(1)
         state.setMemShortAt(arr + index * 2, getOperand(2))
+      case Atan =>
+        storeAtOperand(1, GlulxFloat.atan(getOperand(0)))
+      case Atan2 =>
+        storeAtOperand(2, GlulxFloat.atan2(getOperand(0), getOperand(1)))
       case BinarySearch =>
         val search = new BinarySearch(state, getOperand(0), getOperand(1),
                                       getOperand(2), getOperand(3),
@@ -1222,18 +1230,35 @@ class GlulxVM {
           storeAtOperand(0, state.sp) // catch token
           doBranch(getOperand(1))
         }
+      case Ceil => storeAtOperand(1, GlulxFloat.ceil(getOperand(0)))
       case Copy  => storeAtOperand(1, getOperand(0))
       case Copyb => storeAtOperand8(1, getOperand8(0) & 0xff)
       case Copys => storeAtOperand16(1, getOperand16(0) & 0xffff)
+      case Cos =>
+        storeAtOperand(1, GlulxFloat.cos(getOperand(0)))
       case DebugTrap =>
         fatal("[** ERROR, VM HALTED WITH CODE %d **]".format(getOperand(0)))
       case Div => storeAtOperand(2, getSignedOperand(0) / getSignedOperand(1))
+      case Exp =>
+        storeAtOperand(1, GlulxFloat.exp(getOperand(0)))
       case Fadd =>
-        storeAtOperand(2, FloatHelper.fadd(getOperand(0), getOperand(1)))
+        storeAtOperand(2, GlulxFloat.fadd(getOperand(0), getOperand(1)))
+      case Fdiv =>
+        storeAtOperand(2, GlulxFloat.fdiv(getOperand(0), getOperand(1)))
+      case Floor => storeAtOperand(1, GlulxFloat.floor(getOperand(0)))
+      case Fmod =>
+        val operand1 = getOperand(0)
+        val operand2 = getOperand(1)
+        storeAtOperand(2, GlulxFloat.fmodRemainder(operand1, operand2))
+        storeAtOperand(3, GlulxFloat.fmodQuotient(operand1, operand2))
+      case Fmul =>
+        storeAtOperand(2, GlulxFloat.fmul(getOperand(0), getOperand(1)))
+      case Fsub =>
+        storeAtOperand(2, GlulxFloat.fsub(getOperand(0), getOperand(1)))
       case FtoNumN =>
-        storeAtOperand(1, FloatHelper.ftonumn(getOperand(0)))
+        storeAtOperand(1, GlulxFloat.ftonumn(getOperand(0)))
       case FtoNumZ =>
-        storeAtOperand(1, FloatHelper.ftonumz(getOperand(0)))
+        storeAtOperand(1, GlulxFloat.ftonumz(getOperand(0)))
       case Gestalt =>
         val selector = getOperand(0)
         val arg      = getOperand(1)
@@ -1259,6 +1284,24 @@ class GlulxVM {
         storeAtOperand(2, glkResult)
       case Jeq =>
         if (getSignedOperand(0) == getSignedOperand(1)) doBranch(getOperand(2))
+      case Jfeq =>
+        if (GlulxFloat.feq(getOperand(0), getOperand(1), getOperand(2)))
+          doBranch(getOperand(3))
+      case Jfge =>
+        if (GlulxFloat.fge(getOperand(0), getOperand(1)))
+          doBranch(getOperand(2))
+      case Jfgt =>
+        if (GlulxFloat.fgt(getOperand(0), getOperand(1)))
+          doBranch(getOperand(2))
+      case Jfle =>
+        if (GlulxFloat.fle(getOperand(0), getOperand(1)))
+          doBranch(getOperand(2))
+      case Jflt =>
+        if (GlulxFloat.flt(getOperand(0), getOperand(1)))
+          doBranch(getOperand(2))
+      case Jfne =>
+        if (GlulxFloat.fne(getOperand(0), getOperand(1), getOperand(2)))
+          doBranch(getOperand(3))
       case Jge =>
         if (getSignedOperand(0) >= getSignedOperand(1)) doBranch(getOperand(2))
       case Jgeu =>
@@ -1271,6 +1314,10 @@ class GlulxVM {
         val op0 = getOperand(0).toLong & 0x0ffffffffl
         val op1 = getOperand(1).toLong & 0x0ffffffffl
         if (op0 > op1) doBranch(getOperand(2))
+      case JisNaN =>
+        if (GlulxFloat.isNaN(getOperand(0))) doBranch(getOperand(1))
+      case JisInf =>
+        if (GlulxFloat.isInfinity(getOperand(0))) doBranch(getOperand(1))
       case Jle  =>
         if (getSignedOperand(0) <= getSignedOperand(1)) doBranch(getOperand(2))
       case Jleu  =>
@@ -1304,6 +1351,8 @@ class GlulxVM {
                                       getOperand(2), getOperand(3),
                                       getOperand(4), getOperand(5))
         storeAtOperand(6, search.search)
+      case Log =>
+        storeAtOperand(1, GlulxFloat.log(getOperand(0)))
       case Malloc => storeAtOperand(1, state.malloc(getOperand(0)))
       case Mcopy =>
         state.mcopy(getOperand(0), getOperand(1), getOperand(2))
@@ -1316,6 +1365,8 @@ class GlulxVM {
       case NumToF =>
         val operand1 = getOperand(0).asInstanceOf[Float]
         storeAtOperand(1, java.lang.Float.floatToRawIntBits(operand1))
+      case Pow =>
+        storeAtOperand(2, GlulxFloat.pow(getOperand(0), getOperand(1)))
       case Protect =>
         _protectionStart  = getOperand(0)
         _protectionLength = getOperand(1)
@@ -1396,8 +1447,11 @@ class GlulxVM {
       case ShiftL =>
         val value    = getOperand(0)
         val numShift = getOperand(1)
-        val result   = if (numShift >= 32 || numShift < 0) 0 else value << numShift
+        val result   = if (numShift >= 32 || numShift < 0) 0
+                       else value << numShift
         storeAtOperand(2, result)
+      case Sin =>
+        storeAtOperand(1, GlulxFloat.sin(getOperand(0)))
       case SShiftR =>
         val value    = getOperand(0)
         val numShift = getOperand(1)
@@ -1406,6 +1460,8 @@ class GlulxVM {
           else if (value >= 0 && (numShift >= 32 || numShift < 0)) 0
           else value >> numShift
         storeAtOperand(2, result)
+      case Sqrt =>
+        storeAtOperand(1, GlulxFloat.sqrt(getOperand(0)))
       case StkCopy =>
         val numElems = getOperand(0)
         val copyStart = state.sp - Types.SizeInt * numElems
@@ -1424,6 +1480,8 @@ class GlulxVM {
       case StreamUniChar => currentIOSystem.streamUniChar(getOperand(0))
       case Sub        => storeAtOperand(2, getOperand(0) - getOperand(1))
       case TailCall   => tailCall(getOperand(0), getOperand(1))
+      case Tan =>
+        storeAtOperand(1, GlulxFloat.tan(getOperand(0)))
       case Throw      =>
         val storeVal   = getOperand(0)
         val catchToken = getOperand(1)

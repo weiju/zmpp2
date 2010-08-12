@@ -331,15 +331,19 @@ object Opcodes {
   def numOperands(opcodeNum : Int) = opcodeNum match {
     case AccelFunc     => 2
     case AccelParam    => 2
+    case Acos          => 2
     case Add           => 3
     case Aload         => 3
     case Aloadb        => 3
     case AloadBit      => 3
     case Aloads        => 3
+    case Asin          => 2
     case Astore        => 3
     case Astoreb       => 3
     case AstoreBit     => 3
     case Astores       => 3
+    case Atan          => 2
+    case Atan2         => 3
     case BinarySearch  => 8
     case Bitand        => 3
     case Bitnot        => 2
@@ -351,12 +355,20 @@ object Opcodes {
     case Callfii       => 4
     case Callfiii      => 5
     case Catch         => 2
+    case Ceil          => 2
     case Copy          => 2
     case Copyb         => 2
     case Copys         => 2
+    case Cos           => 2
     case DebugTrap     => 1
     case Div           => 3
+    case Exp           => 2
     case Fadd          => 3
+    case Fdiv          => 3
+    case Floor         => 2
+    case Fmod          => 4
+    case Fmul          => 3
+    case Fsub          => 3
     case FtoNumN       => 2
     case FtoNumZ       => 2
     case Gestalt       => 3
@@ -365,10 +377,18 @@ object Opcodes {
     case GetStringTbl  => 1
     case Glk           => 3
     case Jeq           => 3
+    case Jfeq          => 4
+    case Jfge          => 3
+    case Jfgt          => 3
+    case Jfle          => 3
+    case Jflt          => 3
+    case Jfne          => 4
     case Jge           => 3
     case Jgeu          => 3
     case Jgt           => 3
     case Jgtu          => 3
+    case JisNaN        => 2
+    case JisInf        => 2
     case Jle           => 3
     case Jleu          => 3
     case Jlt           => 3
@@ -380,6 +400,7 @@ object Opcodes {
     case Jz            => 2
     case LinearSearch  => 8
     case LinkedSearch  => 7
+    case Log           => 2
     case Malloc        => 2
     case Mcopy         => 3
     case Mfree         => 1
@@ -389,6 +410,7 @@ object Opcodes {
     case Neg           => 2
     case Nop           => 0
     case NumToF        => 2
+    case Pow           => 3
     case Protect       => 2
     case Quit          => 0
     case Random        => 2
@@ -405,6 +427,8 @@ object Opcodes {
     case Sexb          => 2
     case Sexs          => 2
     case ShiftL        => 3
+    case Sin           => 2
+    case Sqrt          => 2
     case SShiftR       => 3
     case StkCopy       => 1
     case StkCount      => 1
@@ -417,6 +441,7 @@ object Opcodes {
     case StreamUniChar => 1
     case Sub           => 3
     case TailCall      => 2
+    case Tan           => 2
     case Throw         => 2
     case UShiftR       => 3
     case Verify        => 1
@@ -472,7 +497,7 @@ object GlulxGestalt {
   def gestalt(selector: Int, param: Int): Int = {
     logger.info("Glulx.gestalt(#$%02x, #$%02x)".format(selector, param))
     selector match {
-      case Version      => 0x00030101
+      case Version      => 0x00030102
       case TerpVersion  => 0x00010000
       case ResizeMem    => 1
       case Undo         => 1
@@ -496,47 +521,4 @@ object GlulxGestalt {
  */
 class Snapshot(val ram: Array[Byte], val stack: Array[Byte],
                val extMem: Array[Byte]) {
-}
-
-// This object implements most of the Glulx floating point functionality
-object FloatHelper {
-  private def mantissa(intValue: Int) = intValue & 0x7fffff
-  private def exponent(intValue: Int) = intValue & 0x7f800000
-  def isNaN(intValue: Int) = {
-    exponent(intValue) == 0x7f800000 && mantissa(intValue) != 0
-  }
-  def isPositiveNaN(intValue: Int) = intValue >= 0 && isNaN(intValue)
-  def isNegativeNaN(intValue: Int) = intValue < 0 && isNaN(intValue)
-  def isPositiveInfinity(intValue: Int) = intValue == 0x7F800000
-  def isNegativeInfinity(intValue: Int) = intValue == 0xFF800000
-  def isPositiveZero(intValue: Int) = intValue == 0
-  def isNegativeZero(intValue: Int) = intValue == 0x80000000
-  def ftonumz(intValue: Int): Int = {
-    val floatValue = java.lang.Float.intBitsToFloat(intValue)
-    if (isNegativeNaN(intValue) || isNegativeInfinity(intValue)) {
-      0x80000000
-    } else if (isPositiveNaN(intValue) || isPositiveInfinity(intValue)) {
-      0x7FFFFFFF
-    } else if (floatValue < 0) {
-      scala.math.ceil(floatValue).asInstanceOf[Int]
-    } else {
-      scala.math.floor(floatValue).asInstanceOf[Int]
-    }
-  }
-  def ftonumn(intValue: Int): Int = {
-    val floatValue = java.lang.Float.intBitsToFloat(intValue)
-    if (isNegativeNaN(intValue) || isNegativeInfinity(intValue)) {
-      0x80000000
-    } else if (isPositiveNaN(intValue) || isPositiveInfinity(intValue)) {
-      0x7FFFFFFF
-    } else {
-      scala.math.round(floatValue).asInstanceOf[Int]
-    }
-  }
-  def fadd(intValue1: Int, intValue2: Int): Int = {
-    val floatValue1 = java.lang.Float.intBitsToFloat(intValue1)
-    val floatValue2 = java.lang.Float.intBitsToFloat(intValue2)
-    val result = floatValue1 + floatValue2
-    java.lang.Float.floatToRawIntBits(result)
-  }
 }
