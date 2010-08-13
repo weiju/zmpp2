@@ -160,7 +160,7 @@ extends JTextPane with KeyListener {
   // ****** KeyListener ******
   def keyPressed(event: KeyEvent) {
     if (isCharInputMode) {
-      // TODO
+      screenModel.resumeWithCharInput(event.getKeyChar)
     } else if (isLineInputMode) {
       val doc = getDocument
       val caretPos = getCaret.getDot
@@ -174,7 +174,6 @@ extends JTextPane with KeyListener {
         //printChar('\n')
         screenModel.resumeWithLineInput(input + "\n")          
         inputMode = TextInputMode.InputNone
-        //ExecutionControl.executeTurn(_screenUI.vm)
       } else if (event.getKeyCode == KeyEvent.VK_BACK_SPACE ||
                  event.getKeyCode == KeyEvent.VK_LEFT) {
         if (getCaret.getDot <= inputStart) event.consume
@@ -192,7 +191,6 @@ extends JTextPane with KeyListener {
   def keyTyped(event: KeyEvent) {
     if (isCharInputMode) {
       event.consume
-      // TODO
     } else if (!isLineInputMode) {
       // not in input mode, eat all key events
       event.consume
@@ -269,20 +267,33 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
     }
   }
 
+  def updateStatusLine {
+    val objectName  = vm.statusLineObjectName
+    val scoreOrTime = vm.statusLineScoreOrTime
+    statusBar.setText(objectName + " " + scoreOrTime)
+  }
   // input
   def readLine: Int = {
     val maxChars = vm.readLineInfo.maxInputChars
     println("MAX_CHARS FOR READLINE: " + maxChars)
-    // update status line
-    val objectName  = vm.statusLineObjectName
-    val scoreOrTime = vm.statusLineScoreOrTime
-    statusBar.setText(objectName + " " + scoreOrTime)
+    if (vm.version <= 3) updateStatusLine
     bottomWindow.requestLineInput(maxChars)
     0
   }
+  def readChar {
+    if (vm.version <= 3) updateStatusLine
+    bottomWindow.requestCharInput
+  }
+
   def resumeWithLineInput(input: String) {
     println("RESUME WITH " + input)
     vm.resumeWithLineInput(input)
+    ExecutionControl.executeTurn(vm, this)
+  }
+  def resumeWithCharInput(keyCode: Int) {
+    println("RESUME WITH " + keyCode)
+    vm.resumeWithCharInput(keyCode)
+    ExecutionControl.executeTurn(vm, this)
   }
   
   def screenOutputStream = this
@@ -354,6 +365,29 @@ class ZcodeFrame extends JFrame("ZMPP 2.0 Prototype") with WindowListener {
   def windowClosing(event: WindowEvent) { }
 }
 
+object ExecutionControl {
+  def _executeTurn(vm: Machine, screenModel: SwingScreenModel) {
+    while (vm.state.runState == ZMachineRunStates.Running) {
+      vm.doInstruction
+    }
+    if (vm.state.runState == ZMachineRunStates.ReadLine) {
+      SwingUtilities.invokeAndWait(new Runnable {
+        def run = screenModel.readLine
+      })
+    } else if (vm.state.runState == ZMachineRunStates.ReadChar) {
+      SwingUtilities.invokeAndWait(new Runnable {
+        def run = screenModel.readChar
+      })
+    }
+  }
+
+  def executeTurn(vm: Machine, screenModel: SwingScreenModel) {
+    new Thread(new Runnable {
+      def run = _executeTurn(vm, screenModel)
+    }).start
+  }
+}
+
 object ZcodeMain {
   def readFileData(file: File) = {
     val filebytes = new Array[Byte](file.length.toInt)
@@ -392,16 +426,6 @@ object ZcodeMain {
     }
     frame.screenModel.connect(vm)
     // do in thread
-    vm.doTurn
-    // TODO: not only line input
-    if (vm.state.runState == VMRunStates.WaitForEvent) {
-      if (SwingUtilities.isEventDispatchThread) {
-        frame.screenModel.readLine
-      } else {
-        SwingUtilities.invokeAndWait(new Runnable {
-          def run = frame.screenModel.readLine
-        })
-      }
-    }
+    ExecutionControl.executeTurn(vm, frame.screenModel)
   }
 }

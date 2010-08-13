@@ -32,6 +32,7 @@ trait ScreenModel {
   def screenOutputStream : OutputStream
   def keyboardStream     : InputStream
 
+  def updateStatusLine
   def splitWindow(lines: Int)
   def setWindow(windowId: Int)
   def setCursor(line: Int, column: Int)

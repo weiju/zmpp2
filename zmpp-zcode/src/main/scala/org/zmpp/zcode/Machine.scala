@@ -68,19 +68,9 @@ class Machine {
     ioSystem.reset(screenModel)
   }
   def version = state.header.version 
-  def doTurn {
-    while (state.runState == VMRunStates.Running) {
-      executeInstruction
-    }
-  }
-
-  // ***********************************************************************
-  // ******** PARSER SUPPORT
-  // **************************************
-  //private def textBufferOffset = if (version < 5) 1 else 2
 
   def resumeWithLineInput(input: String) {
-    state.runState = VMRunStates.Running
+    state.runState = ZMachineRunStates.Running
     val parserSupport =
       new ParserHelper(state, readLineInfo.textBuffer, readLineInfo.parseBuffer,
                        0, false)
@@ -88,7 +78,10 @@ class Machine {
     if (version >= 5) {
       storeResult(10) // store terminator
     }
-    doTurn
+  }
+  def resumeWithCharInput(c: Int) {
+    state.runState = ZMachineRunStates.Running
+    storeResult(c)
   }
 
   // ***********************************************************************
@@ -127,7 +120,12 @@ class Machine {
       else state.byteAt(text)
     readLineInfo.textBuffer  = text
     readLineInfo.parseBuffer = parse
-    state.runState = VMRunStates.WaitForEvent
+    state.runState = ZMachineRunStates.ReadLine
+  }
+
+  def readChar = {
+    ioSystem.flush
+    state.runState = ZMachineRunStates.ReadChar
   }
   // **********************************************************************
   // ***** Private methods
@@ -236,7 +234,14 @@ class Machine {
       case 0x04 => // nop
       case 0x08 => // ret_popped
         state.returnFromRoutine(state.variableValue(0))
+      case 0x0a => // quit
+        ioSystem.printMessage("*Game Ended*")
+        ioSystem.flush
+        state.runState = VMRunStates.Halted
       case 0x0b => ioSystem.putChar('\n') // new_line
+      case 0x0c => // show_status
+        if (version > 3) fatal("@show_status not allowed in version > 3")
+        else screenModel.updateStatusLine
       case _ =>
         throw new UnsupportedOperationException(
           "0OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
@@ -264,8 +269,13 @@ class Machine {
         val varnum = nextOperand
         state.setVariableValue(varnum,
                                (state.variableValue(varnum) - 1) & 0xffff)
+      case 0x07 => // print_addr
+        state.encoding.decodeZStringAtByteAddress(nextOperand,
+                                                  ioSystem)
       case 0x08 => // call_1s
         callWithReturnValue(0)
+      case 0x09 => // remove_obj
+        objectTable.removeObject(nextOperand)
       case 0x0a => // print_obj
         printObject(nextOperand, ioSystem)
       case 0x0b => state.returnFromRoutine(nextOperand) // ret
@@ -352,6 +362,16 @@ class Machine {
           storeResult(objectTable.propertyAddress(obj, property) & 0xffff)
         } else {
           warn("@get_prop_addr illegal access to object " + obj)
+          storeResult(0)
+        }
+      case 0x13 => // get_next_prop
+        val obj = nextOperand
+        val property = nextOperand
+        if (obj > 0) {
+          storeResult(objectTable.nextProperty(obj, property) & 0xffff)
+        } else {
+          warn("@get_next_prop illegal access to object " + obj)
+          storeResult(0)
         }
       case 0x14 => // add
         storeResult(nextSignedOperand + nextSignedOperand)
@@ -412,7 +432,8 @@ class Machine {
         }
       case 0x04 => // sread V1-V3
         val textBuffer = nextOperand
-        val parseBuffer = nextOperand
+        val parseBuffer = if (_decodeInfo.numOperands > 1) nextOperand
+                          else 0
         if (version >= 4) {
           val time = if (_decodeInfo.numOperands > 2) nextOperand else 0
           val routine = if (_decodeInfo.numOperands > 3) nextOperand else 0
@@ -447,6 +468,16 @@ class Machine {
         printf("@set_text_style %d not implemented yet\n", style)
       case 0x13 => // output_stream
         outputStream(nextSignedOperand)
+      case 0x16 => // readchar
+        // TODO
+        val inp = if (_decodeInfo.numOperands > 0) nextOperand else 1
+        if (version >= 4) {
+          val time = if (_decodeInfo.numOperands > 1) nextOperand else 0
+          val routine = if (_decodeInfo.numOperands > 2) nextOperand else 0
+        }
+        readChar
+      case 0x18 => // not (V5/V6)
+        storeResult((~nextOperand) & 0xffff)
       case 0x19 => // call_vn
         callWithoutReturnValue(_decodeInfo.numOperands - 1)
       case 0x1a => // call_vn2
@@ -470,6 +501,15 @@ class Machine {
       case _ =>
         throw new UnsupportedOperationException(
           "VAR opcode not supported: 0x%02x\n".format(_decodeInfo.opnum))
+    }
+  }
+  private def executeExt {
+    _decodeInfo.opnum match {
+      case 0x09 => // save_undo
+        storeResult(1) // TODO: Faked for now
+      case _ =>
+        throw new UnsupportedOperationException(
+          "EXT opcode not supported: 0x%02x\n".format(_decodeInfo.opnum))
     }
   }
 
@@ -568,7 +608,7 @@ class Machine {
     import Instruction._
     if (byte0 == 0xbe) {
       form         = FormExt
-      operandCount = OperandCountVar
+      operandCount = OperandCountExtVar
       opcode       = state.nextByte
     } else {
       val formSel  = byte0 & 0xc0
@@ -590,7 +630,7 @@ class Machine {
     _currentArg = 0
   }
 
-  private def executeInstruction {
+  def doInstruction {
     val oldpc = state.pc
     decodeInstruction
     decodeForm
@@ -602,7 +642,8 @@ class Machine {
       case 0 => execute0Op
       case 1 => execute1Op
       case 2 => execute2Op
-      case OperandCountVar => executeVar
+      case OperandCountVar    => executeVar
+      case OperandCountExtVar => executeExt
       case _ =>
         throw new UnsupportedOperationException(
           "form not supported: %s\n".format(_decodeInfo.toString))

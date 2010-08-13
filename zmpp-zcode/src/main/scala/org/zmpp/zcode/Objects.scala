@@ -37,7 +37,36 @@ class PropertyDoesNotExistException extends Exception
  */
 abstract class ObjectTable(protected val _vm: Machine) {
 
+  def removeObject(obj: Int) {
+    val oldParent = parent(obj)
+    setParent(obj, 0)
+    if (oldParent != 0) {
+      if (child(oldParent) == obj) {
+        // removed object was first child, set sibling as the first child now
+        setChild(oldParent, sibling(obj))
+      } else {
+        // removed object was not the first child
+        // find the previous sibling in the chain and set the removed object's
+        // next sibling as the previous sibling's next sibling
+        var currentChild = child(oldParent)
+        var currentSibling = sibling(currentChild)
+        
+        while (currentSibling != 0 && currentSibling != obj) {
+          currentChild   = currentSibling
+          currentSibling = sibling(currentChild)          
+        }
+        // sibling might be 0, in that case, the object is not
+        // in the hierarchy
+        if (currentSibling == obj) {
+          setSibling(currentChild, sibling(obj))
+        }
+      }
+    }
+    setSibling(obj, 0)
+  }
+
   def insertObject(obj: Int, dest: Int) {
+    if (parent(obj) > 0) removeObject(obj)
     val oldChild = child(dest)
     setParent(obj, dest)
     setChild(dest, obj)
@@ -56,14 +85,18 @@ abstract class ObjectTable(protected val _vm: Machine) {
   }
   
   def setAttribute(obj: Int, attr: Int) {
-    val attrAddress = attributeAddress(obj, attr)
-    val value = _vm.state.byteAt(attrAddress)
-    _vm.state.setByteAt(attrAddress, value | (0x80 >> (attr & 7)))
+    if (obj > 0) { 
+      val attrAddress = attributeAddress(obj, attr)
+      val value = _vm.state.byteAt(attrAddress)
+      _vm.state.setByteAt(attrAddress, value | (0x80 >> (attr & 7)))
+    }
   }
   def clearAttribute(obj: Int, attr: Int) {
-    val attrAddress = attributeAddress(obj, attr)
-    val value = _vm.state.byteAt(attrAddress)
-    _vm.state.setByteAt(attrAddress, value & ~(0x80 >> (attr & 7)))
+    if (obj > 0) {
+      val attrAddress = attributeAddress(obj, attr)
+      val value = _vm.state.byteAt(attrAddress)
+      _vm.state.setByteAt(attrAddress, value & ~(0x80 >> (attr & 7)))
+    }
   }
 
   def propertyTableAddress(obj: Int) = _vm.state.shortAt(objectAddress(obj) +
@@ -101,12 +134,20 @@ abstract class ObjectTable(protected val _vm: Machine) {
     }
     0
   }
-  
-  private def propertyEntriesStart(obj: Int) = {
-    val propTableAddr = propertyTableAddress(obj)
-    propTableAddr + (_vm.state.byteAt(propTableAddr) << 1) + 1
+
+  def nextProperty(obj: Int, prop: Int): Int = {
+    if (prop == 0) propertyNum(propertyEntriesStart(obj))
+    else {
+      val propDataAddr = propertyAddress(obj, prop)
+      if (propDataAddr == 0) {
+        _vm.fatal("property %d of object %d not available.".format(prop, obj))
+        0
+      } else {
+        propertyNum(propDataAddr + propertyLength(propDataAddr))
+      }
+    }
   }
-  
+
   // Protected members
   protected def objectTreeStart = objectTableAddress + propertyDefaultTableSize
   protected def objectTableAddress = _vm.state.header.objectTable
@@ -121,10 +162,15 @@ abstract class ObjectTable(protected val _vm: Machine) {
   protected def numPropertySizeBytes(propAddr: Int): Int
   
   // Private members
-  private def attributeAddress(obj: Int, attr: Int) = objectAddress(obj) + attr / 8
+  private def attributeAddress(obj: Int, attr: Int) =
+    objectAddress(obj) + attr / 8
   private def propertyDefault(prop: Int) = {
     _vm.state.shortAt(objectTableAddress + ((prop - 1) << 1))
   }
+  private def propertyEntriesStart(obj: Int) = {
+    val propTableAddr = propertyTableAddress(obj)
+    propTableAddr + (_vm.state.byteAt(propTableAddr) << 1) + 1
+  }  
 }
 
 class ClassicObjectTable(vm: Machine) extends ObjectTable(vm) {
@@ -167,7 +213,9 @@ class ModernObjectTable(vm: Machine) extends ObjectTable(vm) {
   def setSibling(obj: Int, newSibling: Int) = {
     _vm.state.setShortAt(objectAddress(obj) + 8, newSibling)
   }
-  def child(obj: Int)   = _vm.state.shortAt(objectAddress(obj) + 10)    
+  def child(obj: Int)   = {
+    _vm.state.shortAt(objectAddress(obj) + 10)
+  }
   def setChild(obj: Int, newChild: Int)   = {
     _vm.state.setShortAt(objectAddress(obj) + 10, newChild)
   }

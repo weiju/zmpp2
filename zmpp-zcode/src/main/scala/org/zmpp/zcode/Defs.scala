@@ -97,7 +97,7 @@ class StoryHeader(story: Memory) {
 // value that might get stored is the return address in the call frame
 // (only happens on a push).
 class Stack {
-  private val _values = new Array[Int](300) // 300 for now
+  private val _values = new Array[Int](1024)
 
   var sp = 0
   
@@ -131,6 +131,13 @@ object FrameOffset {
   val NumArgs  = 3
   val Locals   = 4
 }
+object ZMachineRunStates {
+  val Halted       = 0
+  val Running      = 1
+  val ReadLine     = 2
+  val ReadChar     = 11
+}
+
 class VMState {
   private var _story : Memory = null
   private val _stack = new Stack
@@ -215,7 +222,7 @@ class VMState {
       val numLocals = _story.byteAt(routineAddr)
 
       // debug
-      /*
+/*
       printf("@call $%02x ARGS = ", routineAddr)
       for (i <- 0 until numArgs) {
         printf("%02x, ", args(i))
@@ -233,6 +240,7 @@ class VMState {
       _stack.push(storeVar)
       _stack.push(numArgs)
       pc = routineAddr + 1 // place PC after routine header
+      //printf("PUSHING %d locals\n", numLocals)
       if (header.version <= 4) {
         for (i <- 0 until numLocals) _stack.push(nextShort)
       } else {
@@ -240,9 +248,11 @@ class VMState {
       }
       // set arguments to locals, throw away excess parameters (6.4.4.1)
       val numParams = if (numArgs <= numLocals) numArgs else numLocals
+      //printf("number of parameters: %d\n", numParams)
       for (i <- 0 until numParams) {
         _stack.setValueAt(fp + FrameOffset.Locals + i, args(i))
       }
+      //println("CALL ENDED, RETURNING")
     }
   }
   def returnFromRoutine(retval: Int) {
@@ -259,11 +269,12 @@ class VMState {
 }
 
 object Instruction {
-  val FormLong        = 0
-  val FormShort       = 1
-  val FormVar         = 2
-  val FormExt         = 3
-  val OperandCountVar = -1
+  val FormLong           = 0
+  val FormShort          = 1
+  val FormVar            = 2
+  val FormExt            = 3
+  val OperandCountVar    = -1
+  val OperandCountExtVar = -2
 }
 
 object OperandTypes {
@@ -319,7 +330,8 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
       case 0 => Oc0Op.opcodeName(opnum, version)
       case 1 => Oc1Op.opcodeName(opnum, version)
       case 2 => Oc2Op.opcodeName(opnum, version)
-      case Instruction.OperandCountVar => OcVar.opcodeName(opnum, version)
+      case Instruction.OperandCountVar    => OcVar.opcodeName(opnum, version)
+      case Instruction.OperandCountExtVar => OcExt.opcodeName(opnum, version)
       case _         => "???"
     }
   }
@@ -454,7 +466,32 @@ object OcVar extends Enumeration {
 }
 
 object OcExt extends Enumeration {
-  val Save = Value(0x00, "SAVE")
+  val Save         = Value(0x00, "SAVE")
+  val Restore      = Value(0x01, "RESTORE")
+  val LogShift     = Value(0x02, "LOG_SHIFT")
+  val ArtShift     = Value(0x03, "ART_SHIFT")
+  val SetFont      = Value(0x04, "SET_FONT")
+  val DrawPicture  = Value(0x05, "DRAW_PICTURE")
+  val PictureData  = Value(0x06, "PICTURE_DATA")
+  val ErasePicture = Value(0x07, "ERASE_PICTURE")
+  val SetMargins   = Value(0x08, "SET_MARGINS")
+  val SaveUndo     = Value(0x09, "SAVE_UNDO")
+  val RestoreUndo  = Value(0x0a, "RESTORE_UNDO")
+  val PrintUnicode = Value(0x0b, "PRINT_UNICODE")
+  val CheckUnicode = Value(0x0c, "CHECK_UNICODE")
+  val MoveWindow   = Value(0x10, "MOVE_WINDOW")
+  val WindowSize   = Value(0x11, "WINDOW_SIZE")
+  val WindowStyle  = Value(0x12, "WINDOW_STYLE")
+  val GetWindProp  = Value(0x13, "GET_WIND_PROP")
+  val ScrollWindow = Value(0x14, "SCROLL_WINDOW")
+  val PopStack     = Value(0x15, "POP_STACK")
+  val ReadMouse    = Value(0x16, "READ_MOUSE")
+  val MouseWindow  = Value(0x17, "MOUSE_WINDOW")
+  val PushStack    = Value(0x18, "PUSH_STACK")
+  val PutWindProp  = Value(0x19, "PUT_WIND_PROP")
+  val PrintForm    = Value(0x1a, "PRINT_FORM")
+  val MakeMenu     = Value(0x1b, "MAKE_MENU")
+  val PictureTable = Value(0x1c, "PICTURE_TABLE")
   def opcodeName(opnum: Int, version: Int) = {
     OcExt(opnum).toString
   }
