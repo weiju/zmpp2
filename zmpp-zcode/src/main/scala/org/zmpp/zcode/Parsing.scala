@@ -202,11 +202,11 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
     new Encoder(token, tokenBuffer).encode
     // tokenBytes now contains the dictionary-encoded token
     val lookupAddress = dictionary.lookup(tokenBytes)
-    printf("Token found at: %02x\n", lookupAddress)
     val address = parseBuffer + 2 + tokenNum * 4
+    //printf("($%02x) Token found at: %02x, %d, %02x\n", address, lookupAddress, token.length, token.start)
     state.setShortAt(address, lookupAddress)
     state.setByteAt(address + 2, token.length)
-    state.setByteAt(address + 3, token.start)
+    state.setByteAt(address + 3, token.start - textBuffer)
   }
 
   // Encoder class. For now, this is embedded and therefore can get

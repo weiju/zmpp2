@@ -161,12 +161,24 @@ class VMState {
   def byteAt(addr: Int)  = _story.byteAt(addr)
   def shortAt(addr: Int) = _story.shortAt(addr)
   def intAt(addr: Int)   = _story.intAt(addr)
-  def setByteAt(addr: Int, value: Int)  = _story.setByteAt(addr, value)
+  def setByteAt(addr: Int, value: Int)  = {
+    if (addr >= header.staticStart) {
+      throw new IllegalArgumentException("Attempt to write to static memory.")
+    }
+    _story.setByteAt(addr, value)
+  }
   def setShortAt(addr: Int, value: Int) {
-    if (addr == 0) throw new IllegalArgumentException("AAAAAH")
+    if (addr >= header.staticStart) {
+      throw new IllegalArgumentException("Attempt to write to static memory.")
+    }
     _story.setShortAt(addr, value)
   }
-  def setIntAt(addr: Int, value: Int)   = _story.setIntAt(addr, value)
+  def setIntAt(addr: Int, value: Int)   = {
+    if (addr >= header.staticStart) {
+      throw new IllegalArgumentException("Attempt to write to static memory.")
+    }
+    _story.setIntAt(addr, value)
+  }
   
   def nextByte = {
     pc += 1
