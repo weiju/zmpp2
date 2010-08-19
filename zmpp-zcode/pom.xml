@@ -91,14 +91,16 @@
 	      <id>stdrun</id>
 	      <mainClass>org.zmpp.zcode.ZcodeMain</mainClass>
 	      <args>
-		      <arg>/Users/weiju/Games/Inform/gntests.z5</arg>
+		      <arg>/Users/weiju/Games/infocom/amfv.z4</arg>
           <!--
+		      <arg>/Users/weiju/Games/Inform/photopia.z5</arg>
+		      <arg>/Users/weiju/Games/Inform/suvehnux.z5</arg>
+		      <arg>/Users/weiju/Games/Inform/shade.z5</arg>
+		      <arg>/Users/weiju/Games/Inform/gntests.z5</arg>
 		      <arg>/Users/weiju/Games/Inform/proptest.z5</arg>
 		      <arg>/Users/weiju/Games/Inform/crashme.z5</arg>
 		      <arg>/Users/weiju/Games/Inform/strictz.z5</arg>
 		      <arg>/Users/weiju/Games/Inform/etude.z5</arg>
-		      <arg>/Users/weiju/Games/Inform/suvehnux.z5</arg>
-		      <arg>/Users/weiju/Games/Inform/shade.z5</arg>
 		      <arg>minizork.z3</arg>
           -->
 	      </args>

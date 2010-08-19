@@ -114,7 +114,7 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
       state.setByteAt(textBuffer + 1, numCharsTyped)
     } else {
       // Terminate with 0 byte in versions < 5
-      var terminatePos = inputString.length
+      var terminatePos = lengthWithoutTerminator
       if (terminateChar == ZsciiEncoding.NullChar) terminatePos = 0 // cancelled
       state.setByteAt(textBuffer + offset + terminatePos,
                       ZsciiEncoding.NullChar)

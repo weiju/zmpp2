@@ -170,7 +170,7 @@ extends JTextPane with KeyListener {
         event.consume
         val input = doc.getText(inputStart, doc.getLength - inputStart)
         doc.insertString(doc.getLength, "\n", null)
-        //println("Input was: " + input)
+        println("Input was: " + input)
         //printChar('\n')
         screenModel.resumeWithLineInput(input + "\n")          
         inputMode = TextInputMode.InputNone
@@ -319,6 +319,21 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
       throw new UnsupportedOperationException(
         "Can not set cursor in bottom window")
     }   
+  }
+
+  def bufferMode(flag: Int) {
+    printf("@buffer_mode %d not implemented yet\n", flag)
+  }
+  def eraseWindow(windowId: Int) {
+    printf("@erase_window %d not implemented yet\n", windowId)
+  }
+  def setTextStyle(style: Int) {
+    printf("@set_text_style %d not implemented yet\n", style)
+  }
+
+  def setColour(foreground: Int, background: Int, window: Int) {
+    printf("@set_colour %d, %d, %d not implemented yet\n",
+           foreground, background, window)
   }
 
   def initUI {

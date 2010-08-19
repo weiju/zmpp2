@@ -10,45 +10,43 @@ Missing:
 05. @verify
 06. @piracy
 07. @load
-08. @set_colour
-09. @throw
-10. @erase_window
-11. @erase_line
-12. @get_cursor
-13. @buffer_mode
-14. @input_stream
-15. @sound_effect
-16. @scan_table
-17. @encode_text
-18. @copy_table
-19. @print_table
+08. @throw
+09. @erase_line
+10. @get_cursor
+11. @input_stream
+12. @sound_effect
+13. @encode_text
+14. @copy_table
+15. @print_table
 
 ext:
 
-20. @save
-21. @restore
-22. @log_shift
-23. @art_shift
-24. @set_font
-25. @draw_picture
-26. @picture_data
-27. @erase_picture
-28. @set_margins
-29. @save_undo
-30. @restore_undo
-31. @print_unicode
-32. @check_unicode
-33. @move_window
-34. @window_size
-35. @window_style
-36. @get_wind_prop
-37. @scroll_window
-38. @pop_stack
-39. @read_mouse
-40. @mouse_window
-41. @push_stack
-42. @put_wind_prop
-43. @print_form
-44. @make_menu
-45. @picture_table
+16. @save
+17. @restore
+18. @log_shift
+19. @art_shift
+20. @set_font
+21. @draw_picture
+22. @picture_data
+23. @erase_picture
+24. @set_margins
+25. @restore_undo
+26. @print_unicode
+27. @check_unicode
+28. @move_window
+29. @window_size
+30. @window_style
+31. @get_wind_prop
+32. @scroll_window
+33. @pop_stack
+34. @read_mouse
+35. @mouse_window
+36. @push_stack
+37. @put_wind_prop
+38. @print_form
+29. @make_menu
+40. @picture_table
 
+TODO:
+
+- implement undo

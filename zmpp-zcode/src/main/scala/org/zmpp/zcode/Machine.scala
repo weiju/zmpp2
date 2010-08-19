@@ -393,6 +393,12 @@ class Machine {
         callWithReturnValue(1)
       case 0x1a => // call_2n
         callWithoutReturnValue(1)
+      case 0x1b => // set_colour
+        val foreground = nextSignedOperand
+        val background = nextSignedOperand
+        // TODO: what about the window argument in V6 ?
+        val window = 3 // current for now
+        screenModel.setColour(foreground, background, window)
       case _ =>
         throw new UnsupportedOperationException(
           "2OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
@@ -458,24 +464,34 @@ class Machine {
         else warn("@set_window, platformIO not set")
       case 0x0c => // call_vs2
         callWithReturnValueVs2(_decodeInfo.numOperands - 1)
+      case 0x0d => // erase_window
+        screenModel.eraseWindow(nextSignedOperand)
       case 0x0f => // set_cursor
         val line   = nextOperand
         val column = nextOperand
         if (screenModel != null) screenModel.setCursor(line, column)
         else warn("@set_window, platformIO not set")
       case 0x11 => // set_text_style
-        val style = nextOperand
-        printf("@set_text_style %d not implemented yet\n", style)
+        screenModel.setTextStyle(nextOperand)
+      case 0x12 => // buffer_mode
+        screenModel.bufferMode(nextOperand)
       case 0x13 => // output_stream
         outputStream(nextSignedOperand)
       case 0x16 => // readchar
-        // TODO
         val inp = if (_decodeInfo.numOperands > 0) nextOperand else 1
         if (version >= 4) {
           val time = if (_decodeInfo.numOperands > 1) nextOperand else 0
           val routine = if (_decodeInfo.numOperands > 2) nextOperand else 0
         }
         readChar
+      case 0x17 => // scan_table
+        val x     = nextOperand
+        val table = nextOperand
+        val len   = nextOperand
+        val form = if (_decodeInfo.numOperands > 3) nextOperand else 0x82
+        val result = scanTable(x, table, len, form)
+        storeResult(result)
+        decideBranch(result > 0)
       case 0x18 => // not (V5/V6)
         storeResult((~nextOperand) & 0xffff)
       case 0x19 => // call_vn
@@ -537,6 +553,21 @@ class Machine {
       // nextInt(range) returns [0, range[, but we need [1, range]
       randomGenerator.nextInt(range) + 1
     }
+  }
+
+  private def scanTable(x: Int, table: Int, len: Int, form: Int): Int = {
+    val isWordType   = (form & 0x80) == 0x80
+    val fieldLength = form & 0x7f
+    var current = table
+    var found = false
+    
+    for (i <- 0 until len) {
+      val currentValue = if (isWordType) state.shortAt(current)
+                         else state.byteAt(current)
+      if (currentValue == x) return current
+      current += fieldLength
+    }
+    0
   }
 
   private def decodeVarTypes {
