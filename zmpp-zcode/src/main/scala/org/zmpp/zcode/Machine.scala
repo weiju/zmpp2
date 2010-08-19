@@ -234,6 +234,12 @@ class Machine {
       case 0x04 => // nop
       case 0x08 => // ret_popped
         state.returnFromRoutine(state.variableValue(0))
+      case 0x09 => // pop
+        if (version < 5) {
+          state.variableValue(0)
+        } else {
+          throw new UnsupportedOperationException("@catch not yet implemented")
+        }
       case 0x0a => // quit
         ioSystem.printMessage("*Game Ended*")
         ioSystem.flush
@@ -242,6 +248,8 @@ class Machine {
       case 0x0c => // show_status
         if (version > 3) fatal("@show_status not allowed in version > 3")
         else screenModel.updateStatusLine
+      case 0x0f => // piracy (as recommended in the spec, always branch)
+        decideBranch(true)
       case _ =>
         throw new UnsupportedOperationException(
           "0OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
