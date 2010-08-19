@@ -6,17 +6,17 @@ Missing:
 01. @save
 02. @restore
 03. @restart
-04. @pop/@catch
-05. @verify
-06. @piracy
-07. @load
-08. @throw
-09. @erase_line
-10. @get_cursor
-11. @input_stream
-12. @sound_effect
-13. @encode_text
-14. @copy_table
+04. @pop
+05. @catch
+06. @verify
+07. @piracy
+08. @load
+09. @throw
+10. @erase_line
+11. @get_cursor
+12. @input_stream
+13. @sound_effect
+14. @encode_text
 15. @print_table
 
 ext:

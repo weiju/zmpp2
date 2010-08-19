@@ -511,6 +511,11 @@ class Machine {
         val parserHelper = new ParserHelper(state, textBuffer, parseBuffer,
                                             userDictionary, flag != 0)
         parserHelper.tokenize
+      case 0x1d => // copy_table
+        val first  = nextOperand
+        val second = nextOperand
+        val size   = nextSignedOperand
+        copyTable(first, second, size);
       case 0x1f => // check_arg_count
         val argNum = nextOperand
         decideBranch(argNum <= state.numArgsCurrentRoutine)
@@ -568,6 +573,22 @@ class Machine {
       current += fieldLength
     }
     0
+  }
+
+  private def copyTable(first: Int, second: Int, size: Int) {
+    val absSize = if (size < 0) -size else size
+    val secondStartsInFirst = second >= first && second < first + size
+    val copyForward = size < 0 || !secondStartsInFirst
+    if (second == 0) for (i <- 0 until absSize) state.setByteAt(first + i, 0)
+    else if (copyForward) {
+      for (i <- 0 until absSize)
+        state.setByteAt(second + i, state.byteAt(first + i))
+    } else {
+      // copy backwards
+      for (i <- (absSize - 1) to 0 by -1) {
+        state.setByteAt(second + i, state.byteAt(first + i))
+      }
+    }
   }
 
   private def decodeVarTypes {
