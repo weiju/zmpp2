@@ -30,7 +30,6 @@ package org.zmpp.glulx
 
 // This object implements most of the Glulx floating point functionality
 object GlulxFloat {
-  val Zero    = 0
   val NegZero = 0x80000000
   val PosInf  = 0x7F800000
   val NegInf  = 0xFF800000
@@ -48,7 +47,6 @@ object GlulxFloat {
   def isNegativeNaN(intValue: Int) = intValue < 0 && isNaN(intValue)
   def isPositiveInfinity(intValue: Int) = intValue == PosInf
   def isNegativeInfinity(intValue: Int) = intValue == NegInf
-  def isPositiveZero(intValue: Int) = intValue == Zero
   def isNegativeZero(intValue: Int) = intValue == NegZero
   def ftonumz(intValue: Int): Int = {
     val floatValue = java.lang.Float.intBitsToFloat(intValue)
@@ -137,8 +135,14 @@ object GlulxFloat {
   def pow(intValue1: Int, intValue2: Int): Int = {
     val floatValue1 = java.lang.Float.intBitsToFloat(intValue1)
     val floatValue2 = java.lang.Float.intBitsToFloat(intValue2)
-    val result = scala.math.pow(floatValue1, floatValue2).asInstanceOf[Float]
-    java.lang.Float.floatToRawIntBits(result)
+    // special cases according to Glulx spec
+    if (floatValue1 == 1.0f || floatValue1 == -1.0f && isInfinity(intValue2)) {
+      java.lang.Float.floatToRawIntBits(1.0f)
+    }
+    else {
+      val result = scala.math.pow(floatValue1, floatValue2).asInstanceOf[Float]
+      java.lang.Float.floatToRawIntBits(result)
+    }
   }
 
   def sin(intValue: Int): Int = {
@@ -184,10 +188,13 @@ object GlulxFloat {
     val floatValue2 = java.lang.Float.intBitsToFloat(intValue2)
     val floatDiff = java.lang.Float.intBitsToFloat(intDiff)
     if (isNaN(intValue1) || isNaN(intValue2) || isNaN(intDiff)) false
-    else if (isInfinity(intDiff)) {
-      isNegativeInfinity(intValue1) && isPositiveInfinity(intValue2) ||
-      isPositiveInfinity(intValue1) && isNegativeInfinity(intValue2)
-    } else if (isZero(intDiff)) intValue1 == intValue2
+    else if (isZero(intValue1) && isZero(intValue2)) true
+    else if (isNegativeInfinity(intValue1) && isNegativeInfinity(intValue2) ||
+             isPositiveInfinity(intValue1) && isPositiveInfinity(intValue2)) true
+    else if (isNegativeInfinity(intValue1) && isPositiveInfinity(intValue2) ||
+             isPositiveInfinity(intValue1) && isNegativeInfinity(intValue2)) false
+    else if (isInfinity(intDiff)) true
+    else if (isZero(intDiff)) intValue1 == intValue2
     else {
       val eps = scala.math.abs(floatDiff)
       scala.math.abs(floatValue1 - floatValue2) <= eps
