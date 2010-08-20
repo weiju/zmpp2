@@ -93,17 +93,11 @@ object GlulxFloat {
   def fmodQuotient(intValue1: Int, intValue2: Int): Int = {
     val floatValue1 = java.lang.Float.intBitsToFloat(intValue1)
     val floatValue2 = java.lang.Float.intBitsToFloat(intValue2)
-    val result = if (intValue1 == 0 || isInfinity(intValue2)) 0
-    else if (isInfinity(intValue1) || intValue2 == 0) {
-      java.lang.Float.floatToRawIntBits(java.lang.Float.NaN)
-    } else {
-      val q = floatValue1 / floatValue2
-      val quotient = if (q < 0) scala.math.ceil(q) else scala.math.floor(q)
-      java.lang.Float.floatToRawIntBits(quotient.asInstanceOf[Float])
-    }
-    printf("FMOD (%f / %f) = %f\n", floatValue1, floatValue2,
-           java.lang.Float.intBitsToFloat(result))
-    result
+    val remainder = floatValue1 % floatValue2
+    val quotient = java.lang.Float.floatToRawIntBits(
+      (floatValue1 - remainder) / floatValue2)
+    if (isZero(quotient)) (intValue1 ^ intValue2) & 0x80000000 
+    else quotient
   }
   def fmodRemainder(intValue1: Int, intValue2: Int): Int = {
     val floatValue1 = java.lang.Float.intBitsToFloat(intValue1)
