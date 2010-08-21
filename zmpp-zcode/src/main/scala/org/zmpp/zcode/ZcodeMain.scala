@@ -336,6 +336,11 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
            foreground, background, window)
   }
 
+  def setFont(font: Int): Int = {
+    printf("@set_font %d not implemented yet\n", font)
+    1
+  }
+
   def initUI {
     println("INITIALIZE THE UI !!!")
     topWindow.setFont(new Font("Courier New", Font.PLAIN, 14))

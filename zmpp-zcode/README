@@ -8,42 +8,36 @@ Missing:
 03. @restart
 04. @catch
 05. @verify
-06. @load
-07. @throw
-08. @erase_line
-09. @get_cursor
-10. @input_stream
-11. @sound_effect
-12. @encode_text
-13. @print_table
+06. @throw
+07. @erase_line
+08. @get_cursor
+09. @input_stream
+10. @sound_effect
+11. @encode_text
+12. @print_table
 
 ext:
 
-14. @save
-15. @restore
-16. @log_shift
-17. @art_shift
-18. @set_font
-19. @draw_picture
-20. @picture_data
-21. @erase_picture
-22. @set_margins
-23. @restore_undo
-24. @print_unicode
-25. @check_unicode
-26. @move_window
-27. @window_size
-28. @window_style
-29. @get_wind_prop
-30. @scroll_window
-31. @pop_stack
-32. @read_mouse
-33. @mouse_window
-34. @push_stack
-35. @put_wind_prop
-36. @print_form
-37. @make_menu
-38. @picture_table
+13. @save
+14. @restore
+15. @draw_picture
+16. @picture_data
+17. @erase_picture
+18. @set_margins
+19. @restore_undo
+20. @move_window
+21. @window_size
+22. @window_style
+23. @get_wind_prop
+24. @scroll_window
+25. @pop_stack
+26. @read_mouse
+27. @mouse_window
+28. @push_stack
+29. @put_wind_prop
+30. @print_form
+31. @make_menu
+32. @picture_table
 
 TODO:
 

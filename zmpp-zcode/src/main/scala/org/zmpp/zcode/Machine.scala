@@ -293,6 +293,12 @@ class Machine {
       case 0x0d => // print_paddr
         state.encoding.decodeZStringAtPackedAddress(nextOperand,
                                                     ioSystem)
+      case 0x0e => // load
+        val varnum = nextOperand
+        // see Std. 1.1
+        val value = if (varnum == 0) state.stackTop
+                    else state.variableValue(varnum)
+        storeResult(value)
       case 0x0f => // 1-4 -> not, > 5 -> call_1n
         if (version <= 4) storeResult((~nextOperand) & 0xffff)
         else state.call(nextOperand, _callArgs, -1, 0)
@@ -355,11 +361,11 @@ class Machine {
         objectTable.insertObject(obj, dest)
       case 0x0f => // loadw
         val array = nextOperand
-        val wordIndex = nextOperand
-        storeResult(state.shortAt(array + (wordIndex << 1)))
+        val wordIndex = nextSignedOperand
+        storeResult(state.shortAt(array + wordIndex * 2))
       case 0x10 => // loadb
         val array     = nextOperand
-        val byteIndex = nextOperand
+        val byteIndex = nextSignedOperand
         storeResult(state.byteAt(array + byteIndex))
       case 0x11 => // get_prop
         storeResult(objectTable.propertyValue(nextOperand, nextOperand))
@@ -418,13 +424,13 @@ class Machine {
         callWithReturnValue(_decodeInfo.numOperands - 1)
       case 0x01 => // storew
         val array     = nextOperand
-        val wordIndex = nextOperand
+        val wordIndex = nextSignedOperand
         val value     = nextOperand
         //printf("storew $%02x %d %d\n", array, wordIndex, value)
-        state.setShortAt(array + (wordIndex << 1), value)
+        state.setShortAt(array + wordIndex * 2, value)
       case 0x02 => // storeb
         val array     = nextOperand
-        val byteIndex = nextOperand
+        val byteIndex = nextSignedOperand
         val value     = nextOperand
         state.setByteAt(array + byteIndex, value)
       case 0x03 => // put_prop
@@ -534,8 +540,30 @@ class Machine {
   }
   private def executeExt {
     _decodeInfo.opnum match {
+      case 0x02 => // log_shift
+        val number = nextOperand.asInstanceOf[Short]
+        val places = nextSignedOperand
+        val result = if (places < 0) number >>> -places
+                     else number << places
+        storeResult(result)
+      case 0x03 => // art_shift
+        val number = nextSignedOperand.asInstanceOf[Short]
+        val places = nextSignedOperand
+        val result = if (places < 0) number >> -places
+                     else number << places
+        storeResult(result)
+      case 0x04 => // set_font
+        storeResult(screenModel.setFont(nextOperand))
       case 0x09 => // save_undo
         storeResult(1) // TODO: Faked for now
+      case 0x0b => // print_unicode
+        // printing a 16 bit char code means that the Z-Machine can only
+        // handle characters from the BMP (Basic Multilingual Plane)
+        ioSystem.putChar(nextOperand.asInstanceOf[Char])
+      case 0x0c => // check_unicode
+        // we simply assume that most Java systems can process Unicode
+        nextOperand
+        storeResult(3)
       case _ =>
         throw new UnsupportedOperationException(
           "EXT opcode not supported: 0x%02x\n".format(_decodeInfo.opnum))
