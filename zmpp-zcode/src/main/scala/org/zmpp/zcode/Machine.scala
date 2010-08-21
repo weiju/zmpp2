@@ -541,13 +541,13 @@ class Machine {
   private def executeExt {
     _decodeInfo.opnum match {
       case 0x02 => // log_shift
-        val number = nextOperand.asInstanceOf[Short]
+        val number: Char = nextOperand.asInstanceOf[Char]
         val places = nextSignedOperand
         val result = if (places < 0) number >>> -places
                      else number << places
         storeResult(result)
       case 0x03 => // art_shift
-        val number = nextSignedOperand.asInstanceOf[Short]
+        val number: Short = nextSignedOperand.asInstanceOf[Short]
         val places = nextSignedOperand
         val result = if (places < 0) number >> -places
                      else number << places
@@ -722,8 +722,8 @@ class Machine {
     val oldpc = state.pc
     decodeInstruction
     decodeForm
-    printf("%04d - $%05x: %s %s\n", iterations, oldpc,
-           _decodeInfo.opcodeName(version), makeOperandString)
+    //printf("%04d - $%05x: %s %s\n", iterations, oldpc,
+    //       _decodeInfo.opcodeName(version), makeOperandString)
     // execute
     import Instruction._
     _decodeInfo.operandCount match {
