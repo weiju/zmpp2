@@ -102,9 +102,9 @@
 		      <arg>/Users/weiju/Games/Inform/proptest.z5</arg>
 		      <arg>/Users/weiju/Games/Inform/crashme.z5</arg>
 		      <arg>/Users/weiju/Games/Inform/strictz.z5</arg>
-		      <arg>/Users/weiju/Games/Inform/etude.z5</arg>
-		      arg>/Users/weiju/Games/Inform/gntests.z5</arg>
 		      <arg>minizork.z3</arg>
+		      <arg>/Users/weiju/Games/Inform/etude.z5</arg>
+		      <arg>/Users/weiju/Games/Inform/gntests.z5</arg>
           -->
 	      </args>
 	      <jvmArgs>

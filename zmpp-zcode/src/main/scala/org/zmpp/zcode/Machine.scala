@@ -323,13 +323,15 @@ class Machine {
       case 0x04 => // dec_chk
         val varnum   = nextOperand
         val value    = nextSignedOperand
-        val newValue = Types.signExtend16(state.variableValue(varnum)) - 1
+        val newValue = (Types.signExtend16(state.variableValue(varnum)) - 1)
+          .asInstanceOf[Short]
         state.setVariableValue(varnum, newValue)
         decideBranch(newValue < value)
       case 0x05 => // inc_chk
         val varnum = nextOperand
         val value  = nextSignedOperand
-        val newValue = Types.signExtend16(state.variableValue(varnum)) + 1
+        val newValue = (Types.signExtend16(state.variableValue(varnum)) + 1)
+          .asInstanceOf[Short]
         state.setVariableValue(varnum, newValue)
         decideBranch(newValue > value)
       case 0x06 => // jin
@@ -388,9 +390,9 @@ class Machine {
           storeResult(0)
         }
       case 0x14 => // add
-        storeResult(nextSignedOperand + nextSignedOperand)
+        storeResult((nextSignedOperand+nextSignedOperand).asInstanceOf[Short])
       case 0x15 => // sub
-        storeResult(nextSignedOperand - nextSignedOperand)
+        storeResult((nextSignedOperand-nextSignedOperand).asInstanceOf[Short])
       case 0x16 => // mul
         storeResult(nextSignedOperand * nextSignedOperand)
       case 0x17 => // div
