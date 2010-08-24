@@ -132,20 +132,26 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
     result
   }
 
+  private def bufferlen = state.byteAt(textBuffer)
+  private def bufferstart = textBuffer + textBufferOffset
+  private def charsTypedV5 = state.byteAt(textBuffer + 1)
+  private def atInputEnd(currentChar: Int, bufferIndex: Int) = {
+    currentChar == ZsciiEncoding.NullChar || bufferIndex >= bufferlen ||
+      storyVersion >= 5 && bufferIndex >= charsTypedV5
+  }
+
   // tokenizes the textbuffer and stores the result in the parse buffer
   def tokenize {
-    val bufferlen = state.byteAt(textBuffer)
-    val bufferstart = textBuffer + textBufferOffset
-    val charsTyped = if (storyVersion >= 5) state.byteAt(textBuffer + 1) else 0    
-    
     // 1. lexical analysis
     val maxTokens = state.byteAt(parseBuffer)
     val separators = getWordSeparators
     var tokens: List[Token] = Nil
-    var token = processNextToken(bufferstart, bufferlen, separators)
+    var token = processNextToken(0, separators)
     while  (token != null && tokens.length <= maxTokens) {
       tokens ::= token
-      token = processNextToken(token.end + 1, bufferlen, separators)
+      // the next buffer start index is right after the end of the
+      // previous one
+      token = processNextToken(token.end - bufferstart + 1, separators)
     }
     // now tokens contains the tokenized list in the correct order
     tokens = tokens.reverse
@@ -158,36 +164,42 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
     state.setByteAt(parseBuffer + 1, numTokens)
   }
 
-  private def processNextToken(bufferpos: Int, bufferlen: Int,
+  private def processNextToken(currentIndex: Int,
                                separators: List[Int]): Token = {
-    val bufferend = bufferpos + bufferlen
-    var pos = bufferpos
-    var zsciiChar = ZsciiEncoding.zsciiCodeFor(state.byteAt(pos))
+    // index is the current position within the text input buffer
+    var index = currentIndex
+    var zsciiChar =
+      ZsciiEncoding.zsciiCodeFor(state.byteAt(bufferstart + index))
     
     // return null if text end
-    if (zsciiChar == ZsciiEncoding.NullChar) return null
+    if (atInputEnd(zsciiChar, index)) return null
     
     // skip whitespace
-    while (isSpace(zsciiChar) && pos < bufferend) {
-      pos += 1
-      zsciiChar = ZsciiEncoding.zsciiCodeFor(state.byteAt(pos))
+    while (isSpace(zsciiChar) && !atInputEnd(zsciiChar, index)) {
+      index += 1
+      zsciiChar =
+        ZsciiEncoding.zsciiCodeFor(state.byteAt(bufferstart + index))
     }
-    val tokenStart = pos
+    // return null if text end
+    if (atInputEnd(zsciiChar, index)) return null
+
+    val tokenStart = index
+    //printf("TOKEN START AT: %d\n", tokenStart)
     // return separator token if match
     if (separators.exists(sep => sep == zsciiChar))
-      return new Token(tokenStart, tokenStart)
+      return new Token(bufferstart + tokenStart, bufferstart + tokenStart)
     
     // regular token
     var separatorSeen = false
-    while (zsciiChar != ZsciiEncoding.NullChar && !separatorSeen &&
-           pos < bufferend) {
-      pos += 1
-      zsciiChar = ZsciiEncoding.zsciiCodeFor(state.byteAt(pos))
+    while (!separatorSeen && !atInputEnd(zsciiChar, index)) {
+      index += 1
+      zsciiChar =
+        ZsciiEncoding.zsciiCodeFor(state.byteAt(bufferstart + index))
       if (isSpace(zsciiChar) || separators.exists(sep => sep == zsciiChar)) {
         separatorSeen = true
       }
     }
-    new Token(tokenStart, pos - 1)
+    new Token(bufferstart + tokenStart, bufferstart + index - 1)
   }
 
   def process(input: String) {
