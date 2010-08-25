@@ -24,20 +24,19 @@ ext:
 16. @picture_data
 17. @erase_picture
 18. @set_margins
-19. @restore_undo
-20. @move_window
-21. @window_size
-22. @window_style
-23. @get_wind_prop
-24. @scroll_window
-25. @pop_stack
-26. @read_mouse
-27. @mouse_window
-28. @push_stack
-29. @put_wind_prop
-30. @print_form
-31. @make_menu
-32. @picture_table
+19. @move_window
+20. @window_size
+21. @window_style
+22. @get_wind_prop
+23. @scroll_window
+24. @pop_stack
+25. @read_mouse
+26. @mouse_window
+27. @push_stack
+28. @put_wind_prop
+29. @print_form
+30. @make_menu
+31. @picture_table
 
 TODO:
 

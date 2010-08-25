@@ -122,6 +122,17 @@ class Stack {
     }
     builder.toString
   }
+
+  def cloneValues : Array[Int] = {
+    val values = new Array[Int](sp)
+    for (i <- 0 until sp) values(i) = _values(i)
+    values
+  }
+
+  def initFromArray(values: Array[Int]) {
+    for (i <- 0 until values.length) _values(i) = values(i)
+    sp = values.length
+  }
 }
 
 object FrameOffset {
@@ -137,6 +148,9 @@ object ZMachineRunStates {
   val ReadLine     = 2
   val ReadChar     = 11
 }
+
+class Snapshot(val dynamicMem: Array[Byte], val stackValues: Array[Int],
+               val pc: Int, val fp: Int)
 
 class VMState {
   private var _story : Memory = null
@@ -157,6 +171,10 @@ class VMState {
       pc = header.startPC
     }
     encoding.reset
+    // set interpreter information
+    setByteAt(0x1e, 0x06)
+    setByteAt(0x1f, '6'.asInstanceOf[Int])
+    setShortAt(0x32, 0x0101)
   }
   def byteAt(addr: Int)  = _story.byteAt(addr)
   def shortAt(addr: Int) = _story.shortAt(addr)
@@ -278,6 +296,23 @@ class VMState {
   }
 
   def numArgsCurrentRoutine = _stack.valueAt(fp + FrameOffset.NumArgs)
+
+  def cloneDynamicMem: Array[Byte] = {
+    // (size dynamic mem) == header.staticStart
+    val dynamicMem = new Array[Byte](header.staticStart)
+    _story.copyBytesTo(dynamicMem, 0, header.staticStart)
+    dynamicMem
+  }
+
+  def createSnapshot : Snapshot = {
+    new Snapshot(cloneDynamicMem, _stack.cloneValues, pc, fp)
+  }
+  def readSnapshot(snapshot: Snapshot) {
+    _story.copyBytesFrom(snapshot.dynamicMem, 0, 0, snapshot.dynamicMem.length)
+    _stack.initFromArray(snapshot.stackValues)
+    pc = snapshot.pc
+    fp = snapshot.fp
+  }
 }
 
 object Instruction {

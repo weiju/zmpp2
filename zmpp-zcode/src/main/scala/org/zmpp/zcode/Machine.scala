@@ -47,7 +47,13 @@ class Machine {
   val randomGenerator           = new Random
   var screenModel : ScreenModel = null
 
-  var objectTable: ObjectTable = null
+  var objectTable: ObjectTable  = null
+
+  // save dynamic memory state for restarting
+  var dynamicMem: Array[Byte]   = null
+
+  
+  private var _undoSnapshots: List[Snapshot] = Nil
 
   // for efficiency reasons, we cache the current decoding state here.
   // there is only one instance of decoding info for stage 1 and
@@ -66,6 +72,7 @@ class Machine {
                   else new ModernObjectTable(this)
     this.screenModel = screenModel
     ioSystem.reset(screenModel)
+    dynamicMem = state.cloneDynamicMem
   }
   def version = state.header.version 
 
@@ -557,7 +564,19 @@ class Machine {
       case 0x04 => // set_font
         storeResult(screenModel.setFont(nextOperand))
       case 0x09 => // save_undo
-        storeResult(1) // TODO: Faked for now
+        storeResult(1)
+        _undoSnapshots ::= state.createSnapshot
+      case 0x0a => // restore_undo
+        if (_undoSnapshots != Nil) {
+          state.readSnapshot(_undoSnapshots.head)
+          _undoSnapshots = _undoSnapshots.tail
+          // note: we have to change the return code to 2, but the pc is already
+          // behind the store byte. We solve this by re-reading the store
+          // variable number and adjusting the value
+          state.setVariableValue(state.byteAt(state.pc - 1), 2)
+        } else {
+          storeResult(0)
+        }
       case 0x0b => // print_unicode
         // printing a 16 bit char code means that the Z-Machine can only
         // handle characters from the BMP (Basic Multilingual Plane)

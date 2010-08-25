@@ -91,11 +91,12 @@
 	      <id>stdrun</id>
 	      <mainClass>org.zmpp.zcode.ZcodeMain</mainClass>
 	      <args>
-		      <arg>/Users/weiju/Games/infocom/amfv.z4</arg>
+		      <arg>/Users/weiju/Games/Inform/praxix.z5</arg>
           <!--
+		      <arg>/Users/weiju/Games/Inform/etude.z5</arg>
+		      <arg>/Users/weiju/Games/infocom/amfv.z4</arg>
 		      <arg>/Users/weiju/Games/infocom/leather.z3</arg>
 		      <arg>/Users/weiju/Games/Inform/curses.z5</arg>
-		      <arg>/Users/weiju/Games/Inform/praxix.z5</arg>
 		      <arg>/Users/weiju/Games/infocom/borderzone.z5</arg>
 		      <arg>/Users/weiju/Games/infocom/ztuu.z5</arg>
 		      <arg>/Users/weiju/Games/Inform/photopia.z5</arg>
@@ -104,7 +105,6 @@
 		      <arg>/Users/weiju/Games/Inform/proptest.z5</arg>
 		      <arg>/Users/weiju/Games/Inform/crashme.z5</arg>
 		      <arg>/Users/weiju/Games/Inform/strictz.z5</arg>
-		      <arg>/Users/weiju/Games/Inform/etude.z5</arg>
 		      <arg>/Users/weiju/Games/Inform/gntests.z5</arg>
           -->
 	      </args>
