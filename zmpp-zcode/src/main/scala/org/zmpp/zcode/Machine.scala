@@ -498,6 +498,8 @@ class Machine {
         callWithReturnValueVs2(_decodeInfo.numOperands - 1)
       case 0x0d => // erase_window
         screenModel.eraseWindow(nextSignedOperand)
+      case 0x0e => // erase_line
+        screenModel.eraseLine(nextOperand)
       case 0x0f => // set_cursor
         val line   = nextOperand
         val column = nextOperand
@@ -760,8 +762,8 @@ class Machine {
     val oldpc = state.pc
     decodeInstruction
     decodeForm
-    //printf("%04d - $%05x: %s %s\n", iterations, oldpc,
-    //       _decodeInfo.opcodeName(version), makeOperandString)
+    printf("%04d - $%05x: %s %s\n", iterations, oldpc,
+           _decodeInfo.opcodeName(version), makeOperandString)
     // execute
     import Instruction._
     _decodeInfo.operandCount match {

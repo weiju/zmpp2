@@ -330,22 +330,25 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
   }
 
   def bufferMode(flag: Int) {
-    printf("@buffer_mode %d not implemented yet\n", flag)
+    printf("@buffer_mode %d not implemented yet (TODO)\n", flag)
   }
   def eraseWindow(windowId: Int) {
-    printf("@erase_window %d not implemented yet\n", windowId)
+    printf("@erase_window %d not implemented yet (TODO)\n", windowId)
+  }
+  def eraseLine(value: Int) {
+    printf("@erase_line %d not implemented yet (TODO)\n", value)
   }
   def setTextStyle(style: Int) {
-    printf("@set_text_style %d not implemented yet\n", style)
+    printf("@set_text_style %d not implemented yet (TODO)\n", style)
   }
 
   def setColour(foreground: Int, background: Int, window: Int) {
-    printf("@set_colour %d, %d, %d not implemented yet\n",
+    printf("@set_colour %d, %d, %d not implemented yet (TODO)\n",
            foreground, background, window)
   }
 
   def setFont(font: Int): Int = {
-    printf("@set_font %d not implemented yet\n", font)
+    printf("@set_font %d not implemented yet (TODO)\n", font)
     1
   }
 
@@ -373,8 +376,10 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
 }
 
 class ZcodeFrame extends JFrame("ZMPP 2.0 Prototype") with WindowListener {
-  val topWindow = new TextGrid
+  val topWindow   = new TextGrid
   val screenModel = new SwingScreenModel(topWindow)
+  var vm: Machine = null
+
   getContentPane.add(screenModel, BorderLayout.CENTER)
   getRootPane.getGlassPane.setVisible(true)
   getRootPane.setGlassPane(topWindow)
@@ -385,6 +390,8 @@ class ZcodeFrame extends JFrame("ZMPP 2.0 Prototype") with WindowListener {
   def windowOpened(event: WindowEvent) {
     // UI exists now, sizes can be initialized
     screenModel.initUI
+    // make sure that the UI exists when execution is started
+    ExecutionControl.executeTurn(vm, screenModel)
   }
   def windowActivated(event: WindowEvent) { }
   def windowDeactivated(event: WindowEvent) { }
@@ -392,6 +399,18 @@ class ZcodeFrame extends JFrame("ZMPP 2.0 Prototype") with WindowListener {
   def windowIconified(event: WindowEvent) { }
   def windowClosed(event: WindowEvent) { }
   def windowClosing(event: WindowEvent) { }
+
+  def runMachine(vm: Machine) {
+    this.vm = vm
+    screenModel.connect(vm)
+    if (SwingUtilities.isEventDispatchThread) {
+      setVisible(true)
+    } else {
+      SwingUtilities.invokeAndWait(new Runnable {
+        def run = setVisible(true)
+      })
+    }
+  }
 }
 
 object ExecutionControl {
@@ -441,20 +460,11 @@ object ZcodeMain {
   
   def main(args: Array[String]) {
     val frame = new ZcodeFrame
-    if (SwingUtilities.isEventDispatchThread) {
-      frame.setVisible(true)
-    } else {
-      SwingUtilities.invokeAndWait(new Runnable {
-        def run = frame.setVisible(true)
-      })
-    }
     val vm = if (args.length == 0) {
       readZcodeFile(new File("minizork.z3"), frame.screenModel)
     } else {
       readZcodeFile(new File(args(0)), frame.screenModel)
     }
-    frame.screenModel.connect(vm)
-    // do in thread
-    ExecutionControl.executeTurn(vm, frame.screenModel)
+    frame.runMachine(vm)
   }
 }

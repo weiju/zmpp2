@@ -41,6 +41,7 @@ trait ScreenModel {
 
   def bufferMode(flag: Int)
   def eraseWindow(windowId: Int)
+  def eraseLine(value: Int)
   def setTextStyle(style: Int)
   def setFont(font: Int): Int
   def setColour(foreground: Int, background: Int, window: Int)

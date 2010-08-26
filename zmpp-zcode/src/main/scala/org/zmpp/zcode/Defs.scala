@@ -171,8 +171,8 @@ class VMState {
     if (header.version != 6) {
       pc = header.startPC      
     } else {
-      // do function call
-      throw new UnsupportedOperationException("V6 not yet supported")
+      // V6 does function call to main routine
+      call(header.startPC, null, -1, 0)
     }
     encoding.reset
     // set interpreter information
