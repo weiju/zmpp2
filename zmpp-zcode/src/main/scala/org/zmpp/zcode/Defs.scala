@@ -164,17 +164,26 @@ class VMState {
   var fp       = 0 // frame pointer
   def sp       = _stack.sp
 
-  def reset(story: Memory) {
-    _story = story
-    header = new StoryHeader(_story)
+  def reset {
+    header    = new StoryHeader(_story)
+    _stack.sp = 0
+    fp        = 0
     if (header.version != 6) {
-      pc = header.startPC
+      pc = header.startPC      
+    } else {
+      // do function call
+      throw new UnsupportedOperationException("V6 not yet supported")
     }
     encoding.reset
     // set interpreter information
     setByteAt(0x1e, 0x06)
     setByteAt(0x1f, '6'.asInstanceOf[Int])
     setShortAt(0x32, 0x0101)
+  }
+
+  def reset(story: Memory) {
+    _story = story
+    reset
   }
   def byteAt(addr: Int)  = _story.byteAt(addr)
   def shortAt(addr: Int) = _story.shortAt(addr)
@@ -302,6 +311,9 @@ class VMState {
     val dynamicMem = new Array[Byte](header.staticStart)
     _story.copyBytesTo(dynamicMem, 0, header.staticStart)
     dynamicMem
+  }
+  def overwriteDynamicMemWith(dynamicMem: Array[Byte]) = {
+    _story.copyBytesFrom(dynamicMem, 0, 0, dynamicMem.length)
   }
 
   def createSnapshot : Snapshot = {

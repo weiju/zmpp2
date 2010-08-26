@@ -37,6 +37,7 @@ trait ScreenModel {
   def setWindow(windowId: Int)
   def setCursor(line: Int, column: Int)
   def connect(vm: Machine)
+  def initUI // set sizes etc.
 
   def bufferMode(flag: Int)
   def eraseWindow(windowId: Int)

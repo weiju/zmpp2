@@ -147,7 +147,15 @@ extends JTextPane with KeyListener {
   def isLineInputMode = inputMode == TextInputMode.ReadLine
   private var inputStart    = 0
   private var maxInputChars = 0
-  
+
+  def reset {
+    inputMode     = TextInputMode.InputNone
+    builder       = new StringBuilder
+    inputStart    = 0
+    maxInputChars = 0
+    setText("")
+  }
+
   def putChar(c: Char) {
     builder.append(c)
   }
@@ -346,6 +354,7 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
     topWindow.setFont(new Font("Courier New", Font.PLAIN, 14))
     bottomWindow.setFont(new Font("American Typewriter", Font.PLAIN, 14))
     topWindow.reset
+    bottomWindow.reset
 
     // now the top window "knows" how large the screen is, so we can set
     // the dimensions and font sizes to the VM

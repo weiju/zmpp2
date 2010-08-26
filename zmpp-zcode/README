@@ -5,39 +5,37 @@ Known issues:
 Missing:
 01. @save
 02. @restore
-03. @restart
-04. @catch
-05. @verify
-06. @throw
-07. @erase_line
-08. @get_cursor
-09. @input_stream
-10. @sound_effect
-11. @encode_text
-12. @print_table
+03. @catch
+04. @verify
+05. @throw
+06. @erase_line
+07. @get_cursor
+08. @input_stream
+09. @encode_text
+10. @print_table
 
 ext:
 
-13. @save
-14. @restore
-15. @draw_picture
-16. @picture_data
-17. @erase_picture
-18. @set_margins
-19. @move_window
-20. @window_size
-21. @window_style
-22. @get_wind_prop
-23. @scroll_window
-24. @pop_stack
-25. @read_mouse
-26. @mouse_window
-27. @push_stack
-28. @put_wind_prop
-29. @print_form
-30. @make_menu
-31. @picture_table
+11. @save
+12. @restore
+13. @draw_picture
+14. @picture_data
+15. @erase_picture
+16. @set_margins
+17. @move_window
+18. @window_size
+19. @window_style
+20. @get_wind_prop
+21. @scroll_window
+22. @pop_stack
+23. @read_mouse
+24. @mouse_window
+25. @push_stack
+26. @put_wind_prop
+27. @print_form
+28. @make_menu
 
 TODO:
 
-- implement undo
+- Swing interface should support styles
+- Swing interface should support sound

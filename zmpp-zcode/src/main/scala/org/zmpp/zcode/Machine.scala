@@ -239,6 +239,15 @@ class Machine {
         ioSystem.putChar('\n')
         state.returnFromRoutine(1)
       case 0x04 => // nop
+      case 0x07 => // restart
+        // bit 0 of flags2 (transcript)
+        // bit 1 of flags2 (fixed pitch)
+        val preserveFlags = state.byteAt(0x10) & 0x03
+        state.overwriteDynamicMemWith(dynamicMem)
+        state.reset
+        // restore preserved flags
+        state.setByteAt(0x10, state.byteAt(0x10) | preserveFlags)
+        screenModel.initUI
       case 0x08 => // ret_popped
         state.returnFromRoutine(state.variableValue(0))
       case 0x09 => // pop
@@ -500,6 +509,13 @@ class Machine {
         screenModel.bufferMode(nextOperand)
       case 0x13 => // output_stream
         outputStream(nextSignedOperand)
+      case 0x15 => // sound_effect
+        val number = if (_decodeInfo.numOperands > 0) nextOperand else 1
+        val effect = if (_decodeInfo.numOperands > 1) nextOperand else 2
+        val volumeRepeats =
+          if (_decodeInfo.numOperands > 2) nextOperand else 0x01a0
+        val routine = if (_decodeInfo.numOperands > 3) nextOperand else 0
+        printf("TODO: @sound_effect not connected yet\n")
       case 0x16 => // readchar
         val inp = if (_decodeInfo.numOperands > 0) nextOperand else 1
         if (version >= 4) {
@@ -585,6 +601,7 @@ class Machine {
         // we simply assume that most Java systems can process Unicode
         nextOperand
         storeResult(3)
+      case 0x1c => // picture_table, do nothing
       case _ =>
         throw new UnsupportedOperationException(
           "EXT opcode not supported: 0x%02x\n".format(_decodeInfo.opnum))
