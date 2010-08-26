@@ -5,34 +5,31 @@ Known issues:
 Missing:
 01. @save
 02. @restore
-03. @catch
-04. @verify
-05. @throw
-06. @get_cursor
-07. @input_stream
-08. @encode_text
-09. @print_table
+03. @verify
+04. @throw
+05. @get_cursor
+06. @input_stream
+07. @encode_text
+08. @print_table
 
 ext:
 
-10. @save
-11. @restore
-12. @draw_picture
-13. @picture_data
-14. @erase_picture
-15. @set_margins
-16. @move_window
-17. @window_size
-18. @window_style
-19. @get_wind_prop
-20. @scroll_window
-21. @pop_stack
-22. @read_mouse
-23. @mouse_window
-24. @push_stack
-25. @put_wind_prop
-26. @print_form
-27. @make_menu
+09. @save
+10. @restore
+11. @draw_picture
+12. @picture_data
+13. @erase_picture
+14. @set_margins
+15. @move_window
+16. @window_size
+17. @window_style
+18. @get_wind_prop
+19. @scroll_window
+20. @read_mouse
+21. @mouse_window
+22. @put_wind_prop
+23. @print_form
+24. @make_menu
 
 TODO:
 

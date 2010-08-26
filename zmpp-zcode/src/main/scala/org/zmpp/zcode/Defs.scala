@@ -98,7 +98,6 @@ class StoryHeader(story: Memory) {
 // (only happens on a push).
 class Stack {
   private val _values = new Array[Int](1024)
-
   var sp = 0
   
   def push(value: Int) {
@@ -110,6 +109,10 @@ class Stack {
     _values(sp) & 0xffff
   }
   def top = _values(sp - 1)
+  def replaceTopWith(value: Int) {
+    _values(sp - 1) = value
+  }
+
   // there is only one single case where we need this function: return
   // PCs.
   def value32At(index: Int) = _values(index)
@@ -217,6 +220,22 @@ class VMState {
   }
   def stackEmpty = _stack.sp == 0
   def stackTop = _stack.top
+  def replaceStackTopWith(value: Int) = _stack.replaceTopWith(value)
+  def pushUserStack(userStack: Int, value: Int): Boolean = {
+    val capacity = _story.shortAt(userStack)
+    if (capacity == 0) false
+    else {
+      _story.setShortAt(userStack + capacity * 2, value)
+      _story.setShortAt(userStack, capacity - 1)
+      true
+    }
+  }
+  def popUserStack(userStack: Int): Int = {
+    val capacity = _story.shortAt(userStack)
+    _story.setShortAt(userStack, capacity + 1)
+    _story.shortAt(userStack + (capacity + 1) * 2)
+  }
+
   def variableValue(varnum: Int) = {
     if (varnum == 0) _stack.pop
     else if (varnum >= 1 && varnum <= 15) { // local
@@ -259,27 +278,16 @@ class VMState {
     else {
       val routineAddr = header.unpackRoutineAddress(packedAddr)
       val numLocals = _story.byteAt(routineAddr)
-
-      // debug
-/*
-      printf("@call $%02x ARGS = ", routineAddr)
-      for (i <- 0 until numArgs) {
-        printf("%02x, ", args(i))
-      }
-      printf(" -> VAR %02x\n", storeVar)
-      */
-      // end debug
     
       // create a call frame
       val oldfp = fp
       fp = sp // current frame pointer
       _stack.push(pc) // return address
-      //printf("PUSHED RETURN ADDRESS: %02x\n", pc)
       _stack.push(oldfp)
       _stack.push(storeVar)
       _stack.push(numArgs)
       pc = routineAddr + 1 // place PC after routine header
-      //printf("PUSHING %d locals\n", numLocals)
+
       if (header.version <= 4) {
         for (i <- 0 until numLocals) _stack.push(nextShort)
       } else {
@@ -287,11 +295,10 @@ class VMState {
       }
       // set arguments to locals, throw away excess parameters (6.4.4.1)
       val numParams = if (numArgs <= numLocals) numArgs else numLocals
-      //printf("number of parameters: %d\n", numParams)
+
       for (i <- 0 until numParams) {
         _stack.setValueAt(fp + FrameOffset.Locals + i, args(i))
       }
-      //println("CALL ENDED, RETURNING")
     }
   }
   def returnFromRoutine(retval: Int) {

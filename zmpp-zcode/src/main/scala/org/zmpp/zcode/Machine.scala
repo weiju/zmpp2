@@ -253,8 +253,8 @@ class Machine {
       case 0x09 => // pop
         if (version < 5) {
           state.variableValue(0)
-        } else {
-          throw new UnsupportedOperationException("@catch not yet implemented")
+        } else { // V6 -> catch
+          storeResult(state.fp)
         }
       case 0x0a => // quit
         ioSystem.printMessage("*Game Ended*")
@@ -486,8 +486,21 @@ class Machine {
       case 0x08 => // push
         state.setVariableValue(0, nextOperand)
       case 0x09 => // pull
-        if (state.stackEmpty) fatal("Stack underflow !")
-        else storeResult(state.variableValue(0))
+        if (version == 6) {
+          val userStack = if (_decodeInfo.numOperands > 0) nextOperand else 0
+          if (userStack > 0) storeResult(state.popUserStack(userStack))
+          else {
+            if (state.stackEmpty) fatal("Stack underflow !")
+            storeResult(state.variableValue(0))
+          }
+        } else {
+          val varnum = nextOperand
+          val value = state.variableValue(0)
+          // standard 1.1: indirect access to variable 0 -> replace value in-place
+          if (varnum == 0) state.replaceStackTopWith(value)
+          else if (state.stackEmpty) fatal("Stack underflow !")
+          else state.setVariableValue(varnum, value)
+        }
       case 0x0a => // split_window
         if (screenModel != null) screenModel.splitWindow(nextOperand)
         else warn("@split_window, platformIO not set")
@@ -603,6 +616,20 @@ class Machine {
         // we simply assume that most Java systems can process Unicode
         nextOperand
         storeResult(3)
+      case 0x15 => // pop_stack
+        val numItems = nextOperand
+        val userStack = if (_decodeInfo.numOperands > 1) nextOperand else 0
+        for (i <- 0 until numItems) {
+          if (userStack == 0) state.variableValue(0)
+          else state.popUserStack(userStack)
+        }
+      case 0x18 => // push_stack
+        val value = nextOperand
+        val userStack = if (_decodeInfo.numOperands > 1) nextOperand else 0
+        val result = if (userStack == 0) {
+          state.setVariableValue(0, value)
+          decideBranch(true)
+        } else decideBranch(state.pushUserStack(userStack, value))
       case 0x1c => // picture_table, do nothing
       case _ =>
         throw new UnsupportedOperationException(
