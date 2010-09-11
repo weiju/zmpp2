@@ -40,10 +40,23 @@ import javax.swing._
 import java.awt._
 import java.awt.event._
 
-// The V1-V3 status bar. This is implemented as a label, because
-// there is at least 1 game (Seastalker) which has both status
+// The V1-V3 status bar. This is implemented as a separate component
+// because there is at least 1 game (Seastalker) which has both status
 // bar and two windows
-class StatusBar extends JLabel(" ")
+class StatusBar extends JPanel(new GridLayout(1, 2)) {
+  private val objectLabel = new JLabel(" ")
+  private val scoreLabel       = new JLabel(" ")
+  private val left  = new JPanel(new FlowLayout(FlowLayout.LEFT))
+  private val right = new JPanel(new FlowLayout(FlowLayout.RIGHT))
+  this.add(left)
+  this.add(right)
+  left.add(objectLabel)
+  right.add(scoreLabel)
+  def set(objectName: String, scoreOrTime: String) {
+    objectLabel.setText(objectName)
+    scoreLabel.setText(scoreOrTime)
+  }
+}
 
 // A class to implement the top window. In Swing, the top window sits
 // in the glass pane. This is done to implement the tricky behaviour
@@ -233,7 +246,7 @@ extends JTextPane with KeyListener {
 class SwingScreenModel(topWindow: TextGrid) extends JPanel(new BorderLayout)
 with OutputStream with InputStream with ScreenModel with FocusListener {
   var vm: Machine  = null
-  var activeWindow = 0
+  var activeWindow = 0 // 0 is the bottom window, 1 is the top window
   val statusBar    = new StatusBar
   val mainPane     = new JPanel(new BorderLayout)
   val bottomWindow = new TextBuffer(this)
@@ -281,7 +294,7 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
   def updateStatusLine {
     val objectName  = vm.statusLineObjectName
     val scoreOrTime = vm.statusLineScoreOrTime
-    statusBar.setText(objectName + " " + scoreOrTime)
+    statusBar.set(objectName, scoreOrTime)
   }
   // input
   def readLine: Int = {
@@ -343,6 +356,11 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
   }
   def setTextStyle(style: Int) {
     printf("@set_text_style %d not implemented yet (TODO)\n", style)
+    if (activeWindow == 0) {
+      // set style in bottom window
+    } else {
+      // set style in top window
+    }
   }
 
   def setColour(foreground: Int, background: Int, window: Int) {
