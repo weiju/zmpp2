@@ -100,6 +100,14 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     val attrs = getInputAttributes
     getDocument.insertString(getDocument.getLength, buffer.toString, attrs)
     buffer = new StringBuilder
+
+    // TODO
+    // Note: As soon as we print something, we need to update the input mark
+    // as well. This is a little tricky, but this is how we handle the conflict
+    // between timed input and having text printed from somewhere else
+    // (such as hyperlink input in 'Dead Cities')
+    //logger.info("UPDATE INPUT START")
+    //inputStart = getDocument.getLength
   }
   override def _setStyle(style: Int) {
     if (isHyperlinkMode) return // ignore style in hyperlink mode

@@ -227,6 +227,9 @@ extends JTextPane with KeyListener {
   }
 }
 
+/*
+ * Standard screen model for all versions except 6.
+ */
 class SwingScreenModel(topWindow: TextGrid) extends JPanel(new BorderLayout)
 with OutputStream with InputStream with ScreenModel with FocusListener {
   var vm: Machine  = null

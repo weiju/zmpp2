@@ -28,6 +28,48 @@
  */
 package org.zmpp.zcode
 
+object ScreenModelConstants {
+  val FontNormal       = 1
+  val FontPicture      = 2
+  val FontCharacterGfx = 3
+  val FontFixed        = 4
+
+  val ColorCurrent     = 0
+  val ColorDefault     = 1
+  val ColorBlack       = 2
+  val ColorRed         = 3
+  val ColorGreen       = 4
+  val ColorYellow      = 5
+  val ColorBlue        = 6
+  val ColorMagenta     = 7
+  val ColorCyan        = 8
+  val ColorWhite       = 9
+
+  // these colors are V6 only
+  val ColorGray1       = 10
+  val ColorGray2       = 11
+  val ColorGray3       = 12
+  val ColorUnderCursor = -1
+}
+
+object WindowAttributes {
+  val Wrapping         = 0
+  val Scrolling        = 1
+  val Transcript       = 2
+  val Buffered         = 3
+}
+
+object WindowProperties {
+  val CoordY           = 0
+  val CoordX           = 1
+  val SizeY            = 2
+  val SizeX            = 3
+  val CursorY          = 4
+  val CursorX          = 5
+  val MarginSizeLeft   = 6
+  val MarginSizeRight  = 7
+}
+
 trait ScreenModel {
   def screenOutputStream : OutputStream
   def keyboardStream     : InputStream

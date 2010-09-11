@@ -130,7 +130,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
       if (event.getKeyCode == KeyEvent.VK_ENTER) {
         event.consume
         val input = doc.getText(inputStart, doc.getLength - inputStart)
-        logger.info("Input was: " + input)
+        logger.info("Input was: '%s'".format(input))
         putChar('\n')
         resumeWithLineInput(input)
       } else if (event.getKeyCode == KeyEvent.VK_BACK_SPACE ||
@@ -172,6 +172,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
     style = StyleType.Input.id
     requestFocusInWindow
     getCaret.setVisible(true)
+    // here we assume the input mark is the one from the last select
     textInputMode = SwingTextWindowUI.InputModeLine
   }
   def requestCharInput {

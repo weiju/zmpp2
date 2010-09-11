@@ -129,6 +129,7 @@
           <scalaVersion>${scala.version}</scalaVersion>
           <args>
             <arg>-deprecation</arg>
+            <arg>-optimise</arg>
           </args>
 	  <!--
 	      Simply run this Scala project with
