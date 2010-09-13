@@ -428,8 +428,8 @@ class Machine {
       case 0x1b => // set_colour
         val foreground = nextSignedOperand
         val background = nextSignedOperand
-        // TODO: what about the window argument in V6 ?
-        val window = 3 // current for now
+        val window = if (_decodeInfo.numOperands > 2) nextOperand
+                     else 3
         screenModel.setColour(foreground, background, window)
       case _ =>
         throw new UnsupportedOperationException(

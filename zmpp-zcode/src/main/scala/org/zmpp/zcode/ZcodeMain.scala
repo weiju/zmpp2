@@ -37,6 +37,7 @@ import org.zmpp.base.DefaultMemory
 import org.zmpp.base.VMRunStates
 
 import javax.swing._
+import javax.swing.text.StyleConstants
 import java.awt._
 import java.awt.event._
 
@@ -67,14 +68,31 @@ class StatusBar extends JPanel(new GridLayout(1, 2)) {
 // why the Glk can't fully implement the Z-machine screen model, V6
 // is a another story.
 class TextGrid extends JTextPane {
+
+  // the current color settings could be outfactored to a common
+  // subclass to TextGrid and TextBuffer (TODO)
+  // BETTER: Color settings seem to be shared for the screen model.
+  // so it might be actually better to retrieve the settings from there
+  private var currentBackground = Colors.White
+  private var currentForeground = Colors.Black
+  private var currentAttribute = new TextAttribute(Fonts.Fixed,
+                                                   TextStyles.Roman)
+
   private var numLines     = 0
   private var _cursorPos   = (1, 1)
+  // Even though the text grid is a non-buffered window type, we still buffer
+  // it up to prepare for resizing of the main window
   // TODO: Use annotated characters
-  private var buffer : Array[Array[Char]] = null
+  private var buffer : Array[Array[AttributedChar]] = null
   var totalLines   = 0
   var charsPerLine = 0
 
   setOpaque(false)
+
+  def setColors(foreground: Int, background: Int) {
+    currentForeground = foreground
+    currentBackground = background
+  }
 
   def windowSize = numLines
   def windowSize_=(numLines: Int) {
@@ -92,11 +110,12 @@ class TextGrid extends JTextPane {
       val line = _cursorPos._1
       //printf("PUT CHARACTER TO POS (%d, %d)\n", line, col)
       // save the state in the buffer
-      buffer(line - 1)(col - 1) = c
+      buffer(line - 1)(col - 1) = new AttributedChar(c, null)
       // and also set it in the window
       val offset = (line - 1) * (charsPerLine + 1) + (col - 1)
       getDocument.remove(offset, 1)
-      getDocument.insertString(offset, String.valueOf(c), null)
+      getDocument.insertString(offset, String.valueOf(c),
+                               toAttributeSet(currentAttribute))
 
       if (col < charsPerLine) _cursorPos = (line, col + 1)
       else moveCursorToNextLine
@@ -107,15 +126,56 @@ class TextGrid extends JTextPane {
     _cursorPos = (nextLine, 0)
   }
 
+  private def getColor(colorId: Int) = {
+    colorId match {
+      case Colors.Black   => Color.BLACK
+      case Colors.Red     => Color.RED
+      case Colors.Green   => Color.YELLOW
+      case Colors.Blue    => Color.BLUE
+      case Colors.Magenta => Color.MAGENTA
+      case Colors.Cyan    => Color.CYAN
+      case Colors.White   => Color.WHITE
+      case _ =>
+        throw new IllegalArgumentException("Unknown color value: %d"
+                                           .format(colorId))
+    }
+  }
+
+  // TODO: This might be reused in text buffer
+  private def toAttributeSet(attr: TextAttribute) = {
+    val attrs = getInputAttributes
+    if (attr != null) {
+      val textColor = getColor(currentForeground)
+      val backColor = getColor(currentBackground)
+      StyleConstants.setBold(attrs, attr.isBold)
+      StyleConstants.setItalic(attrs, attr.isItalic)
+      if (attr.isReverseVideo) {
+        StyleConstants.setBackground(attrs, textColor)
+        StyleConstants.setForeground(attrs, backColor)
+      } else {
+        StyleConstants.setForeground(attrs, textColor)
+        StyleConstants.setBackground(attrs, backColor)
+      }
+    }
+    attrs
+  }
+
+  private def appendCharacter(c: AttributedChar) {
+    getDocument.insertString(getDocument.getLength,
+                             c.toString,
+                             toAttributeSet(c.attribute))
+  }
+  private def appendNewline {
+    getDocument.insertString(getDocument.getLength, "\n", null)
+  }
+
   def clear {
     getDocument.remove(0, getDocument.getLength)
     for (line <- 0 until totalLines) {
       for (col <- 0 until charsPerLine) {
-        getDocument.insertString(getDocument.getLength,
-                                 String.valueOf(buffer(line)(col)),
-                                 null)
+        appendCharacter(buffer(line)(col))
       }
-      getDocument.insertString(getDocument.getLength, "\n", null)
+      appendNewline
     }
   }
 
@@ -125,10 +185,11 @@ class TextGrid extends JTextPane {
     charsPerLine  = currentSize.width / fontMetrics.charWidth('0')
     totalLines    = currentSize.height / fontMetrics.getHeight
     printf("SCREEN SIZE: %d LINES %d COLS\n", totalLines, charsPerLine)
-    buffer = new Array[Array[Char]](totalLines)
+    buffer = new Array[Array[AttributedChar]](totalLines)
     for (line <- 0 until totalLines) {
-      buffer(line) = new Array[Char](charsPerLine)
-      for (col <- 0 until charsPerLine) buffer(line)(col) = ' '
+      buffer(line) = new Array[AttributedChar](charsPerLine)
+      for (col <- 0 until charsPerLine)
+        buffer(line)(col) = new AttributedChar(' ', null)
     }
     clear
   }
@@ -366,6 +427,8 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
   def setColour(foreground: Int, background: Int, window: Int) {
     printf("@set_colour %d, %d, %d not implemented yet (TODO)\n",
            foreground, background, window)
+    // TODO: Should be a global setting of the screen models != 6
+    topWindow.setColors(foreground, background)
   }
 
   def setFont(font: Int): Int = {

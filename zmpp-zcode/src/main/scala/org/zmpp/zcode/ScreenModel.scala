@@ -62,6 +62,22 @@ object TextStyles {
   val FixedPitch         = 8
 }
 
+class TextAttribute(val font: Int, val style: Int) {
+  import TextStyles._
+  def isRoman        = style                  == Roman
+  def isReverseVideo = (style & ReverseVideo) == ReverseVideo
+  def isBold         = (style & Bold)         == Bold
+  def isItalic       = (style & Italic)       == Italic
+  def isFixedStyle   = (style & FixedPitch)   == FixedPitch
+}
+
+class AttributedChar(val c: Char, val attribute: TextAttribute) {
+  override def toString = String.valueOf(c)
+}
+class AttributedString(val s: String, val attribute: TextAttribute) {
+  override def toString = s
+}
+
 object WindowAttributes {
   val Wrapping           = 0
   val Scrolling          = 1
