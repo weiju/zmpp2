@@ -31,7 +31,3 @@ ext:
 23. @print_form
 24. @make_menu
 
-TODO:
-
-- Swing interface should support styles
-- Swing interface should support sound
