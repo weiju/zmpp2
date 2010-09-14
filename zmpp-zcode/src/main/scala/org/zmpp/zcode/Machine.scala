@@ -789,8 +789,8 @@ class Machine {
     val oldpc = state.pc
     decodeInstruction
     decodeForm
-    printf("%04d - $%05x: %s %s\n", iterations, oldpc,
-           _decodeInfo.opcodeName(version), makeOperandString)
+//    printf("%04d - $%05x: %s %s\n", iterations, oldpc,
+//           _decodeInfo.opcodeName(version), makeOperandString)
     // execute
     import Instruction._
     _decodeInfo.operandCount match {

@@ -38,6 +38,7 @@ import org.zmpp.base.VMRunStates
 
 import javax.swing._
 import javax.swing.text.StyleConstants
+import javax.swing.text.MutableAttributeSet
 import java.awt._
 import java.awt.event._
 
@@ -69,30 +70,18 @@ class StatusBar extends JPanel(new GridLayout(1, 2)) {
 // is a another story.
 class TextGrid extends JTextPane {
 
-  // the current color settings could be outfactored to a common
-  // subclass to TextGrid and TextBuffer (TODO)
-  // BETTER: Color settings seem to be shared for the screen model.
-  // so it might be actually better to retrieve the settings from there
-  private var currentBackground = Colors.White
-  private var currentForeground = Colors.Black
-  private var currentAttribute = new TextAttribute(Fonts.Fixed,
-                                                   TextStyles.Roman)
-
   private var numLines     = 0
   private var _cursorPos   = (1, 1)
   // Even though the text grid is a non-buffered window type, we still buffer
   // it up to prepare for resizing of the main window
   // TODO: Use annotated characters
-  private var buffer : Array[Array[AttributedChar]] = null
   var totalLines   = 0
   var charsPerLine = 0
 
-  setOpaque(false)
+  // we need access to the screen model to access
+  var screenModel    : SwingScreenModel = null
 
-  def setColors(foreground: Int, background: Int) {
-    currentForeground = foreground
-    currentBackground = background
-  }
+  setOpaque(false)
 
   def windowSize = numLines
   def windowSize_=(numLines: Int) {
@@ -108,14 +97,10 @@ class TextGrid extends JTextPane {
     else {
       val col  = _cursorPos._2
       val line = _cursorPos._1
-      //printf("PUT CHARACTER TO POS (%d, %d)\n", line, col)
-      // save the state in the buffer
-      buffer(line - 1)(col - 1) = new AttributedChar(c, null)
-      // and also set it in the window
       val offset = (line - 1) * (charsPerLine + 1) + (col - 1)
       getDocument.remove(offset, 1)
       getDocument.insertString(offset, String.valueOf(c),
-                               toAttributeSet(currentAttribute))
+                               currentAttributeSet)
 
       if (col < charsPerLine) _cursorPos = (line, col + 1)
       else moveCursorToNextLine
@@ -126,54 +111,38 @@ class TextGrid extends JTextPane {
     _cursorPos = (nextLine, 0)
   }
 
-  private def getColor(colorId: Int) = {
-    colorId match {
-      case Colors.Black   => Color.BLACK
-      case Colors.Red     => Color.RED
-      case Colors.Green   => Color.YELLOW
-      case Colors.Blue    => Color.BLUE
-      case Colors.Magenta => Color.MAGENTA
-      case Colors.Cyan    => Color.CYAN
-      case Colors.White   => Color.WHITE
-      case _ =>
-        throw new IllegalArgumentException("Unknown color value: %d"
-                                           .format(colorId))
-    }
-  }
-
-  // TODO: This might be reused in text buffer
-  private def toAttributeSet(attr: TextAttribute) = {
+  private def currentAttributeSet = {
     val attrs = getInputAttributes
-    if (attr != null) {
-      val textColor = getColor(currentForeground)
-      val backColor = getColor(currentBackground)
-      StyleConstants.setBold(attrs, attr.isBold)
-      StyleConstants.setItalic(attrs, attr.isItalic)
-      if (attr.isReverseVideo) {
-        StyleConstants.setBackground(attrs, textColor)
-        StyleConstants.setForeground(attrs, backColor)
-      } else {
-        StyleConstants.setForeground(attrs, textColor)
-        StyleConstants.setBackground(attrs, backColor)
-      }
-    }
+    screenModel.setAttributeSet(attrs, false)
     attrs
   }
 
   private def appendCharacter(c: AttributedChar) {
-    getDocument.insertString(getDocument.getLength,
-                             c.toString,
-                             toAttributeSet(c.attribute))
+    // this is a workaround for whitespace only, we need to properly deal with
+    // blanks
+    if (c.attribute == null) {
+      getDocument.insertString(getDocument.getLength,
+                               c.toString,
+                               null)
+    } else {
+      getDocument.insertString(getDocument.getLength,
+                               c.toString,
+                               currentAttributeSet)
+    }
   }
   private def appendNewline {
     getDocument.insertString(getDocument.getLength, "\n", null)
   }
 
   def clear {
+    setBackground(screenModel.backgroundColor)
+    // TODO: also take into account the background color
+    val blank = new AttributedChar(' ', null)
     getDocument.remove(0, getDocument.getLength)
+    
     for (line <- 0 until totalLines) {
       for (col <- 0 until charsPerLine) {
-        appendCharacter(buffer(line)(col))
+        appendCharacter(blank)
       }
       appendNewline
     }
@@ -185,12 +154,6 @@ class TextGrid extends JTextPane {
     charsPerLine  = currentSize.width / fontMetrics.charWidth('0')
     totalLines    = currentSize.height / fontMetrics.getHeight
     printf("SCREEN SIZE: %d LINES %d COLS\n", totalLines, charsPerLine)
-    buffer = new Array[Array[AttributedChar]](totalLines)
-    for (line <- 0 until totalLines) {
-      buffer(line) = new Array[AttributedChar](charsPerLine)
-      for (col <- 0 until charsPerLine)
-        buffer(line)(col) = new AttributedChar(' ', null)
-    }
     clear
   }
 }
@@ -217,6 +180,7 @@ extends JTextPane with KeyListener {
   addKeyListener(this)
   var builder = new StringBuilder
   var inputMode = TextInputMode.InputNone
+  var useBufferMode = true
   def isCharInputMode = inputMode == TextInputMode.ReadChar
   def isLineInputMode = inputMode == TextInputMode.ReadLine
   private var inputStart    = 0
@@ -227,7 +191,19 @@ extends JTextPane with KeyListener {
     builder       = new StringBuilder
     inputStart    = 0
     maxInputChars = 0
+    clear
+  }
+  
+  private def currentAttributeSet = {
+    val attrs = getInputAttributes
+    screenModel.setAttributeSet(attrs, true)
+    attrs
+  }
+
+  def clear {
+    // TODO: also take into account the background color
     setText("")
+    setBackground(screenModel.backgroundColor)
   }
 
   def putChar(c: Char) {
@@ -235,7 +211,7 @@ extends JTextPane with KeyListener {
   }
   def flush {
     val doc = getDocument
-    doc.insertString(doc.getLength, builder.toString, null)
+    doc.insertString(doc.getLength, builder.toString, currentAttributeSet)
     builder = new StringBuilder
   }
   
@@ -308,6 +284,11 @@ class SwingScreenModel(topWindow: TextGrid) extends JPanel(new BorderLayout)
 with OutputStream with InputStream with ScreenModel with FocusListener {
   var vm: Machine  = null
   var activeWindow = 0 // 0 is the bottom window, 1 is the top window
+  var currentBackground = Colors.White
+  var currentForeground = Colors.Black
+  var style             = TextStyles.Roman
+  var currentFont       = Fonts.Normal
+
   val statusBar    = new StatusBar
   val mainPane     = new JPanel(new BorderLayout)
   val bottomWindow = new TextBuffer(this)
@@ -316,6 +297,7 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
   mainPane.add(scrollPane, BorderLayout.CENTER)
   add(mainPane, BorderLayout.CENTER)
   topWindow.addFocusListener(this)
+  topWindow.screenModel = this
 
   def connect(aVm: Machine) {
     vm = aVm
@@ -324,6 +306,13 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
       add(statusBar, BorderLayout.NORTH)
     }
   }
+
+  import TextStyles._
+  def isRoman        = style                  == Roman
+  def isReverseVideo = (style & ReverseVideo) == ReverseVideo
+  def isBold         = (style & Bold)         == Bold
+  def isItalic       = (style & Italic)       == Italic
+  def isFixedStyle   = (style & FixedPitch)   == FixedPitch
 
   private var selected: Boolean = true
   def isSelected = selected
@@ -391,7 +380,6 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
   def setWindow(windowId: Int) {
     if (windowId == 0 || windowId == 1) {
       activeWindow = windowId
-      printf("Setting active window to: %d\n", activeWindow)
     } else {
       throw new IllegalArgumentException(
         "@set_window illegal window: %d".format(windowId))
@@ -407,33 +395,86 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
   }
 
   def bufferMode(flag: Int) {
-    printf("@buffer_mode %d not implemented yet (TODO)\n", flag)
+    bottomWindow.useBufferMode = (flag != 0)
   }
   def eraseWindow(windowId: Int) {
-    printf("@erase_window %d not implemented yet (TODO)\n", windowId)
+    // TODO: polymorphism might make this prettier and shorter
+    if (windowId == -1) {
+      topWindow.windowSize = 0
+      topWindow.clear
+      bottomWindow.clear
+    } else if (windowId == -2) {
+      topWindow.clear
+      bottomWindow.clear
+    } else if (windowId == 1 || windowId == 3 && activeWindow == 1) {
+      topWindow.clear
+    } else if (windowId == 0 || windowId == 3 && activeWindow == 0) {
+      bottomWindow.clear
+    }
   }
   def eraseLine(value: Int) {
     printf("@erase_line %d not implemented yet (TODO)\n", value)
   }
-  def setTextStyle(style: Int) {
-    printf("@set_text_style %d not implemented yet (TODO)\n", style)
-    if (activeWindow == 0) {
-      // set style in bottom window
-    } else {
-      // set style in top window
+  def setTextStyle(aStyle: Int) {
+    flush
+    style = aStyle
+  }
+
+  // Note: window parameter is only relevant for V6
+  // The method is called "setColour" only to express that it
+  // implements the Z-instruction
+  def setColour(foreground: Int, background: Int, window: Int) {
+    flush
+    currentForeground = foreground
+    currentBackground = background
+  }
+
+  private def getColor(colorId: Int) = {
+    colorId match {
+      case Colors.Black   => Color.BLACK
+      case Colors.Red     => Color.RED
+      case Colors.Green   => Color.YELLOW
+      case Colors.Blue    => Color.BLUE
+      case Colors.Magenta => Color.MAGENTA
+      case Colors.Cyan    => Color.CYAN
+      case Colors.White   => Color.WHITE
+      case _ =>
+        throw new IllegalArgumentException("Unknown color value: %d"
+                                           .format(colorId))
     }
   }
-
-  def setColour(foreground: Int, background: Int, window: Int) {
-    printf("@set_colour %d, %d, %d not implemented yet (TODO)\n",
-           foreground, background, window)
-    // TODO: Should be a global setting of the screen models != 6
-    topWindow.setColors(foreground, background)
-  }
+  def backgroundColor = getColor(currentBackground)
+  def textColor       = getColor(currentForeground)
 
   def setFont(font: Int): Int = {
-    printf("@set_font %d not implemented yet (TODO)\n", font)
-    1
+    val previousFont = currentFont
+    flush
+    currentFont = font
+    previousFont
+  }
+
+  // TODO: Specify whether it can be switched between fixed and
+  // proportional font
+  def setAttributeSet(attrs: MutableAttributeSet, fixedOnly: Boolean) = {
+    StyleConstants.setBold(attrs,   this.isBold)
+    StyleConstants.setItalic(attrs, this.isItalic)
+    if (this.isReverseVideo) {
+      StyleConstants.setBackground(attrs, this.textColor)
+      StyleConstants.setForeground(attrs, this.backgroundColor)
+    } else {
+      StyleConstants.setForeground(attrs, this.textColor)
+      StyleConstants.setBackground(attrs, this.backgroundColor)
+    }
+    if (currentFont == Fonts.Normal && fixedOnly) {
+      // TODO
+    } else if (currentFont == Fonts.Fixed) {
+      // TODO
+    } else if (currentFont == Fonts.Picture) {
+      throw new UnsupportedOperationException("Picture font not supported")
+    } else if (currentFont == Fonts.CharacterGfx) {
+      // TODO
+      throw new UnsupportedOperationException("Character GFX font not supported")
+    }
   }
 
   def initUI {
