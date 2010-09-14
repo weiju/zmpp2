@@ -40,14 +40,23 @@ import org.zmpp.base.Memory
 import org.zmpp.base.DefaultMemory
 import org.zmpp.base.VMRunStates
 
-class ZcodeFrame extends JFrame("ZMPP 2.0 Prototype") with WindowListener {
-  val topWindow   = new TextGrid
-  val screenModel = new SwingScreenModel(topWindow)
-  var vm: Machine = null
+trait SwingScreenModel extends ScreenModel with InputStream {
+  def readChar
+}
 
-  getContentPane.add(screenModel, BorderLayout.CENTER)
-  getRootPane.getGlassPane.setVisible(true)
-  getRootPane.setGlassPane(topWindow)
+class ZcodeFrame(version: Int) extends JFrame("ZMPP 2.0 Prototype")
+with WindowListener {
+  var vm: Machine = null
+  var screenModel : SwingScreenModel = null
+  if (version != 6) {
+    val topWindow   = new TextGrid
+    screenModel = new SwingScreenModelStd(topWindow)
+    getRootPane.getGlassPane.setVisible(true)
+    getRootPane.setGlassPane(topWindow)
+  } else {
+    screenModel = new SwingScreenModelV6
+  }
+  getContentPane.add(screenModel.asInstanceOf[Component], BorderLayout.CENTER)
   pack
   addWindowListener(this)
 
@@ -116,20 +125,19 @@ object ZcodeMain {
     }
     filebytes
   }
-  def readZcodeFile(file : File, screenModel: ScreenModel) = {
+  def readZcodeFile(file : File) = {
     val story = new DefaultMemory(readFileData(file))
+    val frame = new ZcodeFrame(story.byteAt(0))
     val vm = new Machine
-    vm.init(story, screenModel)
-    vm
+    vm.init(story, frame.screenModel)
+    frame.runMachine(vm)
   }
   
   def main(args: Array[String]) {
-    val frame = new ZcodeFrame
-    val vm = if (args.length == 0) {
-      readZcodeFile(new File("minizork.z3"), frame.screenModel)
+    val frame = if (args.length == 0) {
+      readZcodeFile(new File("minizork.z3"))
     } else {
-      readZcodeFile(new File(args(0)), frame.screenModel)
+      readZcodeFile(new File(args(0)))
     }
-    frame.runMachine(vm)
   }
 }

@@ -47,7 +47,7 @@ class TextGrid extends JTextPane {
   var charsPerLine = 0
 
   // we need access to the screen model to access
-  var screenModel    : SwingScreenModel = null
+  var screenModel    : SwingScreenModelStd = null
 
   setOpaque(false)
 
@@ -139,7 +139,7 @@ object TextInputMode extends Enumeration {
   val ReadChar  = Value("ReadChar")
 } 
 
-class TextBuffer(screenModel: SwingScreenModel)
+class TextBuffer(screenModel: SwingScreenModelStd)
 extends JTextPane with KeyListener {
   setMargin(new java.awt.Insets(TextBuffer.MarginTop,
                                 TextBuffer.MarginLeft,
@@ -248,14 +248,16 @@ extends JTextPane with KeyListener {
 /*
  * Standard screen model for all versions except 6.
  */
-class SwingScreenModel(topWindow: TextGrid) extends JPanel(new BorderLayout)
-with OutputStream with InputStream with ScreenModel with FocusListener {
-  var vm: Machine  = null
-  var activeWindow = 0 // 0 is the bottom window, 1 is the top window
+class SwingScreenModelStd(topWindow: TextGrid) extends JPanel(new BorderLayout)
+with OutputStream with InputStream with SwingScreenModel with FocusListener {
+  var vm: Machine       = null
+  var activeWindow      = 0 // 0 is the bottom window, 1 is the top window
   var currentBackground = Colors.White
   var currentForeground = Colors.Black
   var style             = TextStyles.Roman
   var currentFont       = Fonts.Normal
+  val fixedFont         = new Font("Courier New", Font.PLAIN, 14)
+  val stdFont           = new Font("American Typewriter", Font.PLAIN, 14)
 
   val statusBar    = new StatusBar
   val mainPane     = new JPanel(new BorderLayout)
@@ -282,8 +284,8 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
   def isItalic       = (style & Italic)       == Italic
   def isFixedStyle   = (style & FixedPitch)   == FixedPitch
 
-  private var selected: Boolean = true
-  def isSelected = selected
+  private var selected      = true
+  def isSelected            = selected
   def select(flag: Boolean) = selected = flag
   def putChar(c: Char) {
     if (SwingUtilities.isEventDispatchThread) _putChar(c)
@@ -447,8 +449,8 @@ with OutputStream with InputStream with ScreenModel with FocusListener {
 
   def initUI {
     println("INITIALIZE THE UI !!!")
-    topWindow.setFont(new Font("Courier New", Font.PLAIN, 14))
-    bottomWindow.setFont(new Font("American Typewriter", Font.PLAIN, 14))
+    topWindow.setFont(fixedFont)
+    bottomWindow.setFont(stdFont)
     topWindow.reset
     bottomWindow.reset
 
