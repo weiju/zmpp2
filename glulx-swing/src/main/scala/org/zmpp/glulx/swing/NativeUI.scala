@@ -139,7 +139,11 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   var lineHeightStdFont    = 0
   var charWidthStdFont     = 0
   var vm: GlulxVM = null
-  
+  var currentView : JComponent = null
+
+  // Currently, this "status bar" is just a focus catcher, i.e. it captures
+  // the focus when the view layout hierarchy is reorganized
+  var statusBar : JLabel = null
   def eventManager = vm.eventManager
   def blorbData   = vm.blorbData
 
@@ -255,10 +259,19 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   def updateLayout(root: GlkWindow) {
     val runnable = new Runnable {
       def run {
+        if (statusBar == null) {
+          statusBar = new JLabel("")
+          getContentPane.add(statusBar, BorderLayout.SOUTH)
+        }
         val view = makeLayout(root, getClientSize)
-        getContentPane.removeAll
+        // ensure that we do not lose the input focus when we close the
+        // current view. We do this by setting the input focus to the status
+        // bar
+        statusBar.requestFocusInWindow
+        if (currentView != null) getContentPane.remove(currentView)
         getContentPane.invalidate
         getContentPane.add(view, BorderLayout.CENTER)
+        currentView = view
         getContentPane.validate
         // we also need to reset the text grids in order
         // to pre-fill them with spaces

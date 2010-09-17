@@ -83,6 +83,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   val container = new JScrollPane(this,
                                   ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                                   ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)
+  container.setBorder(null)
   def _moveCursor(xpos: Int, ypos: Int) { }
   def _putChar(c: Char) {
     buffer.append(c)

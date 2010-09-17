@@ -31,3 +31,6 @@ ext:
 23. @print_form
 24. @make_menu
 
+TODO:
+
+- research feasibility and performance of decoding like in Mahatma68k
