@@ -1,0 +1,252 @@
+/*
+ * Created on 2010/05/05
+ * Copyright (c) 2010, Wei-ju Wu.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * Neither the name of Wei-ju Wu nor the names of its contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+package org.zmpp.tads3
+
+import java.util.logging._
+import java.io.File
+import java.io.FileInputStream
+
+import org.zmpp.base.Types
+import org.zmpp.base.Memory
+import org.zmpp.base.DefaultMemory
+
+object RunStates {
+  val Running = 1
+  val Halted  = 0
+}
+object T3VMFuncs {
+  val RunGC            = 0
+  val SetSay           = 1
+  val GetGlobalSymbols = 7
+}
+
+object TadsVMState {
+}
+class Tads3VMState {
+  private var _memory : Memory = null
+  var image: Tads3Image        = null
+  val stack = new Tads3Stack
+  var runState = RunStates.Running
+  
+  // Registers (TODO: current savepoint, savepoint count)
+  var r0: Tads3Value = null // data register R0
+  var ip = 0                // instruction pointer
+  var ep = 0                // current function entry pointer
+  def sp = stack.sp         // stack pointer
+  var fp = 0                // frame pointer
+
+  def reset(imageMem: Memory) {
+    image = new Tads3Image(imageMem)
+
+    // call initial function
+    // push empty list on stack - QTads puts command line arguments in that list
+    val argList = new Tads3List
+    stack.push(argList)
+    doCall(1, image.startEntryPoint, 0, 0, 0, 0)
+  }
+
+  def nextCodeByte = {
+    val retval = image.codeByteAt(ip)
+    ip += 1
+    retval
+  }
+  def nextCodeShort = {
+    val retval = image.codeShortAt(ip)
+    ip += 2
+    retval
+  }
+  def nextCodeInt = {
+    val retval = image.codeIntAt(ip)
+    ip += 4
+    retval
+  }
+
+  def doBranch {
+    val branchOffset = Types.signExtend16(image.codeShortAt(ip))
+    ip += branchOffset
+  }
+
+  // we might be able to do this entirely in the State class
+  def doCall(argc: Int, targetOffs: Int,
+             targetProp: Int, origTargetObj: Int, definingObj: Int,
+             self: Int) {
+
+    val methodHeader = image.methodHeaderAt(targetOffs)
+    printf("# params = %d\n", methodHeader.paramCount)
+    printf("# locals = %d\n", methodHeader.localCount)
+    printf("max stack slots = %d\n", methodHeader.maxStackSlots)
+    printf("ex tab offs = %d\n", methodHeader.exceptionTableOffset)
+    printf("debug rec offs = %d\n", methodHeader.debugRecordOffset)
+    r0 = Tads3Nil
+
+    // allocate stack frame
+    stack.pushPropertyId(targetProp)
+    if (self == 0) { // VMInvalidObj
+      stack.pushNil
+      stack.pushNil
+      stack.pushNil
+    } else {
+      stack.pushObjectId(origTargetObj)
+      stack.pushObjectId(definingObj)
+      stack.pushObjectId(self)
+    }
+    // TODO: discard self object if necessary
+    stack.pushCodeOffset(ip) // check this !!!
+    stack.pushCodeOffset(ep)
+    stack.pushInt(argc)
+    stack.pushInt(fp)
+    fp = sp
+    
+    // locals
+    for (i <- 0 until methodHeader.localCount) stack.pushNil
+
+    // new frame pointer
+    ep = targetOffs
+    ip = targetOffs + image.methodHeaderSize
+  }
+  
+  def getParam(index: Int) = stack.valueAt(fp - 1 - index)
+}
+
+class Tads3VM {
+  val _state = new Tads3VMState
+  var sayFuncPtr: Tads3Value = null
+  var iteration = 1
+
+  def init(imageMem: Memory) {
+    _state.reset(imageMem)
+    printf("VALID FILE: %b, Version: %d Timestamp: %s\n",
+           _state.image.isValid, _state.image.version, _state.image.timestamp)
+  }
+  
+  def nextByteOperand   = _state.nextCodeByte
+  def nextShortOperand  = _state.nextCodeShort
+  def nextIntOperand    = _state.nextCodeInt
+  def nextSignedShortOperand = Types.signExtend16(nextShortOperand)
+
+  def doTurn {
+    while (_state.runState == RunStates.Running) {
+      executeInstruction
+    }
+  }
+  
+  def executeInstruction {
+    val opcode = _state.nextCodeByte
+
+    // debug
+    printf("%04d: %s\n", iteration, OpcodeNames.opcodeName(opcode))
+    iteration += 1
+    // debug
+
+    import Opcodes._
+    opcode match {
+      case BuiltinA   =>
+        val argCount  = nextByteOperand
+        val funcIndex = nextByteOperand
+        printf("BuiltinA, function set 0 -> index: %d #args: %d\n", funcIndex, argCount)
+        callBuiltin0(argCount, funcIndex)
+      case Call       =>
+        val argCount   = nextByteOperand
+        val funcOffset = nextIntOperand
+        _state.doCall(argCount, funcOffset, 0, 0, 0, 0)
+      case Dup        => _state.stack.dup
+      case GetArg1    => _state.stack.push(_state.getParam(nextByteOperand))
+      case GetR0      => _state.stack.push(_state.r0)
+      case JNil       => branchIfTrue(_state.stack.pop == Tads3Nil)
+      case JR0T       => branchIfTrue(_state.r0.isTrue)
+      case ObjGetProp =>
+        val objId  = nextIntOperand
+        val propId = nextShortOperand
+        printf("getObjProp(%d, %d) TODO\n", objId, propId)
+      case PushFnPtr  => _state.stack.pushFunctionPointer(nextIntOperand)
+      case PushNil    => _state.stack.pushNil
+      case SetLcl1    =>
+        val localNumber = nextByteOperand
+        val value = _state.stack.pop
+        _state.stack.setValueAt(_state.fp + localNumber, value)
+      case _          =>
+        throw new UnsupportedOperationException("unknown opcode: 0x%02x"
+                                                .format(opcode))
+    }
+  }
+
+  private def branchIfTrue(condition: Boolean) {
+    if (condition) _state.doBranch
+    else nextShortOperand // skip branch word
+  }
+
+  // Intrinsic function set 0: t3vm
+  def callBuiltin0(argc: Int, funcIndex: Int) {
+    import T3VMFuncs._
+    funcIndex match {
+      case SetSay =>
+        if (argc != 1) throw new IllegalArgumentException("setSay() argc must be 1")
+        setSay(_state.stack.pop)
+      case GetGlobalSymbols =>
+        _state.r0 = Tads3Nil // TODO: our test game does not have a GSYM
+      case _ =>
+        throw new UnsupportedOperationException("unknown function index: %d"
+                                                .format(funcIndex))
+    }
+  }
+
+  def setSay(funcPtr: Tads3Value) {
+    printf("setSay: %s\n", funcPtr.getClass.getName)
+    sayFuncPtr = funcPtr
+  }
+}
+
+object Tads3Main {
+  private var _vm : Tads3VM = null
+
+  def readFileData(file: File) = {
+    val filebytes = new Array[Byte](file.length.toInt)
+    var fileIs : FileInputStream = null
+    try {
+      fileIs = new FileInputStream(file)
+      fileIs.read(filebytes)
+    } finally {
+      if (fileIs != null) fileIs.close
+    }
+    filebytes
+  }
+  def readTads3File(file : File) = {
+    // Little Endian format - Hello Intel-Lovers
+    val imageMem = new DefaultMemory(readFileData(file)).littleEndian
+    _vm = new Tads3VM
+    _vm.init(imageMem)
+    _vm
+  }
+  
+  def main(args: Array[String]) {
+    val vm = readTads3File(new File(args(0)))
+    println("TADS 3 ZMPP")
+    vm.doTurn
+  }
+}

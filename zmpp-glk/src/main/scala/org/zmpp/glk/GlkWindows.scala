@@ -308,6 +308,7 @@ class GlkWindowSystem {
 
   def rootWindowId = if (_rootWindow == null) 0 else _rootWindow.id
   def clearWindow(winId: Int) {
+    logger.info("clearWindow(), winId: %d".format(winId))
     val win = windowWithId(winId)
     if (win != null) win.ui.clear
   }
@@ -370,6 +371,7 @@ class GlkWindowSystem {
   }
   def imageSize(resnum: Int): GlkDimension = screenUI.imageSize(resnum)
   def setBackgroundColor(winId: Int, color: Int) {
+    logger.info("setBackgroundColor() win: %d color: %02x".format(winId, color))
     windowWithId(winId).ui.setBackgroundColor(color)
   }
   def getParent(winId: Int): Int = {
@@ -397,8 +399,8 @@ class GlkWindowSystem {
     windowWithId(winId).ui.moveCursor(xpos, ypos)
   }
   def open(split: Int, method: Int, size: Int, wintype: Int, rock: Int): Int = {
-    logger.info("open(), split: %d method: %d, size: %d, wintype: %d, rock: %d".format(split, method, size, wintype, rock))
     val newWindow = createWindow(GlkWindowType(wintype), size, rock)
+    logger.info("open(), split: %d method: %d, size: %d, wintype: %d, rock: %d, ID = %d".format(split, method, size, wintype, rock, newWindow.id))
     if (split > 0) {
       splitWindow(windowWithId(split), newWindow, method)
     }
@@ -406,6 +408,7 @@ class GlkWindowSystem {
     newWindow.id
   }
   def closeWindow(winId: Int): Int = {
+    logger.info("closeWindow(), winId: %d".format(winId))
     val windowToClose = windowWithId(winId)
     if (windowToClose == null) return 0
     val writeCount = windowToClose.outputStream.writeCount
