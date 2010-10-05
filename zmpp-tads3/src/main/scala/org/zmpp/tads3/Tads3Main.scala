@@ -151,7 +151,7 @@ class Tads3VM {
   def nextSignedShortOperand = Types.signExtend16(nextShortOperand)
 
   def doTurn {
-    while (_state.runState == RunStates.Running) {
+    while (_state.runState == RunStates.Running && iteration < 8) {
       executeInstruction
     }
   }
@@ -160,7 +160,7 @@ class Tads3VM {
     val opcode = _state.nextCodeByte
 
     // debug
-    printf("%04d: %s\n", iteration, OpcodeNames.opcodeName(opcode))
+    printf("%04d: %s[%02x]\n", iteration, OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
     // debug
 
@@ -183,7 +183,12 @@ class Tads3VM {
       case ObjGetProp =>
         val objId  = nextIntOperand
         val propId = nextShortOperand
+        val obj = _state.image.objectWithId(objId)
         printf("getObjProp(%d, %d) TODO\n", objId, propId)
+        if (obj != null) {
+          //obj.dump
+          obj.findProperty(propId)
+        }
       case PushFnPtr  => _state.stack.pushFunctionPointer(nextIntOperand)
       case PushNil    => _state.stack.pushNil
       case SetLcl1    =>

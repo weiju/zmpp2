@@ -43,17 +43,83 @@ class MetaClass(val name: String, val numProperties: Int) {
   val propertyIds = new Array[Int](numProperties)
 }
 
-class StaticObject(val id: Int, val metaClassIndex: Int, val dataAddress: Int,
-                   val dataSize: Int)
+// Static objects are created from the image's static object block
+class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,
+                   val dataAddress: Int, val dataSize: Int) {
+  def superClassCount        = tads3Image.memory.shortAt(dataAddress)
+  def loadImagePropertyCount = tads3Image.memory.shortAt(dataAddress + 2)
+  def objectFlags            = tads3Image.memory.shortAt(dataAddress + 4)
+  def superClassIdAt(index: Int)  = tads3Image.memory.shortAt(dataAddress + 6 + index * 4)
+
+  // TODO: The header alignment still does not work !!! We read wrong properties
+  private def propertyOffset = dataAddress + 6 + superClassCount * 4
+
+  private def propertyAddressAt(index: Int) = {
+    import Tads3Constants._
+    propertyOffset + (SizeDataHolder + SizePropertyId) * index
+  }
+  private def propertyIdAt(index: Int) = {
+    tads3Image.memory.shortAt(propertyAddressAt(index))
+  }
+  private def propertyTypeAt(index: Int) = {
+    tads3Image.memory.byteAt(propertyAddressAt(index) + 2)
+  }
+  private def propertyValueAt(index: Int) = {
+    tads3Image.memory.intAt(propertyAddressAt(index) + 3)
+  }
+
+  def findProperty(propertyId: Int): Boolean = {
+    // First search property in this object, we use a simple linear search for now
+    for (i <- 0 until loadImagePropertyCount) {
+      val propId = propertyIdAt(i)
+      if (propId == propertyId) return true
+    }
+
+    // try super class properties
+    //println("searching super classes")
+    for (i <- 0 until superClassCount) {
+      val superClass = tads3Image.objectWithId(superClassIdAt(i))
+      if (superClass.findProperty(propertyId)) return true
+    }
+    false
+  }
+
+  override def toString = {
+    val result = new StringBuilder
+    result.append(
+      "[STATIC (%s) size = %d] # super classes: %d, # props: %d FLAGS = %04x\n".format(
+        tads3Image.metaClassAtIndex(metaClassIndex).name, dataSize, superClassCount,
+        loadImagePropertyCount, objectFlags))
+    result.append("Properties:\n")
+    for (i <- 0 until loadImagePropertyCount) {
+      result.append("  [+%d] - %d: %d %d\n".format(propertyAddressAt(i) - dataAddress,
+                                                   propertyIdAt(i),
+                                                   propertyTypeAt(i),
+                                                   propertyValueAt(i)))
+    }
+    if (superClassCount > 0) {
+    }
+    result.toString
+  }
+}
 
 class MethodHeader(val paramCount: Int, val localCount: Int, val maxStackSlots: Int,
                    val exceptionTableOffset: Int, val debugRecordOffset: Int)
+
+// Define a very simple TADS3 object class for now, which later holds all
+// object types. At the moment only static objects
+class Tads3Object(staticObject: StaticObject) {
+  def findProperty(propertyId: Int) = staticObject.findProperty(propertyId)
+  def dump {
+    printf("TADS3 OBJECT: %s\n", staticObject.toString)
+  }
+}
 
 /**
  * Quickly construct a TADS3 image from a memory object.
  * Quite a bit of data is loaded on demand.
  */
-class Tads3Image(_image: Memory) {
+class Tads3Image(val memory: Memory) {
   private var _timestamp: String = null
   private var _blocks: List[BlockHeader] = Nil
   private val _constantPools = new Array[ConstantPool](3)
@@ -86,42 +152,47 @@ class Tads3Image(_image: Memory) {
   printf("ex table entry size: %d\n", exTableEntrySize)
   printf("# objects: %d\n", _objects.size)
   
-  def startEntryPoint  = _image.intAt(_entp.dataAddress)
-  def methodHeaderSize = _image.shortAt(_entp.dataAddress + 4)
-  def exTableEntrySize = _image.shortAt(_entp.dataAddress + 6)
+  def startEntryPoint  = memory.intAt(_entp.dataAddress)
+  def methodHeaderSize = memory.shortAt(_entp.dataAddress + 4)
+  def exTableEntrySize = memory.shortAt(_entp.dataAddress + 6)
   def startAddress     = startEntryPoint + methodHeaderSize
   
   def isValid: Boolean = {
     for (i <- 0 until Tads3Header.Id.length) {
-      if (_image.byteAt(i) != Tads3Header.Id(i)) return false
+      if (memory.byteAt(i) != Tads3Header.Id(i)) return false
     }
     true
   }
-  def version = (_image.byteAt(12) << 8) | _image.byteAt(11).toInt
+  def version = (memory.byteAt(12) << 8) | memory.byteAt(11).toInt
   def timestamp = {
     if (_timestamp == null) {
       val buffer = new StringBuilder
-      for (i <- 45 to 68) buffer.append(_image.byteAt(i).asInstanceOf[Char])
+      for (i <- 45 to 68) buffer.append(memory.byteAt(i).asInstanceOf[Char])
       _timestamp = buffer.toString
     }
     _timestamp
   }
   
   def codeByteAt(offset: Int) = {
-    _image.byteAt(_constantPools(PoolTypes.ByteCode).addressForOffset(offset))
+    memory.byteAt(_constantPools(PoolTypes.ByteCode).addressForOffset(offset))
   }
   def codeShortAt(offset: Int) = {
-    _image.shortAt(_constantPools(PoolTypes.ByteCode).addressForOffset(offset))
+    memory.shortAt(_constantPools(PoolTypes.ByteCode).addressForOffset(offset))
   }
   def codeIntAt(offset: Int) = {
-    _image.intAt(_constantPools(PoolTypes.ByteCode).addressForOffset(offset))
+    memory.intAt(_constantPools(PoolTypes.ByteCode).addressForOffset(offset))
   }
   
   def methodHeaderAt(offset: Int) = {
     val addr = _constantPools(PoolTypes.ByteCode).addressForOffset(offset)
-    new MethodHeader(_image.byteAt(addr), _image.shortAt(addr + 2),
-                     _image.shortAt(addr + 4), _image.shortAt(addr + 6),
-                     _image.shortAt(addr + 8))
+    new MethodHeader(memory.byteAt(addr), memory.shortAt(addr + 2),
+                     memory.shortAt(addr + 4), memory.shortAt(addr + 6),
+                     memory.shortAt(addr + 8))
+  }
+
+  def metaClassAtIndex(index: Int) = _metaClasses(index)
+  def objectWithId(id: Int)    = {
+    new Tads3Object(_objects(id))
   }
 
   // ********************************************************************
@@ -129,14 +200,14 @@ class Tads3Image(_image: Memory) {
   // ******************************
   private def printPage(pageAddr: Int, size: Int) {
     for (i <- 0 until size) {
-      printf("0x%02x ", _image.byteAt(pageAddr + i))
+      printf("0x%02x ", memory.byteAt(pageAddr + i))
     }
     println
   }
   private def addConstantPoolPage(blockHeader: BlockHeader) {
-    val poolId    = _image.shortAt(blockHeader.dataAddress)
-    val pageIndex = _image.intAt(blockHeader.dataAddress + 2)
-    val xor       = _image.byteAt(blockHeader.dataAddress + 6)
+    val poolId    = memory.shortAt(blockHeader.dataAddress)
+    val pageIndex = memory.intAt(blockHeader.dataAddress + 2)
+    val xor       = memory.byteAt(blockHeader.dataAddress + 6)
     /*
     if (poolId == 1 && pageIndex == 0) {
       printf("first code page found, addr = $%02x size = %d\n",
@@ -151,52 +222,57 @@ class Tads3Image(_image: Memory) {
 
   private def readPoolDef(blockHeader: BlockHeader) {
     val addr = blockHeader.dataAddress
-    val poolId = _image.shortAt(addr)
-    _constantPools(poolId) = new ConstantPool(poolId, _image.intAt(addr + 2), _image.intAt(addr + 6))
+    val poolId = memory.shortAt(addr)
+    _constantPools(poolId) = new ConstantPool(poolId, memory.intAt(addr + 2),
+                                              memory.intAt(addr + 6))
   }
   
   private def readBlockHeader(addr: Int): BlockHeader = {
     val buffer = new StringBuilder
-    buffer.append(_image.byteAt(addr).asInstanceOf[Char])
-    buffer.append(_image.byteAt(addr + 1).asInstanceOf[Char])
-    buffer.append(_image.byteAt(addr + 2).asInstanceOf[Char])
-    buffer.append(_image.byteAt(addr + 3).asInstanceOf[Char])
-    new BlockHeader(addr, buffer.toString, _image.intAt(addr + 4),
-                    _image.shortAt(addr + 8).asInstanceOf[Int])
+    buffer.append(memory.byteAt(addr).asInstanceOf[Char])
+    buffer.append(memory.byteAt(addr + 1).asInstanceOf[Char])
+    buffer.append(memory.byteAt(addr + 2).asInstanceOf[Char])
+    buffer.append(memory.byteAt(addr + 3).asInstanceOf[Char])
+    new BlockHeader(addr, buffer.toString, memory.intAt(addr + 4),
+                    memory.shortAt(addr + 8).asInstanceOf[Int])
   }
   
   private def readMetaclassDependencies(blockHeader: BlockHeader) {
-    val numEntries = _image.shortAt(blockHeader.dataAddress)
+    val numEntries = memory.shortAt(blockHeader.dataAddress)
     _metaClasses = new Array[MetaClass](numEntries)
     printf("# meta classes found: %d\n", numEntries)
     var addr = blockHeader.dataAddress + 2
     for (i <- 0 until numEntries) {
-      val entrySize = _image.shortAt(addr)
-      val numEntryNameBytes = _image.byteAt(addr + 2)
+      val entrySize = memory.shortAt(addr)
+      val numEntryNameBytes = memory.byteAt(addr + 2)
       val namebuffer = new StringBuilder
       for (j <- 0 until numEntryNameBytes) {
-        namebuffer.append(_image.byteAt(addr + 3 + j).asInstanceOf[Char])
+        namebuffer.append(memory.byteAt(addr + 3 + j).asInstanceOf[Char])
       }
-      val numPropertyIds = _image.shortAt(addr + 3 + numEntryNameBytes)
+      val numPropertyIds = memory.shortAt(addr + 3 + numEntryNameBytes)
       _metaClasses(i) = new MetaClass(namebuffer.toString, numPropertyIds)
       printf("Metaclass %d: %s\n", i, _metaClasses(i).name)
       val propbase = addr + 3 + numEntryNameBytes + 2
       for (j <- 0 until numPropertyIds) {
-        _metaClasses(i).propertyIds(j) = _image.shortAt(propbase + j * 2)
+        _metaClasses(i).propertyIds(j) = memory.shortAt(propbase + j * 2)
+        // DEBUGGING
+        if (_metaClasses(i).propertyIds(j) == 1579) {
+          printf("YEAH, THE ID IS HERE !!")
+        }
       }
       addr += entrySize
     }
   }
   
   private def readFunctionSetDependencies(blockHeader: BlockHeader) {
-    val numEntries = _image.shortAt(blockHeader.dataAddress)
+    val numEntries = memory.shortAt(blockHeader.dataAddress)
     _functionSets = new Array[String](numEntries)
     var addr = blockHeader.dataAddress + 2
     for (i <- 0 until numEntries) {
-      val numBytes = _image.byteAt(addr)
+      val numBytes = memory.byteAt(addr)
       val buffer = new StringBuilder
       for (j <- 0 until numBytes) {
-        buffer.append(_image.byteAt(addr + 1 + j).asInstanceOf[Char])
+        buffer.append(memory.byteAt(addr + 1 + j).asInstanceOf[Char])
       }
       _functionSets(i) = buffer.toString
       addr += numBytes + 1
@@ -205,21 +281,23 @@ class Tads3Image(_image: Memory) {
 
   private def readStaticObjectBlock(blockHeader: BlockHeader) {
     val dataAddress = blockHeader.dataAddress
-    val numObjects     = _image.shortAt(dataAddress)
-    val metaClassIndex = _image.shortAt(dataAddress + 2)
-    val flags          = _image.shortAt(dataAddress + 4)
+    val numObjects     = memory.shortAt(dataAddress)
+    val metaClassIndex = memory.shortAt(dataAddress + 2)
+    val flags          = memory.shortAt(dataAddress + 4)
+    // for large objects, the size field is size UINT4, otherwise
+    // UINT2
     val isLarge     = (flags & 0x01) == 0x01
     val isTransient = (flags & 0x02) == 0x02
     var objAddr = dataAddress + 6
     //printf("# objects = %d meta class: %d large: %b transient: %b\n",
     //  numObjects, metaClassIndex, isLarge, isTransient)
     for (i <- 0 until numObjects) {
-      val objId = _image.intAt(objAddr)
-      val numBytes = if (isLarge) _image.intAt(objAddr + 4)
-                     else _image.shortAt(objAddr + 4)
+      val objId = memory.intAt(objAddr)
+      val numBytes = if (isLarge) memory.intAt(objAddr + 4)
+                     else memory.shortAt(objAddr + 4)
       //printf("OBJ ID: %d #BYTES: %d\n", objId, numBytes)
       objAddr += (if (isLarge) 8 else 6)
-      val obj = new StaticObject(objId, metaClassIndex, objAddr, numBytes)
+      val obj = new StaticObject(this, objId, metaClassIndex, objAddr, numBytes)
       _objects(objId) = obj
       objAddr += numBytes
     }

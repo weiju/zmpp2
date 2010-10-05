@@ -30,6 +30,13 @@ package org.zmpp.tads3
 
 import scala.collection.mutable.ArrayStack
 
+object Tads3Constants {
+  val SizePropertyId = 2
+  // A data holder is defined in TADS3 as a prefix byte (specifying the type)
+  // and a 4-byte value
+  val SizeDataHolder = 5
+}
+
 /*
  * Values that can appear in the TADS3 stack or in register R0
  */
