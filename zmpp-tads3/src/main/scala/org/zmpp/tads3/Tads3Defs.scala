@@ -30,6 +30,28 @@ package org.zmpp.tads3
 
 import scala.collection.mutable.ArrayStack
 
+object TypeIds {
+  val VmNil        = 1
+  val VmTrue       = 2
+  val VmStack      = 3
+  val VmCodePtr    = 4
+  val VmObj        = 5
+  val VmProp       = 6
+  val VmInt        = 7
+  val VmSString    = 8
+  val VmDString    = 9
+  val VmList       = 10
+  val VmCodeOfs    = 11
+  val VmFuncPtr    = 12
+  val VmEmpty      = 13
+  val VmNativeCode = 14
+  val VmEnum       = 15
+
+  def valueForType(typ: Int, value: Int) = {
+    if (typ == TypeIds.VmProp) value & 0xffff else value
+  }
+}
+
 object Tads3Constants {
   val SizePropertyId = 2
   // A data holder is defined in TADS3 as a prefix byte (specifying the type)
@@ -44,9 +66,13 @@ abstract class Tads3Value {
   def isTrue = true
 }
 
+// Definition of the constants of type Tads3Value
 object Tads3Nil extends Tads3Value {
   override def isTrue = false
 }
+object Tads3True extends Tads3Value
+object Tads3Empty extends Tads3Value
+
 class Tads3List extends Tads3Value
 class Tads3PropertyId(val id: Int) extends Tads3Value
 class Tads3ObjectId(val id: Int) extends Tads3Value
@@ -57,6 +83,9 @@ class Tads3Integer(val value: Int) extends Tads3Value {
 class Tads3FunctionPointer(val offset: Int) extends Tads3Value
 
 class Tads3Stack {
+  // do not create too many unnecessary one's
+  val IntegerOne = new Tads3Integer(1)
+
   var _stack = new Array[Tads3Value](300)
   var sp = 0
 
@@ -68,6 +97,7 @@ class Tads3Stack {
   def pushCodeOffset(offset: Int) = push(new Tads3CodeOffset(offset))
   def pushFunctionPointer(offset: Int) = push(new Tads3FunctionPointer(offset))
   def pushInt(value: Int) = push(new Tads3Integer(value))
+  def push1 = push(IntegerOne)
 
   def push(value: Tads3Value) = {
     _stack(sp) = value
@@ -85,6 +115,7 @@ class Tads3Stack {
 
 // The machine opcodes
 object Opcodes {
+  val Push1      = 0x02
   val PushNil    = 0x08
   val PushFnPtr  = 0x0b
   val RetNil     = 0x51
@@ -99,6 +130,7 @@ object Opcodes {
   val BuiltinB   = 0xb2
   val BuiltinC   = 0xb3
   val BuiltinD   = 0xb4
+  val New1       = 0xc0
   val SetLcl1    = 0xe0
 }
 
@@ -115,7 +147,9 @@ object OpcodeNames {
     GetR0      -> "GETR0",
     JNil       -> "JNIL",
     JR0T       -> "JR0T",
+    New1       -> "NEW1",
     ObjGetProp -> "OBJGETPROP",
+    Push1      -> "PUSH_1",
     PushNil    -> "PUSHNIL",
     PushFnPtr  -> "PUSHFNPTR",
     RetNil     -> "RETNIL",

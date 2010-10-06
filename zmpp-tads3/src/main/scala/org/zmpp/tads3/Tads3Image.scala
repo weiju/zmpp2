@@ -43,13 +43,18 @@ class MetaClass(val name: String, val numProperties: Int) {
   val propertyIds = new Array[Int](numProperties)
 }
 
+class SymbolicName(val name: String, val valueType: Int, val value: Int)
+class Property(val id: Int, val valueType: Int, val value: Int,
+               val definingObject: Int)
+
 // Static objects are created from the image's static object block
 class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,
                    val dataAddress: Int, val dataSize: Int) {
   def superClassCount        = tads3Image.memory.shortAt(dataAddress)
   def loadImagePropertyCount = tads3Image.memory.shortAt(dataAddress + 2)
   def objectFlags            = tads3Image.memory.shortAt(dataAddress + 4)
-  def superClassIdAt(index: Int)  = tads3Image.memory.shortAt(dataAddress + 6 + index * 4)
+  def superClassIdAt(index: Int)  = tads3Image.memory.shortAt(dataAddress + 6 +
+                                                              index * 4)
 
   // TODO: The header alignment still does not work !!! We read wrong properties
   private def propertyOffset = dataAddress + 6 + superClassCount * 4
@@ -68,20 +73,28 @@ class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,
     tads3Image.memory.intAt(propertyAddressAt(index) + 3)
   }
 
-  def findProperty(propertyId: Int): Boolean = {
-    // First search property in this object, we use a simple linear search for now
+  def findProperty(propertyId: Int): Property = {
+    // First search property in this object, we use a simple linear search for
+    // now
     for (i <- 0 until loadImagePropertyCount) {
       val propId = propertyIdAt(i)
-      if (propId == propertyId) return true
+      if (propId == propertyId) {
+        val propertyType = propertyTypeAt(i)
+        return new Property(propId, propertyType,
+                            TypeIds.valueForType(propertyType,
+                                                 propertyValueAt(i)),
+                            id)
+      }
     }
 
     // try super class properties
-    //println("searching super classes")
+    println("not found, try super class")
     for (i <- 0 until superClassCount) {
       val superClass = tads3Image.objectWithId(superClassIdAt(i))
-      if (superClass.findProperty(propertyId)) return true
+      val prop = superClass.findProperty(propertyId)
+      if (prop != null) return prop
     }
-    false
+    null
   }
 
   override def toString = {
@@ -140,6 +153,7 @@ class Tads3Image(val memory: Memory) {
       case "FNSD" => readFunctionSetDependencies(blockHeader)
       case "MCLD" => readMetaclassDependencies(blockHeader)
       case "OBJS" => readStaticObjectBlock(blockHeader)
+      case "SYMD" => readSymbolicNameBlock(blockHeader)
       case _ =>
         printf("UNHANDLED BLOCK: %s\n", blockHeader.toString)
     }
@@ -300,6 +314,26 @@ class Tads3Image(val memory: Memory) {
       val obj = new StaticObject(this, objId, metaClassIndex, objAddr, numBytes)
       _objects(objId) = obj
       objAddr += numBytes
+    }
+  }
+  
+  private def readSymbolicNameBlock(blockHeader: BlockHeader) {
+    var current = blockHeader.dataAddress
+    val numEntries = memory.shortAt(current)
+    current += 2
+    printf("# SYMBOLIC NAMES: %d\n", numEntries)
+    for (i <- 0 until numEntries) {
+      val dhType = memory.byteAt(current)
+      val value = TypeIds.valueForType(dhType, memory.intAt(current + 1))
+      val numChars = memory.byteAt(current + 5)
+      // construct name
+      val builder = new StringBuilder
+      for (j <- 0 until numChars) {
+        builder.append(memory.byteAt(current + 6 + j).asInstanceOf[Char])
+      }
+      printf("Adding symbol: '%s' t = %d, val = %d\n", builder.toString,
+             dhType, value)
+      current += 6 + numChars
     }
   }
 }

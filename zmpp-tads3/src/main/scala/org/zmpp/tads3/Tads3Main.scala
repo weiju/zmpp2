@@ -41,9 +41,10 @@ object RunStates {
   val Halted  = 0
 }
 object T3VMFuncs {
-  val RunGC            = 0
-  val SetSay           = 1
-  val GetGlobalSymbols = 7
+  val RunGC              = 0
+  val SetSay             = 1
+  val GetPreinitModeFlag = 5
+  val GetGlobalSymbols   = 7
 }
 
 object TadsVMState {
@@ -92,7 +93,6 @@ class Tads3VMState {
     ip += branchOffset
   }
 
-  // we might be able to do this entirely in the State class
   def doCall(argc: Int, targetOffs: Int,
              targetProp: Int, origTargetObj: Int, definingObj: Int,
              self: Int) {
@@ -151,7 +151,7 @@ class Tads3VM {
   def nextSignedShortOperand = Types.signExtend16(nextShortOperand)
 
   def doTurn {
-    while (_state.runState == RunStates.Running && iteration < 8) {
+    while (_state.runState == RunStates.Running) {
       executeInstruction
     }
   }
@@ -169,7 +169,8 @@ class Tads3VM {
       case BuiltinA   =>
         val argCount  = nextByteOperand
         val funcIndex = nextByteOperand
-        printf("BuiltinA, function set 0 -> index: %d #args: %d\n", funcIndex, argCount)
+        printf("BuiltinA, function set 0 -> index: %d #args: %d\n", funcIndex,
+               argCount)
         callBuiltin0(argCount, funcIndex)
       case Call       =>
         val argCount   = nextByteOperand
@@ -180,15 +181,8 @@ class Tads3VM {
       case GetR0      => _state.stack.push(_state.r0)
       case JNil       => branchIfTrue(_state.stack.pop == Tads3Nil)
       case JR0T       => branchIfTrue(_state.r0.isTrue)
-      case ObjGetProp =>
-        val objId  = nextIntOperand
-        val propId = nextShortOperand
-        val obj = _state.image.objectWithId(objId)
-        printf("getObjProp(%d, %d) TODO\n", objId, propId)
-        if (obj != null) {
-          //obj.dump
-          obj.findProperty(propId)
-        }
+      case ObjGetProp => objGetProp(nextIntOperand, nextShortOperand)
+      case Push1      => _state.stack.push1
       case PushFnPtr  => _state.stack.pushFunctionPointer(nextIntOperand)
       case PushNil    => _state.stack.pushNil
       case SetLcl1    =>
@@ -207,7 +201,7 @@ class Tads3VM {
   }
 
   // Intrinsic function set 0: t3vm
-  def callBuiltin0(argc: Int, funcIndex: Int) {
+  private def callBuiltin0(argc: Int, funcIndex: Int) {
     import T3VMFuncs._
     funcIndex match {
       case SetSay =>
@@ -215,15 +209,45 @@ class Tads3VM {
         setSay(_state.stack.pop)
       case GetGlobalSymbols =>
         _state.r0 = Tads3Nil // TODO: our test game does not have a GSYM
+      case GetPreinitModeFlag => _state.r0 = Tads3Nil // never in preinit mode
       case _ =>
         throw new UnsupportedOperationException("unknown function index: %d"
                                                 .format(funcIndex))
     }
   }
 
-  def setSay(funcPtr: Tads3Value) {
+  private def setSay(funcPtr: Tads3Value) {
     printf("setSay: %s\n", funcPtr.getClass.getName)
     sayFuncPtr = funcPtr
+  }
+
+  private def objGetProp(objId: Int, propId: Int) {
+    val obj = _state.image.objectWithId(objId)
+    val prop = obj.findProperty(propId)
+    if (prop != null) evalProperty(objId, prop)
+    else {
+      // TODO: check if propNotDefined is available
+      throw new UnsupportedOperationException("TODO: property not found, check for propNotDefined")
+    }
+  }
+
+  private def evalProperty(self: Int, property: Property) {
+    import TypeIds._
+    property.valueType match {
+      case VmNil     => _state.r0 = Tads3Nil
+      case VmTrue    => _state.r0 = Tads3True
+      case VmObj     => _state.r0 = new Tads3ObjectId(property.value)
+      case VmProp    => _state.r0 = new Tads3PropertyId(property.value)
+      case VmInt     => _state.r0 = new Tads3Integer(property.value)
+      case VmCodeOfs =>
+        _state.doCall(0, property.value, 0, 0, property.definingObject, self)
+      case VmDString =>
+        throw new UnsupportedOperationException("TODO: DOUBLE QUOTED STRING")
+      case _ =>
+        throw new UnsupportedOperationException(
+          "UNHANDLED TYPE: %d => STORE %d IN R0\n".format(property.valueType,
+                                                          property.value))
+    }
   }
 }
 
