@@ -64,7 +64,6 @@ class Tads3VMState {
   var fp = 0                // frame pointer
 
   def reset(imageMem: Memory) {
-    objectManager.reset
     image = new Tads3Image(imageMem, objectManager)
 
     // call initial function

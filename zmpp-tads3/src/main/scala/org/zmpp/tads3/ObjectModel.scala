@@ -28,6 +28,8 @@
  */
 package org.zmpp.tads3
 
+import scala.collection.mutable.HashMap
+
 // Define a very simple TADS3 object class for now, which later holds all
 // object types. At the moment only static objects
 class Tads3Object(staticObject: StaticObject) {
@@ -42,11 +44,26 @@ class MetaClass {
 
 // The object manager handles instantiation and management of objects
 class ObjectManager {
-  var maxObjectId = 0
-  var metaClassDependencies: Array[MetaClassDependency] = null
-  def reset { }
-/*
-  def registerMetaClassDependency(dependency: MetaClassDependency) {
-    println(dependency.toString)
-  }*/
+  private var _maxObjectId = 0
+  private var _metaClassDependencies: Array[MetaClassDependency] = null
+  private var _staticObjects        : HashMap[Int, StaticObject] = null
+
+  def reset(metaClassDeps: Array[MetaClassDependency],
+            staticObjs: HashMap[Int, StaticObject],
+            maxObjectId: Int) {
+    _maxObjectId           = maxObjectId
+    _metaClassDependencies = metaClassDeps
+
+    // TODO: initialize the collection of current objects with static objects
+    _staticObjects         = staticObjs
+  }
+
+  def newId = {
+    _maxObjectId += 1
+    _maxObjectId
+  }
+  def objectWithId(id: Int)    = {
+    // TODO: Retrieve the objects from a global object collection
+    new Tads3Object(_staticObjects(id))
+  }
 }

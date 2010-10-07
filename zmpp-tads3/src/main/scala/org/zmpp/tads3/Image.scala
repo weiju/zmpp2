@@ -127,7 +127,6 @@ class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,
   def superClassIdAt(index: Int)  = tads3Image.memory.shortAt(dataAddress + 6 +
                                                               index * 4)
 
-  // TODO: The header alignment still does not work !!! We read wrong properties
   private def propertyOffset = dataAddress + 6 + superClassCount * 4
 
   private def propertyAddressAt(index: Int) = {
@@ -171,8 +170,8 @@ class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,
   override def toString = {
     val result = new StringBuilder
     result.append(
-      "[STATIC (%s) size = %d] # super classes: %d, # props: %d FLAGS = %04x\n".format(
-        tads3Image.metaClassAtIndex(metaClassIndex).name, dataSize, superClassCount,
+      "[STATIC size = %d] # super classes: %d, # props: %d FLAGS = %04x\n".format(
+        dataSize, superClassCount,
         loadImagePropertyCount, objectFlags))
     result.append("Properties:\n")
     for (i <- 0 until loadImagePropertyCount) {
@@ -202,7 +201,7 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
   private var _metaClassDependencies: Array[MetaClassDependency] = null
   private var _functionSets: Array[String] = null
   private val _staticObjects = new HashMap[Int, StaticObject]
-  private var maxObjectId = 0
+  private var _maxObjectId = 0
 
   // read data from blocks to build an index
   var blockAddress = 69
@@ -224,14 +223,13 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
     blockHeader = readBlockHeader(blockAddress)
   }
   // done, let's initialize the object system
-  objectManager.maxObjectId = maxObjectId + 1
-  objectManager.metaClassDependencies = _metaClassDependencies
+  objectManager.reset(_metaClassDependencies, _staticObjects, _maxObjectId)
   printf("# blocks read: %d\n", _blocks.length)
   printf("start address: $%02x\n", startAddress)
   printf("method header size: %d\n", methodHeaderSize)
   printf("ex table entry size: %d\n", exTableEntrySize)
   printf("# static objects: %d\n", _staticObjects.size)
-  printf("MAX object id: %d\n", maxObjectId)
+  printf("MAX object id: %d\n", _maxObjectId)
   
   def startEntryPoint  = memory.intAt(_entp.dataAddress)
   def methodHeaderSize = memory.shortAt(_entp.dataAddress + 4)
@@ -271,10 +269,8 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
                      memory.shortAt(addr + 8))
   }
 
-  def metaClassAtIndex(index: Int) = _metaClassDependencies(index)
-  def objectWithId(id: Int)    = {
-    new Tads3Object(_staticObjects(id))
-  }
+  //def metaClassAtIndex(index: Int) = _metaClassDependencies(index)
+  def objectWithId(id: Int)    = _staticObjects(id)
 
   // ********************************************************************
   // ****** Private methods
@@ -370,7 +366,7 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
     //  numObjects, metaClassIndex, isLarge, isTransient)
     for (i <- 0 until numObjects) {
       val objId = memory.intAt(objAddr)
-      if (objId > maxObjectId) maxObjectId = objId
+      if (objId > _maxObjectId) _maxObjectId = objId
       val numBytes = if (isLarge) memory.intAt(objAddr + 4)
                      else memory.shortAt(objAddr + 4)
       //printf("OBJ ID: %d #BYTES: %d\n", objId, numBytes)
