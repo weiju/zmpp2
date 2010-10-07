@@ -36,3 +36,17 @@ class Tads3Object(staticObject: StaticObject) {
     printf("TADS3 OBJECT: %s\n", staticObject.toString)
   }
 }
+
+class MetaClass {
+}
+
+// The object manager handles instantiation and management of objects
+class ObjectManager {
+  var maxObjectId = 0
+  var metaClassDependencies: Array[MetaClassDependency] = null
+  def reset { }
+/*
+  def registerMetaClassDependency(dependency: MetaClassDependency) {
+    println(dependency.toString)
+  }*/
+}

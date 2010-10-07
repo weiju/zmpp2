@@ -32,7 +32,8 @@ import scala.collection.mutable.HashMap
 import org.zmpp.base._
 
 // This file contains the data that is read from a TADS3 image file.
-// As understanding grows, I add information
+// As understanding grows, I add information. Note that TADS3 images are
+// stored in little endian format (*yuck*).
 
 object ImageFile {
   // The TADS3 signature ("T3-image\015\12\032")
@@ -40,6 +41,26 @@ object ImageFile {
                               0x0d, 0x0a, 0x1a)
 }
 
+// Block header, structure:
+// Bytes 0-3: block type ID
+// Bytes 4-7: block size in bytes (UINT4)
+// Bytes 8-9: Flags (UINT2), only flag 0 is currently used (the mandatory flag)
+// Block type ID can be one of
+// - EOF:  last data block, marks the end of the file
+// - ENTP: Entrypoint, marks the beginning of executable code
+// - OBJS: Static Object
+// - CPDF: Constant Pool Definition
+// - CPPG: Constant Pool Page
+// - MRES: Multimedia Resource
+// - MREL: Multimedia Rsource Link
+// - MCLD: Metaclass Dependency List
+// - FNSD: Function Set Dependency List
+// - SYMD: Symbolic Names
+// - SRCF: Source File Descriptor
+// - GSYM: Global Symbol Table
+// - MHLS: Method Header List
+// - MACR: Macro Symbol Table
+// - SINI: Static Initializer List
 object BlockHeader {
   val Size = 10
 }
@@ -50,6 +71,9 @@ class BlockHeader(val address: Int, val typeId: String, val dataSize: Int, val f
   }
 }
 
+// References to constant pools in the image file. Constant pools are
+// implemented as collections of pool pages, which are in turn simple
+// pointers to the address within the image data.
 object PoolTypes {
   val ByteCode     = 1
   val ConstantData = 2
@@ -72,11 +96,22 @@ class ConstantPool(val id: Int, val numPages: Int, val pageSize: Int) {
   }
 }
 
-class MetaClassDependency(nameString: String, val numProperties: Int) {
+// Meta class dependencies define the mapping from well-known meta classes
+// to indexes
+class MetaClassDependency(index: Int, nameString: String, val numProperties: Int) {
   val name = nameString.split("/")(0)
   val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
                 else "000000"
   val propertyIds = new Array[Int](numProperties)
+
+  override def toString = {
+    var result = "Metaclass %d: %s Version %s\nProperty Ids:\n".format(
+      index, name, version)
+    for (i <- 0 until propertyIds.length) {
+      result += "  %d\n".format(propertyIds(i))
+    }
+    result
+  }
 }
 
 class SymbolicName(val name: String, val valueType: Int, val value: Int)
@@ -159,14 +194,15 @@ class MethodHeader(val paramCount: Int, val localCount: Int, val maxStackSlots: 
  * Quickly construct a TADS3 image from a memory object.
  * Quite a bit of data is loaded on demand.
  */
-class Tads3Image(val memory: Memory) {
+class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
   private var _timestamp: String = null
   private var _blocks: List[BlockHeader] = Nil
   private val _constantPools = new Array[ConstantPool](3)
   private var _entp: BlockHeader = null
-  private var _metaClasses: Array[MetaClassDependency] = null
+  private var _metaClassDependencies: Array[MetaClassDependency] = null
   private var _functionSets: Array[String] = null
-  private val _objects = new HashMap[Int, StaticObject]
+  private val _staticObjects = new HashMap[Int, StaticObject]
+  private var maxObjectId = 0
 
   // read data from blocks to build an index
   var blockAddress = 69
@@ -187,11 +223,15 @@ class Tads3Image(val memory: Memory) {
     blockAddress += BlockHeader.Size + blockHeader.dataSize
     blockHeader = readBlockHeader(blockAddress)
   }
+  // done, let's initialize the object system
+  objectManager.maxObjectId = maxObjectId + 1
+  objectManager.metaClassDependencies = _metaClassDependencies
   printf("# blocks read: %d\n", _blocks.length)
   printf("start address: $%02x\n", startAddress)
   printf("method header size: %d\n", methodHeaderSize)
   printf("ex table entry size: %d\n", exTableEntrySize)
-  printf("# objects: %d\n", _objects.size)
+  printf("# static objects: %d\n", _staticObjects.size)
+  printf("MAX object id: %d\n", maxObjectId)
   
   def startEntryPoint  = memory.intAt(_entp.dataAddress)
   def methodHeaderSize = memory.shortAt(_entp.dataAddress + 4)
@@ -231,9 +271,9 @@ class Tads3Image(val memory: Memory) {
                      memory.shortAt(addr + 8))
   }
 
-  def metaClassAtIndex(index: Int) = _metaClasses(index)
+  def metaClassAtIndex(index: Int) = _metaClassDependencies(index)
   def objectWithId(id: Int)    = {
-    new Tads3Object(_objects(id))
+    new Tads3Object(_staticObjects(id))
   }
 
   // ********************************************************************
@@ -280,7 +320,7 @@ class Tads3Image(val memory: Memory) {
   
   private def readMetaclassDependencies(blockHeader: BlockHeader) {
     val numEntries = memory.shortAt(blockHeader.dataAddress)
-    _metaClasses = new Array[MetaClassDependency](numEntries)
+    _metaClassDependencies = new Array[MetaClassDependency](numEntries)
     printf("# meta classes found: %d\n", numEntries)
     var addr = blockHeader.dataAddress + 2
     for (i <- 0 until numEntries) {
@@ -291,12 +331,11 @@ class Tads3Image(val memory: Memory) {
         namebuffer.append(memory.byteAt(addr + 3 + j).asInstanceOf[Char])
       }
       val numPropertyIds = memory.shortAt(addr + 3 + numEntryNameBytes)
-      _metaClasses(i) = new MetaClassDependency(namebuffer.toString, numPropertyIds)
-      printf("Metaclass %d: %s Version %s\n", i, _metaClasses(i).name,
-             _metaClasses(i).version)
+      _metaClassDependencies(i) = new MetaClassDependency(i, namebuffer.toString,
+                                                          numPropertyIds)
       val propbase = addr + 3 + numEntryNameBytes + 2
       for (j <- 0 until numPropertyIds) {
-        _metaClasses(i).propertyIds(j) = memory.shortAt(propbase + j * 2)
+        _metaClassDependencies(i).propertyIds(j) = memory.shortAt(propbase + j * 2)
       }
       addr += entrySize
     }
@@ -331,12 +370,13 @@ class Tads3Image(val memory: Memory) {
     //  numObjects, metaClassIndex, isLarge, isTransient)
     for (i <- 0 until numObjects) {
       val objId = memory.intAt(objAddr)
+      if (objId > maxObjectId) maxObjectId = objId
       val numBytes = if (isLarge) memory.intAt(objAddr + 4)
                      else memory.shortAt(objAddr + 4)
       //printf("OBJ ID: %d #BYTES: %d\n", objId, numBytes)
       objAddr += (if (isLarge) 8 else 6)
       val obj = new StaticObject(this, objId, metaClassIndex, objAddr, numBytes)
-      _objects(objId) = obj
+      _staticObjects(objId) = obj
       objAddr += numBytes
     }
   }

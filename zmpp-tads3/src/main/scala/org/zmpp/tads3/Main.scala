@@ -53,6 +53,7 @@ class Tads3VMState {
   private var _memory : Memory = null
   var image: Tads3Image        = null
   val stack = new Tads3Stack
+  val objectManager = new ObjectManager
   var runState = RunStates.Running
   
   // Registers (TODO: current savepoint, savepoint count)
@@ -63,7 +64,8 @@ class Tads3VMState {
   var fp = 0                // frame pointer
 
   def reset(imageMem: Memory) {
-    image = new Tads3Image(imageMem)
+    objectManager.reset
+    image = new Tads3Image(imageMem, objectManager)
 
     // call initial function
     // push empty list on stack - QTads puts command line arguments in that list
