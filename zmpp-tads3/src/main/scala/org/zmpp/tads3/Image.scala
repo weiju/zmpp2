@@ -1,10 +1,43 @@
+/*
+ * Created on 2010/05/08
+ * Copyright (c) 2010, Wei-ju Wu.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * Neither the name of Wei-ju Wu nor the names of its contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package org.zmpp.tads3
 
 import scala.collection.mutable.HashMap
 import org.zmpp.base._
 
-object Tads3Header {
-  val Id = Array[Byte](0x54, 0x33, 0x2d, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x0d, 0x0a, 0x1a)
+// This file contains the data that is read from a TADS3 image file.
+// As understanding grows, I add information
+
+object ImageFile {
+  // The TADS3 signature ("T3-image\015\12\032")
+  val Signature = Array[Byte](0x54, 0x33, 0x2d, 0x69, 0x6d, 0x61, 0x67, 0x65,
+                              0x0d, 0x0a, 0x1a)
 }
 
 object BlockHeader {
@@ -39,7 +72,10 @@ class ConstantPool(val id: Int, val numPages: Int, val pageSize: Int) {
   }
 }
 
-class MetaClass(val name: String, val numProperties: Int) {
+class MetaClassDependency(nameString: String, val numProperties: Int) {
+  val name = nameString.split("/")(0)
+  val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
+                else "000000"
   val propertyIds = new Array[Int](numProperties)
 }
 
@@ -119,15 +155,6 @@ class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,
 class MethodHeader(val paramCount: Int, val localCount: Int, val maxStackSlots: Int,
                    val exceptionTableOffset: Int, val debugRecordOffset: Int)
 
-// Define a very simple TADS3 object class for now, which later holds all
-// object types. At the moment only static objects
-class Tads3Object(staticObject: StaticObject) {
-  def findProperty(propertyId: Int) = staticObject.findProperty(propertyId)
-  def dump {
-    printf("TADS3 OBJECT: %s\n", staticObject.toString)
-  }
-}
-
 /**
  * Quickly construct a TADS3 image from a memory object.
  * Quite a bit of data is loaded on demand.
@@ -137,7 +164,7 @@ class Tads3Image(val memory: Memory) {
   private var _blocks: List[BlockHeader] = Nil
   private val _constantPools = new Array[ConstantPool](3)
   private var _entp: BlockHeader = null
-  private var _metaClasses: Array[MetaClass] = null
+  private var _metaClasses: Array[MetaClassDependency] = null
   private var _functionSets: Array[String] = null
   private val _objects = new HashMap[Int, StaticObject]
 
@@ -172,8 +199,8 @@ class Tads3Image(val memory: Memory) {
   def startAddress     = startEntryPoint + methodHeaderSize
   
   def isValid: Boolean = {
-    for (i <- 0 until Tads3Header.Id.length) {
-      if (memory.byteAt(i) != Tads3Header.Id(i)) return false
+    for (i <- 0 until ImageFile.Signature.length) {
+      if (memory.byteAt(i) != ImageFile.Signature(i)) return false
     }
     true
   }
@@ -253,7 +280,7 @@ class Tads3Image(val memory: Memory) {
   
   private def readMetaclassDependencies(blockHeader: BlockHeader) {
     val numEntries = memory.shortAt(blockHeader.dataAddress)
-    _metaClasses = new Array[MetaClass](numEntries)
+    _metaClasses = new Array[MetaClassDependency](numEntries)
     printf("# meta classes found: %d\n", numEntries)
     var addr = blockHeader.dataAddress + 2
     for (i <- 0 until numEntries) {
@@ -264,15 +291,12 @@ class Tads3Image(val memory: Memory) {
         namebuffer.append(memory.byteAt(addr + 3 + j).asInstanceOf[Char])
       }
       val numPropertyIds = memory.shortAt(addr + 3 + numEntryNameBytes)
-      _metaClasses(i) = new MetaClass(namebuffer.toString, numPropertyIds)
-      printf("Metaclass %d: %s\n", i, _metaClasses(i).name)
+      _metaClasses(i) = new MetaClassDependency(namebuffer.toString, numPropertyIds)
+      printf("Metaclass %d: %s Version %s\n", i, _metaClasses(i).name,
+             _metaClasses(i).version)
       val propbase = addr + 3 + numEntryNameBytes + 2
       for (j <- 0 until numPropertyIds) {
         _metaClasses(i).propertyIds(j) = memory.shortAt(propbase + j * 2)
-        // DEBUGGING
-        if (_metaClasses(i).propertyIds(j) == 1579) {
-          printf("YEAH, THE ID IS HERE !!")
-        }
       }
       addr += entrySize
     }

@@ -181,6 +181,11 @@ class Tads3VM {
       case GetR0      => _state.stack.push(_state.r0)
       case JNil       => branchIfTrue(_state.stack.pop == Tads3Nil)
       case JR0T       => branchIfTrue(_state.r0.isTrue)
+      case New1       =>
+        val argCount = nextByteOperand
+        val metaClassId = nextByteOperand
+        printf("NEW1 %d, %d\n", argCount, metaClassId)
+        throw new UnsupportedOperationException("NEW1 not supported")
       case ObjGetProp => objGetProp(nextIntOperand, nextShortOperand)
       case Push1      => _state.stack.push1
       case PushFnPtr  => _state.stack.pushFunctionPointer(nextIntOperand)
