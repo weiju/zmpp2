@@ -32,8 +32,21 @@ import scala.collection.mutable.HashMap
 
 // Define a very simple TADS3 object class for now, which later holds all
 // object types. At the moment only static objects
-class Tads3Object(staticObject: StaticObject) {
-  def findProperty(propertyId: Int) = staticObject.findProperty(propertyId)
+class Tads3Object(objectManager: ObjectManager, staticObject: StaticObject) {
+  def findProperty(propertyId: Int): Property = {
+    val prop = staticObject.findProperty(propertyId)
+    if (prop != null) return prop
+    // not found in object try super class properties
+    for (i <- 0 until staticObject.superClassCount) {
+      val superClassId = staticObject.superClassIdAt(i)
+      printf("not found, try super class: %d\n", superClassId)
+      val superClass = objectManager.objectWithId(superClassId)
+      val prop = superClass.findProperty(propertyId)
+      if (prop != null) return prop
+    }
+    null
+  }
+
   def dump {
     printf("TADS3 OBJECT: %s\n", staticObject.toString)
   }
@@ -45,25 +58,20 @@ class MetaClass {
 // The object manager handles instantiation and management of objects
 class ObjectManager {
   private var _maxObjectId = 0
-  private var _metaClassDependencies: Array[MetaClassDependency] = null
-  private var _staticObjects        : HashMap[Int, StaticObject] = null
+  private var _image: Tads3Image = null
 
-  def reset(metaClassDeps: Array[MetaClassDependency],
-            staticObjs: HashMap[Int, StaticObject],
-            maxObjectId: Int) {
-    _maxObjectId           = maxObjectId
-    _metaClassDependencies = metaClassDeps
-
-    // TODO: initialize the collection of current objects with static objects
-    _staticObjects         = staticObjs
+  def connectImage(image: Tads3Image) {
+    _maxObjectId = image.maxObjectId
+    _image       = image
   }
 
   def newId = {
     _maxObjectId += 1
     _maxObjectId
   }
+
   def objectWithId(id: Int)    = {
     // TODO: Retrieve the objects from a global object collection
-    new Tads3Object(_staticObjects(id))
+    new Tads3Object(this, _image.staticObjectWithId(id))
   }
 }

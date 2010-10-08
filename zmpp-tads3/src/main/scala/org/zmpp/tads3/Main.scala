@@ -228,7 +228,7 @@ class Tads3VM {
   }
 
   private def objGetProp(objId: Int, propId: Int) {
-    val obj = _state.image.objectWithId(objId)
+    val obj = _state.objectManager.objectWithId(objId)
     val prop = obj.findProperty(propId)
     if (prop != null) evalProperty(objId, prop)
     else {

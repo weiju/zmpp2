@@ -156,14 +156,6 @@ class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,
                             id)
       }
     }
-
-    // try super class properties
-    println("not found, try super class")
-    for (i <- 0 until superClassCount) {
-      val superClass = tads3Image.objectWithId(superClassIdAt(i))
-      val prop = superClass.findProperty(propertyId)
-      if (prop != null) return prop
-    }
     null
   }
 
@@ -203,6 +195,8 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
   private val _staticObjects = new HashMap[Int, StaticObject]
   private var _maxObjectId = 0
 
+  def maxObjectId = _maxObjectId
+
   // read data from blocks to build an index
   var blockAddress = 69
   var blockHeader = readBlockHeader(blockAddress)
@@ -223,7 +217,7 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
     blockHeader = readBlockHeader(blockAddress)
   }
   // done, let's initialize the object system
-  objectManager.reset(_metaClassDependencies, _staticObjects, _maxObjectId)
+  objectManager.connectImage(this)
   printf("# blocks read: %d\n", _blocks.length)
   printf("start address: $%02x\n", startAddress)
   printf("method header size: %d\n", methodHeaderSize)
@@ -270,7 +264,7 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
   }
 
   //def metaClassAtIndex(index: Int) = _metaClassDependencies(index)
-  def objectWithId(id: Int)    = _staticObjects(id)
+  def staticObjectWithId(id: Int)    = _staticObjects(id)
 
   // ********************************************************************
   // ****** Private methods
