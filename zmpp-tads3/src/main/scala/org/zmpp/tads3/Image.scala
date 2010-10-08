@@ -195,7 +195,8 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
   private val _staticObjects = new HashMap[Int, StaticObject]
   private var _maxObjectId = 0
 
-  def maxObjectId = _maxObjectId
+  def maxObjectId            = _maxObjectId
+  def metaClassDependencies  = _metaClassDependencies
 
   // read data from blocks to build an index
   var blockAddress = 69

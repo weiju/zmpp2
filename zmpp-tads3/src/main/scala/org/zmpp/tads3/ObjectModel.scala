@@ -30,9 +30,54 @@ package org.zmpp.tads3
 
 import scala.collection.mutable.HashMap
 
-// Define a very simple TADS3 object class for now, which later holds all
-// object types. At the moment only static objects
-class Tads3Object(objectManager: ObjectManager, staticObject: StaticObject) {
+// The abstract interface to a TADS3 meta class.
+trait MetaClass {
+  def createFromStack
+  def supportsVersion(version: String): Boolean
+}
+
+trait Tads3Object {
+  def findProperty(propertyId: Int): Property
+}
+
+// Define all system meta classes that we know so far
+// These are the current meta classes that are provided by the reference
+// implementation. Apparently, the technical manual only mentions four of them,
+// which makes it hard to implement a VM without looking at the QTads' source code.
+// Instead of complaining, I'll just see how they are implemented in QTads and
+// document it by myself
+class SystemMetaClass extends MetaClass {
+  def createFromStack { }
+  def supportsVersion(version: String) = true
+}
+class TadsObjectMetaClass extends SystemMetaClass
+class StringMetaClass extends SystemMetaClass
+class ListMetaClass   extends SystemMetaClass
+class VectorMetaClass extends SystemMetaClass
+class LookupTableMetaClass extends SystemMetaClass
+class Dictionary2MetaClass extends SystemMetaClass
+class GrammarProductionMetaClass extends SystemMetaClass
+class AnonFuncPtrMetaClass extends SystemMetaClass
+class IntClassModMetaClass extends SystemMetaClass
+class RootObjectMetaClass extends SystemMetaClass
+class IntrinsicClassMetaClass extends SystemMetaClass
+class CollectionMetaClass extends SystemMetaClass
+class IteratorMetaClass extends SystemMetaClass
+class IndexedIteratorMetaClass extends SystemMetaClass
+class CharacterSetMetaClass extends SystemMetaClass
+class ByteArrayMetaClass extends SystemMetaClass
+class RegexPatternMetaClass extends SystemMetaClass
+class WeakRefLookupTableMetaClass extends SystemMetaClass
+class LookupTableIteratorMetaClass extends SystemMetaClass
+class FileMetaClass extends SystemMetaClass
+class StringComparatorMetaClass extends SystemMetaClass
+class BigNumberMetaClass extends SystemMetaClass
+
+// A class that wraps the static objects in the load image.
+// We might later instead put the static object into a wrapper that
+// is associated with the correct meta class
+class Tads3StaticObject(objectManager: ObjectManager, staticObject: StaticObject)
+extends Tads3Object {
   def findProperty(propertyId: Int): Property = {
     val prop = staticObject.findProperty(propertyId)
     if (prop != null) return prop
@@ -52,17 +97,57 @@ class Tads3Object(objectManager: ObjectManager, staticObject: StaticObject) {
   }
 }
 
-class MetaClass {
+object ObjectSystem {
+  // map the unique meta class names to the system meta classes
+  // when initializing the game, this map can be used to map the image
+  // identifiers for metaclass dependencies to the actual meta classes that
+  // the ZMPP TADS3 VM supports
+  val MetaClasses = Map(
+    "tads-object"          -> new TadsObjectMetaClass,
+    "string"               -> new StringMetaClass,
+    "list"                 -> new ListMetaClass,
+    "vector"               -> new VectorMetaClass,
+    "lookuptable"          -> new LookupTableMetaClass,
+    "dictionary2"          -> new Dictionary2MetaClass,
+    "grammar-production"   -> new GrammarProductionMetaClass,
+    "anon-func-ptr"        -> new AnonFuncPtrMetaClass,
+    "int-class-mod"        -> new IntClassModMetaClass,
+    "root-object"          -> new RootObjectMetaClass,
+    "intrinsic-class"      -> new IntrinsicClassMetaClass,
+    "collection"           -> new CollectionMetaClass,
+    "iterator"             -> new IteratorMetaClass,
+    "indexed-iterator"     -> new IndexedIteratorMetaClass,
+    "character-set"        -> new CharacterSetMetaClass,
+    "bytearray"            -> new ByteArrayMetaClass,
+    "regex-pattern"        -> new RegexPatternMetaClass,
+    "weakreflookuptable"   -> new WeakRefLookupTableMetaClass,
+    "lookuptable-iterator" -> new LookupTableIteratorMetaClass,
+    "file"                 -> new FileMetaClass,
+    "string-comparator"    -> new StringComparatorMetaClass,
+    "bignumber"            -> new BigNumberMetaClass)
 }
 
 // The object manager handles instantiation and management of objects
+// The overall design philosophy is that objects are only created when
+// necessary to support quick serialization/deserialization
+
 class ObjectManager {
   private var _maxObjectId = 0
   private var _image: Tads3Image = null
+  private val _objectCache = new HashMap[Int, Tads3Object]
+  private val _metaClassMap = new HashMap[Int, MetaClass]
+
+  private def establishMetaClassMapping {
+    for (i <- 0 until _image.metaClassDependencies.length) {
+      _metaClassMap(i) =
+        ObjectSystem.MetaClasses(_image.metaClassDependencies(i).name)
+    }
+  }
 
   def connectImage(image: Tads3Image) {
     _maxObjectId = image.maxObjectId
     _image       = image
+    establishMetaClassMapping
   }
 
   def newId = {
@@ -70,8 +155,13 @@ class ObjectManager {
     _maxObjectId
   }
 
-  def objectWithId(id: Int)    = {
-    // TODO: Retrieve the objects from a global object collection
-    new Tads3Object(this, _image.staticObjectWithId(id))
+  def objectWithId(id: Int): Tads3Object = {
+    if (_objectCache.contains(id)) _objectCache(id)
+    else {
+      // search static objects
+      val obj = new Tads3StaticObject(this, _image.staticObjectWithId(id))
+      _objectCache(id) = obj
+      obj
+    }
   }
 }
