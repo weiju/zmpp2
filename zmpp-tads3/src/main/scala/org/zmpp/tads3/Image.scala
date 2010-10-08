@@ -193,10 +193,12 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
   private var _metaClassDependencies: Array[MetaClassDependency] = null
   private var _functionSets: Array[String] = null
   private val _staticObjects = new HashMap[Int, StaticObject]
+  private val _symbolicNames = new HashMap[String, SymbolicName]
   private var _maxObjectId = 0
 
   def maxObjectId            = _maxObjectId
   def metaClassDependencies  = _metaClassDependencies
+  def symbolicNames          = _symbolicNames
 
   // read data from blocks to build an index
   var blockAddress = 69
@@ -378,16 +380,18 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
     current += 2
     printf("# SYMBOLIC NAMES: %d\n", numEntries)
     for (i <- 0 until numEntries) {
-      val dhType = memory.byteAt(current)
-      val value = TypeIds.valueForType(dhType, memory.intAt(current + 1))
+      val valueType = memory.byteAt(current)
+      val value = TypeIds.valueForType(valueType, memory.intAt(current + 1))
       val numChars = memory.byteAt(current + 5)
       // construct name
       val builder = new StringBuilder
       for (j <- 0 until numChars) {
         builder.append(memory.byteAt(current + 6 + j).asInstanceOf[Char])
       }
-      printf("Adding symbol: '%s' t = %d, val = %d\n", builder.toString,
-             dhType, value)
+      val name = builder.toString
+      printf("Adding symbol: '%s' t = %d, val = %d\n", name,
+             valueType, value)
+      _symbolicNames(name) = new SymbolicName(name, valueType, value)
       current += 6 + numChars
     }
   }

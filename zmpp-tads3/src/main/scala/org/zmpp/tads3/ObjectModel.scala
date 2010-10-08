@@ -36,7 +36,7 @@ trait MetaClass {
   def supportsVersion(version: String): Boolean
 }
 
-trait Tads3Object {
+trait TadsObject {
   def findProperty(propertyId: Int): Property
 }
 
@@ -77,7 +77,7 @@ class BigNumberMetaClass extends SystemMetaClass
 // We might later instead put the static object into a wrapper that
 // is associated with the correct meta class
 class Tads3StaticObject(objectManager: ObjectManager, staticObject: StaticObject)
-extends Tads3Object {
+extends TadsObject {
   def findProperty(propertyId: Int): Property = {
     val prop = staticObject.findProperty(propertyId)
     if (prop != null) return prop
@@ -95,6 +95,37 @@ extends Tads3Object {
   def dump {
     printf("TADS3 OBJECT: %s\n", staticObject.toString)
   }
+}
+
+// Predefined symbols that the image defines. Can be accessed by the VM through
+// the unique name
+object PredefinedSymbols {
+  val Constructor             = "Constructor"
+  val Destructor              = "Destructor"
+  val ExceptionMessage        = "exceptionMessage"
+  val FileNotFoundException   = "File.FileNotFoundException"
+  val FileCreationExcetpion   = "File.FileCreationException"
+  val FileOpenException       = "File.FileOpenException"
+  val FileIOException         = "File.FileIOException"
+  val FileSyncException       = "File.FileSyncException"
+  val FileClosedException     = "File.FileClosedException"
+  val FileModeException       = "File.FileModeException"
+  val FileSafetyException     = "File.FileSafetyException"
+  val GpFirstTokenIndex       = "GrammarProd.firstTokenIndex"
+  val GpLastTokenIndex        = "GrammarProd.lastTokenIndex"
+  val GpTokenList             = "GrammarProd.tokenList"
+  val GpTokenMatchList        = "GrammarProd.tokenMatchList"
+  val GpGrammarAltInfo        = "GrammarProd.GrammarAltInfo"
+  val GpGrammarAltTokInfo     = "GrammarProd.GrammarAltTokInfo"
+  val IfcCalcHash             = "IfcComparator.calcHash"
+  val IfcMatchValues          = "IfcComparator.matchValues"
+  val LastProp                = "LastProp"
+  val MainRestore             = "mainRestore"
+  val ObjectCallProp          = "ObjectCallProp"
+  val PropNotDefined          = "propNotDefined"
+  val RuntimeError            = "RuntimeError"
+  val T3StackInfo             = "T3StackInfo"
+  val UnknownCharSetException = "CharacterSet.UnknownCharSetException"
 }
 
 object ObjectSystem {
@@ -130,12 +161,11 @@ object ObjectSystem {
 // The object manager handles instantiation and management of objects
 // The overall design philosophy is that objects are only created when
 // necessary to support quick serialization/deserialization
-
 class ObjectManager {
-  private var _maxObjectId = 0
+  private var _maxObjectId       = 0
   private var _image: Tads3Image = null
-  private val _objectCache = new HashMap[Int, Tads3Object]
-  private val _metaClassMap = new HashMap[Int, MetaClass]
+  private val _objectCache       = new HashMap[Int, TadsObject]
+  private val _metaClassMap      = new HashMap[Int, MetaClass]
 
   private def establishMetaClassMapping {
     for (i <- 0 until _image.metaClassDependencies.length) {
@@ -150,12 +180,14 @@ class ObjectManager {
     establishMetaClassMapping
   }
 
+  // create a unique object id
+  // we assume that a VM runs single-threaded and we never reuse ids
   def newId = {
     _maxObjectId += 1
     _maxObjectId
   }
 
-  def objectWithId(id: Int): Tads3Object = {
+  def objectWithId(id: Int) = {
     if (_objectCache.contains(id)) _objectCache(id)
     else {
       // search static objects
