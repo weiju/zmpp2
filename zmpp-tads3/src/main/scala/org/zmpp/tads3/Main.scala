@@ -96,11 +96,12 @@ class Tads3VMState {
              self: Int) {
 
     val methodHeader = image.methodHeaderAt(targetOffs)
+/*
     printf("# params = %d\n", methodHeader.paramCount)
     printf("# locals = %d\n", methodHeader.localCount)
     printf("max stack slots = %d\n", methodHeader.maxStackSlots)
     printf("ex tab offs = %d\n", methodHeader.exceptionTableOffset)
-    printf("debug rec offs = %d\n", methodHeader.debugRecordOffset)
+    printf("debug rec offs = %d\n", methodHeader.debugRecordOffset)*/
     r0 = Tads3Nil
 
     // allocate stack frame
@@ -112,9 +113,10 @@ class Tads3VMState {
     } else {
       stack.pushObjectId(origTargetObj)
       stack.pushObjectId(definingObj)
+      printf("ACTIVATION FRAME FOR CALL, SELF IS: %d\n", self)
       stack.pushObjectId(self)
     }
-    // TODO: discard self object if necessary
+    // TODO: discard self object if necessary ?
     stack.pushCodeOffset(ip) // check this !!!
     stack.pushCodeOffset(ep)
     stack.pushInt(argc)
@@ -130,6 +132,11 @@ class Tads3VMState {
   }
   
   def getParam(index: Int) = stack.valueAt(fp - 1 - index)
+
+  def setLocal(localNumber: Int, value: Tads3Value) {
+    stack.setValueAt(fp + localNumber, value)
+  }
+  def currentSelf = stack.valueAt(fp - 5)
 }
 
 class Tads3VM {
@@ -169,8 +176,8 @@ class Tads3VM {
       case BuiltinA   =>
         val argCount  = nextByteOperand
         val funcIndex = nextByteOperand
-        printf("BuiltinA, function set 0 -> index: %d #args: %d\n", funcIndex,
-               argCount)
+        //printf("BuiltinA, function set 0 -> index: %d #args: %d\n", funcIndex,
+        //       argCount)
         callBuiltin0(argCount, funcIndex)
       case Call       =>
         val argCount   = nextByteOperand
@@ -190,10 +197,17 @@ class Tads3VM {
       case Push1      => _state.stack.push1
       case PushFnPtr  => _state.stack.pushFunctionPointer(nextIntOperand)
       case PushNil    => _state.stack.pushNil
+      case PushSelf   =>
+        val currentSelf = _state.currentSelf
+        printf("currentself is: %d\n", currentSelf.asInstanceOf[Tads3ObjectId].value)
+        _state.stack.push(currentSelf)
       case SetLcl1    =>
         val localNumber = nextByteOperand
         val value = _state.stack.pop
-        _state.stack.setValueAt(_state.fp + localNumber, value)
+        _state.setLocal(localNumber, value)
+      case SetLcl1R0  =>
+        val localNumber = nextByteOperand
+        _state.setLocal(localNumber, _state.r0)
       case _          =>
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"
                                                 .format(opcode))
@@ -222,7 +236,6 @@ class Tads3VM {
   }
 
   private def setSay(funcPtr: Tads3Value) {
-    printf("setSay: %s\n", funcPtr.getClass.getName)
     sayFuncPtr = funcPtr
   }
 
@@ -280,7 +293,7 @@ object Tads3Main {
   
   def main(args: Array[String]) {
     val vm = readTads3File(new File(args(0)))
-    println("TADS 3 ZMPP")
+    println("TADS 3 ZMPP\n\n--------------------\n\n")
     vm.doTurn
   }
 }

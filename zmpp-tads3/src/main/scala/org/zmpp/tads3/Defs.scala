@@ -81,13 +81,13 @@ object Tads3Empty extends Tads3Value {
 class Tads3List extends Tads3Value {
   def valueType = TypeIds.VmList
 }
-class Tads3PropertyId(val id: Int) extends Tads3Value {
+class Tads3PropertyId(val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmProp
 }
-class Tads3ObjectId(val id: Int) extends Tads3Value {
+class Tads3ObjectId(val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmObj
 }
-class Tads3CodeOffset(val offset: Int) extends Tads3Value {
+class Tads3CodeOffset(val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmCodeOfs
 }
 class Tads3Integer(val value: Int) extends Tads3Value {
@@ -131,45 +131,51 @@ class Tads3Stack {
 
 // The machine opcodes
 object Opcodes {
-  val Push1      = 0x02
-  val PushNil    = 0x08
-  val PushFnPtr  = 0x0b
-  val RetNil     = 0x51
-  val Call       = 0x58
-  val ObjGetProp = 0x66
-  val GetArg1    = 0x82
-  val Dup        = 0x88
-  val GetR0      = 0x8b
-  val JNil       = 0x9e
-  val JR0T       = 0xa0
-  val BuiltinA   = 0xb1
-  val BuiltinB   = 0xb2
-  val BuiltinC   = 0xb3
-  val BuiltinD   = 0xb4
-  val New1       = 0xc0
-  val SetLcl1    = 0xe0
+  val Push1        = 0x02
+  val PushNil      = 0x08
+  val PushFnPtr    = 0x0b
+  val RetNil       = 0x51
+  val Call         = 0x58
+  val ObjGetProp   = 0x66
+  val GetArg1      = 0x82
+  val PushSelf     = 0x84
+  val Dup          = 0x88
+  val GetR0        = 0x8b
+  val JNil         = 0x9e
+  val JR0T         = 0xa0
+  val BuiltinA     = 0xb1
+  val BuiltinB     = 0xb2
+  val BuiltinC     = 0xb3
+  val BuiltinD     = 0xb4
+  val New1         = 0xc0
+  val SetLcl1      = 0xe0
+  val SetLcl1R0    = 0xee
+  val SetIndLcl1I8 = 0xef
 }
 
 object OpcodeNames {
   import Opcodes._
   val Names = Map(
-    BuiltinA   -> "BUILTIN_A",
-    BuiltinB   -> "BUILTIN_B",
-    BuiltinC   -> "BUILTIN_C",
-    BuiltinD   -> "BUILTIN_D",
-    Call       -> "CALL",
-    Dup        -> "DUP",
-    GetArg1    -> "GETARG1",
-    GetR0      -> "GETR0",
-    JNil       -> "JNIL",
-    JR0T       -> "JR0T",
-    New1       -> "NEW1",
-    ObjGetProp -> "OBJGETPROP",
-    Push1      -> "PUSH_1",
-    PushNil    -> "PUSHNIL",
-    PushFnPtr  -> "PUSHFNPTR",
-    RetNil     -> "RETNIL",
-    SetLcl1    -> "SETLCL1"
+    BuiltinA     -> "BUILTIN_A",
+    BuiltinB     -> "BUILTIN_B",
+    BuiltinC     -> "BUILTIN_C",
+    BuiltinD     -> "BUILTIN_D",
+    Call         -> "CALL",
+    Dup          -> "DUP",
+    GetArg1      -> "GETARG1",
+    GetR0        -> "GETR0",
+    JNil         -> "JNIL",
+    JR0T         -> "JR0T",
+    New1         -> "NEW1",
+    ObjGetProp   -> "OBJGETPROP",
+    Push1        -> "PUSH_1",
+    PushNil      -> "PUSHNIL",
+    PushFnPtr    -> "PUSHFNPTR",
+    PushSelf     -> "PUSHSELF",
+    RetNil       -> "RETNIL",
+    SetIndLcl1I8 -> "SETINDLCL1I8",
+    SetLcl1      -> "SETLCL1",
+    SetLcl1R0    -> "SETLCL1R0"
   )
   def opcodeName(opcodeNum: Int) = {
     if (Names.contains(opcodeNum)) Names(opcodeNum)
