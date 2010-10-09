@@ -35,16 +35,35 @@ import scala.collection.JavaConversions._
 // This file implements the built-in library class/metaclass Vector in TADS3.
 // A TADS3 Vector is backed by an ArrayList, so constructor arguments which
 // specify sizes will have no effect here.
+// Note: Vector indexes in TADS are, as all sequential types in TADS, in the
+// range [1..n], and *not* [0..n-1]
 class Vector extends TadsObject {
   def isTransient = false
   val _container = new ArrayList[Tads3Value]
+
+  def init(numElements: Int) {
+    printf("initialize %d elements\n", numElements)
+    for (i <- 0 until numElements) _container.add(Tads3Nil)
+  }
   def findProperty(propertyId: Int) = null
   def add(value: Tads3Value) {
     _container.add(value)
   }
-  def init(numElements: Int) {
-    printf("initialize %d elements\n", numElements)
-    for (i <- 0 until numElements) _container.add(Tads3Nil)
+  def valueAtIndex(index: Int) = _container(index)
+  def setValueAtIndex(index: Int, newValue: Tads3Value) = {
+    val oldValue = _container(index - 1)
+    _container(index - 1) = newValue
+    oldValue
+  }
+
+  override def toString = {
+    val builder = new StringBuilder("vector(%d elems) [ ".format(_container.size))
+    for (elem <- _container) {
+      builder.append(elem)
+      builder.append(" ")
+    }
+    builder.append("]")
+    builder.toString
   }
 }
 
@@ -63,15 +82,14 @@ class VectorMetaClass extends SystemMetaClass {
     if (argc < 1 || argc > 2) {
       throw new IllegalArgumentException("vector::constructor(), argc must be 1 or 2")
     }
-    val result = new Vector
     val arg0 = vmState.stack.pop
-    if (arg0.valueType == TypeIds.VmInt) {
-      // just ignore this
-      printf("vector::construct(), # elements allocate: %d\n",
-             arg0.value)
+    val result = if (arg0.valueType == TypeIds.VmInt) {
+      // we ignore this parameter, we do not allocate vectors with an initial size
+      new Vector
     } else {
       throw new IllegalArgumentException("vector::constructor(), illegal arg0 type")
     }
+    // second (optional argument)
     if (argc > 1) {
       val arg1 = vmState.stack.pop
       if (arg1.valueType == TypeIds.VmInt) {

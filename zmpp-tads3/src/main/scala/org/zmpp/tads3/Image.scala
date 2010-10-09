@@ -220,12 +220,13 @@ class Tads3Image(val memory: Memory) {
     blockAddress += BlockHeader.Size + blockHeader.dataSize
     blockHeader = readBlockHeader(blockAddress)
   }
+/*
   printf("# blocks read: %d\n", _blocks.length)
   printf("start address: $%02x\n", startAddress)
   printf("method header size: %d\n", methodHeaderSize)
   printf("ex table entry size: %d\n", exTableEntrySize)
   printf("# static objects: %d\n", _staticObjects.size)
-  printf("MAX object id: %d\n", _maxObjectId)
+  printf("MAX object id: %d\n", _maxObjectId)*/
   
   def startEntryPoint  = memory.intAt(_entp.dataAddress)
   def methodHeaderSize = memory.shortAt(_entp.dataAddress + 4)
@@ -313,7 +314,6 @@ class Tads3Image(val memory: Memory) {
   private def readMetaclassDependencies(blockHeader: BlockHeader) {
     val numEntries = memory.shortAt(blockHeader.dataAddress)
     _metaClassDependencies = new Array[MetaClassDependency](numEntries)
-    printf("# meta classes found: %d\n", numEntries)
     var addr = blockHeader.dataAddress + 2
     for (i <- 0 until numEntries) {
       val entrySize = memory.shortAt(addr)
@@ -378,7 +378,7 @@ class Tads3Image(val memory: Memory) {
     var current = blockHeader.dataAddress
     val numEntries = memory.shortAt(current)
     current += 2
-    printf("# SYMBOLIC NAMES: %d\n", numEntries)
+    //printf("# SYMBOLIC NAMES: %d\n", numEntries)
     for (i <- 0 until numEntries) {
       val valueType = memory.byteAt(current)
       val value = TypeIds.valueForType(valueType, memory.intAt(current + 1))
@@ -389,8 +389,8 @@ class Tads3Image(val memory: Memory) {
         builder.append(memory.byteAt(current + 6 + j).asInstanceOf[Char])
       }
       val name = builder.toString
-      printf("Adding symbol: '%s' t = %d, val = %d\n", name,
-             valueType, value)
+      //printf("Adding symbol: '%s' t = %d, val = %d\n", name,
+      //       valueType, value)
       _symbolicNames(name) = new SymbolicName(name, valueType, value)
       current += 6 + numChars
     }

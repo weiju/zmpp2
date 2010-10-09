@@ -113,7 +113,6 @@ class Tads3VMState {
     } else {
       stack.pushObjectId(origTargetObj)
       stack.pushObjectId(definingObj)
-      printf("ACTIVATION FRAME FOR CALL, SELF IS: %d\n", self)
       stack.pushObjectId(self)
     }
     // TODO: discard self object if necessary ?
@@ -181,6 +180,10 @@ class Tads3VM {
         _state.doCall(nextByteOperand, nextIntOperand, 0, 0, 0, 0)
       case Dup          => _state.stack.dup
       case GetArg1      => _state.stack.push(_state.getParam(nextByteOperand))
+      case GetPropSelf  =>
+        val propId = nextShortOperand
+        printf("GETPROPSELF %d (SELF is %s)\n", propId, _state.currentSelf)
+        throw new UnsupportedOperationException("GETPROPSELF, TODO")
       case GetR0        => _state.stack.push(_state.r0)
       case JNil         => branchIfTrue(_state.stack.pop == Tads3Nil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
@@ -201,21 +204,25 @@ class Tads3VM {
       case SetIndLcl1I8 =>
         val localNumber  = nextByteOperand
         val containerVal = _state.getLocal(localNumber)
-        val indexVal     = nextByteOperand
+        val index        = nextByteOperand
         val newVal       = _state.stack.pop
-        printf("SETINDLCL1I8 %d, containertype: %d container id: %d, %d\n",
-               localNumber, containerVal.valueType, containerVal.value, indexVal)
-        if (containerVal.valueType == TypeIds.VmObj) {
-          val obj = _objectManager.objectWithId(containerVal.value)
-          obj.asInstanceOf[Tads3StaticObject].dump
-        }
-        throw new UnsupportedOperationException("SETINDLCLI8 not supported")
+        _state.setLocal(localNumber, setInd(containerVal, index, newVal))
       case SetLcl1      => _state.setLocal(nextByteOperand, _state.stack.pop)
       case SetLcl1R0    => _state.setLocal(nextByteOperand, _state.r0)
       case _            =>
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"
                                                 .format(opcode))
     }
+  }
+
+  private def setInd(containerVal: Tads3Value, index: Int, newVal: Tads3Value) = {
+    if (containerVal.valueType == TypeIds.VmObj) {
+      val obj = _objectManager.objectWithId(containerVal.value)
+      obj.setValueAtIndex(index, newVal)
+    } else if (containerVal.valueType == TypeIds.VmList) {
+      throw new UnsupportedOperationException("SETINDxxx not supported " +
+                                              "for objects of list yet")
+    } else throw new CannotIndexTypeException
   }
 
   private def branchIfTrue(condition: Boolean) {
@@ -249,7 +256,8 @@ class Tads3VM {
     if (prop != null) evalProperty(objId, prop)
     else {
       // TODO: check if propNotDefined is available
-      throw new UnsupportedOperationException("TODO: property not found, check for propNotDefined")
+      throw new UnsupportedOperationException("TODO: property not found, " +
+                                              "check for propNotDefined")
     }
   }
 
@@ -296,8 +304,9 @@ object Tads3Main {
   }
   
   def main(args: Array[String]) {
+    println("ZMPP TADS3 (Prototype version)")
     val vm = readTads3File(new File(args(0)))
-    println("TADS 3 ZMPP\n\n--------------------\n\n")
+    println("\nProgram:\n---------")
     vm.doTurn
   }
 }

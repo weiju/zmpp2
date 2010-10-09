@@ -31,8 +31,10 @@ package org.zmpp.tads3
 import scala.collection.mutable.HashMap
 
 trait TadsObject {
-  def findProperty(propertyId: Int): Property
   def isTransient: Boolean
+  def findProperty(propertyId: Int): Property
+  def valueAtIndex(index: Int): Tads3Value
+  def setValueAtIndex(index: Int, newValue: Tads3Value): Tads3Value
 }
 
 // The abstract interface to a TADS3 meta class.
@@ -138,9 +140,11 @@ extends TadsObject {
     null
   }
 
-  def dump {
-    printf("TADS3 OBJECT: %s\n", staticObject.toString)
+  def valueAtIndex(index: Int) = throw new CannotIndexTypeException
+  def setValueAtIndex(index: Int, newValue: Tads3Value) = {
+    throw new CannotIndexTypeException
   }
+  override def toString = staticObject.toString
 }
 
 // Predefined symbols that the image defines. Can be accessed by the VM through
@@ -251,7 +255,7 @@ class ObjectManager(vmState: Tads3VMState) {
     val id = newId
     val obj = _metaClassMap(metaClassId).createFromStack(vmState, argc)
     _objectCache(id) = obj
-    printf("CREATED OBJECT WITH ID: %d\n", id)
+    //printf("CREATED OBJECT WITH ID: %d\n", id)
     new Tads3ObjectId(id)
   }
 }

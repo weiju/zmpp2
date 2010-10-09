@@ -72,32 +72,41 @@ abstract class Tads3Value {
 object Tads3Nil extends Tads3Value {
   override def isTrue = false
   def valueType = TypeIds.VmNil
+  override def toString = "NIL"
 }
 object Tads3True extends Tads3Value {
   def valueType = TypeIds.VmTrue
   override def value = 1
+  override def toString = "TRUE"
 }
 object Tads3Empty extends Tads3Value {
   def valueType = TypeIds.VmEmpty
+  override def toString = "EMPTY"
 }
 class Tads3List extends Tads3Value {
   def valueType = TypeIds.VmList
+  override def toString = "list"
 }
 class Tads3PropertyId(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmProp
+  override def toString = "property (value = %d)".format(value)
 }
 class Tads3ObjectId(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmObj
+  override def toString = "objectid (value = %d)".format(value)
 }
 class Tads3CodeOffset(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmCodeOfs
+  override def toString = "code-offset (value = %d)".format(value)
 }
 class Tads3Integer(override val value: Int) extends Tads3Value {
   override def isTrue = value != 0
   def valueType = TypeIds.VmInt
+  override def toString = "integer (value = %d)".format(value)
 }
 class Tads3FunctionPointer(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmFuncPtr
+  override def toString = "function-ptr (value = %d)".format(value)
 }
 
 class Tads3Stack {
@@ -138,6 +147,7 @@ object Opcodes {
   val PushFnPtr    = 0x0b
   val RetNil       = 0x51
   val Call         = 0x58
+  val GetPropSelf  = 0x63
   val ObjGetProp   = 0x66
   val GetArg1      = 0x82
   val PushSelf     = 0x84
@@ -169,6 +179,7 @@ object OpcodeNames {
     Call         -> "CALL",
     Dup          -> "DUP",
     GetArg1      -> "GETARG1",
+    GetPropSelf  -> "GETPROPSELF",
     GetR0        -> "GETR0",
     JNil         -> "JNIL",
     JR0T         -> "JR0T",
@@ -192,3 +203,5 @@ object OpcodeNames {
 }
 
 
+// Exceptions
+class CannotIndexTypeException extends Exception
