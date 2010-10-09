@@ -37,6 +37,20 @@ trait TadsObject {
   def setValueAtIndex(index: Int, newValue: Tads3Value): Tads3Value
 }
 
+abstract class AbstractTadsObject extends TadsObject {
+  def isTransient = false
+  def findProperty(propertyId: Int) = {
+    throw new UnsupportedOperationException("findProperty() not implemented")
+  }
+  def valueAtIndex(index: Int) = {
+    throw new UnsupportedOperationException("valueAtIndex() not implemented")
+  }
+  def setValueAtIndex(index: Int, newValue: Tads3Value) = {
+    throw new UnsupportedOperationException("setValueAtIndex() not implemented")
+  }
+}
+
+
 // The abstract interface to a TADS3 meta class.
 trait MetaClass {
   def name: String
@@ -51,7 +65,10 @@ trait MetaClass {
 // Instead of complaining, I'll just see how they are implemented in QTads and
 // document it by myself
 abstract class SystemMetaClass extends MetaClass {
-  def createFromStack(vmState: Tads3VMState, argc: Int): TadsObject = null
+  def createFromStack(vmState: Tads3VMState, argc: Int): TadsObject = {
+    throw new UnsupportedOperationException("createFromStack not yet supported in " +
+                                            "metaclass '%s'".format(name))
+  }
   def supportsVersion(version: String) = true
 }
 class TadsObjectMetaClass extends SystemMetaClass {
@@ -73,9 +90,6 @@ class GrammarProductionMetaClass extends SystemMetaClass {
   def name = "grammar-production"
 }
 
-class AnonFuncPtrMetaClass extends SystemMetaClass {
-  def name = "anon-func-ptr"
-}
 class IntClassModMetaClass extends SystemMetaClass {
   def name = "int-class-mod"
 }

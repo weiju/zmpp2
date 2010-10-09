@@ -116,7 +116,10 @@ class MetaClassDependency(index: Int, nameString: String, val numProperties: Int
 
 class SymbolicName(val name: String, val valueType: Int, val value: Int)
 class Property(val id: Int, val valueType: Int, val value: Int,
-               val definingObject: Int)
+               val definingObject: Int) {
+  override def toString = "Property (id = %d type: %d value: %d def. obj: %d)".format(
+    id, valueType, value, definingObject)
+}
 
 // Static objects are created from the image's static object block
 class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,

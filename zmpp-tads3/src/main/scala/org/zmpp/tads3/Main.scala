@@ -65,7 +65,7 @@ class Tads3VMState {
 
     // call initial function
     // push empty list on stack - QTads puts command line arguments in that list
-    val argList = new Tads3List
+    val argList = new Tads3ListConstant
     stack.push(argList)
     doCall(1, image.startEntryPoint, 0, 0, 0, 0)
   }
@@ -132,6 +132,8 @@ class Tads3VMState {
   
   def getParam(index: Int) = stack.valueAt(fp - 1 - index)
 
+  // local variable access. Note that Local variable access is based
+  // on index 0 !!
   def getLocal(localNumber: Int) = stack.valueAt(fp + localNumber)
   def setLocal(localNumber: Int, value: Tads3Value) {
     stack.setValueAt(fp + localNumber, value)
@@ -180,10 +182,9 @@ class Tads3VM {
         _state.doCall(nextByteOperand, nextIntOperand, 0, 0, 0, 0)
       case Dup          => _state.stack.dup
       case GetArg1      => _state.stack.push(_state.getParam(nextByteOperand))
+      case GetLcl1      => _state.stack.push(_state.getLocal(nextByteOperand))        
       case GetPropSelf  =>
-        val propId = nextShortOperand
-        printf("GETPROPSELF %d (SELF is %s)\n", propId, _state.currentSelf)
-        throw new UnsupportedOperationException("GETPROPSELF, TODO")
+        objGetProp(_state.currentSelf.value, nextShortOperand)
       case GetR0        => _state.stack.push(_state.r0)
       case JNil         => branchIfTrue(_state.stack.pop == Tads3Nil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
@@ -199,7 +200,6 @@ class Tads3VM {
         val indexVal     = _state.stack.pop
         val containerVal = _state.stack.pop
         val newVal       = _state.stack.pop
-        
         throw new UnsupportedOperationException("SETIND not supported")
       case SetIndLcl1I8 =>
         val localNumber  = nextByteOperand
@@ -261,8 +261,9 @@ class Tads3VM {
     }
   }
 
-  private def evalProperty(self: Int, property: Property) {
+  private def evalProperty(selfId: Int, property: Property) {
     import TypeIds._
+    printf("evalProperty(%s) [self = %d]\n", property, selfId)
     property.valueType match {
       case VmNil     => _state.r0 = Tads3Nil
       case VmTrue    => _state.r0 = Tads3True
@@ -270,7 +271,7 @@ class Tads3VM {
       case VmProp    => _state.r0 = new Tads3PropertyId(property.value)
       case VmInt     => _state.r0 = new Tads3Integer(property.value)
       case VmCodeOfs =>
-        _state.doCall(0, property.value, 0, 0, property.definingObject, self)
+        _state.doCall(0, property.value, 0, 0, property.definingObject, selfId)
       case VmDString =>
         throw new UnsupportedOperationException("TODO: DOUBLE QUOTED STRING")
       case _ =>

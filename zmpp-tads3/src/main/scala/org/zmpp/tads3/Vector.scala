@@ -45,7 +45,9 @@ class Vector extends TadsObject {
     printf("initialize %d elements\n", numElements)
     for (i <- 0 until numElements) _container.add(Tads3Nil)
   }
-  def findProperty(propertyId: Int) = null
+  def findProperty(propertyId: Int) = {
+    throw new UnsupportedOperationException("TODO")
+  }
   def add(value: Tads3Value) {
     _container.add(value)
   }

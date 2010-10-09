@@ -30,23 +30,30 @@ package org.zmpp.tads3
 
 import scala.collection.mutable.ArrayStack
 
+/*
+ * These type ids and their names are taken from the "T3 Portable Binary Encoding"
+ * section.
+ * ZMPP is unlikely to use any native reference values (VM_STACK, VM_CODEPTR,
+ * VM_NATIVE_CODE) and the related constants here are only listed for completeness.
+ */
 object TypeIds {
-  val VmNil        = 1
-  val VmTrue       = 2
-  val VmStack      = 3
-  val VmCodePtr    = 4
-  val VmObj        = 5
-  val VmProp       = 6
-  val VmInt        = 7
-  val VmSString    = 8
-  val VmDString    = 9
-  val VmList       = 10
-  val VmCodeOfs    = 11
-  val VmFuncPtr    = 12
-  val VmEmpty      = 13
-  val VmNativeCode = 14
-  val VmEnum       = 15
+  val VmNil        = 1  // null and false representation
+  val VmTrue       = 2  // true representation
+  val VmStack      = 3  // native reference to the stack (unused in ZMPP)
+  val VmCodePtr    = 4  // native code pointer (unused in ZMPP)
+  val VmObj        = 5  // object id
+  val VmProp       = 6  // property id
+  val VmInt        = 7  // integer value
+  val VmSString    = 8  // single quoted string
+  val VmDString    = 9  // double quoted string
+  val VmList       = 10 // list constant
+  val VmCodeOfs    = 11 // code offset
+  val VmFuncPtr    = 12 // function pointer
+  val VmEmpty      = 13 // empty value (for initializations)
+  val VmNativeCode = 14 // native code ptr (unused in ZMPP)
+  val VmEnum       = 15 // enumerated constant
 
+  // property values are truncated to unsigned 16 bit
   def valueForType(typ: Int, value: Int) = {
     if (typ == TypeIds.VmProp) value & 0xffff else value
   }
@@ -59,8 +66,16 @@ object Tads3Constants {
   val SizeDataHolder = 5
 }
 
-/*
- * Values that can appear in the TADS3 stack or in register R0
+/***********************************************************************
+ * Definition of the constants of type Tads3Value. These are the values
+ * that appear on the TADS3 VM stack or in register R0.
+ * We define a uniform access interface, each object's value is based
+ * on an integer. Values that do not have an integer representation
+ * (e.g. Nil, True, Empty...) just return 0 as their value because their
+ * value attribute is of no interest (they are interesting only as the
+ * constants they represent). Values that have an underlying object return
+ * an integer value as well, which however is an offset into a constant
+ * pool.
  */
 abstract class Tads3Value {
   def isTrue = true
@@ -68,7 +83,6 @@ abstract class Tads3Value {
   def value = 0
 }
 
-// Definition of the constants of type Tads3Value
 object Tads3Nil extends Tads3Value {
   override def isTrue = false
   def valueType = TypeIds.VmNil
@@ -83,7 +97,7 @@ object Tads3Empty extends Tads3Value {
   def valueType = TypeIds.VmEmpty
   override def toString = "EMPTY"
 }
-class Tads3List extends Tads3Value {
+class Tads3ListConstant extends Tads3Value {
   def valueType = TypeIds.VmList
   override def toString = "list"
 }
@@ -149,6 +163,7 @@ object Opcodes {
   val Call         = 0x58
   val GetPropSelf  = 0x63
   val ObjGetProp   = 0x66
+  val GetLcl1      = 0x80
   val GetArg1      = 0x82
   val PushSelf     = 0x84
   val Dup          = 0x88
@@ -179,6 +194,7 @@ object OpcodeNames {
     Call         -> "CALL",
     Dup          -> "DUP",
     GetArg1      -> "GETARG1",
+    GetLcl1      -> "GETLCL1",
     GetPropSelf  -> "GETPROPSELF",
     GetR0        -> "GETR0",
     JNil         -> "JNIL",
