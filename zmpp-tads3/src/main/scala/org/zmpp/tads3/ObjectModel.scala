@@ -30,14 +30,15 @@ package org.zmpp.tads3
 
 import scala.collection.mutable.HashMap
 
-// The abstract interface to a TADS3 meta class.
-trait MetaClass {
-  def createFromStack
-  def supportsVersion(version: String): Boolean
-}
-
 trait TadsObject {
   def findProperty(propertyId: Int): Property
+}
+
+// The abstract interface to a TADS3 meta class.
+trait MetaClass {
+  def name: String
+  def createFromStack(vmState: Tads3VMState, argc: Int): TadsObject
+  def supportsVersion(version: String): Boolean
 }
 
 // Define all system meta classes that we know so far
@@ -46,32 +47,74 @@ trait TadsObject {
 // which makes it hard to implement a VM without looking at the QTads' source code.
 // Instead of complaining, I'll just see how they are implemented in QTads and
 // document it by myself
-class SystemMetaClass extends MetaClass {
-  def createFromStack { }
+abstract class SystemMetaClass extends MetaClass {
+  def createFromStack(vmState: Tads3VMState, argc: Int): TadsObject = null
   def supportsVersion(version: String) = true
 }
-class TadsObjectMetaClass extends SystemMetaClass
-class StringMetaClass extends SystemMetaClass
-class ListMetaClass   extends SystemMetaClass
-class VectorMetaClass extends SystemMetaClass
-class LookupTableMetaClass extends SystemMetaClass
-class Dictionary2MetaClass extends SystemMetaClass
-class GrammarProductionMetaClass extends SystemMetaClass
-class AnonFuncPtrMetaClass extends SystemMetaClass
-class IntClassModMetaClass extends SystemMetaClass
-class RootObjectMetaClass extends SystemMetaClass
-class IntrinsicClassMetaClass extends SystemMetaClass
-class CollectionMetaClass extends SystemMetaClass
-class IteratorMetaClass extends SystemMetaClass
-class IndexedIteratorMetaClass extends SystemMetaClass
-class CharacterSetMetaClass extends SystemMetaClass
-class ByteArrayMetaClass extends SystemMetaClass
-class RegexPatternMetaClass extends SystemMetaClass
-class WeakRefLookupTableMetaClass extends SystemMetaClass
-class LookupTableIteratorMetaClass extends SystemMetaClass
-class FileMetaClass extends SystemMetaClass
-class StringComparatorMetaClass extends SystemMetaClass
-class BigNumberMetaClass extends SystemMetaClass
+class TadsObjectMetaClass extends SystemMetaClass {
+  def name = "tads-object"
+}
+class StringMetaClass extends SystemMetaClass {
+  def name = "string"
+}
+class ListMetaClass   extends SystemMetaClass {
+  def name = "list"
+}
+class LookupTableMetaClass extends SystemMetaClass {
+  def name = "lookuptable"
+}
+class Dictionary2MetaClass extends SystemMetaClass {
+  def name = "dictionary2"
+}
+class GrammarProductionMetaClass extends SystemMetaClass {
+  def name = "grammar-production"
+}
+
+class AnonFuncPtrMetaClass extends SystemMetaClass {
+  def name = "anon-func-ptr"
+}
+class IntClassModMetaClass extends SystemMetaClass {
+  def name = "int-class-mod"
+}
+class RootObjectMetaClass extends SystemMetaClass {
+  def name = "root-object"
+}
+class IntrinsicClassMetaClass extends SystemMetaClass {
+  def name = "intrinsic-class"
+}
+class CollectionMetaClass extends SystemMetaClass {
+  def name = "collection"
+}
+class IteratorMetaClass extends SystemMetaClass {
+  def name = "iterator"
+}
+class IndexedIteratorMetaClass extends SystemMetaClass {
+  def name = "indexed-iterator"
+}
+class CharacterSetMetaClass extends SystemMetaClass {
+  def name = "character-set"
+}
+class ByteArrayMetaClass extends SystemMetaClass {
+  def name = "bytearray"
+}
+class RegexPatternMetaClass extends SystemMetaClass {
+  def name = "regex-pattern"
+}
+class WeakRefLookupTableMetaClass extends SystemMetaClass {
+  def name = "weakreflookuptable"
+}
+class LookupTableIteratorMetaClass extends SystemMetaClass {
+  def name = "lookuptable-iterator"
+}
+class FileMetaClass extends SystemMetaClass {
+  def name = "file"
+}
+class StringComparatorMetaClass extends SystemMetaClass {
+  def name = "string-comparator"
+}
+class BigNumberMetaClass extends SystemMetaClass {
+  def name = "bignumber"
+}
 
 // A class that wraps the static objects in the load image.
 // We might later instead put the static object into a wrapper that
@@ -161,28 +204,32 @@ object ObjectSystem {
 // The object manager handles instantiation and management of objects
 // The overall design philosophy is that objects are only created when
 // necessary to support quick serialization/deserialization
-class ObjectManager {
+//
+class ObjectManager(vmState: Tads3VMState) {
   private var _maxObjectId       = 0
-  private var _image: Tads3Image = null
   private val _objectCache       = new HashMap[Int, TadsObject]
   private val _metaClassMap      = new HashMap[Int, MetaClass]
 
+  private def image = vmState.image
+  private def metaClassDependencies = vmState.image.metaClassDependencies
   private def establishMetaClassMapping {
-    for (i <- 0 until _image.metaClassDependencies.length) {
+    for (i <- 0 until metaClassDependencies.length) {
       _metaClassMap(i) =
-        ObjectSystem.MetaClasses(_image.metaClassDependencies(i).name)
+        ObjectSystem.MetaClasses(metaClassDependencies(i).name)
+      // TODO: map properties as well
     }
   }
 
-  def connectImage(image: Tads3Image) {
-    _maxObjectId = image.maxObjectId
-    _image       = image
+  def resetImage {
+    _metaClassMap.clear
+    _objectCache.clear
+    _maxObjectId = vmState.image.maxObjectId
     establishMetaClassMapping
   }
 
   // create a unique object id
   // we assume that a VM runs single-threaded and we never reuse ids
-  def newId = {
+  private def newId = {
     _maxObjectId += 1
     _maxObjectId
   }
@@ -191,9 +238,17 @@ class ObjectManager {
     if (_objectCache.contains(id)) _objectCache(id)
     else {
       // search static objects
-      val obj = new Tads3StaticObject(this, _image.staticObjectWithId(id))
+      val obj = new Tads3StaticObject(this, image.staticObjectWithId(id))
       _objectCache(id) = obj
       obj
     }
+  }
+
+  def createFromStack(metaClassId: Int, argc: Int) = {
+    printf("CREATING OBJECT OF METACLASS '%s'\n", _metaClassMap(metaClassId).name)
+    val id = newId
+    val obj = _metaClassMap(metaClassId).createFromStack(vmState, argc)
+    _objectCache(id) = obj
+    new Tads3ObjectId(id)
   }
 }

@@ -64,23 +64,39 @@ object Tads3Constants {
  */
 abstract class Tads3Value {
   def isTrue = true
+  def valueType: Int
 }
 
 // Definition of the constants of type Tads3Value
 object Tads3Nil extends Tads3Value {
   override def isTrue = false
+  def valueType = TypeIds.VmNil
 }
-object Tads3True extends Tads3Value
-object Tads3Empty extends Tads3Value
-
-class Tads3List extends Tads3Value
-class Tads3PropertyId(val id: Int) extends Tads3Value
-class Tads3ObjectId(val id: Int) extends Tads3Value
-class Tads3CodeOffset(val offset: Int) extends Tads3Value
+object Tads3True extends Tads3Value {
+  def valueType = TypeIds.VmTrue
+}
+object Tads3Empty extends Tads3Value {
+  def valueType = TypeIds.VmEmpty
+}
+class Tads3List extends Tads3Value {
+  def valueType = TypeIds.VmList
+}
+class Tads3PropertyId(val id: Int) extends Tads3Value {
+  def valueType = TypeIds.VmProp
+}
+class Tads3ObjectId(val id: Int) extends Tads3Value {
+  def valueType = TypeIds.VmObj
+}
+class Tads3CodeOffset(val offset: Int) extends Tads3Value {
+  def valueType = TypeIds.VmCodeOfs
+}
 class Tads3Integer(val value: Int) extends Tads3Value {
   override def isTrue = value != 0
+  def valueType = TypeIds.VmInt
 }
-class Tads3FunctionPointer(val offset: Int) extends Tads3Value
+class Tads3FunctionPointer(val offset: Int) extends Tads3Value {
+  def valueType = TypeIds.VmFuncPtr
+}
 
 class Tads3Stack {
   // do not create too many unnecessary one's

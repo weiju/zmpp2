@@ -185,7 +185,7 @@ class MethodHeader(val paramCount: Int, val localCount: Int, val maxStackSlots: 
  * Quickly construct a TADS3 image from a memory object.
  * Quite a bit of data is loaded on demand.
  */
-class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
+class Tads3Image(val memory: Memory) {
   private var _timestamp: String = null
   private var _blocks: List[BlockHeader] = Nil
   private val _constantPools = new Array[ConstantPool](3)
@@ -219,8 +219,6 @@ class Tads3Image(val memory: Memory, objectManager: ObjectManager) {
     blockAddress += BlockHeader.Size + blockHeader.dataSize
     blockHeader = readBlockHeader(blockAddress)
   }
-  // done, let's initialize the object system
-  objectManager.connectImage(this)
   printf("# blocks read: %d\n", _blocks.length)
   printf("start address: $%02x\n", startAddress)
   printf("method header size: %d\n", methodHeaderSize)

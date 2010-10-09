@@ -47,13 +47,10 @@ object T3VMFuncs {
   val GetGlobalSymbols   = 7
 }
 
-object TadsVMState {
-}
 class Tads3VMState {
   private var _memory : Memory = null
   var image: Tads3Image        = null
   val stack = new Tads3Stack
-  val objectManager = new ObjectManager
   var runState = RunStates.Running
   
   // Registers (TODO: current savepoint, savepoint count)
@@ -64,7 +61,7 @@ class Tads3VMState {
   var fp = 0                // frame pointer
 
   def reset(imageMem: Memory) {
-    image = new Tads3Image(imageMem, objectManager)
+    image = new Tads3Image(imageMem)
 
     // call initial function
     // push empty list on stack - QTads puts command line arguments in that list
@@ -137,11 +134,13 @@ class Tads3VMState {
 
 class Tads3VM {
   val _state = new Tads3VMState
+  val _objectManager = new ObjectManager(_state)
   var sayFuncPtr: Tads3Value = null
   var iteration = 1
 
   def init(imageMem: Memory) {
     _state.reset(imageMem)
+    _objectManager.resetImage
     printf("VALID FILE: %b, Version: %d Timestamp: %s\n",
            _state.image.isValid, _state.image.version, _state.image.timestamp)
   }
@@ -185,8 +184,8 @@ class Tads3VM {
       case New1       =>
         val argCount = nextByteOperand
         val metaClassId = nextByteOperand
-        printf("NEW1 %d, %d\n", argCount, metaClassId)
-        throw new UnsupportedOperationException("NEW1 not supported")
+        val objId = _objectManager.createFromStack(metaClassId, argCount)
+        _state.r0 = objId
       case ObjGetProp => objGetProp(nextIntOperand, nextShortOperand)
       case Push1      => _state.stack.push1
       case PushFnPtr  => _state.stack.pushFunctionPointer(nextIntOperand)
@@ -228,7 +227,7 @@ class Tads3VM {
   }
 
   private def objGetProp(objId: Int, propId: Int) {
-    val obj = _state.objectManager.objectWithId(objId)
+    val obj = _objectManager.objectWithId(objId)
     val prop = obj.findProperty(propId)
     if (prop != null) evalProperty(objId, prop)
     else {
