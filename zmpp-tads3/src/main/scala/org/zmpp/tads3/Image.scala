@@ -120,7 +120,8 @@ class Property(val id: Int, val valueType: Int, val value: Int,
 
 // Static objects are created from the image's static object block
 class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,
-                   val dataAddress: Int, val dataSize: Int) {
+                   val dataAddress: Int, val dataSize: Int,
+                   val isTransient: Boolean) {
   def superClassCount        = tads3Image.memory.shortAt(dataAddress)
   def loadImagePropertyCount = tads3Image.memory.shortAt(dataAddress + 2)
   def objectFlags            = tads3Image.memory.shortAt(dataAddress + 4)
@@ -366,7 +367,8 @@ class Tads3Image(val memory: Memory) {
                      else memory.shortAt(objAddr + 4)
       //printf("OBJ ID: %d #BYTES: %d\n", objId, numBytes)
       objAddr += (if (isLarge) 8 else 6)
-      val obj = new StaticObject(this, objId, metaClassIndex, objAddr, numBytes)
+      val obj = new StaticObject(this, objId, metaClassIndex, objAddr, numBytes,
+                                 isTransient)
       _staticObjects(objId) = obj
       objAddr += numBytes
     }

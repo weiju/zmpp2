@@ -133,6 +133,7 @@ class Tads3VMState {
   
   def getParam(index: Int) = stack.valueAt(fp - 1 - index)
 
+  def getLocal(localNumber: Int) = stack.valueAt(fp + localNumber)
   def setLocal(localNumber: Int, value: Tads3Value) {
     stack.setValueAt(fp + localNumber, value)
   }
@@ -173,42 +174,45 @@ class Tads3VM {
 
     import Opcodes._
     opcode match {
-      case BuiltinA   =>
-        val argCount  = nextByteOperand
-        val funcIndex = nextByteOperand
-        //printf("BuiltinA, function set 0 -> index: %d #args: %d\n", funcIndex,
-        //       argCount)
-        callBuiltin0(argCount, funcIndex)
-      case Call       =>
-        val argCount   = nextByteOperand
-        val funcOffset = nextIntOperand
-        _state.doCall(argCount, funcOffset, 0, 0, 0, 0)
-      case Dup        => _state.stack.dup
-      case GetArg1    => _state.stack.push(_state.getParam(nextByteOperand))
-      case GetR0      => _state.stack.push(_state.r0)
-      case JNil       => branchIfTrue(_state.stack.pop == Tads3Nil)
-      case JR0T       => branchIfTrue(_state.r0.isTrue)
-      case New1       =>
-        val argCount = nextByteOperand
-        val metaClassId = nextByteOperand
-        val objId = _objectManager.createFromStack(metaClassId, argCount)
-        _state.r0 = objId
-      case ObjGetProp => objGetProp(nextIntOperand, nextShortOperand)
-      case Push1      => _state.stack.push1
-      case PushFnPtr  => _state.stack.pushFunctionPointer(nextIntOperand)
-      case PushNil    => _state.stack.pushNil
-      case PushSelf   =>
-        val currentSelf = _state.currentSelf
-        printf("currentself is: %d\n", currentSelf.asInstanceOf[Tads3ObjectId].value)
-        _state.stack.push(currentSelf)
-      case SetLcl1    =>
-        val localNumber = nextByteOperand
-        val value = _state.stack.pop
-        _state.setLocal(localNumber, value)
-      case SetLcl1R0  =>
-        val localNumber = nextByteOperand
-        _state.setLocal(localNumber, _state.r0)
-      case _          =>
+      case BP           =>
+        throw new UnsupportedOperationException("Breakpoints not supported")
+      case BuiltinA     => callBuiltin0(nextByteOperand, nextByteOperand)
+      case Call         =>
+        _state.doCall(nextByteOperand, nextIntOperand, 0, 0, 0, 0)
+      case Dup          => _state.stack.dup
+      case GetArg1      => _state.stack.push(_state.getParam(nextByteOperand))
+      case GetR0        => _state.stack.push(_state.r0)
+      case JNil         => branchIfTrue(_state.stack.pop == Tads3Nil)
+      case JR0T         => branchIfTrue(_state.r0.isTrue)
+      case New1         =>
+        _state.r0 = _objectManager.createFromStack(nextByteOperand, nextByteOperand)
+      case Nop          => // do nothing
+      case ObjGetProp   => objGetProp(nextIntOperand, nextShortOperand)
+      case Push1        => _state.stack.push1
+      case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
+      case PushNil      => _state.stack.pushNil
+      case PushSelf     => _state.stack.push(_state.currentSelf)
+      case SetInd       =>
+        val indexVal     = _state.stack.pop
+        val containerVal = _state.stack.pop
+        val newVal       = _state.stack.pop
+        
+        throw new UnsupportedOperationException("SETIND not supported")
+      case SetIndLcl1I8 =>
+        val localNumber  = nextByteOperand
+        val containerVal = _state.getLocal(localNumber)
+        val indexVal     = nextByteOperand
+        val newVal       = _state.stack.pop
+        printf("SETINDLCL1I8 %d, containertype: %d container id: %d, %d\n",
+               localNumber, containerVal.valueType, containerVal.value, indexVal)
+        if (containerVal.valueType == TypeIds.VmObj) {
+          val obj = _objectManager.objectWithId(containerVal.value)
+          obj.asInstanceOf[Tads3StaticObject].dump
+        }
+        throw new UnsupportedOperationException("SETINDLCLI8 not supported")
+      case SetLcl1      => _state.setLocal(nextByteOperand, _state.stack.pop)
+      case SetLcl1R0    => _state.setLocal(nextByteOperand, _state.r0)
+      case _            =>
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"
                                                 .format(opcode))
     }

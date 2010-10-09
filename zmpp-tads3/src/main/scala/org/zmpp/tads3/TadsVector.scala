@@ -36,6 +36,7 @@ import scala.collection.JavaConversions._
 // A TADS3 Vector is backed by an ArrayList, so constructor arguments which
 // specify sizes will have no effect here.
 class Vector extends TadsObject {
+  def isTransient = false
   val _container = new ArrayList[Tads3Value]
   def findProperty(propertyId: Int) = null
   def add(value: Tads3Value) {
@@ -67,14 +68,14 @@ class VectorMetaClass extends SystemMetaClass {
     if (arg0.valueType == TypeIds.VmInt) {
       // just ignore this
       printf("vector::construct(), # elements allocate: %d\n",
-             arg0.asInstanceOf[Tads3Integer].value)
+             arg0.value)
     } else {
       throw new IllegalArgumentException("vector::constructor(), illegal arg0 type")
     }
     if (argc > 1) {
       val arg1 = vmState.stack.pop
       if (arg1.valueType == TypeIds.VmInt) {
-        result.init(arg1.asInstanceOf[Tads3Integer].value)
+        result.init(arg1.value)
       } else {
         throw new UnsupportedOperationException("vector::constructor(), arg1 type " +
                                                 "not yet supported")

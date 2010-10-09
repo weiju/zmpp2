@@ -65,6 +65,7 @@ object Tads3Constants {
 abstract class Tads3Value {
   def isTrue = true
   def valueType: Int
+  def value = 0
 }
 
 // Definition of the constants of type Tads3Value
@@ -74,6 +75,7 @@ object Tads3Nil extends Tads3Value {
 }
 object Tads3True extends Tads3Value {
   def valueType = TypeIds.VmTrue
+  override def value = 1
 }
 object Tads3Empty extends Tads3Value {
   def valueType = TypeIds.VmEmpty
@@ -81,20 +83,20 @@ object Tads3Empty extends Tads3Value {
 class Tads3List extends Tads3Value {
   def valueType = TypeIds.VmList
 }
-class Tads3PropertyId(val value: Int) extends Tads3Value {
+class Tads3PropertyId(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmProp
 }
-class Tads3ObjectId(val value: Int) extends Tads3Value {
+class Tads3ObjectId(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmObj
 }
-class Tads3CodeOffset(val value: Int) extends Tads3Value {
+class Tads3CodeOffset(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmCodeOfs
 }
-class Tads3Integer(val value: Int) extends Tads3Value {
+class Tads3Integer(override val value: Int) extends Tads3Value {
   override def isTrue = value != 0
   def valueType = TypeIds.VmInt
 }
-class Tads3FunctionPointer(val offset: Int) extends Tads3Value {
+class Tads3FunctionPointer(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmFuncPtr
 }
 
@@ -149,13 +151,17 @@ object Opcodes {
   val BuiltinD     = 0xb4
   val New1         = 0xc0
   val SetLcl1      = 0xe0
+  val SetInd       = 0xe4
   val SetLcl1R0    = 0xee
   val SetIndLcl1I8 = 0xef
+  val BP           = 0xf1
+  val Nop          = 0xf2
 }
 
 object OpcodeNames {
   import Opcodes._
   val Names = Map(
+    BP           -> "BP",
     BuiltinA     -> "BUILTIN_A",
     BuiltinB     -> "BUILTIN_B",
     BuiltinC     -> "BUILTIN_C",
@@ -167,12 +173,14 @@ object OpcodeNames {
     JNil         -> "JNIL",
     JR0T         -> "JR0T",
     New1         -> "NEW1",
+    Nop          -> "NOP",
     ObjGetProp   -> "OBJGETPROP",
     Push1        -> "PUSH_1",
     PushNil      -> "PUSHNIL",
     PushFnPtr    -> "PUSHFNPTR",
     PushSelf     -> "PUSHSELF",
     RetNil       -> "RETNIL",
+    SetInd       -> "SETIND",
     SetIndLcl1I8 -> "SETINDLCL1I8",
     SetLcl1      -> "SETLCL1",
     SetLcl1R0    -> "SETLCL1R0"

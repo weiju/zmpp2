@@ -32,6 +32,7 @@ import scala.collection.mutable.HashMap
 
 trait TadsObject {
   def findProperty(propertyId: Int): Property
+  def isTransient: Boolean
 }
 
 // The abstract interface to a TADS3 meta class.
@@ -121,6 +122,8 @@ class BigNumberMetaClass extends SystemMetaClass {
 // is associated with the correct meta class
 class Tads3StaticObject(objectManager: ObjectManager, staticObject: StaticObject)
 extends TadsObject {
+  val isTransient = staticObject.isTransient
+
   def findProperty(propertyId: Int): Property = {
     val prop = staticObject.findProperty(propertyId)
     if (prop != null) return prop
@@ -244,11 +247,11 @@ class ObjectManager(vmState: Tads3VMState) {
     }
   }
 
-  def createFromStack(metaClassId: Int, argc: Int) = {
-    printf("CREATING OBJECT OF METACLASS '%s'\n", _metaClassMap(metaClassId).name)
+  def createFromStack(argc: Int, metaClassId: Int) = {
     val id = newId
     val obj = _metaClassMap(metaClassId).createFromStack(vmState, argc)
     _objectCache(id) = obj
+    printf("CREATED OBJECT WITH ID: %d\n", id)
     new Tads3ObjectId(id)
   }
 }
