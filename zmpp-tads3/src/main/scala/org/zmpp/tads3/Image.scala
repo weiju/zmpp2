@@ -114,6 +114,12 @@ class MetaClassDependency(index: Int, nameString: String, val numProperties: Int
   }
 }
 
+class FunctionSetDependency(nameString: String) {
+  val name = nameString.split("/")(0)
+  val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
+                else "000000"
+}
+
 class SymbolicName(val name: String, val valueType: Int, val value: Int)
 class Property(val id: Int, val valueType: Int, val value: Int,
                val definingObject: Int) {
@@ -195,14 +201,15 @@ class Tads3Image(val memory: Memory) {
   private val _constantPools = new Array[ConstantPool](3)
   private var _entp: BlockHeader = null
   private var _metaClassDependencies: Array[MetaClassDependency] = null
-  private var _functionSets: Array[String] = null
+  private var _functionSetDependencies: Array[FunctionSetDependency] = null
   private val _staticObjects = new HashMap[Int, StaticObject]
   private val _symbolicNames = new HashMap[String, SymbolicName]
   private var _maxObjectId = 0
 
-  def maxObjectId            = _maxObjectId
-  def metaClassDependencies  = _metaClassDependencies
-  def symbolicNames          = _symbolicNames
+  def maxObjectId             = _maxObjectId
+  def metaClassDependencies   = _metaClassDependencies
+  def symbolicNames           = _symbolicNames
+  def functionSetDependencies = _functionSetDependencies
 
   // read data from blocks to build an index
   var blockAddress = 69
@@ -269,7 +276,6 @@ class Tads3Image(val memory: Memory) {
                      memory.shortAt(addr + 8))
   }
 
-  //def metaClassAtIndex(index: Int) = _metaClassDependencies(index)
   def staticObjectWithId(id: Int)    = _staticObjects(id)
 
   // ********************************************************************
@@ -338,7 +344,7 @@ class Tads3Image(val memory: Memory) {
   
   private def readFunctionSetDependencies(blockHeader: BlockHeader) {
     val numEntries = memory.shortAt(blockHeader.dataAddress)
-    _functionSets = new Array[String](numEntries)
+    _functionSetDependencies = new Array[FunctionSetDependency](numEntries)
     var addr = blockHeader.dataAddress + 2
     for (i <- 0 until numEntries) {
       val numBytes = memory.byteAt(addr)
@@ -346,7 +352,7 @@ class Tads3Image(val memory: Memory) {
       for (j <- 0 until numBytes) {
         buffer.append(memory.byteAt(addr + 1 + j).asInstanceOf[Char])
       }
-      _functionSets(i) = buffer.toString
+      _functionSetDependencies(i) = new FunctionSetDependency(buffer.toString)
       addr += numBytes + 1
     }    
   }

@@ -142,14 +142,16 @@ class Tads3VMState {
 }
 
 class Tads3VM {
-  val _state = new Tads3VMState
-  val _objectManager = new ObjectManager(_state)
+  val _state                 = new Tads3VMState
+  val _objectManager         = new ObjectManager(_state)
+  val _functionSetMapper     = new IntrinsicFunctionSetMapper(_state)
   var sayFuncPtr: Tads3Value = null
-  var iteration = 1
+  var iteration              = 1
 
   def init(imageMem: Memory) {
     _state.reset(imageMem)
     _objectManager.resetImage
+    _functionSetMapper.resetImage
     printf("VALID FILE: %b, Version: %d Timestamp: %s\n",
            _state.image.isValid, _state.image.version, _state.image.timestamp)
   }
@@ -245,6 +247,8 @@ class Tads3VM {
                                                 .format(funcIndex))
     }
   }
+
+  // Intrinsic 
 
   private def setSay(funcPtr: Tads3Value) {
     sayFuncPtr = funcPtr

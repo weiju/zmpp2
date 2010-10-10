@@ -28,13 +28,34 @@
  */
 package org.zmpp.tads3
 
-class AnonFuncPtr extends AbstractTadsObject {
+/*
+ * An anonymous function ptr. Interestingly, this inherits from Vector.
+ * Why ? This is because there is not only the code offset, but also
+ * an arbitrary number of context objects.
+ * As a nice side effect, this automatically implements the indexed access.
+ */
+class AnonFuncPtr extends Vector {
 }
 
 class AnonFuncPtrMetaClass extends SystemMetaClass {
   def name = "anon-func-ptr"
 
   override def createFromStack(vmState: Tads3VMState, argc: Int) = {
-    throw new UnsupportedOperationException("TODO: Create AnonFunPtrs")
+    if (argc < 1) {
+      throw new IllegalArgumentException("%s: createFromStack() needs at least 1 " +
+                                         "parameters.".format(name))
+    }
+    val functionPtr = vmState.stack.pop
+    //printf("argc: %d, Function Ptr: %s\n", argc, functionPtr)
+    if (functionPtr.valueType != TypeIds.VmFuncPtr) {
+      throw new IllegalArgumentException("%s: createFromStack() with illegal " +
+                                         "argument type: %d\n".format(
+                                         name, functionPtr.valueType))
+    }
+    val result = new AnonFuncPtr
+    result.add(functionPtr)
+    // copy (argc - 1) context objects into the result object
+    for (i <- 1 until argc) result.add(vmState.stack.pop)
+    result
   }
 }
