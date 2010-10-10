@@ -226,13 +226,14 @@ object ObjectSystem {
 // The overall design philosophy is that objects are only created when
 // necessary to support quick serialization/deserialization
 //
-class ObjectManager(vmState: Tads3VMState) {
+class ObjectManager {
   private var _maxObjectId       = 0
   private val _objectCache       = new HashMap[Int, TadsObject]
   private val _metaClassMap      = new HashMap[Int, MetaClass]
+  private var _vmState: Tads3VMState = null
 
-  private def image = vmState.image
-  private def metaClassDependencies = vmState.image.metaClassDependencies
+  private def image : Tads3Image = _vmState.image
+  private def metaClassDependencies = _vmState.image.metaClassDependencies
   private def establishMetaClassMapping {
     for (i <- 0 until metaClassDependencies.length) {
       _metaClassMap(i) =
@@ -241,10 +242,11 @@ class ObjectManager(vmState: Tads3VMState) {
     }
   }
 
-  def resetImage {
+  def reset(vmState: Tads3VMState) {
+    _vmState = vmState
     _metaClassMap.clear
     _objectCache.clear
-    _maxObjectId = vmState.image.maxObjectId
+    _maxObjectId = image.maxObjectId
     establishMetaClassMapping
   }
 
@@ -267,7 +269,7 @@ class ObjectManager(vmState: Tads3VMState) {
 
   def createFromStack(argc: Int, metaClassId: Int) = {
     val id = newId
-    val obj = _metaClassMap(metaClassId).createFromStack(vmState, argc)
+    val obj = _metaClassMap(metaClassId).createFromStack(_vmState, argc)
     _objectCache(id) = obj
     //printf("CREATED OBJECT WITH ID: %d\n", id)
     new Tads3ObjectId(id)

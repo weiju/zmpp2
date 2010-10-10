@@ -38,7 +38,13 @@ import scala.collection.mutable.HashMap
  */
 abstract class IntrinsicFunctionSet {
   def name: String
-  var vmState: Tads3VMState = null
+  protected var _vmState: Tads3VMState        = null
+  protected var _objectManager: ObjectManager = null
+  
+  def reset(vmState: Tads3VMState, objectManager: ObjectManager) {
+    _vmState       = vmState
+    _objectManager = _objectManager
+  }
   def callFunction(argc: Int, functionIndex: Int)
 }
 
@@ -72,10 +78,10 @@ class T3VMFunctionSet extends IntrinsicFunctionSet {
     functionIndex match {
       case SetSay =>
         if (argc != 1) throw new IllegalArgumentException("setSay() argc must be 1")
-        _sayFuncPtr = vmState.stack.pop
+        _sayFuncPtr = _vmState.stack.pop
       case GetGlobalSymbols =>
-        vmState.r0 = Tads3Nil // TODO: our test game does not have a GSYM
-      case GetPreinitModeFlag => vmState.r0 = Tads3Nil // never in preinit mode
+        _vmState.r0 = Tads3Nil // TODO: our test game does not have a GSYM
+      case GetPreinitModeFlag => _vmState.r0 = Tads3Nil // never in preinit mode
       case _ =>
         throw new UnsupportedOperationException("unknown function index: %d"
                                                 .format(functionIndex))
@@ -142,7 +148,7 @@ class T3TestFunctionSet extends IntrinsicFunctionSet {
   }
 }
 
-class IntrinsicFunctionSetMapper(vmState: Tads3VMState) {
+class IntrinsicFunctionSetMapper {
   val FunctionSets = Map(
     "t3vm"     -> new T3VMFunctionSet,
     "t3test"   -> new T3TestFunctionSet,
@@ -151,13 +157,13 @@ class IntrinsicFunctionSetMapper(vmState: Tads3VMState) {
   )
   val _functionSets = new Array[IntrinsicFunctionSet](4)
 
-  def resetImage {
+  def reset(vmState: Tads3VMState, objectManager: ObjectManager) {
     for (i <- 0 until vmState.image.functionSetDependencies.length) {
       val fsDep = vmState.image.functionSetDependencies(i)
       printf("mapping function set '%s' to index: %d\n",
              fsDep.name, i)
       _functionSets(i) = FunctionSets(fsDep.name)
-      _functionSets(i).vmState = vmState
+      _functionSets(i).reset(vmState, objectManager)
     }
   }
 
