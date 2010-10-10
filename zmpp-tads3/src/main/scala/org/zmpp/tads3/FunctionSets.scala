@@ -35,6 +35,8 @@ import scala.collection.mutable.HashMap
  * System Manual, "The Intrinsics".
  * The System Manual seems much more complete than the Technical Manual, and
  * the indexes of the functions are taken from the QTads reference VM.
+ * Function sets are indexed in function vectors, so
+ * they can be accessed in an implementation-independent way.
  */
 abstract class IntrinsicFunctionSet {
   def name: String
@@ -61,31 +63,58 @@ abstract class IntrinsicFunctionSet {
  * 8: allocProp()
  * 9: getStackTrace(level?)
  */
-object T3VMFuncs {
-  val RunGC              = 0
-  val SetSay             = 1
-  val GetPreinitModeFlag = 5
-  val GetGlobalSymbols   = 7
-}
-
 class T3VMFunctionSet extends IntrinsicFunctionSet {
   def name = "t3vm"
   var _sayFuncPtr: Tads3Value = null
 
+  private def runGC(argc: Int) { println("t3vm.runGC() [not implemented]") }
+  private def setSay(argc: Int) {
+    println("t3vm.setSay()")
+    if (argc != 1) throw new IllegalArgumentException("setSay() argc must be 1")
+    _sayFuncPtr = _vmState.stack.pop
+  }
+  private def getVMVsn(argc: Int) {
+    throw new UnsupportedOperationException("t3vm.getVMVsn() not implemented yet")
+  }
+  private def getVMID(argc: Int) {
+    throw new UnsupportedOperationException("t3vm.getVMID() not implemented yet")
+  }
+  private def getVMBanner(argc: Int) {
+    throw new UnsupportedOperationException("t3vm.getVMBanner() not implemented yet")
+  }
+  private def getVMPreinitMode(argc: Int) {
+    println("t3vm.getPreinitMode()")
+    _vmState.r0 = Tads3Nil // we are never in preinit mode
+  }
+  private def debugTrace(argc: Int) {
+    throw new UnsupportedOperationException("debugTrace() not implemented yet")
+  }
+  private def getGlobalSymbols(argc: Int) {
+    println("t3vm.getGlobalSymbols()")
+    _vmState.r0 = Tads3Nil // TODO: our test game does not have a GSYM
+  }
+  private def allocProp(argc: Int) {
+    throw new UnsupportedOperationException("allocProp() not implemented yet")
+  }
+  private def getStackTrace(argc: Int) {
+    throw new UnsupportedOperationException("getStackTrace() not implemented yet")
+  }
+
+  val FuncVector = Array(
+    (_: T3VMFunctionSet).runGC(_: Int),
+    (_: T3VMFunctionSet).setSay(_: Int),
+    (_: T3VMFunctionSet).getVMVsn(_: Int),
+    (_: T3VMFunctionSet).getVMID(_: Int),
+    (_: T3VMFunctionSet).getVMBanner(_: Int),
+    (_: T3VMFunctionSet).getVMPreinitMode(_: Int),
+    (_: T3VMFunctionSet).debugTrace(_: Int),
+    (_: T3VMFunctionSet).getGlobalSymbols(_: Int),
+    (_: T3VMFunctionSet).allocProp(_: Int),
+    (_: T3VMFunctionSet).getStackTrace(_: Int)
+  )
+
   def callFunction(argc: Int, functionIndex: Int) {
-    printf("Function Set '%s' callFunction(%d, %d)\n", name, argc, functionIndex)
-    import T3VMFuncs._
-    functionIndex match {
-      case SetSay =>
-        if (argc != 1) throw new IllegalArgumentException("setSay() argc must be 1")
-        _sayFuncPtr = _vmState.stack.pop
-      case GetGlobalSymbols =>
-        _vmState.r0 = Tads3Nil // TODO: our test game does not have a GSYM
-      case GetPreinitModeFlag => _vmState.r0 = Tads3Nil // never in preinit mode
-      case _ =>
-        throw new UnsupportedOperationException("unknown function index: %d"
-                                                .format(functionIndex))
-    }
+    FuncVector(functionIndex)(this, argc)
   }
 }
 
