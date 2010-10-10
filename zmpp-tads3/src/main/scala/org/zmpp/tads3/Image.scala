@@ -114,13 +114,20 @@ class MetaClassDependency(index: Int, nameString: String, val numProperties: Int
   }
 }
 
+// Function set dependency. The image file defines the index that is used
+// to access a function set by listing the order of function set dependencies
+// in the function set dependency block
 class FunctionSetDependency(nameString: String) {
   val name = nameString.split("/")(0)
   val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
                 else "000000"
 }
 
+// Symbols are publicly known values in the image file that are
+// referenced by a textual name. The image file provides a mapping
+// from the name to the way the symbol can be accessed by the VM
 class SymbolicName(val name: String, val valueType: Int, val value: Int)
+
 class Property(val id: Int, val valueType: Int, val value: Int,
                val definingObject: Int) {
   override def toString = "Property (id = %d type: %d value: %d def. obj: %d)".format(

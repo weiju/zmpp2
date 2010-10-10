@@ -174,6 +174,8 @@ object Opcodes {
   val BuiltinB     = 0xb2
   val BuiltinC     = 0xb3
   val BuiltinD     = 0xb4
+  val Builtin1     = 0xb5
+  val Builtin2     = 0xb6
   val New1         = 0xc0
   val SetLcl1      = 0xe0
   val SetInd       = 0xe4
@@ -187,6 +189,8 @@ object OpcodeNames {
   import Opcodes._
   val Names = Map(
     BP           -> "BP",
+    Builtin1     -> "BUILTIN1",
+    Builtin2     -> "BUILTIN2",
     BuiltinA     -> "BUILTIN_A",
     BuiltinB     -> "BUILTIN_B",
     BuiltinC     -> "BUILTIN_C",

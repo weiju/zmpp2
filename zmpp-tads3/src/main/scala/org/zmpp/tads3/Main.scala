@@ -40,12 +40,6 @@ object RunStates {
   val Running = 1
   val Halted  = 0
 }
-object T3VMFuncs {
-  val RunGC              = 0
-  val SetSay             = 1
-  val GetPreinitModeFlag = 5
-  val GetGlobalSymbols   = 7
-}
 
 class Tads3VMState {
   private var _memory : Memory = null
@@ -145,7 +139,6 @@ class Tads3VM {
   val _state                 = new Tads3VMState
   val _objectManager         = new ObjectManager(_state)
   val _functionSetMapper     = new IntrinsicFunctionSetMapper(_state)
-  var sayFuncPtr: Tads3Value = null
   var iteration              = 1
 
   def init(imageMem: Memory) {
@@ -179,7 +172,20 @@ class Tads3VM {
     opcode match {
       case BP           =>
         throw new UnsupportedOperationException("Breakpoints not supported")
-      case BuiltinA     => callBuiltin0(nextByteOperand, nextByteOperand)
+      case BuiltinA     =>
+        _functionSetMapper.callBuiltin(nextByteOperand, nextByteOperand, 0)
+      case BuiltinB     =>
+        _functionSetMapper.callBuiltin(nextByteOperand, nextByteOperand, 1)
+      case BuiltinC     =>
+        _functionSetMapper.callBuiltin(nextByteOperand, nextByteOperand, 2)
+      case BuiltinD     =>
+        _functionSetMapper.callBuiltin(nextByteOperand, nextByteOperand, 3)
+      case Builtin1     =>
+        _functionSetMapper.callBuiltin(nextByteOperand, nextByteOperand,
+                                       nextByteOperand)
+      case Builtin2     =>
+        _functionSetMapper.callBuiltin(nextByteOperand, nextShortOperand,
+                                       nextByteOperand)
       case Call         =>
         _state.doCall(nextByteOperand, nextIntOperand, 0, 0, 0, 0)
       case Dup          => _state.stack.dup
@@ -230,28 +236,6 @@ class Tads3VM {
   private def branchIfTrue(condition: Boolean) {
     if (condition) _state.doBranch
     else nextShortOperand // skip branch word
-  }
-
-  // Intrinsic function set 0: t3vm
-  private def callBuiltin0(argc: Int, funcIndex: Int) {
-    import T3VMFuncs._
-    funcIndex match {
-      case SetSay =>
-        if (argc != 1) throw new IllegalArgumentException("setSay() argc must be 1")
-        setSay(_state.stack.pop)
-      case GetGlobalSymbols =>
-        _state.r0 = Tads3Nil // TODO: our test game does not have a GSYM
-      case GetPreinitModeFlag => _state.r0 = Tads3Nil // never in preinit mode
-      case _ =>
-        throw new UnsupportedOperationException("unknown function index: %d"
-                                                .format(funcIndex))
-    }
-  }
-
-  // Intrinsic 
-
-  private def setSay(funcPtr: Tads3Value) {
-    sayFuncPtr = funcPtr
   }
 
   private def objGetProp(objId: Int, propId: Int) {
