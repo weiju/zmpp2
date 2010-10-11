@@ -192,6 +192,7 @@ object Opcodes {
   val ObjGetProp   = 0x66
   val GetLcl1      = 0x80
   val GetArg1      = 0x82
+  val GetArg2      = 0x83
   val PushSelf     = 0x84
   val Dup          = 0x88
   val GetR0        = 0x8b
@@ -225,6 +226,7 @@ object OpcodeNames {
     Call         -> "CALL",
     Dup          -> "DUP",
     GetArg1      -> "GETARG1",
+    GetArg2      -> "GETARG2",
     GetLcl1      -> "GETLCL1",
     GetPropSelf  -> "GETPROPSELF",
     GetR0        -> "GETR0",

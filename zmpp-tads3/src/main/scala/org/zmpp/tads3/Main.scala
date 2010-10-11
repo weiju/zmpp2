@@ -41,6 +41,9 @@ object RunStates {
   val Halted  = 0
 }
 
+object Tads3VMState {
+  val StackOffsetArg1 = -9
+}
 class Tads3VMState {
   private var _memory : Memory = null
   var image: Tads3Image        = null
@@ -128,7 +131,7 @@ class Tads3VMState {
     ip = targetOffs + image.methodHeaderSize
   }
   
-  def getParam(index: Int) = stack.valueAt(fp - 1 - index)
+  def getParam(index: Int) = stack.valueAt(fp + Tads3VMState.StackOffsetArg1 - index)
 
   // local variable access. Note that Local variable access is based
   // on index 0 !!
@@ -194,6 +197,7 @@ class Tads3VM {
         _state.doCall(nextByteOperand, nextIntOperand, 0, 0, 0, 0)
       case Dup          => _state.stack.dup
       case GetArg1      => _state.stack.push(_state.getParam(nextByteOperand))
+      case GetArg2      => _state.stack.push(_state.getParam(nextShortOperand))
       case GetLcl1      => _state.stack.push(_state.getLocal(nextByteOperand))        
       case GetPropSelf  =>
         objGetProp(_state.currentSelf.value, nextShortOperand)
