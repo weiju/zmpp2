@@ -28,7 +28,18 @@
  */
 package org.zmpp.tads3
 
-import scala.collection.mutable.HashMap
+// treat Java collections like Scala collections
+// until we really understand the object system, we iterate in a similar
+// way as the reference
+// implementation (by ascending key order), so we need sorted maps.
+// unfortunately, the Scala TreeMap is immutable, which might be fine for
+// a lot of operations, but in an IF story, we might have frequent updates,
+// which are potentially slow with an immutable structure.
+// Later, the order will not matter, so we can replace this with a
+// Scala HashMap
+import scala.collection.JavaConversions._
+import java.util.TreeMap
+//import scala.collection.mutable.HashMap
 
 trait TadsObject {
   def isTransient: Boolean
@@ -228,8 +239,8 @@ object ObjectSystem {
 //
 class ObjectManager {
   private var _maxObjectId       = 0
-  private val _objectCache       = new HashMap[Int, TadsObject]
-  private val _metaClassMap      = new HashMap[Int, MetaClass]
+  private val _objectCache       = new TreeMap[Int, TadsObject]
+  private val _metaClassMap      = new TreeMap[Int, MetaClass]
   private var _vmState: Tads3VMState = null
 
   private def image : Tads3Image = _vmState.image

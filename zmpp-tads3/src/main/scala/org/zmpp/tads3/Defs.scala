@@ -39,7 +39,7 @@ import scala.collection.mutable.ArrayStack
 object TypeIds {
   val VmNil        = 1  // null and false representation
   val VmTrue       = 2  // true representation
-  val VmStack      = 3  // native reference to the stack (unused in ZMPP)
+  val VmStack      = 3  // native reference to the stack
   val VmCodePtr    = 4  // native code pointer (unused in ZMPP)
   val VmObj        = 5  // object id
   val VmProp       = 6  // property id
@@ -97,6 +97,7 @@ object Tads3Empty extends Tads3Value {
   def valueType = TypeIds.VmEmpty
   override def toString = "EMPTY"
 }
+
 class Tads3ListConstant extends Tads3Value {
   def valueType = TypeIds.VmList
   override def toString = "list"
@@ -104,6 +105,10 @@ class Tads3ListConstant extends Tads3Value {
 class Tads3PropertyId(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmProp
   override def toString = "property (value = %d)".format(value)
+}
+
+object Tads3ObjectId {
+  val InvalidObject = new Tads3ObjectId(0)
 }
 class Tads3ObjectId(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmObj
@@ -113,19 +118,27 @@ class Tads3CodeOffset(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmCodeOfs
   override def toString = "code-offset (value = %d)".format(value)
 }
+
+object Tads3Integer {
+  val One = new Tads3Integer(1)
+}
 class Tads3Integer(override val value: Int) extends Tads3Value {
   override def isTrue = value != 0
   def valueType = TypeIds.VmInt
   override def toString = "integer (value = %d)".format(value)
 }
+
 class Tads3FunctionPointer(override val value: Int) extends Tads3Value {
   def valueType = TypeIds.VmFuncPtr
   override def toString = "function-ptr (value = %d)".format(value)
 }
 
+class Tads3StackRef(override val value: Int) extends Tads3Value {
+  def valueType = TypeIds.VmStack
+  override def toString = "stack (value = %d)".format(value)
+}
+
 class Tads3Stack {
-  // do not create too many unnecessary one's
-  val IntegerOne = new Tads3Integer(1)
 
   var _stack = new Array[Tads3Value](300)
   var sp = 0
@@ -138,7 +151,8 @@ class Tads3Stack {
   def pushCodeOffset(offset: Int) = push(new Tads3CodeOffset(offset))
   def pushFunctionPointer(offset: Int) = push(new Tads3FunctionPointer(offset))
   def pushInt(value: Int) = push(new Tads3Integer(value))
-  def push1 = push(IntegerOne)
+  def pushStackRef(value: Int) = push(new Tads3StackRef(value))
+  def push1 = push(Tads3Integer.One)
 
   def push(value: Tads3Value) = {
     _stack(sp) = value
@@ -152,6 +166,19 @@ class Tads3Stack {
   def dup = push(top)
   def valueAt(index: Int) = _stack(index)
   def setValueAt(index: Int, value: Tads3Value) = _stack(index) = value
+
+  override def toString = {
+    val buffer = new StringBuilder
+    println("-----------------\n")
+    buffer.append("STACK:\n")
+    for (i <- 0 until sp) {
+      buffer.append("%d: ".format(i))
+      buffer.append(_stack(i))
+      buffer.append("\n")
+    }
+    buffer.append("-----------------\n")
+    buffer.toString
+  }
 }
 
 // The machine opcodes

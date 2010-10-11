@@ -99,21 +99,25 @@ class Tads3VMState {
     r0 = Tads3Nil
 
     // allocate stack frame
+    // The TM says push nil if there is no target property, the reference
+    // implementation pushes property id 0, we do that, too, for the moment
     stack.pushPropertyId(targetProp)
     if (self == 0) { // VMInvalidObj
-      stack.pushNil
-      stack.pushNil
-      stack.pushNil
+      stack.pushNil // target object
+      stack.pushNil // defining object
+      stack.pushNil // self object
     } else {
       stack.pushObjectId(origTargetObj)
       stack.pushObjectId(definingObj)
       stack.pushObjectId(self)
     }
-    // TODO: discard self object if necessary ?
-    stack.pushCodeOffset(ip) // check this !!!
+    // The spec says 'compute the offset from the current method header of
+    // the next instruction execute and push the result'. This simply means
+    // push CodeOfs(Instruction Pointer - Entry Pointer)
+    stack.pushCodeOffset(ip - ep)
     stack.pushCodeOffset(ep)
     stack.pushInt(argc)
-    stack.pushInt(fp)
+    stack.pushStackRef(fp)
     fp = sp
     
     // locals
@@ -221,6 +225,8 @@ class Tads3VM {
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"
                                                 .format(opcode))
     }
+    // DEBUGGING
+    println(_state.stack)
   }
 
   private def setInd(containerVal: Tads3Value, index: Int, newVal: Tads3Value) = {

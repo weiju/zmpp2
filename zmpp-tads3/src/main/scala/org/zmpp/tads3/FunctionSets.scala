@@ -30,18 +30,16 @@ package org.zmpp.tads3
 
 import scala.collection.mutable.HashMap
 
-/*
- * These are the intrinsic function sets, as they are described in the TADS3
- * System Manual, "The Intrinsics".
- * The System Manual seems much more complete than the Technical Manual, and
- * the indexes of the functions are taken from the QTads reference VM.
- * Function sets are indexed in function vectors, so they can be accessed in
- * an implementation-independent way.
- * I'll leave in the index numbers and function names in the comments even
- * though it is redundant information (the order in the array are good enough
- * for me), someone who wants to implement a TADS3 system in another language
- * might find the comments more useful.
- */
+// * These are the intrinsic function sets, as they are described in the TADS3
+// * System Manual, "The Intrinsics".
+// * The System Manual seems much more complete than the Technical Manual, and
+// * the indexes of the functions are taken from the QTads reference VM.
+// * Function sets are indexed in function vectors, so they can be accessed in
+// * an implementation-independent way.
+// * I'll leave in the index numbers and function names in the comments even
+// * though it is redundant information (the order in the array are good enough
+// * for me), someone who wants to implement a TADS3 system in another language
+// * might find the comments more useful.
 abstract class IntrinsicFunctionSet {
   def name: String
   protected var _vmState: Tads3VMState        = null
@@ -54,19 +52,21 @@ abstract class IntrinsicFunctionSet {
   def callFunction(argc: Int, functionIndex: Int)
 }
 
-/*
- * t3vm function set.
- * 0: runGC()
- * 1: setSay(funcptr)
- * 2: getVMVsn()
- * 3: getVMID()
- * 4: getVMBanner()
- * 5: getVMPreinitMode()
- * 6: debugTrace(mode, ...)
- * 7: getGlobalSymbols()
- * 8: allocProp()
- * 9: getStackTrace(level?)
- */
+// ***********************************************************************
+// * t3vm FUNCTION SET
+// ***********************************************************************
+// * 0: runGC()
+// * 1: setSay(funcptr)
+// * 2: getVMVsn()
+// * 3: getVMID()
+// * 4: getVMBanner()
+// * 5: getVMPreinitMode()
+// * 6: debugTrace(mode, ...)
+// * 7: getGlobalSymbols()
+// * 8: allocProp()
+// * 9: getStackTrace(level?)
+// **********************************************************************
+
 class T3VMFunctionSet extends IntrinsicFunctionSet {
   def name = "t3vm"
   var _sayFuncPtr: Tads3Value = null
@@ -122,31 +122,38 @@ class T3VMFunctionSet extends IntrinsicFunctionSet {
   }
 }
 
-/*
- * tads-gen function set.
- * 0: dataType(val)
- * 1: getArg(idx)
- * 2: firstObj(cls?, flags?)
- * 3: nextObj(obj, cls?, flags?)
- * 4: randomize()
- * 5: rand(x, ...)
- * 6: toString(val, radix?)
- * 7: toInteger(val, radix?)
- * 8: getTime(timeType?)
- * 9: rexMatch(pat, str, index?)
- * 10: rexSearch(pat, str, index?)
- * 11: rexGroup(groupNum)
- * 12: rexReplace(pat, str, replacement, flags, index?)
- * 13: savepoint()
- * 14: undo()
- * 15: saveGame(filename)
- * 16: restoreGame(filename)
- * 17: restartGame()
- * 18: getMax(val1, ...)
- * 19: getMin(val1, ...)
- * 20: makeString(val, repeatCount?)
- * 21: getFuncParams(funcptr)
- */
+// ***********************************************************************
+// * tads-gen FUNCTION SET
+// ***********************************************************************
+// * 0: dataType(val)
+// * 1: getArg(idx)
+// * 2: firstObj(cls?, flags?)
+// * 3: nextObj(obj, cls?, flags?)
+// * 4: randomize()
+// * 5: rand(x, ...)
+// * 6: toString(val, radix?)
+// * 7: toInteger(val, radix?)
+// * 8: getTime(timeType?)
+// * 9: rexMatch(pat, str, index?)
+// * 10: rexSearch(pat, str, index?)
+// * 11: rexGroup(groupNum)
+// * 12: rexReplace(pat, str, replacement, flags, index?)
+// * 13: savepoint()
+// * 14: undo()
+// * 15: saveGame(filename)
+// * 16: restoreGame(filename)
+// * 17: restartGame()
+// * 18: getMax(val1, ...)
+// * 19: getMin(val1, ...)
+// * 20: makeString(val, repeatCount?)
+// * 21: getFuncParams(funcptr)
+// ***********************************************************************
+object TadsGenFunctionSet {
+  // enumeration flag values
+  val EnumInstances = 1
+  val EnumClasses   = 2
+}
+
 class TadsGenFunctionSet extends IntrinsicFunctionSet {
   def name = "tads-gen"
   private def dataType(argc: Int) {
@@ -156,6 +163,29 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-gen.getArg() not implemented yet")
   }
   private def firstObj(argc: Int) {
+    // set default values for enumeration
+    var classVal: Tads3Value = Tads3ObjectId.InvalidObject
+    var flags = TadsGenFunctionSet.EnumInstances
+      println(_vmState.stack)
+
+    printf("tads-gen.firstObj(), argc = %d\n", argc)
+    // process up to 2 optional parameters (class?, flags?)
+    if (argc == 2) {
+      classVal = _vmState.stack.pop
+      flags    = _vmState.stack.pop.value
+    } else if (argc == 1) {
+      val arg = _vmState.stack.pop
+      if (arg.valueType == TypeIds.VmInt) {
+        flags = arg.value
+      } else if (arg.valueType == TypeIds.VmObj) {
+        classVal = arg
+      } else {
+        throw new IllegalArgumentException("Illegal argument: %s".format(arg))
+      }
+      printf("CLASS IS: %s, FLAGS IS: %d\n", classVal, flags)
+      // TODO
+    }
+
     throw new UnsupportedOperationException("tads-gen.firstObj() not implemented yet")
   }
   private def nextObj(argc: Int) {
@@ -247,42 +277,43 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
   }
 }
 
-/*
- * tads-io function set
- * 0: tadsSay(val, ...)
- * 1: setLogFile(fnam, logType?)
- * 2: clearScreen()
- * 3: morePrompt()
- * 4: inputLine()
- * 5: inputKey()
- * 6: inputEvent(timeout?)
- * 7: inputDialog(icon, prompt, buttons, defaultButton, cancelButton)
- * 8: inputFile(prompt, dialogType, fileType, flags)
- * 9: timeDelay(delay)
- * 10: systemInfo(infoType, ...)
- * 11: statusMode(mode)
- * 12: statusRight(txt)
- * 13: resExists(resname)
- * 14: setScriptFile(filename, flags?)
- * 15: getLocalCharSet(which)
- * 16: flushOutput()
- * 17: inputLineTimeout(timeout?)
- * 18: inputLineCancel(reset)
- * 19: bannerCreate(parent, where, other, windowType, align, size, sizeUnits, style)
- * 20: bannerDelete(handle)
- * 21: bannerClear(handle)
- * 22: bannerSay(handle, ...)
- * 23: bannerFlush(handle)
- * 24: bannerSizeToContents(handle)
- * 25: bannerGoTo(handle, row, col)
- * 26: bannerSetTextColor(handle, fg, bg)
- * 27: bannerSetScreenColor(handle, color)
- * 28: bannerGetInfo(banner)
- * 29: bannerSetSize(handle, size, sizeUnits, isAdvisory)
- * 30: logConsoleCreate(filename, charset, width)
- * 31: logConsoleClose(handle)
- * 32: logConsoleSay(handle, ...)
- */
+// ***********************************************************************
+// * tads-io FUNCTION SET
+// ***********************************************************************
+// * 0: tadsSay(val, ...)
+// * 1: setLogFile(fnam, logType?)
+// * 2: clearScreen()
+// * 3: morePrompt()
+// * 4: inputLine()
+// * 5: inputKey()
+// * 6: inputEvent(timeout?)
+// * 7: inputDialog(icon, prompt, buttons, defaultButton, cancelButton)
+// * 8: inputFile(prompt, dialogType, fileType, flags)
+// * 9: timeDelay(delay)
+// * 10: systemInfo(infoType, ...)
+// * 11: statusMode(mode)
+// * 12: statusRight(txt)
+// * 13: resExists(resname)
+// * 14: setScriptFile(filename, flags?)
+// * 15: getLocalCharSet(which)
+// * 16: flushOutput()
+// * 17: inputLineTimeout(timeout?)
+// * 18: inputLineCancel(reset)
+// * 19: bannerCreate(parent, where, other, windowType, align, size, sizeUnits, style)
+// * 20: bannerDelete(handle)
+// * 21: bannerClear(handle)
+// * 22: bannerSay(handle, ...)
+// * 23: bannerFlush(handle)
+// * 24: bannerSizeToContents(handle)
+// * 25: bannerGoTo(handle, row, col)
+// * 26: bannerSetTextColor(handle, fg, bg)
+// * 27: bannerSetScreenColor(handle, color)
+// * 28: bannerGetInfo(banner)
+// * 29: bannerSetSize(handle, size, sizeUnits, isAdvisory)
+// * 30: logConsoleCreate(filename, charset, width)
+// * 31: logConsoleClose(handle)
+// * 32: logConsoleSay(handle, ...)
+// ***********************************************************************
 class TadsIoFunctionSet extends IntrinsicFunctionSet {
   def name = "tads-io"
   private def tadsSay(argc: Int) {
@@ -435,13 +466,15 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
   }
 }
 
-/*
- * t3test function set. This is probably not needed, since it is not described
- * in the System Manual. We won't implement it for now
- * 0: t3testGetObjId()
- * 1: t3testGetObjGcState()
- * 2: t3testGetCharCode()
- */
+// ***********************************************************************
+// * t3test FUNCTION SET
+// * This is probably not needed, since it is not described
+// * in the System Manual. We won't implement it for now
+// ***********************************************************************
+// * 0: t3testGetObjId()
+// * 1: t3testGetObjGcState()
+// * 2: t3testGetCharCode()
+// ***********************************************************************
 class T3TestFunctionSet extends IntrinsicFunctionSet {
   def name = "t3test"
 
@@ -459,6 +492,10 @@ class T3TestFunctionSet extends IntrinsicFunctionSet {
   }
 }
 
+// ***********************************************************************
+// *
+// * 
+// ***********************************************************************
 class IntrinsicFunctionSetMapper {
   val FunctionSets = Map(
     "t3vm"     -> new T3VMFunctionSet,
