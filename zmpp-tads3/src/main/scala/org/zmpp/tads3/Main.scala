@@ -41,28 +41,28 @@ object RunStates {
   val Halted  = 0
 }
 
-object Tads3VMState {
+object TadsVMState {
   val StackOffsetArg1 = -9
 }
-class Tads3VMState {
+class TadsVMState {
   private var _memory : Memory = null
-  var image: Tads3Image        = null
-  val stack = new Tads3Stack
+  var image: TadsImage        = null
+  val stack = new Stack
   var runState = RunStates.Running
   
   // Registers (TODO: current savepoint, savepoint count)
-  var r0: Tads3Value = null // data register R0
+  var r0: TadsValue = null // data register R0
   var ip = 0                // instruction pointer
   var ep = 0                // current function entry pointer
   def sp = stack.sp         // stack pointer
   var fp = 0                // frame pointer
 
   def reset(imageMem: Memory) {
-    image = new Tads3Image(imageMem)
+    image = new TadsImage(imageMem)
 
     // call initial function
     // push empty list on stack - QTads puts command line arguments in that list
-    val argList = new Tads3ListConstant
+    val argList = new TadsListConstant
     stack.push(argList)
     doCall(1, image.startEntryPoint, 0, 0, 0, 0)
   }
@@ -99,7 +99,7 @@ class Tads3VMState {
     printf("max stack slots = %d\n", methodHeader.maxStackSlots)
     printf("ex tab offs = %d\n", methodHeader.exceptionTableOffset)
     printf("debug rec offs = %d\n", methodHeader.debugRecordOffset)*/
-    r0 = Tads3Nil
+    r0 = TadsNil
 
     // allocate stack frame
     // The TM says push nil if there is no target property, the reference
@@ -131,19 +131,20 @@ class Tads3VMState {
     ip = targetOffs + image.methodHeaderSize
   }
   
-  def getParam(index: Int) = stack.valueAt(fp + Tads3VMState.StackOffsetArg1 - index)
+  // function argument acccess, indexing is 0-based
+  def getParam(index: Int) = stack.valueAt(fp + TadsVMState.StackOffsetArg1 - index)
 
   // local variable access. Note that Local variable access is based
   // on index 0 !!
   def getLocal(localNumber: Int) = stack.valueAt(fp + localNumber)
-  def setLocal(localNumber: Int, value: Tads3Value) {
+  def setLocal(localNumber: Int, value: TadsValue) {
     stack.setValueAt(fp + localNumber, value)
   }
   def currentSelf = stack.valueAt(fp - 5)
 }
 
-class Tads3VM {
-  val _state                 = new Tads3VMState
+class TadsVM {
+  val _state                 = new TadsVMState
   val _objectManager         = new ObjectManager
   val _functionSetMapper     = new IntrinsicFunctionSetMapper
   var iteration              = 1
@@ -202,7 +203,7 @@ class Tads3VM {
       case GetPropSelf  =>
         objGetProp(_state.currentSelf.value, nextShortOperand)
       case GetR0        => _state.stack.push(_state.r0)
-      case JNil         => branchIfTrue(_state.stack.pop == Tads3Nil)
+      case JNil         => branchIfTrue(_state.stack.pop == TadsNil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
       case New1         =>
         _state.r0 = _objectManager.createFromStack(nextByteOperand, nextByteOperand)
@@ -222,6 +223,8 @@ class Tads3VM {
         val containerVal = _state.getLocal(localNumber)
         val index        = nextByteOperand
         val newVal       = _state.stack.pop
+        printf("SETINDLCL1I8 LCL: %d CONTAINER: %s INDEX: %d NEWVAL: %s\n",
+               localNumber, containerVal, index, newVal)
         _state.setLocal(localNumber, setInd(containerVal, index, newVal))
       case SetLcl1      => _state.setLocal(nextByteOperand, _state.stack.pop)
       case SetLcl1R0    => _state.setLocal(nextByteOperand, _state.r0)
@@ -230,10 +233,11 @@ class Tads3VM {
                                                 .format(opcode))
     }
     // DEBUGGING
+    println("R0 = " + _state.r0)
     println(_state.stack)
   }
 
-  private def setInd(containerVal: Tads3Value, index: Int, newVal: Tads3Value) = {
+  private def setInd(containerVal: TadsValue, index: Int, newVal: TadsValue) = {
     if (containerVal.valueType == TypeIds.VmObj) {
       val obj = _objectManager.objectWithId(containerVal.value)
       obj.setValueAtIndex(index, newVal)
@@ -251,7 +255,7 @@ class Tads3VM {
   private def objGetProp(objId: Int, propId: Int) {
     val obj = _objectManager.objectWithId(objId)
     val prop = obj.findProperty(propId)
-    if (prop != null) evalProperty(objId, prop)
+    if (prop != null) evalProperty(objId, prop, propId)
     else {
       // TODO: check if propNotDefined is available
       throw new UnsupportedOperationException("TODO: property not found, " +
@@ -259,17 +263,18 @@ class Tads3VM {
     }
   }
 
-  private def evalProperty(selfId: Int, property: Property) {
+  private def evalProperty(selfId: Int, property: Property, propertyId: Int) {
     import TypeIds._
     printf("evalProperty(%s) [self = %d]\n", property, selfId)
     property.valueType match {
-      case VmNil     => _state.r0 = Tads3Nil
-      case VmTrue    => _state.r0 = Tads3True
-      case VmObj     => _state.r0 = new Tads3ObjectId(property.value)
-      case VmProp    => _state.r0 = new Tads3PropertyId(property.value)
-      case VmInt     => _state.r0 = new Tads3Integer(property.value)
+      case VmNil     => _state.r0 = TadsNil
+      case VmTrue    => _state.r0 = TadsTrue
+      case VmObj     => _state.r0 = new TadsObjectId(property.value)
+      case VmProp    => _state.r0 = new TadsPropertyId(property.value)
+      case VmInt     => _state.r0 = new TadsInteger(property.value)
       case VmCodeOfs =>
-        _state.doCall(0, property.value, 0, 0, property.definingObject, selfId)
+        _state.doCall(0, property.value, propertyId, selfId,
+                      property.definingObject, selfId)
       case VmDString =>
         throw new UnsupportedOperationException("TODO: DOUBLE QUOTED STRING")
       case _ =>
@@ -281,7 +286,7 @@ class Tads3VM {
 }
 
 object Tads3Main {
-  private var _vm : Tads3VM = null
+  private var _vm : TadsVM = null
 
   def readFileData(file: File) = {
     val filebytes = new Array[Byte](file.length.toInt)
@@ -297,7 +302,7 @@ object Tads3Main {
   def readTads3File(file : File) = {
     // Little Endian format - Hello Intel-Lovers
     val imageMem = new DefaultMemory(readFileData(file)).littleEndian
-    _vm = new Tads3VM
+    _vm = new TadsVM
     _vm.init(imageMem)
     _vm
   }

@@ -42,12 +42,12 @@ import scala.collection.mutable.HashMap
 // * might find the comments more useful.
 abstract class IntrinsicFunctionSet {
   def name: String
-  protected var _vmState: Tads3VMState        = null
+  protected var _vmState: TadsVMState        = null
   protected var _objectManager: ObjectManager = null
   
-  def reset(vmState: Tads3VMState, objectManager: ObjectManager) {
+  def reset(vmState: TadsVMState, objectManager: ObjectManager) {
     _vmState       = vmState
-    _objectManager = _objectManager
+    _objectManager = objectManager
   }
   def callFunction(argc: Int, functionIndex: Int)
 }
@@ -69,7 +69,7 @@ abstract class IntrinsicFunctionSet {
 
 class T3VMFunctionSet extends IntrinsicFunctionSet {
   def name = "t3vm"
-  var _sayFuncPtr: Tads3Value = null
+  var _sayFuncPtr: TadsValue = null
 
   private def runGC(argc: Int) { println("t3vm.runGC() [not implemented]") }
   private def setSay(argc: Int) {
@@ -88,14 +88,14 @@ class T3VMFunctionSet extends IntrinsicFunctionSet {
   }
   private def getVMPreinitMode(argc: Int) {
     println("t3vm.getPreinitMode()")
-    _vmState.r0 = Tads3Nil // we are never in preinit mode
+    _vmState.r0 = TadsNil // we are never in preinit mode
   }
   private def debugTrace(argc: Int) {
     throw new UnsupportedOperationException("debugTrace() not implemented yet")
   }
   private def getGlobalSymbols(argc: Int) {
     println("t3vm.getGlobalSymbols()")
-    _vmState.r0 = Tads3Nil // TODO: our test game does not have a GSYM
+    _vmState.r0 = TadsNil // TODO: our test game does not have a GSYM
   }
   private def allocProp(argc: Int) {
     throw new UnsupportedOperationException("allocProp() not implemented yet")
@@ -164,7 +164,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
   }
   private def firstObj(argc: Int) {
     // set default values for enumeration
-    var classVal: Tads3Value = Tads3ObjectId.InvalidObject
+    var classVal: TadsValue = TadsObjectId.InvalidObject
     var flags = TadsGenFunctionSet.EnumInstances
       println(_vmState.stack)
 
@@ -182,9 +182,10 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
       } else {
         throw new IllegalArgumentException("Illegal argument: %s".format(arg))
       }
-      printf("CLASS IS: %s, FLAGS IS: %d\n", classVal, flags)
-      // TODO
     }
+    printf("CLASS IS: %s, FLAGS IS: %d\n", classVal, flags)
+    _objectManager.printMetaClasses
+    // TODO
 
     throw new UnsupportedOperationException("tads-gen.firstObj() not implemented yet")
   }
@@ -505,7 +506,7 @@ class IntrinsicFunctionSetMapper {
   )
   val _functionSets = new Array[IntrinsicFunctionSet](4)
 
-  def reset(vmState: Tads3VMState, objectManager: ObjectManager) {
+  def reset(vmState: TadsVMState, objectManager: ObjectManager) {
     for (i <- 0 until vmState.image.functionSetDependencies.length) {
       val fsDep = vmState.image.functionSetDependencies(i)
       printf("mapping function set '%s' to index: %d\n",

@@ -59,7 +59,7 @@ object TypeIds {
   }
 }
 
-object Tads3Constants {
+object TadsConstants {
   val SizePropertyId = 2
   // A data holder is defined in TADS3 as a prefix byte (specifying the type)
   // and a 4-byte value
@@ -67,7 +67,7 @@ object Tads3Constants {
 }
 
 /***********************************************************************
- * Definition of the constants of type Tads3Value. These are the values
+ * Definition of the constants of type TadsValue. These are the values
  * that appear on the TADS3 VM stack or in register R0.
  * We define a uniform access interface, each object's value is based
  * on an integer. Values that do not have an integer representation
@@ -77,95 +77,95 @@ object Tads3Constants {
  * an integer value as well, which however is an offset into a constant
  * pool.
  */
-abstract class Tads3Value {
+abstract class TadsValue {
   def isTrue = true
   def valueType: Int
   def value = 0
 }
 
-object Tads3Nil extends Tads3Value {
+object TadsNil extends TadsValue {
   override def isTrue = false
   def valueType = TypeIds.VmNil
   override def toString = "NIL"
 }
-object Tads3True extends Tads3Value {
+object TadsTrue extends TadsValue {
   def valueType = TypeIds.VmTrue
   override def value = 1
   override def toString = "TRUE"
 }
-object Tads3Empty extends Tads3Value {
+object TadsEmpty extends TadsValue {
   def valueType = TypeIds.VmEmpty
   override def toString = "EMPTY"
 }
 
-class Tads3ListConstant extends Tads3Value {
+class TadsListConstant extends TadsValue {
   def valueType = TypeIds.VmList
   override def toString = "list"
 }
-class Tads3PropertyId(override val value: Int) extends Tads3Value {
+class TadsPropertyId(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmProp
   override def toString = "property (value = %d)".format(value)
 }
 
-object Tads3ObjectId {
-  val InvalidObject = new Tads3ObjectId(0)
+object TadsObjectId {
+  val InvalidObject = new TadsObjectId(0)
 }
-class Tads3ObjectId(override val value: Int) extends Tads3Value {
+class TadsObjectId(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmObj
   override def toString = "objectid (value = %d)".format(value)
 }
-class Tads3CodeOffset(override val value: Int) extends Tads3Value {
+class TadsCodeOffset(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmCodeOfs
   override def toString = "code-offset (value = %d)".format(value)
 }
 
-object Tads3Integer {
-  val One = new Tads3Integer(1)
+object TadsInteger {
+  val One = new TadsInteger(1)
 }
-class Tads3Integer(override val value: Int) extends Tads3Value {
+class TadsInteger(override val value: Int) extends TadsValue {
   override def isTrue = value != 0
   def valueType = TypeIds.VmInt
   override def toString = "integer (value = %d)".format(value)
 }
 
-class Tads3FunctionPointer(override val value: Int) extends Tads3Value {
+class TadsFunctionPointer(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmFuncPtr
   override def toString = "function-ptr (value = %d)".format(value)
 }
 
-class Tads3StackRef(override val value: Int) extends Tads3Value {
+class TadsStackRef(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmStack
   override def toString = "stack (value = %d)".format(value)
 }
 
-class Tads3Stack {
+class Stack {
 
-  var _stack = new Array[Tads3Value](300)
+  var _stack = new Array[TadsValue](300)
   var sp = 0
 
   def size = _stack.length
-  def pushNil = push(Tads3Nil)
+  def pushNil = push(TadsNil)
 
-  def pushPropertyId(id: Int) = push(new Tads3PropertyId(id))
-  def pushObjectId(id: Int) = push(new Tads3ObjectId(id))
-  def pushCodeOffset(offset: Int) = push(new Tads3CodeOffset(offset))
-  def pushFunctionPointer(offset: Int) = push(new Tads3FunctionPointer(offset))
-  def pushInt(value: Int) = push(new Tads3Integer(value))
-  def pushStackRef(value: Int) = push(new Tads3StackRef(value))
-  def push1 = push(Tads3Integer.One)
+  def pushPropertyId(id: Int) = push(new TadsPropertyId(id))
+  def pushObjectId(id: Int) = push(new TadsObjectId(id))
+  def pushCodeOffset(offset: Int) = push(new TadsCodeOffset(offset))
+  def pushFunctionPointer(offset: Int) = push(new TadsFunctionPointer(offset))
+  def pushInt(value: Int) = push(new TadsInteger(value))
+  def pushStackRef(value: Int) = push(new TadsStackRef(value))
+  def push1 = push(TadsInteger.One)
 
-  def push(value: Tads3Value) = {
+  def push(value: TadsValue) = {
     _stack(sp) = value
     sp += 1
   }
-  def pop: Tads3Value = {
+  def pop: TadsValue = {
     sp -= 1
     _stack(sp)
   }
   def top = _stack(sp - 1)
   def dup = push(top)
   def valueAt(index: Int) = _stack(index)
-  def setValueAt(index: Int, value: Tads3Value) = _stack(index) = value
+  def setValueAt(index: Int, value: TadsValue) = _stack(index) = value
 
   override def toString = {
     val buffer = new StringBuilder

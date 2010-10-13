@@ -28,6 +28,12 @@
  */
 package org.zmpp.tads3
 
+// we probably will replace the map for static objects with a list in the future
+// for now, the tree map helps to synchronize better with the reference
+// implementation
+import scala.collection.JavaConversions._
+import java.util.TreeMap
+
 import scala.collection.mutable.HashMap
 import org.zmpp.base._
 
@@ -135,7 +141,7 @@ class Property(val id: Int, val valueType: Int, val value: Int,
 }
 
 // Static objects are created from the image's static object block
-class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,
+class StaticObject(tads3Image: TadsImage, val id: Int, val metaClassIndex: Int,
                    val dataAddress: Int, val dataSize: Int,
                    val isTransient: Boolean) {
   def superClassCount        = tads3Image.memory.shortAt(dataAddress)
@@ -147,7 +153,7 @@ class StaticObject(tads3Image: Tads3Image, val id: Int, val metaClassIndex: Int,
   private def propertyOffset = dataAddress + 6 + superClassCount * 4
 
   private def propertyAddressAt(index: Int) = {
-    import Tads3Constants._
+    import TadsConstants._
     propertyOffset + (SizeDataHolder + SizePropertyId) * index
   }
   private def propertyIdAt(index: Int) = {
@@ -202,14 +208,15 @@ class MethodHeader(val paramCount: Int, val localCount: Int, val maxStackSlots: 
  * Quickly construct a TADS3 image from a memory object.
  * Quite a bit of data is loaded on demand.
  */
-class Tads3Image(val memory: Memory) {
+class TadsImage(val memory: Memory) {
   private var _timestamp: String = null
   private var _blocks: List[BlockHeader] = Nil
   private val _constantPools = new Array[ConstantPool](3)
   private var _entp: BlockHeader = null
   private var _metaClassDependencies: Array[MetaClassDependency] = null
   private var _functionSetDependencies: Array[FunctionSetDependency] = null
-  private val _staticObjects = new HashMap[Int, StaticObject]
+  // TODO: we might only need a list of static objects here
+  private val _staticObjects = new TreeMap[Int, StaticObject]
   private val _symbolicNames = new HashMap[String, SymbolicName]
   private var _maxObjectId = 0
 
@@ -217,6 +224,7 @@ class Tads3Image(val memory: Memory) {
   def metaClassDependencies   = _metaClassDependencies
   def symbolicNames           = _symbolicNames
   def functionSetDependencies = _functionSetDependencies
+  def staticObjects           = _staticObjects
 
   // read data from blocks to build an index
   var blockAddress = 69

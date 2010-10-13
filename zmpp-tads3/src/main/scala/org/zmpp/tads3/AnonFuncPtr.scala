@@ -34,13 +34,13 @@ package org.zmpp.tads3
  * an arbitrary number of context objects.
  * As a nice side effect, this automatically implements the indexed access.
  */
-class AnonFuncPtr extends Vector {
+class AnonFuncPtr(id: TadsObjectId) extends Vector(id) {
 }
 
 class AnonFuncPtrMetaClass extends SystemMetaClass {
   def name = "anon-func-ptr"
 
-  override def createFromStack(vmState: Tads3VMState, argc: Int) = {
+  override def createFromStack(id: TadsObjectId, vmState: TadsVMState, argc: Int) = {
     if (argc < 1) {
       throw new IllegalArgumentException("%s: createFromStack() needs at least 1 " +
                                          "parameters.".format(name))
@@ -52,7 +52,7 @@ class AnonFuncPtrMetaClass extends SystemMetaClass {
                                          "argument type: %d\n".format(
                                          name, functionPtr.valueType))
     }
-    val result = new AnonFuncPtr
+    val result = new AnonFuncPtr(id)
     result.add(functionPtr)
     // copy (argc - 1) context objects into the result object
     for (i <- 1 until argc) result.add(vmState.stack.pop)

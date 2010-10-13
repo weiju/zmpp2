@@ -37,25 +37,25 @@ import scala.collection.JavaConversions._
 // specify sizes will have no effect here.
 // Note: Vector indexes in TADS are, as all sequential types in TADS, in the
 // range [1..n], and *not* [0..n-1]
-class Vector extends TadsObject {
+class Vector(val id: TadsObjectId) extends TadsObject {
   def isTransient = false
-  val _container = new ArrayList[Tads3Value]
+  val _container = new ArrayList[TadsValue]
 
   def init(numElements: Int) {
     printf("initialize %d elements\n", numElements)
-    for (i <- 0 until numElements) _container.add(Tads3Nil)
+    for (i <- 0 until numElements) _container.add(TadsNil)
   }
   def findProperty(propertyId: Int) = {
     throw new UnsupportedOperationException("TODO")
   }
-  def add(value: Tads3Value) {
+  def add(value: TadsValue) {
     _container.add(value)
   }
   def valueAtIndex(index: Int) = _container(index)
-  def setValueAtIndex(index: Int, newValue: Tads3Value) = {
+  def setValueAtIndex(index: Int, newValue: TadsValue) = {
     val oldValue = _container(index - 1)
     _container(index - 1) = newValue
-    oldValue
+    id // return this object
   }
 
   override def toString = {
@@ -80,14 +80,16 @@ class VectorMetaClass extends SystemMetaClass {
   //   - (list): copy elements
   //   - (object:vector) copy elements
   // 
-  override def createFromStack(vmState: Tads3VMState, argc: Int) = {
+  override def createFromStack(id: TadsObjectId, vmState: TadsVMState,
+                               argc: Int) = {
     if (argc < 1 || argc > 2) {
-      throw new IllegalArgumentException("vector::constructor(), argc must be 1 or 2")
+      throw new IllegalArgumentException("vector::constructor(), argc " +
+                                         "must be 1 or 2")
     }
     val arg0 = vmState.stack.pop
     val result = if (arg0.valueType == TypeIds.VmInt) {
       // we ignore this parameter, we do not allocate vectors with an initial size
-      new Vector
+      new Vector(id)
     } else {
       throw new IllegalArgumentException("vector::constructor(), illegal arg0 type")
     }

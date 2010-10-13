@@ -42,13 +42,15 @@ import java.util.TreeMap
 //import scala.collection.mutable.HashMap
 
 trait TadsObject {
+  def id: TadsObjectId
   def isTransient: Boolean
   def findProperty(propertyId: Int): Property
-  def valueAtIndex(index: Int): Tads3Value
-  def setValueAtIndex(index: Int, newValue: Tads3Value): Tads3Value
+  def valueAtIndex(index: Int): TadsValue
+  def setValueAtIndex(index: Int,
+                      newValue: TadsValue): TadsValue
 }
 
-abstract class AbstractTadsObject extends TadsObject {
+abstract class AbstractTadsObject(val id: TadsObjectId) extends TadsObject {
   def isTransient = false
   def findProperty(propertyId: Int) = {
     throw new UnsupportedOperationException("findProperty() not implemented")
@@ -56,7 +58,7 @@ abstract class AbstractTadsObject extends TadsObject {
   def valueAtIndex(index: Int) = {
     throw new UnsupportedOperationException("valueAtIndex() not implemented")
   }
-  def setValueAtIndex(index: Int, newValue: Tads3Value) = {
+  def setValueAtIndex(index: Int, newValue: TadsValue) = {
     throw new UnsupportedOperationException("setValueAtIndex() not implemented")
   }
 }
@@ -65,25 +67,32 @@ abstract class AbstractTadsObject extends TadsObject {
 // The abstract interface to a TADS3 meta class.
 trait MetaClass {
   def name: String
-  def createFromStack(vmState: Tads3VMState, argc: Int): TadsObject
+  def createFromStack(id: TadsObjectId, vmState: TadsVMState,
+                      argc: Int): TadsObject
+  def createFromImage(staticObject: StaticObject): TadsObject
   def supportsVersion(version: String): Boolean
 }
 
 // Define all system meta classes that we know so far
 // These are the current meta classes that are provided by the reference
-// implementation. Apparently, the technical manual only mentions four of them,
-// which makes it hard to implement a VM without looking at the QTads' source code.
+// implementation. Apparently, the technical manual only mentions four of
+// them, which makes it hard to implement a VM without looking at the
+// QTads' source code.
 // Instead of complaining, I'll just see how they are implemented in QTads and
 // document it by myself
 abstract class SystemMetaClass extends MetaClass {
-  def createFromStack(vmState: Tads3VMState, argc: Int): TadsObject = {
-    throw new UnsupportedOperationException("createFromStack not yet supported in " +
+  def createFromStack(id: TadsObjectId, vmState: TadsVMState,
+                      argc: Int): TadsObject = {
+    throw new UnsupportedOperationException("createFromStack not yet " +
+                                            "supported in " +
+                                            "metaclass '%s'".format(name))
+  }
+  def createFromImage(staticObject: StaticObject): TadsObject = {
+    throw new UnsupportedOperationException("createFromImage not yet " +
+                                            "supported in " +
                                             "metaclass '%s'".format(name))
   }
   def supportsVersion(version: String) = true
-}
-class TadsObjectMetaClass extends SystemMetaClass {
-  def name = "tads-object"
 }
 class StringMetaClass extends SystemMetaClass {
   def name = "string"
@@ -147,10 +156,10 @@ class BigNumberMetaClass extends SystemMetaClass {
 // A class that wraps the static objects in the load image.
 // We might later instead put the static object into a wrapper that
 // is associated with the correct meta class
-class Tads3StaticObject(objectManager: ObjectManager, staticObject: StaticObject)
+class TadsStaticObject(objectManager: ObjectManager, staticObject: StaticObject)
 extends TadsObject {
   val isTransient = staticObject.isTransient
-
+  val id = new TadsObjectId(staticObject.id)
   def findProperty(propertyId: Int): Property = {
     val prop = staticObject.findProperty(propertyId)
     if (prop != null) return prop
@@ -166,7 +175,7 @@ extends TadsObject {
   }
 
   def valueAtIndex(index: Int) = throw new CannotIndexTypeException
-  def setValueAtIndex(index: Int, newValue: Tads3Value) = {
+  def setValueAtIndex(index: Int, newValue: TadsValue) = {
     throw new CannotIndexTypeException
   }
   override def toString = staticObject.toString
@@ -209,7 +218,7 @@ object ObjectSystem {
   // identifiers for metaclass dependencies to the actual meta classes that
   // the ZMPP TADS3 VM supports
   val MetaClasses = Map(
-    "tads-object"          -> new TadsObjectMetaClass,
+    "tads-object"          -> new TadsGenericObjectMetaClass,
     "string"               -> new StringMetaClass,
     "list"                 -> new ListMetaClass,
     "vector"               -> new VectorMetaClass,
@@ -241,10 +250,11 @@ class ObjectManager {
   private var _maxObjectId       = 0
   private val _objectCache       = new TreeMap[Int, TadsObject]
   private val _metaClassMap      = new TreeMap[Int, MetaClass]
-  private var _vmState: Tads3VMState = null
+  private var _vmState: TadsVMState = null
 
-  private def image : Tads3Image = _vmState.image
+  private def image : TadsImage = _vmState.image
   private def metaClassDependencies = _vmState.image.metaClassDependencies
+  private def staticObjects = _vmState.image.staticObjects
   private def establishMetaClassMapping {
     for (i <- 0 until metaClassDependencies.length) {
       _metaClassMap(i) =
@@ -253,12 +263,21 @@ class ObjectManager {
     }
   }
 
-  def reset(vmState: Tads3VMState) {
+  private def createObjectsFromImage {
+    for (id <- staticObjects.keys) {
+      val staticObject = staticObjects(id)
+      printf("CREATEFROM IMAGE STATIC OBJECT, ID: %d METACLASS: %s\n", id,
+             _metaClassMap(staticObject.metaClassIndex).name)
+    }
+  }
+
+  def reset(vmState: TadsVMState) {
     _vmState = vmState
     _metaClassMap.clear
     _objectCache.clear
-    _maxObjectId = image.maxObjectId
+    _maxObjectId = image.maxObjectId + 3 // +3 just as a debugging offset
     establishMetaClassMapping
+    createObjectsFromImage
   }
 
   // create a unique object id
@@ -272,17 +291,23 @@ class ObjectManager {
     if (_objectCache.contains(id)) _objectCache(id)
     else {
       // search static objects
-      val obj = new Tads3StaticObject(this, image.staticObjectWithId(id))
+      val obj = new TadsStaticObject(this, image.staticObjectWithId(id))
       _objectCache(id) = obj
       obj
     }
   }
 
   def createFromStack(argc: Int, metaClassId: Int) = {
-    val id = newId
-    val obj = _metaClassMap(metaClassId).createFromStack(_vmState, argc)
-    _objectCache(id) = obj
+    val id = new TadsObjectId(newId)
+    val obj = _metaClassMap(metaClassId).createFromStack(id, _vmState, argc)
+    _objectCache(id.value) = obj
     //printf("CREATED OBJECT WITH ID: %d\n", id)
-    new Tads3ObjectId(id)
+    id
+  }
+
+  def printMetaClasses {
+    for (i <- _metaClassMap.keys) {
+      printf("ID: %d NAME: %s\n", i, _metaClassMap(i).name)
+    }
   }
 }
