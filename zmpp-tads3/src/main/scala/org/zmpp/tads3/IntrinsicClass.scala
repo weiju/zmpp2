@@ -41,7 +41,8 @@ class IntrinsicClass(id: TadsObjectId) extends AbstractTadsObject(id) {
 
 class IntrinsicClassMetaClass extends SystemMetaClass {
   def name = "intrinsic-class"
-  override def createFromImage(staticObject: StaticObject): TadsObject = {
+  override def createFromImage(staticObject: StaticObject,
+                               objectManager: ObjectManager): TadsObject = {
     val intClass = new IntrinsicClass(new TadsObjectId(staticObject.id))
     intClass.staticObject = staticObject
     intClass

@@ -40,7 +40,8 @@ class AnonFuncPtr(id: TadsObjectId) extends Vector(id) {
 class AnonFuncPtrMetaClass extends SystemMetaClass {
   def name = "anon-func-ptr"
 
-  override def createFromImage(staticObject: StaticObject): TadsObject = {
+  override def createFromImage(staticObject: StaticObject,
+                               objectManager: ObjectManager): TadsObject = {
     val anonFuncPtr = new AnonFuncPtr(new TadsObjectId(staticObject.id))
     anonFuncPtr.staticObject = staticObject
     anonFuncPtr

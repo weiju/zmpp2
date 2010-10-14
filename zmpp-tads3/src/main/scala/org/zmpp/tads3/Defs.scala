@@ -254,3 +254,4 @@ object OpcodeNames {
 
 // Exceptions
 class CannotIndexTypeException extends Exception
+class ObjectNotFoundException extends Exception

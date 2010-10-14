@@ -39,7 +39,8 @@ class BigNumber(id: TadsObjectId) extends AbstractTadsObject(id) {
 
 class BigNumberMetaClass extends SystemMetaClass {
   def name = "bignumber"
-  override def createFromImage(staticObject: StaticObject): TadsObject = {
+  override def createFromImage(staticObject: StaticObject,
+                               objectManager: ObjectManager): TadsObject = {
     val bigNum = new BigNumber(new TadsObjectId(staticObject.id))
     bigNum.staticObject = staticObject
     bigNum

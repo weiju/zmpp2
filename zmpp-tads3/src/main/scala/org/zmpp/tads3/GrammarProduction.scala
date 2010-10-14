@@ -39,7 +39,8 @@ class GrammarProduction(id: TadsObjectId) extends AbstractTadsObject(id) {
 
 class GrammarProductionMetaClass extends SystemMetaClass {
   def name = "grammar-production"
-  override def createFromImage(staticObject: StaticObject): TadsObject = {
+  override def createFromImage(staticObject: StaticObject,
+                               objectManager: ObjectManager): TadsObject = {
     val grammarProd = new GrammarProduction(new TadsObjectId(staticObject.id))
     grammarProd.staticObject = staticObject
     grammarProd

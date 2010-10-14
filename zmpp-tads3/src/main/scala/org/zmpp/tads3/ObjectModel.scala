@@ -53,7 +53,8 @@ trait TadsObject {
 abstract class AbstractTadsObject(val id: TadsObjectId) extends TadsObject {
   def isTransient = false
   def findProperty(propertyId: Int): Property = {
-    throw new UnsupportedOperationException("findProperty() not implemented")
+    throw new UnsupportedOperationException("findProperty() not implemented: " +
+                                          getClass.getName)
   }
   def valueAtIndex(index: Int) = {
     throw new UnsupportedOperationException("valueAtIndex() not implemented")
@@ -69,7 +70,8 @@ trait MetaClass {
   def name: String
   def createFromStack(id: TadsObjectId, vmState: TadsVMState,
                       argc: Int): TadsObject
-  def createFromImage(staticObject: StaticObject): TadsObject
+  def createFromImage(staticObject: StaticObject,
+                      objectManager: ObjectManager): TadsObject
   def supportsVersion(version: String): Boolean
 }
 
@@ -87,7 +89,8 @@ abstract class SystemMetaClass extends MetaClass {
                                             "supported in " +
                                             "metaclass '%s'".format(name))
   }
-  def createFromImage(staticObject: StaticObject): TadsObject = {
+  def createFromImage(staticObject: StaticObject,
+                      objectManager: ObjectManager): TadsObject = {
     throw new UnsupportedOperationException("createFromImage not yet " +
                                             "supported in " +
                                             "metaclass '%s'".format(name))
@@ -248,8 +251,9 @@ class ObjectManager {
       //printf("CREATEFROM IMAGE STATIC OBJECT, ID: %d METACLASS: %s\n", id,
       //       _metaClassMap(staticObject.metaClassIndex).name)
       val obj =
-        _metaClassMap(staticObject.metaClassIndex).createFromImage(staticObject)
-      // TODO: Place in cache
+        _metaClassMap(staticObject.metaClassIndex).createFromImage(staticObject,
+                                                                   this)
+      _objectCache(id) = obj
     }
   }
 
@@ -272,10 +276,12 @@ class ObjectManager {
   def objectWithId(id: Int) = {
     if (_objectCache.contains(id)) _objectCache(id)
     else {
+/*
       // search static objects
       val obj = new TadsStaticObject(this, image.staticObjectWithId(id))
       _objectCache(id) = obj
-      obj
+      obj*/
+      throw new ObjectNotFoundException
     }
   }
 

@@ -39,7 +39,8 @@ class Dictionary2(id: TadsObjectId) extends AbstractTadsObject(id) {
 
 class Dictionary2MetaClass extends SystemMetaClass {
   def name = "dictionary2"
-  override def createFromImage(staticObject: StaticObject): TadsObject = {
+  override def createFromImage(staticObject: StaticObject,
+                               objectManager: ObjectManager): TadsObject = {
     val dictionary = new Dictionary2(new TadsObjectId(staticObject.id))
     dictionary.staticObject = staticObject
     dictionary

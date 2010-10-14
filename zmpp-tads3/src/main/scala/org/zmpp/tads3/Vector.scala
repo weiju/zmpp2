@@ -73,7 +73,8 @@ class Vector(val id: TadsObjectId) extends TadsObject {
 class VectorMetaClass extends SystemMetaClass {
   def name = "vector"
 
-  override def createFromImage(staticObject: StaticObject): TadsObject = {
+  override def createFromImage(staticObject: StaticObject,
+                               objectManager: ObjectManager): TadsObject = {
     val vector = new Vector(new TadsObjectId(staticObject.id))
     vector.staticObject = staticObject
     vector

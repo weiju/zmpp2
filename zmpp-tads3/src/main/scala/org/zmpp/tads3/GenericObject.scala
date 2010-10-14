@@ -43,18 +43,31 @@ import scala.collection.JavaConversions._
 // because of the need to enumerate all objects with some functions.
 // We keep in mind that the generic object has almost a 1:1 representation
 // in the load/save image.
-class GenericObject(id: TadsObjectId) extends AbstractTadsObject(id) {
+class GenericObject(id: TadsObjectId, objectManager: ObjectManager)
+extends AbstractTadsObject(id) {
   var staticObject: StaticObject = null
   override def isTransient = staticObject.isTransient
-  override def findProperty(propertyId: Int) = {
-    staticObject.findProperty(propertyId)
+  override def findProperty(propertyId: Int):Property = {
+    val prop = staticObject.findProperty(propertyId)
+    if (prop != null) return prop
+    // not found in object try super class properties
+    for (i <- 0 until staticObject.superClassCount) {
+      val superClassId = staticObject.superClassIdAt(i)
+      printf("not found, try super class: %d\n", superClassId)
+      val superClass = objectManager.objectWithId(superClassId)
+      val prop = superClass.findProperty(propertyId)
+      if (prop != null) return prop
+    }
+    null
   }
 }
 
 class GenericObjectMetaClass extends SystemMetaClass {
   def name = "tads-object"
-  override def createFromImage(staticObject: StaticObject): TadsObject = {
-    val genericObject = new GenericObject(new TadsObjectId(staticObject.id))
+  override def createFromImage(staticObject: StaticObject,
+                               objectManager: ObjectManager): TadsObject = {
+    val genericObject = new GenericObject(new TadsObjectId(staticObject.id),
+                                          objectManager)
     genericObject.staticObject = staticObject
     genericObject
   }

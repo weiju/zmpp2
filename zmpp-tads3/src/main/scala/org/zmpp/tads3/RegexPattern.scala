@@ -39,7 +39,8 @@ class RegexPattern(id: TadsObjectId) extends AbstractTadsObject(id) {
 
 class RegexPatternMetaClass extends SystemMetaClass {
   def name = "regex-pattern"
-  override def createFromImage(staticObject: StaticObject): TadsObject = {
+  override def createFromImage(staticObject: StaticObject,
+                               objectManager: ObjectManager): TadsObject = {
     val regexPat = new RegexPattern(new TadsObjectId(staticObject.id))
     regexPat.staticObject = staticObject
     regexPat

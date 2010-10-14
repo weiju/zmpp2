@@ -39,7 +39,8 @@ class LookupTable(id: TadsObjectId) extends AbstractTadsObject(id) {
 
 class LookupTableMetaClass extends SystemMetaClass {
   def name = "lookuptable"
-  override def createFromImage(staticObject: StaticObject): TadsObject = {
+  override def createFromImage(staticObject: StaticObject,
+                               objectManager: ObjectManager): TadsObject = {
     val lookupTable = new LookupTable(new TadsObjectId(staticObject.id))
     lookupTable.staticObject = staticObject
     lookupTable

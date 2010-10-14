@@ -39,7 +39,8 @@ class StringComparator(id: TadsObjectId) extends AbstractTadsObject(id) {
 
 class StringComparatorMetaClass extends SystemMetaClass {
   def name = "string-comparator"
-  override def createFromImage(staticObject: StaticObject): TadsObject = {
+  override def createFromImage(staticObject: StaticObject,
+                               objectManager: ObjectManager): TadsObject = {
     val stringComp = new StringComparator(new TadsObjectId(staticObject.id))
     stringComp.staticObject = staticObject
     stringComp
