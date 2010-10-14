@@ -1,5 +1,5 @@
 /*
- * Created on 2010/10/12
+ * Created on 2010/10/13
  * Copyright (c) 2010, Wei-ju Wu.
  * All rights reserved.
  *
@@ -32,30 +32,16 @@ import java.util.ArrayList
 // treat Java collections like Scala collections
 import scala.collection.JavaConversions._
 
-// GenericObjects are instances of what the documentation calls "TADS Object".
-// We wanted to avoid confusion, because "TadsObject" is the super class of
-// all object classes in the ZMPP implementation. "GenericObjects" seems like
-// a more fitting name which also more accurately reflects the purpose as
-// a very flexible data structure the user can manipulate.
-// This implementation currently just delegates to a static object for
-// most cases, which is fine for now, but is not pure on-demand loading.
-// We won't provide a different approach until for file-based loading,
-// because of the need to enumerate all objects with some functions.
-// We keep in mind that the generic object has almost a 1:1 representation
-// in the load/save image.
-class GenericObject(id: TadsObjectId) extends AbstractTadsObject(id) {
+class Dictionary2(id: TadsObjectId) extends AbstractTadsObject(id) {
   var staticObject: StaticObject = null
   override def isTransient = staticObject.isTransient
-  override def findProperty(propertyId: Int) = {
-    staticObject.findProperty(propertyId)
-  }
 }
 
-class GenericObjectMetaClass extends SystemMetaClass {
-  def name = "tads-object"
+class Dictionary2MetaClass extends SystemMetaClass {
+  def name = "dictionary2"
   override def createFromImage(staticObject: StaticObject): TadsObject = {
-    val genericObject = new GenericObject(new TadsObjectId(staticObject.id))
-    genericObject.staticObject = staticObject
-    genericObject
+    val dictionary = new Dictionary2(new TadsObjectId(staticObject.id))
+    dictionary.staticObject = staticObject
+    dictionary
   }
 }

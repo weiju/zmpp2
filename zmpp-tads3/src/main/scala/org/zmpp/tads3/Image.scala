@@ -70,7 +70,8 @@ object ImageFile {
 object BlockHeader {
   val Size = 10
 }
-class BlockHeader(val address: Int, val typeId: String, val dataSize: Int, val flags: Int) {
+class BlockHeader(val address: Int, val typeId: String, val dataSize: Int,
+                  val flags: Int) {
   def dataAddress = address + BlockHeader.Size
   override def toString = {
     "DataBlock[%s, %d, %d]".format(typeId, dataSize, flags)
@@ -104,7 +105,8 @@ class ConstantPool(val id: Int, val numPages: Int, val pageSize: Int) {
 
 // Meta class dependencies define the mapping from well-known meta classes
 // to indexes
-class MetaClassDependency(index: Int, nameString: String, val numProperties: Int) {
+class MetaClassDependency(index: Int, nameString: String,
+                          val numProperties: Int) {
   val name = nameString.split("/")(0)
   val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
                 else "000000"
@@ -136,11 +138,15 @@ class SymbolicName(val name: String, val valueType: Int, val value: Int)
 
 class Property(val id: Int, val valueType: Int, val value: Int,
                val definingObject: Int) {
-  override def toString = "Property (id = %d type: %d value: %d def. obj: %d)".format(
-    id, valueType, value, definingObject)
+  override def toString = {
+    "Property (id = %d type: %d value: %d def. obj: %d)".format(
+      id, valueType, value, definingObject)
+  }
 }
 
 // Static objects are created from the image's static object block
+// This is a pointer into the load image, and is used by the meta classes
+// to create the real object
 class StaticObject(tads3Image: TadsImage, val id: Int, val metaClassIndex: Int,
                    val dataAddress: Int, val dataSize: Int,
                    val isTransient: Boolean) {
@@ -164,6 +170,13 @@ class StaticObject(tads3Image: TadsImage, val id: Int, val metaClassIndex: Int,
   }
   private def propertyValueAt(index: Int) = {
     tads3Image.memory.intAt(propertyAddressAt(index) + 3)
+  }
+
+  def propertyAt(index: Int) = {
+    val propertyType = propertyTypeAt(index)
+    new Property(propertyIdAt(index), propertyType,
+                 TypeIds.valueForType(propertyType,
+                                      propertyValueAt(index)), id)
   }
 
   def findProperty(propertyId: Int): Property = {
@@ -190,10 +203,11 @@ class StaticObject(tads3Image: TadsImage, val id: Int, val metaClassIndex: Int,
         loadImagePropertyCount, objectFlags))
     result.append("Properties:\n")
     for (i <- 0 until loadImagePropertyCount) {
-      result.append("  [+%d] - %d: %d %d\n".format(propertyAddressAt(i) - dataAddress,
-                                                   propertyIdAt(i),
-                                                   propertyTypeAt(i),
-                                                   propertyValueAt(i)))
+      result.append("  [+%d] - %d: %d %d\n".format(
+        propertyAddressAt(i) - dataAddress,
+        propertyIdAt(i),
+        propertyTypeAt(i),
+        propertyValueAt(i)))
     }
     if (superClassCount > 0) {
     }
@@ -201,7 +215,8 @@ class StaticObject(tads3Image: TadsImage, val id: Int, val metaClassIndex: Int,
   }
 }
 
-class MethodHeader(val paramCount: Int, val localCount: Int, val maxStackSlots: Int,
+class MethodHeader(val paramCount: Int, val localCount: Int,
+                   val maxStackSlots: Int,
                    val exceptionTableOffset: Int, val debugRecordOffset: Int)
 
 /**
@@ -351,7 +366,8 @@ class TadsImage(val memory: Memory) {
                                                           numPropertyIds)
       val propbase = addr + 3 + numEntryNameBytes + 2
       for (j <- 0 until numPropertyIds) {
-        _metaClassDependencies(i).propertyIds(j) = memory.shortAt(propbase + j * 2)
+        _metaClassDependencies(i).propertyIds(j) =
+          memory.shortAt(propbase + j * 2)
       }
       addr += entrySize
     }

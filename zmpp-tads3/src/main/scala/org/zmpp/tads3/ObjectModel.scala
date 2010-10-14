@@ -52,7 +52,7 @@ trait TadsObject {
 
 abstract class AbstractTadsObject(val id: TadsObjectId) extends TadsObject {
   def isTransient = false
-  def findProperty(propertyId: Int) = {
+  def findProperty(propertyId: Int): Property = {
     throw new UnsupportedOperationException("findProperty() not implemented")
   }
   def valueAtIndex(index: Int) = {
@@ -100,24 +100,12 @@ class StringMetaClass extends SystemMetaClass {
 class ListMetaClass   extends SystemMetaClass {
   def name = "list"
 }
-class LookupTableMetaClass extends SystemMetaClass {
-  def name = "lookuptable"
-}
-class Dictionary2MetaClass extends SystemMetaClass {
-  def name = "dictionary2"
-}
-class GrammarProductionMetaClass extends SystemMetaClass {
-  def name = "grammar-production"
-}
 
 class IntClassModMetaClass extends SystemMetaClass {
   def name = "int-class-mod"
 }
 class RootObjectMetaClass extends SystemMetaClass {
   def name = "root-object"
-}
-class IntrinsicClassMetaClass extends SystemMetaClass {
-  def name = "intrinsic-class"
 }
 class CollectionMetaClass extends SystemMetaClass {
   def name = "collection"
@@ -134,9 +122,6 @@ class CharacterSetMetaClass extends SystemMetaClass {
 class ByteArrayMetaClass extends SystemMetaClass {
   def name = "bytearray"
 }
-class RegexPatternMetaClass extends SystemMetaClass {
-  def name = "regex-pattern"
-}
 class WeakRefLookupTableMetaClass extends SystemMetaClass {
   def name = "weakreflookuptable"
 }
@@ -145,12 +130,6 @@ class LookupTableIteratorMetaClass extends SystemMetaClass {
 }
 class FileMetaClass extends SystemMetaClass {
   def name = "file"
-}
-class StringComparatorMetaClass extends SystemMetaClass {
-  def name = "string-comparator"
-}
-class BigNumberMetaClass extends SystemMetaClass {
-  def name = "bignumber"
 }
 
 // A class that wraps the static objects in the load image.
@@ -218,7 +197,7 @@ object ObjectSystem {
   // identifiers for metaclass dependencies to the actual meta classes that
   // the ZMPP TADS3 VM supports
   val MetaClasses = Map(
-    "tads-object"          -> new TadsGenericObjectMetaClass,
+    "tads-object"          -> new GenericObjectMetaClass,
     "string"               -> new StringMetaClass,
     "list"                 -> new ListMetaClass,
     "vector"               -> new VectorMetaClass,
@@ -266,8 +245,11 @@ class ObjectManager {
   private def createObjectsFromImage {
     for (id <- staticObjects.keys) {
       val staticObject = staticObjects(id)
-      printf("CREATEFROM IMAGE STATIC OBJECT, ID: %d METACLASS: %s\n", id,
-             _metaClassMap(staticObject.metaClassIndex).name)
+      //printf("CREATEFROM IMAGE STATIC OBJECT, ID: %d METACLASS: %s\n", id,
+      //       _metaClassMap(staticObject.metaClassIndex).name)
+      val obj =
+        _metaClassMap(staticObject.metaClassIndex).createFromImage(staticObject)
+      // TODO: Place in cache
     }
   }
 

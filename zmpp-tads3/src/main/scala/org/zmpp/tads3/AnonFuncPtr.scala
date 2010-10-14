@@ -40,9 +40,17 @@ class AnonFuncPtr(id: TadsObjectId) extends Vector(id) {
 class AnonFuncPtrMetaClass extends SystemMetaClass {
   def name = "anon-func-ptr"
 
-  override def createFromStack(id: TadsObjectId, vmState: TadsVMState, argc: Int) = {
+  override def createFromImage(staticObject: StaticObject): TadsObject = {
+    val anonFuncPtr = new AnonFuncPtr(new TadsObjectId(staticObject.id))
+    anonFuncPtr.staticObject = staticObject
+    anonFuncPtr
+  }
+
+  override def createFromStack(id: TadsObjectId, vmState: TadsVMState,
+                               argc: Int) = {
     if (argc < 1) {
-      throw new IllegalArgumentException("%s: createFromStack() needs at least 1 " +
+      throw new IllegalArgumentException("%s: createFromStack() needs at " +
+                                         "least 1 " +
                                          "parameters.".format(name))
     }
     val functionPtr = vmState.stack.pop

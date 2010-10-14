@@ -38,6 +38,7 @@ import scala.collection.JavaConversions._
 // Note: Vector indexes in TADS are, as all sequential types in TADS, in the
 // range [1..n], and *not* [0..n-1]
 class Vector(val id: TadsObjectId) extends TadsObject {
+  var staticObject: StaticObject = null
   def isTransient = false
   val _container = new ArrayList[TadsValue]
 
@@ -72,6 +73,12 @@ class Vector(val id: TadsObjectId) extends TadsObject {
 class VectorMetaClass extends SystemMetaClass {
   def name = "vector"
 
+  override def createFromImage(staticObject: StaticObject): TadsObject = {
+    val vector = new Vector(new TadsObjectId(staticObject.id))
+    vector.staticObject = staticObject
+    vector
+  }
+
   // This is the TADS Vector constructor.
   // Parameters
   // arg0 (int): number of elements to allocate
@@ -91,7 +98,8 @@ class VectorMetaClass extends SystemMetaClass {
       // we ignore this parameter, we do not allocate vectors with an initial size
       new Vector(id)
     } else {
-      throw new IllegalArgumentException("vector::constructor(), illegal arg0 type")
+      throw new IllegalArgumentException("vector::constructor(), illegal " +
+                                         "arg0 type")
     }
     // second (optional argument)
     if (argc > 1) {
@@ -99,7 +107,8 @@ class VectorMetaClass extends SystemMetaClass {
       if (arg1.valueType == TypeIds.VmInt) {
         result.init(arg1.value)
       } else {
-        throw new UnsupportedOperationException("vector::constructor(), arg1 type " +
+        throw new UnsupportedOperationException("vector::constructor(), " +
+                                                "arg1 type " +
                                                 "not yet supported")
       }
     }
