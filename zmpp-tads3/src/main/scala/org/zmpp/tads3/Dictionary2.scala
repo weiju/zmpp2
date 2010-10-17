@@ -29,8 +29,36 @@
 package org.zmpp.tads3
 
 import java.util.ArrayList
-// treat Java collections like Scala collections
 import scala.collection.JavaConversions._
+
+
+// The image file data block is arranged as follows:
+  
+// UINT4 comparator_object_id
+// UINT2 load_image_entry_count
+// entry 1
+// entry 2
+// ...
+// entry N
+
+// Each entry has the following structure:
+
+// UCHAR key_string_byte_length
+// key_string (UTF-8 characters, not null terminated, XOR'ed with 0xBD)
+// UINT2 number of sub-entries
+// sub-entry 1
+// sub-entry 2
+// etc
+
+// Each sub-entry is structured like this:
+
+// UINT4 associated_object_id
+// UINT2 defining_property_id
+
+// Note that each byte of the key string is XOR'ed with the arbitrary
+// byte value 0xBD.  This is simply to provide a minimal level of
+// obfuscation in the image file to prevent casual browsing of the image
+// contents.
 
 class Dictionary2(id: TadsObjectId) extends AbstractTadsObject(id) {
   var staticObject: StaticObject = null

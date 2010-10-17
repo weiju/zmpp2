@@ -28,23 +28,39 @@
  */
 package org.zmpp.tads3
 
-import java.util.ArrayList
-// treat Java collections like Scala collections
 import scala.collection.JavaConversions._
+import java.util.ArrayList
 
-// IntrinsicClass is a strange thing. Unless we use it for the first
-// time, we'll keep it in the current simple state
-class IntrinsicClass(id: TadsObjectId) extends AbstractTadsObject(id) {
-  var staticObject: StaticObject = null
+class IntrinsicClass(staticObject: StaticObject)
+extends AbstractTadsObject(new TadsObjectId(staticObject.id)) {
   override def isTransient = staticObject.isTransient
+  override def isInstanceOf(objectId: Int): Boolean = {
+    // The reference implementation looks up here whether this object is
+    // 1. an instance of IntrinsicClass
+    // 2. if this object's metaclass index matches the given object id
+    // We are implementing in IntrinsicClass itself
+    // TODO: the meta class might have a super class, in which case we will have to ask
+    // the super class(es) whether it inherits from the class defined by objectId
+    return staticObject.metaClassIndex == objectId
+  }
 }
 
+// Image data format of an intrinsic-class entry
+// UINT2 byte_count of the data block (currently 8)
+// UINT2 metaclass_dependency_table_index
+// UINT4 modifier_object_id
 class IntrinsicClassMetaClass extends SystemMetaClass {
   def name = "intrinsic-class"
   override def createFromImage(staticObject: StaticObject,
                                objectManager: ObjectManager): TadsObject = {
-    val intClass = new IntrinsicClass(new TadsObjectId(staticObject.id))
-    intClass.staticObject = staticObject
-    intClass
+    println("-------------------------------------------------------------")
+    printf("CREATING INTRINSIC CLASS %d ", staticObject.id)
+    printf("Super classes: [")
+    for (i <- 0 until staticObject.superClassCount) {
+      printf("%d ", staticObject.superClassIdAt(i))
+    }
+    println("]")
+    println("-------------------------------------------------------------")
+    new IntrinsicClass(staticObject)
   }
 }

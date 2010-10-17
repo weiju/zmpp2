@@ -28,9 +28,47 @@
  */
 package org.zmpp.tads3
 
-import java.util.ArrayList
-// treat Java collections like Scala collections
 import scala.collection.JavaConversions._
+import java.util.ArrayList
+
+// Grammar production object - image file format
+
+// UINT2 alt_count
+// alternative 1
+// alternative 2
+// etc
+
+// Each alternative has the following structure:
+
+// INT2 score
+// INT2 badness
+// UINT4 processor_object_id
+// UINT2 token_count
+// token 1
+// token 2
+// etc
+
+// Each token has this structure:
+
+// UINT2 property_association
+// BYTE token_match_type (see below)
+// extra data depending on token_match_type (see below)
+
+// The extra data for the token varies by match type:
+
+// VMGRAM_MATCH_PROD - a UINT4 giving the production object ID
+
+// VMGRAM_MATCH_SPEECH - a UINT2 giving the vocabulary property
+
+// VMGRAM_MATCH_NSPEECH - a UINT2 giving a count, then that many
+// additional UINT2's giving a list of vocabulary properties
+
+// VMGRAM_MATCH_LITERAL - a UINT2 byte-length prefix followed by the
+// UTF8-encoded bytes of the literal string
+
+// VMGRAM_MATCH_TOKTYPE - a UINT4 giving the token enum's ID
+
+// VMGRAM_MATCH_STAR - no additional data 
 
 class GrammarProduction(id: TadsObjectId) extends AbstractTadsObject(id) {
   var staticObject: StaticObject = null

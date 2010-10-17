@@ -233,8 +233,8 @@ class TadsVM {
                                                 .format(opcode))
     }
     // DEBUGGING
-    println("R0 = " + _state.r0)
-    println(_state.stack)
+    //println("R0 = " + _state.r0)
+    //println(_state.stack)
   }
 
   private def setInd(containerVal: TadsValue, index: Int, newVal: TadsValue) = {

@@ -70,6 +70,13 @@ class Vector(id: TadsObjectId) extends AbstractTadsObject(id) {
   }
 }
 
+// Image format for vector instances:
+// UINT2 elements_allocated 
+// UINT2 number_of_elements_used
+// DATAHOLDER element[1]
+// DATAHOLDER element[2]
+//
+// Object extension: TODO
 class VectorMetaClass extends SystemMetaClass {
   def name = "vector"
 

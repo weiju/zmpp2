@@ -267,7 +267,11 @@ class TadsImage(val memory: Memory) {
   printf("ex table entry size: %d\n", exTableEntrySize)
   printf("# static objects: %d\n", _staticObjects.size)
   printf("MAX object id: %d\n", _maxObjectId)*/
-  
+/*
+  for (md <- _metaClassDependencies) {
+    println(md)
+  }*/
+
   def startEntryPoint  = memory.intAt(_entp.dataAddress)
   def methodHeaderSize = memory.shortAt(_entp.dataAddress + 4)
   def exTableEntrySize = memory.shortAt(_entp.dataAddress + 6)
@@ -407,6 +411,7 @@ class TadsImage(val memory: Memory) {
                      else memory.shortAt(objAddr + 4)
       //printf("OBJ ID: %d #BYTES: %d\n", objId, numBytes)
       objAddr += (if (isLarge) 8 else 6)
+      // TODO: Read meta class specific !!!!!!
       val obj = new StaticObject(this, objId, metaClassIndex, objAddr, numBytes,
                                  isTransient)
       _staticObjects(objId) = obj

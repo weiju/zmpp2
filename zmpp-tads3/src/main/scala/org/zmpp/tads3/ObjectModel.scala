@@ -42,7 +42,6 @@ import java.util.TreeMap
 
 trait TadsObject {
   def id: TadsObjectId
-//  def metaClassId: Int
   def isTransient: Boolean
   def isInstanceOf(objectId: Int): Boolean
 
@@ -54,11 +53,7 @@ trait TadsObject {
 
 abstract class AbstractTadsObject(val id: TadsObjectId) extends TadsObject {
   def isTransient = false
-
-  def isInstanceOf(objectId: Int): Boolean = {
-    throw new UnsupportedOperationException("isInstanceOf() not implemented: " +
-                                            getClass.getName)
-  }
+  def isInstanceOf(objectId: Int): Boolean = false
   def findProperty(propertyId: Int): Property = {
     throw new UnsupportedOperationException("findProperty() not implemented: " +
                                           getClass.getName)

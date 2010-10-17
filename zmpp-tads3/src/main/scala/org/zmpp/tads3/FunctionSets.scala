@@ -166,7 +166,6 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     // set default values for enumeration
     var classVal: TadsValue = TadsObjectId.InvalidObject
     var flags = TadsGenFunctionSet.EnumInstances
-      println(_vmState.stack)
 
     printf("tads-gen.firstObj(), argc = %d\n", argc)
     // process up to 2 optional parameters (class?, flags?)
@@ -184,7 +183,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
       }
     }
     printf("CLASS IS: %s, FLAGS IS: %d\n", classVal, flags)
-    _objectManager.printMetaClasses
+    //_objectManager.printMetaClasses
     // TODO
 
     throw new UnsupportedOperationException("tads-gen.firstObj() not implemented yet")

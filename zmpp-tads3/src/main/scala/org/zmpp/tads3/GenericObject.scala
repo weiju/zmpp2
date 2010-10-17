@@ -28,9 +28,8 @@
  */
 package org.zmpp.tads3
 
-import java.util.ArrayList
-// treat Java collections like Scala collections
 import scala.collection.JavaConversions._
+import java.util.ArrayList
 
 // GenericObjects are instances of what the documentation calls "TADS Object".
 // We wanted to avoid confusion, because "TadsObject" is the super class of
@@ -47,6 +46,11 @@ class GenericObject(id: TadsObjectId, objectManager: ObjectManager)
 extends AbstractTadsObject(id) {
   var staticObject: StaticObject = null
   override def isTransient = staticObject.isTransient
+  override def isInstanceOf(objectId: Int): Boolean = {
+    // TODO: This check checks user-defined class hierarchies
+    throw new UnsupportedOperationException("isInstanceOf() not yet implemented: " +
+                                            getClass.getName)
+  }
   override def findProperty(propertyId: Int):Property = {
     val prop = staticObject.findProperty(propertyId)
     if (prop != null) return prop
@@ -62,6 +66,18 @@ extends AbstractTadsObject(id) {
   }
 }
 
+// Image format for tads-object instances:
+// UINT2 superclass_count
+// UINT2 load_image_property_count
+// UINT2 flags
+// UINT4 superclass_1
+// ...
+// UINT4 superclass_N
+// UINT2 load_image_property_ID_1
+// DATAHOLDER load_image_property_value_1
+// ...
+// UINT2 load_image_property_ID_N
+// DATAHOLDER load_image_property_value_N 
 class GenericObjectMetaClass extends SystemMetaClass {
   def name = "tads-object"
   override def createFromImage(staticObject: StaticObject,
