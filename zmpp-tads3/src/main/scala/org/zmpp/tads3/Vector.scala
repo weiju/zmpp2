@@ -37,23 +37,23 @@ import scala.collection.JavaConversions._
 // specify sizes will have no effect here.
 // Note: Vector indexes in TADS are, as all sequential types in TADS, in the
 // range [1..n], and *not* [0..n-1]
-class Vector(val id: TadsObjectId) extends TadsObject {
+class Vector(id: TadsObjectId) extends AbstractTadsObject(id) {
   var staticObject: StaticObject = null
-  def isTransient = false
+  override def isTransient = false
   val _container = new ArrayList[TadsValue]
 
   def init(numElements: Int) {
     printf("initialize %d elements\n", numElements)
     for (i <- 0 until numElements) _container.add(TadsNil)
   }
-  def findProperty(propertyId: Int) = {
+  override def findProperty(propertyId: Int) = {
     throw new UnsupportedOperationException("TODO")
   }
   def add(value: TadsValue) {
     _container.add(value)
   }
-  def valueAtIndex(index: Int) = _container(index)
-  def setValueAtIndex(index: Int, newValue: TadsValue) = {
+  override def valueAtIndex(index: Int): TadsValue = _container(index)
+  override def setValueAtIndex(index: Int, newValue: TadsValue): TadsObjectId = {
     val oldValue = _container(index - 1)
     _container(index - 1) = newValue
     id // return this object

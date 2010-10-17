@@ -35,6 +35,7 @@ import scala.collection.JavaConversions._
 class BigNumber(id: TadsObjectId) extends AbstractTadsObject(id) {
   var staticObject: StaticObject = null
   override def isTransient = staticObject.isTransient
+  def metaClassId = staticObject.metaClassIndex
 }
 
 class BigNumberMetaClass extends SystemMetaClass {

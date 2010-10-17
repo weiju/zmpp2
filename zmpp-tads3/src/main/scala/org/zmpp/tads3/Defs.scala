@@ -108,7 +108,8 @@ class TadsPropertyId(override val value: Int) extends TadsValue {
 }
 
 object TadsObjectId {
-  val InvalidObject = new TadsObjectId(0)
+  val ObjectIdInvalid = 0
+  val InvalidObject = new TadsObjectId(ObjectIdInvalid)
 }
 class TadsObjectId(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmObj

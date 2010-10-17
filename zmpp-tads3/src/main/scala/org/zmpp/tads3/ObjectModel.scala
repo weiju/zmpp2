@@ -39,11 +39,13 @@ package org.zmpp.tads3
 // Scala HashMap
 import scala.collection.JavaConversions._
 import java.util.TreeMap
-//import scala.collection.mutable.HashMap
 
 trait TadsObject {
   def id: TadsObjectId
+//  def metaClassId: Int
   def isTransient: Boolean
+  def isInstanceOf(objectId: Int): Boolean
+
   def findProperty(propertyId: Int): Property
   def valueAtIndex(index: Int): TadsValue
   def setValueAtIndex(index: Int,
@@ -52,14 +54,19 @@ trait TadsObject {
 
 abstract class AbstractTadsObject(val id: TadsObjectId) extends TadsObject {
   def isTransient = false
+
+  def isInstanceOf(objectId: Int): Boolean = {
+    throw new UnsupportedOperationException("isInstanceOf() not implemented: " +
+                                            getClass.getName)
+  }
   def findProperty(propertyId: Int): Property = {
     throw new UnsupportedOperationException("findProperty() not implemented: " +
                                           getClass.getName)
   }
-  def valueAtIndex(index: Int) = {
+  def valueAtIndex(index: Int): TadsValue = {
     throw new UnsupportedOperationException("valueAtIndex() not implemented")
   }
-  def setValueAtIndex(index: Int, newValue: TadsValue) = {
+  def setValueAtIndex(index: Int, newValue: TadsValue): TadsValue = {
     throw new UnsupportedOperationException("setValueAtIndex() not implemented")
   }
 }
@@ -133,34 +140,6 @@ class LookupTableIteratorMetaClass extends SystemMetaClass {
 }
 class FileMetaClass extends SystemMetaClass {
   def name = "file"
-}
-
-// A class that wraps the static objects in the load image.
-// We might later instead put the static object into a wrapper that
-// is associated with the correct meta class
-class TadsStaticObject(objectManager: ObjectManager, staticObject: StaticObject)
-extends TadsObject {
-  val isTransient = staticObject.isTransient
-  val id = new TadsObjectId(staticObject.id)
-  def findProperty(propertyId: Int): Property = {
-    val prop = staticObject.findProperty(propertyId)
-    if (prop != null) return prop
-    // not found in object try super class properties
-    for (i <- 0 until staticObject.superClassCount) {
-      val superClassId = staticObject.superClassIdAt(i)
-      printf("not found, try super class: %d\n", superClassId)
-      val superClass = objectManager.objectWithId(superClassId)
-      val prop = superClass.findProperty(propertyId)
-      if (prop != null) return prop
-    }
-    null
-  }
-
-  def valueAtIndex(index: Int) = throw new CannotIndexTypeException
-  def setValueAtIndex(index: Int, newValue: TadsValue) = {
-    throw new CannotIndexTypeException
-  }
-  override def toString = staticObject.toString
 }
 
 // Predefined symbols that the image defines. Can be accessed by the VM through
@@ -273,18 +252,6 @@ class ObjectManager {
     _maxObjectId
   }
 
-  def objectWithId(id: Int) = {
-    if (_objectCache.contains(id)) _objectCache(id)
-    else {
-/*
-      // search static objects
-      val obj = new TadsStaticObject(this, image.staticObjectWithId(id))
-      _objectCache(id) = obj
-      obj*/
-      throw new ObjectNotFoundException
-    }
-  }
-
   def createFromStack(argc: Int, metaClassId: Int) = {
     val id = new TadsObjectId(newId)
     val obj = _metaClassMap(metaClassId).createFromStack(id, _vmState, argc)
@@ -297,5 +264,32 @@ class ObjectManager {
     for (i <- _metaClassMap.keys) {
       printf("ID: %d NAME: %s\n", i, _metaClassMap(i).name)
     }
+  }
+
+  // **********************************************************************
+  // **** Query Functions
+  // **********************************************************************
+
+  def objectWithId(id: Int) = {
+    if (_objectCache.contains(id)) _objectCache(id)
+    else {
+/*
+      // search static objects
+      val obj = new TadsStaticObject(this, image.staticObjectWithId(id))
+      _objectCache(id) = obj
+      obj*/
+      throw new ObjectNotFoundException
+    }
+  }
+
+  // Enumeration of objects, this is the 
+  def firstObject(getInstances: Boolean, getClasses: Boolean,
+                  classId: Int = TadsObjectId.ObjectIdInvalid): TadsObject = {
+    throw new UnsupportedOperationException("firstObject() not yet supported")
+  }
+  def nextObject(getInstances: Boolean, getClasses: Boolean,
+                 previousObject: Int = TadsObjectId.ObjectIdInvalid,
+                 classId: Int = TadsObjectId.ObjectIdInvalid): TadsObject = {
+    throw new UnsupportedOperationException("previousObject() not yet supported")
   }
 }
