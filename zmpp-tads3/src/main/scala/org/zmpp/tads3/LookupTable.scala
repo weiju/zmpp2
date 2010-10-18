@@ -29,20 +29,20 @@
 package org.zmpp.tads3
 
 import java.util.ArrayList
-// treat Java collections like Scala collections
 import scala.collection.JavaConversions._
+import org.zmpp.base._
 
 class LookupTable(id: TadsObjectId) extends AbstractTadsObject(id) {
-  var staticObject: StaticObject = null
-  override def isTransient = staticObject.isTransient
 }
 
 class LookupTableMetaClass extends SystemMetaClass {
   def name = "lookuptable"
-  override def createFromImage(staticObject: StaticObject,
-                               objectManager: ObjectManager): TadsObject = {
-    val lookupTable = new LookupTable(new TadsObjectId(staticObject.id))
-    lookupTable.staticObject = staticObject
+  override def createFromImage(objectManager: ObjectManager,
+                               imageMem: Memory, objectId: Int,
+                               objDataAddr: Int,
+                               numBytes: Int,
+                               isTransient: Boolean): TadsObject = {
+    val lookupTable = new LookupTable(new TadsObjectId(objectId))
     lookupTable
   }
 }

@@ -43,11 +43,9 @@ import scala.collection.mutable.HashMap
 abstract class IntrinsicFunctionSet {
   def name: String
   protected var _vmState: TadsVMState        = null
-  protected var _objectManager: ObjectManager = null
   
-  def reset(vmState: TadsVMState, objectManager: ObjectManager) {
+  def reset(vmState: TadsVMState) {
     _vmState       = vmState
-    _objectManager = objectManager
   }
   def callFunction(argc: Int, functionIndex: Int)
 }
@@ -183,7 +181,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
       }
     }
     printf("CLASS IS: %s, FLAGS IS: %d\n", classVal, flags)
-    //_objectManager.printMetaClasses
+    //vmState.objectManager.printMetaClasses
     // TODO
 
     throw new UnsupportedOperationException("tads-gen.firstObj() not implemented yet")
@@ -505,13 +503,13 @@ class IntrinsicFunctionSetMapper {
   )
   val _functionSets = new Array[IntrinsicFunctionSet](4)
 
-  def reset(vmState: TadsVMState, objectManager: ObjectManager) {
+  def reset(vmState: TadsVMState) {
     for (i <- 0 until vmState.image.functionSetDependencies.length) {
       val fsDep = vmState.image.functionSetDependencies(i)
       printf("mapping function set '%s' to index: %d\n",
              fsDep.name, i)
       _functionSets(i) = FunctionSets(fsDep.name)
-      _functionSets(i).reset(vmState, objectManager)
+      _functionSets(i).reset(vmState)
     }
   }
 

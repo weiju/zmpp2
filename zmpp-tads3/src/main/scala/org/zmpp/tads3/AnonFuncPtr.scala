@@ -28,6 +28,8 @@
  */
 package org.zmpp.tads3
 
+import org.zmpp.base._
+
 /*
  * An anonymous function ptr. Interestingly, this inherits from Vector.
  * Why ? This is because there is not only the code offset, but also
@@ -40,10 +42,12 @@ class AnonFuncPtr(id: TadsObjectId) extends Vector(id) {
 class AnonFuncPtrMetaClass extends SystemMetaClass {
   def name = "anon-func-ptr"
 
-  override def createFromImage(staticObject: StaticObject,
-                               objectManager: ObjectManager): TadsObject = {
-    val anonFuncPtr = new AnonFuncPtr(new TadsObjectId(staticObject.id))
-    anonFuncPtr.staticObject = staticObject
+  override def createFromImage(objectManager: ObjectManager,
+                               imageMem: Memory, objectId: Int,
+                               objDataAddr: Int,
+                               numBytes: Int,
+                               isTransient: Boolean): TadsObject = {
+    val anonFuncPtr = new AnonFuncPtr(new TadsObjectId(objectId))
     anonFuncPtr
   }
 

@@ -29,20 +29,20 @@
 package org.zmpp.tads3
 
 import java.util.ArrayList
-// treat Java collections like Scala collections
 import scala.collection.JavaConversions._
+import org.zmpp.base._
 
 class StringComparator(id: TadsObjectId) extends AbstractTadsObject(id) {
-  var staticObject: StaticObject = null
-  override def isTransient = staticObject.isTransient
 }
 
 class StringComparatorMetaClass extends SystemMetaClass {
   def name = "string-comparator"
-  override def createFromImage(staticObject: StaticObject,
-                               objectManager: ObjectManager): TadsObject = {
-    val stringComp = new StringComparator(new TadsObjectId(staticObject.id))
-    stringComp.staticObject = staticObject
+  override def createFromImage(objectManager: ObjectManager,
+                               imageMem: Memory, objectId: Int,
+                               objDataAddr: Int,
+                               numBytes: Int,
+                               isTransient: Boolean): TadsObject = {
+    val stringComp = new StringComparator(new TadsObjectId(objectId))
     stringComp
   }
 }

@@ -29,20 +29,20 @@
 package org.zmpp.tads3
 
 import java.util.ArrayList
-// treat Java collections like Scala collections
 import scala.collection.JavaConversions._
+import org.zmpp.base._
 
 class RegexPattern(id: TadsObjectId) extends AbstractTadsObject(id) {
-  var staticObject: StaticObject = null
-  override def isTransient = staticObject.isTransient
 }
 
 class RegexPatternMetaClass extends SystemMetaClass {
   def name = "regex-pattern"
-  override def createFromImage(staticObject: StaticObject,
-                               objectManager: ObjectManager): TadsObject = {
-    val regexPat = new RegexPattern(new TadsObjectId(staticObject.id))
-    regexPat.staticObject = staticObject
+  override def createFromImage(objectManager: ObjectManager,
+                               imageMem: Memory, objectId: Int,
+                               objDataAddr: Int,
+                               numBytes: Int,
+                               isTransient: Boolean): TadsObject = {
+    val regexPat = new RegexPattern(new TadsObjectId(objectId))
     regexPat
   }
 }

@@ -30,7 +30,7 @@ package org.zmpp.tads3
 
 import java.util.ArrayList
 import scala.collection.JavaConversions._
-
+import org.zmpp.base._
 
 // The image file data block is arranged as follows:
   
@@ -61,16 +61,16 @@ import scala.collection.JavaConversions._
 // contents.
 
 class Dictionary2(id: TadsObjectId) extends AbstractTadsObject(id) {
-  var staticObject: StaticObject = null
-  override def isTransient = staticObject.isTransient
 }
 
 class Dictionary2MetaClass extends SystemMetaClass {
   def name = "dictionary2"
-  override def createFromImage(staticObject: StaticObject,
-                               objectManager: ObjectManager): TadsObject = {
-    val dictionary = new Dictionary2(new TadsObjectId(staticObject.id))
-    dictionary.staticObject = staticObject
+  override def createFromImage(objectManager: ObjectManager,
+                               imageMem: Memory, objectId: Int,
+                               objDataAddr: Int,
+                               numBytes: Int,
+                               isTransient: Boolean): TadsObject = {
+    val dictionary = new Dictionary2(new TadsObjectId(objectId))
     dictionary
   }
 }

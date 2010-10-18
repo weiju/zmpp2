@@ -39,6 +39,7 @@ package org.zmpp.tads3
 // Scala HashMap
 import scala.collection.JavaConversions._
 import java.util.TreeMap
+import org.zmpp.base._
 
 trait TadsObject {
   def id: TadsObjectId
@@ -52,7 +53,7 @@ trait TadsObject {
 }
 
 abstract class AbstractTadsObject(val id: TadsObjectId) extends TadsObject {
-  def isTransient = false
+  var isTransient = false
   def isInstanceOf(objectId: Int): Boolean = false
   def findProperty(propertyId: Int): Property = {
     throw new UnsupportedOperationException("findProperty() not implemented: " +
@@ -66,14 +67,22 @@ abstract class AbstractTadsObject(val id: TadsObjectId) extends TadsObject {
   }
 }
 
+class Property(val id: Int, val valueType: Int, val value: Int,
+               val definingObject: Int) {
+  override def toString = {
+    "Property (id = %d type: %d value: %d def. obj: %d)".format(
+      id, valueType, value, definingObject)
+  }
+}
 
 // The abstract interface to a TADS3 meta class.
 trait MetaClass {
   def name: String
   def createFromStack(id: TadsObjectId, vmState: TadsVMState,
                       argc: Int): TadsObject
-  def createFromImage(staticObject: StaticObject,
-                      objectManager: ObjectManager): TadsObject
+  def createFromImage(objectManager: ObjectManager,
+                      imageMem: Memory, objectId: Int, objDataAddr: Int,
+                      numBytes: Int, isTransient: Boolean): TadsObject
   def supportsVersion(version: String): Boolean
 }
 
@@ -91,8 +100,9 @@ abstract class SystemMetaClass extends MetaClass {
                                             "supported in " +
                                             "metaclass '%s'".format(name))
   }
-  def createFromImage(staticObject: StaticObject,
-                      objectManager: ObjectManager): TadsObject = {
+  def createFromImage(objectManager: ObjectManager,
+                      imageMem: Memory, objectId: Int, objDataAddr: Int,
+                      numBytes: Int, isTransient: Boolean): TadsObject = {
     throw new UnsupportedOperationException("createFromImage not yet " +
                                             "supported in " +
                                             "metaclass '%s'".format(name))
@@ -198,46 +208,42 @@ object ObjectSystem {
     "bignumber"            -> new BigNumberMetaClass)
 }
 
-// The object manager handles instantiation and management of objects
-// The overall design philosophy is that objects are only created when
-// necessary to support quick serialization/deserialization
-//
-class ObjectManager {
+// The object manager handles instantiation and management of objects.
+// It is an extension of the VM state, because it represents the current state
+// of all objects in the system.
+// This version of the object manager has to be
+// 1. reset before loading a new file
+// 2. during loading the image, add metaclass dependencies as they come in
+// 3. then load the classes as they come in
+class ObjectManager(vmState: TadsVMState) {
   private var _maxObjectId       = 0
   private val _objectCache       = new TreeMap[Int, TadsObject]
   private val _metaClassMap      = new TreeMap[Int, MetaClass]
-  private var _vmState: TadsVMState = null
 
-  private def image : TadsImage = _vmState.image
-  private def metaClassDependencies = _vmState.image.metaClassDependencies
-  private def staticObjects = _vmState.image.staticObjects
-  private def establishMetaClassMapping {
-    for (i <- 0 until metaClassDependencies.length) {
-      _metaClassMap(i) =
-        ObjectSystem.MetaClasses(metaClassDependencies(i).name)
-      // TODO: map properties as well
-    }
+  private def image : TadsImage = vmState.image
+
+  def addMetaClassDependency(index: Int, nameString: String) {
+    val name = nameString.split("/")(0)
+    val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
+                      else "000000"
+    _metaClassMap(index) = ObjectSystem.MetaClasses(name)
   }
 
-  private def createObjectsFromImage {
-    for (id <- staticObjects.keys) {
-      val staticObject = staticObjects(id)
-      //printf("CREATEFROM IMAGE STATIC OBJECT, ID: %d METACLASS: %s\n", id,
-      //       _metaClassMap(staticObject.metaClassIndex).name)
-      val obj =
-        _metaClassMap(staticObject.metaClassIndex).createFromImage(staticObject,
-                                                                   this)
-      _objectCache(id) = obj
-    }
+  def addMetaClassPropertyId(index: Int, propertyId: Int) {
+    // TODO: Add property ids to the specified meta class
+    // (we should first find out what it means)
+  }
+  def addStaticObject(imageMem: Memory, objectId: Int, metaClassIndex: Int,
+                      objAddr: Int, numBytes: Int, isTransient: Boolean) {
+    val obj = _metaClassMap(metaClassIndex).createFromImage(this, imageMem,
+                                                            objectId, objAddr,
+                                                            numBytes, isTransient)
+    _objectCache(objectId) = obj
   }
 
-  def reset(vmState: TadsVMState) {
-    _vmState = vmState
+  def reset {
     _metaClassMap.clear
     _objectCache.clear
-    _maxObjectId = image.maxObjectId + 3 // +3 just as a debugging offset
-    establishMetaClassMapping
-    createObjectsFromImage
   }
 
   // create a unique object id
@@ -249,7 +255,7 @@ class ObjectManager {
 
   def createFromStack(argc: Int, metaClassId: Int) = {
     val id = new TadsObjectId(newId)
-    val obj = _metaClassMap(metaClassId).createFromStack(id, _vmState, argc)
+    val obj = _metaClassMap(metaClassId).createFromStack(id, vmState, argc)
     _objectCache(id.value) = obj
     //printf("CREATED OBJECT WITH ID: %d\n", id)
     id
@@ -268,11 +274,6 @@ class ObjectManager {
   def objectWithId(id: Int) = {
     if (_objectCache.contains(id)) _objectCache(id)
     else {
-/*
-      // search static objects
-      val obj = new TadsStaticObject(this, image.staticObjectWithId(id))
-      _objectCache(id) = obj
-      obj*/
       throw new ObjectNotFoundException
     }
   }

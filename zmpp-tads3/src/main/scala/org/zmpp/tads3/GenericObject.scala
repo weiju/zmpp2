@@ -30,6 +30,7 @@ package org.zmpp.tads3
 
 import scala.collection.JavaConversions._
 import java.util.ArrayList
+import org.zmpp.base._
 
 // GenericObjects are instances of what the documentation calls "TADS Object".
 // We wanted to avoid confusion, because "TadsObject" is the super class of
@@ -42,29 +43,6 @@ import java.util.ArrayList
 // because of the need to enumerate all objects with some functions.
 // We keep in mind that the generic object has almost a 1:1 representation
 // in the load/save image.
-class GenericObject(id: TadsObjectId, objectManager: ObjectManager)
-extends AbstractTadsObject(id) {
-  var staticObject: StaticObject = null
-  override def isTransient = staticObject.isTransient
-  override def isInstanceOf(objectId: Int): Boolean = {
-    // TODO: This check checks user-defined class hierarchies
-    throw new UnsupportedOperationException("isInstanceOf() not yet implemented: " +
-                                            getClass.getName)
-  }
-  override def findProperty(propertyId: Int):Property = {
-    val prop = staticObject.findProperty(propertyId)
-    if (prop != null) return prop
-    // not found in object try super class properties
-    for (i <- 0 until staticObject.superClassCount) {
-      val superClassId = staticObject.superClassIdAt(i)
-      printf("not found, try super class: %d\n", superClassId)
-      val superClass = objectManager.objectWithId(superClassId)
-      val prop = superClass.findProperty(propertyId)
-      if (prop != null) return prop
-    }
-    null
-  }
-}
 
 // Image format for tads-object instances:
 // UINT2 superclass_count
@@ -78,13 +56,62 @@ extends AbstractTadsObject(id) {
 // ...
 // UINT2 load_image_property_ID_N
 // DATAHOLDER load_image_property_value_N 
+class GenericObject(id: TadsObjectId, objectManager: ObjectManager)
+extends AbstractTadsObject(id) {
+  val superClassIds = new ArrayList[Int]
+  val properties    = new ArrayList[Property]
+
+  override def isInstanceOf(objectId: Int): Boolean = {
+    // TODO: This check checks user-defined class hierarchies
+    throw new UnsupportedOperationException("isInstanceOf() not yet implemented: " +
+                                            getClass.getName)
+  }
+  override def findProperty(propertyId: Int):Property = {
+    val prop = findPropertyInThis(propertyId)
+    if (prop != null) return prop
+    // not found in object -> try super class properties
+    for (superClassId <- superClassIds) {
+      printf("not found, try super class: %d\n", superClassId)
+      val superClass = objectManager.objectWithId(superClassId)
+      val prop = superClass.findProperty(propertyId)
+      if (prop != null) return prop
+    }
+    null
+  }
+
+  def findPropertyInThis(propertyId: Int): Property = {
+    for (prop <- properties) if (prop.id == propertyId) return prop
+    null
+  }
+}
+
 class GenericObjectMetaClass extends SystemMetaClass {
   def name = "tads-object"
-  override def createFromImage(staticObject: StaticObject,
-                               objectManager: ObjectManager): TadsObject = {
-    val genericObject = new GenericObject(new TadsObjectId(staticObject.id),
+  override def createFromImage(objectManager: ObjectManager,
+                               imageMem: Memory, objectId: Int,
+                               objDataAddr: Int,
+                               numBytes: Int,
+                               isTransient: Boolean): TadsObject = {
+    import TadsConstants._
+    val genericObject = new GenericObject(new TadsObjectId(objectId),
                                           objectManager)
-    genericObject.staticObject = staticObject
+    val superClassCount = imageMem.shortAt(objDataAddr)
+    val propertyCount   = imageMem.shortAt(objDataAddr + 2)
+    val flags           = imageMem.shortAt(objDataAddr + 4)
+    for (index <- 0 until superClassCount) {
+      genericObject.superClassIds.add(imageMem.shortAt(objDataAddr + 6 +
+                                                       index * 4))
+    }
+    val propertyOffset = objDataAddr + 6 + superClassCount * 4
+    for (index <- 0 until propertyCount) {
+      val propAddr = propertyOffset + (SizeDataHolder + SizePropertyId) * index
+      val propertyId    = imageMem.shortAt(propAddr)
+      val propertyType  = imageMem.byteAt(propAddr + 2)
+      val propertyValue = TypeIds.valueForType(propertyType,
+                                               imageMem.intAt(propAddr + 3))
+      genericObject.properties.add(new Property(propertyId, propertyType,
+                                                propertyValue, objectId))
+    }
     genericObject
   }
 }

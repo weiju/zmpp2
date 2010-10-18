@@ -103,25 +103,6 @@ class ConstantPool(val id: Int, val numPages: Int, val pageSize: Int) {
   }
 }
 
-// Meta class dependencies define the mapping from well-known meta classes
-// to indexes
-class MetaClassDependency(index: Int, nameString: String,
-                          val numProperties: Int) {
-  val name = nameString.split("/")(0)
-  val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
-                else "000000"
-  val propertyIds = new Array[Int](numProperties)
-
-  override def toString = {
-    var result = "Metaclass %d: %s Version %s\nProperty Ids:\n".format(
-      index, name, version)
-    for (i <- 0 until propertyIds.length) {
-      result += "  %d\n".format(propertyIds(i))
-    }
-    result
-  }
-}
-
 // Function set dependency. The image file defines the index that is used
 // to access a function set by listing the order of function set dependencies
 // in the function set dependency block
@@ -136,85 +117,6 @@ class FunctionSetDependency(nameString: String) {
 // from the name to the way the symbol can be accessed by the VM
 class SymbolicName(val name: String, val valueType: Int, val value: Int)
 
-class Property(val id: Int, val valueType: Int, val value: Int,
-               val definingObject: Int) {
-  override def toString = {
-    "Property (id = %d type: %d value: %d def. obj: %d)".format(
-      id, valueType, value, definingObject)
-  }
-}
-
-// Static objects are created from the image's static object block
-// This is a pointer into the load image, and is used by the meta classes
-// to create the real object
-class StaticObject(tads3Image: TadsImage, val id: Int, val metaClassIndex: Int,
-                   val dataAddress: Int, val dataSize: Int,
-                   val isTransient: Boolean) {
-  def superClassCount        = tads3Image.memory.shortAt(dataAddress)
-  def loadImagePropertyCount = tads3Image.memory.shortAt(dataAddress + 2)
-  def objectFlags            = tads3Image.memory.shortAt(dataAddress + 4)
-  def superClassIdAt(index: Int)  = tads3Image.memory.shortAt(dataAddress + 6 +
-                                                              index * 4)
-
-  private def propertyOffset = dataAddress + 6 + superClassCount * 4
-
-  private def propertyAddressAt(index: Int) = {
-    import TadsConstants._
-    propertyOffset + (SizeDataHolder + SizePropertyId) * index
-  }
-  private def propertyIdAt(index: Int) = {
-    tads3Image.memory.shortAt(propertyAddressAt(index))
-  }
-  private def propertyTypeAt(index: Int) = {
-    tads3Image.memory.byteAt(propertyAddressAt(index) + 2)
-  }
-  private def propertyValueAt(index: Int) = {
-    tads3Image.memory.intAt(propertyAddressAt(index) + 3)
-  }
-
-  def propertyAt(index: Int) = {
-    val propertyType = propertyTypeAt(index)
-    new Property(propertyIdAt(index), propertyType,
-                 TypeIds.valueForType(propertyType,
-                                      propertyValueAt(index)), id)
-  }
-
-  def findProperty(propertyId: Int): Property = {
-    // First search property in this object, we use a simple linear search for
-    // now
-    for (i <- 0 until loadImagePropertyCount) {
-      val propId = propertyIdAt(i)
-      if (propId == propertyId) {
-        val propertyType = propertyTypeAt(i)
-        return new Property(propId, propertyType,
-                            TypeIds.valueForType(propertyType,
-                                                 propertyValueAt(i)),
-                            id)
-      }
-    }
-    null
-  }
-
-  override def toString = {
-    val result = new StringBuilder
-    result.append(
-      "[STATIC size = %d] # super classes: %d, # props: %d FLAGS = %04x\n".format(
-        dataSize, superClassCount,
-        loadImagePropertyCount, objectFlags))
-    result.append("Properties:\n")
-    for (i <- 0 until loadImagePropertyCount) {
-      result.append("  [+%d] - %d: %d %d\n".format(
-        propertyAddressAt(i) - dataAddress,
-        propertyIdAt(i),
-        propertyTypeAt(i),
-        propertyValueAt(i)))
-    }
-    if (superClassCount > 0) {
-    }
-    result.toString
-  }
-}
-
 class MethodHeader(val paramCount: Int, val localCount: Int,
                    val maxStackSlots: Int,
                    val exceptionTableOffset: Int, val debugRecordOffset: Int)
@@ -228,49 +130,43 @@ class TadsImage(val memory: Memory) {
   private var _blocks: List[BlockHeader] = Nil
   private val _constantPools = new Array[ConstantPool](3)
   private var _entp: BlockHeader = null
-  private var _metaClassDependencies: Array[MetaClassDependency] = null
   private var _functionSetDependencies: Array[FunctionSetDependency] = null
-  // TODO: we might only need a list of static objects here
-  private val _staticObjects = new TreeMap[Int, StaticObject]
   private val _symbolicNames = new HashMap[String, SymbolicName]
   private var _maxObjectId = 0
 
   def maxObjectId             = _maxObjectId
-  def metaClassDependencies   = _metaClassDependencies
   def symbolicNames           = _symbolicNames
   def functionSetDependencies = _functionSetDependencies
-  def staticObjects           = _staticObjects
 
   // read data from blocks to build an index
-  var blockAddress = 69
-  var blockHeader = readBlockHeader(blockAddress)
-  while (blockHeader.typeId != "EOF ") {
+  // This function needs to be called in order to initialize the system
+  def readData(vmState: TadsVMState) {
+    var blockAddress = 69
+    var blockHeader = readBlockHeader(blockAddress)
+    while (blockHeader.typeId != "EOF ") {
 
-    blockHeader.typeId match {
-      case "CPDF" => readPoolDef(blockHeader)
-      case "CPPG" => addConstantPoolPage(blockHeader)
-      case "ENTP" => _entp = blockHeader
-      case "FNSD" => readFunctionSetDependencies(blockHeader)
-      case "MCLD" => readMetaclassDependencies(blockHeader)
-      case "OBJS" => readStaticObjectBlock(blockHeader)
-      case "SYMD" => readSymbolicNameBlock(blockHeader)
-      case _ =>
-        printf("UNHANDLED BLOCK: %s\n", blockHeader.toString)
+      blockHeader.typeId match {
+        case "CPDF" => readPoolDef(blockHeader)
+        case "CPPG" => addConstantPoolPage(blockHeader)
+        case "ENTP" => _entp = blockHeader
+        case "FNSD" => readFunctionSetDependencies(blockHeader)
+        case "MCLD" => readMetaclassDependencies(blockHeader, vmState.objectManager)
+        case "OBJS" => readStaticObjectBlock(blockHeader, vmState.objectManager)
+        case "SYMD" => readSymbolicNameBlock(blockHeader)
+        case _ =>
+          printf("UNHANDLED BLOCK: %s\n", blockHeader.toString)
+      }
+      blockAddress += BlockHeader.Size + blockHeader.dataSize
+      blockHeader = readBlockHeader(blockAddress)
     }
-    blockAddress += BlockHeader.Size + blockHeader.dataSize
-    blockHeader = readBlockHeader(blockAddress)
+    /*
+     printf("# blocks read: %d\n", _blocks.length)
+     printf("start address: $%02x\n", startAddress)
+     printf("method header size: %d\n", methodHeaderSize)
+     printf("ex table entry size: %d\n", exTableEntrySize)
+     printf("# static objects: %d\n", _staticObjects.size)
+     printf("MAX object id: %d\n", _maxObjectId)*/
   }
-/*
-  printf("# blocks read: %d\n", _blocks.length)
-  printf("start address: $%02x\n", startAddress)
-  printf("method header size: %d\n", methodHeaderSize)
-  printf("ex table entry size: %d\n", exTableEntrySize)
-  printf("# static objects: %d\n", _staticObjects.size)
-  printf("MAX object id: %d\n", _maxObjectId)*/
-/*
-  for (md <- _metaClassDependencies) {
-    println(md)
-  }*/
 
   def startEntryPoint  = memory.intAt(_entp.dataAddress)
   def methodHeaderSize = memory.shortAt(_entp.dataAddress + 4)
@@ -309,8 +205,6 @@ class TadsImage(val memory: Memory) {
                      memory.shortAt(addr + 4), memory.shortAt(addr + 6),
                      memory.shortAt(addr + 8))
   }
-
-  def staticObjectWithId(id: Int)    = _staticObjects(id)
 
   // ********************************************************************
   // ****** Private methods
@@ -354,9 +248,9 @@ class TadsImage(val memory: Memory) {
                     memory.shortAt(addr + 8).asInstanceOf[Int])
   }
   
-  private def readMetaclassDependencies(blockHeader: BlockHeader) {
+  private def readMetaclassDependencies(blockHeader: BlockHeader,
+                                        objectManager: ObjectManager) {
     val numEntries = memory.shortAt(blockHeader.dataAddress)
-    _metaClassDependencies = new Array[MetaClassDependency](numEntries)
     var addr = blockHeader.dataAddress + 2
     for (i <- 0 until numEntries) {
       val entrySize = memory.shortAt(addr)
@@ -366,12 +260,10 @@ class TadsImage(val memory: Memory) {
         namebuffer.append(memory.byteAt(addr + 3 + j).asInstanceOf[Char])
       }
       val numPropertyIds = memory.shortAt(addr + 3 + numEntryNameBytes)
-      _metaClassDependencies(i) = new MetaClassDependency(i, namebuffer.toString,
-                                                          numPropertyIds)
+      objectManager.addMetaClassDependency(i, namebuffer.toString)
       val propbase = addr + 3 + numEntryNameBytes + 2
       for (j <- 0 until numPropertyIds) {
-        _metaClassDependencies(i).propertyIds(j) =
-          memory.shortAt(propbase + j * 2)
+        objectManager.addMetaClassPropertyId(i, memory.shortAt(propbase + j * 2))
       }
       addr += entrySize
     }
@@ -392,7 +284,8 @@ class TadsImage(val memory: Memory) {
     }    
   }
 
-  private def readStaticObjectBlock(blockHeader: BlockHeader) {
+  private def readStaticObjectBlock(blockHeader: BlockHeader,
+                                    objectManager: ObjectManager) {
     val dataAddress = blockHeader.dataAddress
     val numObjects     = memory.shortAt(dataAddress)
     val metaClassIndex = memory.shortAt(dataAddress + 2)
@@ -411,10 +304,8 @@ class TadsImage(val memory: Memory) {
                      else memory.shortAt(objAddr + 4)
       //printf("OBJ ID: %d #BYTES: %d\n", objId, numBytes)
       objAddr += (if (isLarge) 8 else 6)
-      // TODO: Read meta class specific !!!!!!
-      val obj = new StaticObject(this, objId, metaClassIndex, objAddr, numBytes,
-                                 isTransient)
-      _staticObjects(objId) = obj
+      objectManager.addStaticObject(memory, objId, metaClassIndex, objAddr, numBytes,
+                                    isTransient)
       objAddr += numBytes
     }
   }

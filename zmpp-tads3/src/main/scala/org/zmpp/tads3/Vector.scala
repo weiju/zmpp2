@@ -29,8 +29,8 @@
 package org.zmpp.tads3
 
 import java.util.ArrayList
-// treat Java collections like Scala collections
 import scala.collection.JavaConversions._
+import org.zmpp.base._
 
 // This file implements the built-in library class/metaclass Vector in TADS3.
 // A TADS3 Vector is backed by an ArrayList, so constructor arguments which
@@ -38,8 +38,6 @@ import scala.collection.JavaConversions._
 // Note: Vector indexes in TADS are, as all sequential types in TADS, in the
 // range [1..n], and *not* [0..n-1]
 class Vector(id: TadsObjectId) extends AbstractTadsObject(id) {
-  var staticObject: StaticObject = null
-  override def isTransient = false
   val _container = new ArrayList[TadsValue]
 
   def init(numElements: Int) {
@@ -80,10 +78,12 @@ class Vector(id: TadsObjectId) extends AbstractTadsObject(id) {
 class VectorMetaClass extends SystemMetaClass {
   def name = "vector"
 
-  override def createFromImage(staticObject: StaticObject,
-                               objectManager: ObjectManager): TadsObject = {
-    val vector = new Vector(new TadsObjectId(staticObject.id))
-    vector.staticObject = staticObject
+  override def createFromImage(objectManager: ObjectManager,
+                               imageMem: Memory, objectId: Int,
+                               objDataAddr: Int,
+                               numBytes: Int,
+                               isTransient: Boolean): TadsObject = {
+    val vector = new Vector(new TadsObjectId(objectId))
     vector
   }
 

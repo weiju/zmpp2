@@ -30,10 +30,9 @@ package org.zmpp.tads3
 
 import scala.collection.JavaConversions._
 import java.util.ArrayList
+import org.zmpp.base._
 
-class IntrinsicClass(staticObject: StaticObject)
-extends AbstractTadsObject(new TadsObjectId(staticObject.id)) {
-  override def isTransient = staticObject.isTransient
+class IntrinsicClass(id: TadsObjectId) extends AbstractTadsObject(id) {
   override def isInstanceOf(objectId: Int): Boolean = {
     // The reference implementation looks up here whether this object is
     // 1. an instance of IntrinsicClass
@@ -41,7 +40,7 @@ extends AbstractTadsObject(new TadsObjectId(staticObject.id)) {
     // We are implementing in IntrinsicClass itself
     // TODO: the meta class might have a super class, in which case we will have to ask
     // the super class(es) whether it inherits from the class defined by objectId
-    return staticObject.metaClassIndex == objectId
+    throw new UnsupportedOperationException("not yet supported")
   }
 }
 
@@ -51,16 +50,14 @@ extends AbstractTadsObject(new TadsObjectId(staticObject.id)) {
 // UINT4 modifier_object_id
 class IntrinsicClassMetaClass extends SystemMetaClass {
   def name = "intrinsic-class"
-  override def createFromImage(staticObject: StaticObject,
-                               objectManager: ObjectManager): TadsObject = {
+  override def createFromImage(objectManager: ObjectManager,
+                               imageMem: Memory, objectId: Int,
+                               objDataAddr: Int,
+                               numBytes: Int,
+                               isTransient: Boolean): TadsObject = {
     println("-------------------------------------------------------------")
-    printf("CREATING INTRINSIC CLASS %d ", staticObject.id)
-    printf("Super classes: [")
-    for (i <- 0 until staticObject.superClassCount) {
-      printf("%d ", staticObject.superClassIdAt(i))
-    }
-    println("]")
+    printf("CREATING INTRINSIC CLASS %d \n", objectId)
     println("-------------------------------------------------------------")
-    new IntrinsicClass(staticObject)
+    new IntrinsicClass(new TadsObjectId(objectId))
   }
 }

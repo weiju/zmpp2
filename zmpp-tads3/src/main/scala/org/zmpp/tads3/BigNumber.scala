@@ -30,6 +30,7 @@ package org.zmpp.tads3
 
 import scala.collection.JavaConversions._
 import java.util.ArrayList
+import org.zmpp.base._
 
 // We store a BigNumber value as a varying-length string of BCD-encoded
 // digits; we store two digits in each byte.  Our bytes are stored from
@@ -69,16 +70,16 @@ import java.util.ArrayList
 // There is an implicit decimal point before the first byte of the
 // mantissa.
 class BigNumber(id: TadsObjectId) extends AbstractTadsObject(id) {
-  var staticObject: StaticObject = null
-  override def isTransient = staticObject.isTransient
 }
 
 class BigNumberMetaClass extends SystemMetaClass {
   def name = "bignumber"
-  override def createFromImage(staticObject: StaticObject,
-                               objectManager: ObjectManager): TadsObject = {
-    val bigNum = new BigNumber(new TadsObjectId(staticObject.id))
-    bigNum.staticObject = staticObject
+  override def createFromImage(objectManager: ObjectManager,
+                               imageMem: Memory, objectId: Int,
+                               objDataAddr: Int,
+                               numBytes: Int,
+                               isTransient: Boolean): TadsObject = {
+    val bigNum = new BigNumber(new TadsObjectId(objectId))
     bigNum
   }
 }

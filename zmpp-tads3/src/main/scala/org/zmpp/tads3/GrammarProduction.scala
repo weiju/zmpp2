@@ -30,6 +30,7 @@ package org.zmpp.tads3
 
 import scala.collection.JavaConversions._
 import java.util.ArrayList
+import org.zmpp.base._
 
 // Grammar production object - image file format
 
@@ -71,16 +72,16 @@ import java.util.ArrayList
 // VMGRAM_MATCH_STAR - no additional data 
 
 class GrammarProduction(id: TadsObjectId) extends AbstractTadsObject(id) {
-  var staticObject: StaticObject = null
-  override def isTransient = staticObject.isTransient
 }
 
 class GrammarProductionMetaClass extends SystemMetaClass {
   def name = "grammar-production"
-  override def createFromImage(staticObject: StaticObject,
-                               objectManager: ObjectManager): TadsObject = {
-    val grammarProd = new GrammarProduction(new TadsObjectId(staticObject.id))
-    grammarProd.staticObject = staticObject
+  override def createFromImage(objectManager: ObjectManager,
+                               imageMem: Memory, objectId: Int,
+                               objDataAddr: Int,
+                               numBytes: Int,
+                               isTransient: Boolean): TadsObject = {
+    val grammarProd = new GrammarProduction(new TadsObjectId(objectId))
     grammarProd
   }
 }

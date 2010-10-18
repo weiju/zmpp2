@@ -48,6 +48,7 @@ class TadsVMState {
   private var _memory : Memory = null
   var image: TadsImage        = null
   val stack = new Stack
+  val objectManager = new ObjectManager(this)
   var runState = RunStates.Running
   
   // Registers (TODO: current savepoint, savepoint count)
@@ -59,6 +60,8 @@ class TadsVMState {
 
   def reset(imageMem: Memory) {
     image = new TadsImage(imageMem)
+    objectManager.reset
+    image.readData(this)
 
     // call initial function
     // push empty list on stack - QTads puts command line arguments in that list
@@ -145,14 +148,12 @@ class TadsVMState {
 
 class TadsVM {
   val _state                 = new TadsVMState
-  val _objectManager         = new ObjectManager
   val _functionSetMapper     = new IntrinsicFunctionSetMapper
   var iteration              = 1
 
   def init(imageMem: Memory) {
     _state.reset(imageMem)
-    _objectManager.reset(_state)
-    _functionSetMapper.reset(_state, _objectManager)
+    _functionSetMapper.reset(_state)
     printf("VALID FILE: %b, Version: %d Timestamp: %s\n",
            _state.image.isValid, _state.image.version, _state.image.timestamp)
   }
@@ -206,7 +207,7 @@ class TadsVM {
       case JNil         => branchIfTrue(_state.stack.pop == TadsNil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
       case New1         =>
-        _state.r0 = _objectManager.createFromStack(nextByteOperand, nextByteOperand)
+        _state.r0 = _state.objectManager.createFromStack(nextByteOperand, nextByteOperand)
       case Nop          => // do nothing
       case ObjGetProp   => objGetProp(nextIntOperand, nextShortOperand)
       case Push1        => _state.stack.push1
@@ -239,7 +240,7 @@ class TadsVM {
 
   private def setInd(containerVal: TadsValue, index: Int, newVal: TadsValue) = {
     if (containerVal.valueType == TypeIds.VmObj) {
-      val obj = _objectManager.objectWithId(containerVal.value)
+      val obj = _state.objectManager.objectWithId(containerVal.value)
       obj.setValueAtIndex(index, newVal)
     } else if (containerVal.valueType == TypeIds.VmList) {
       throw new UnsupportedOperationException("SETINDxxx not supported " +
@@ -253,7 +254,7 @@ class TadsVM {
   }
 
   private def objGetProp(objId: Int, propId: Int) {
-    val obj = _objectManager.objectWithId(objId)
+    val obj = _state.objectManager.objectWithId(objId)
     val prop = obj.findProperty(propId)
     if (prop != null) evalProperty(objId, prop, propId)
     else {
