@@ -32,9 +32,11 @@ import scala.collection.JavaConversions._
 import java.util.ArrayList
 import org.zmpp.base._
 
-class IntrinsicClass(id: TadsObjectId, val metaClassId: Int,
+class IntrinsicClass(id: TadsObjectId, metaClass: MetaClass,
+                     val metaClassIndex: Int,
                      val modifierObjId: Int)
-extends AbstractTadsObject(id) {
+extends AbstractTadsObject(id, metaClass) {
+  override def isClassObject = true
   override def isInstanceOf(objectId: Int): Boolean = {
     // The reference implementation looks up here whether this object is
     // 1. an instance of IntrinsicClass
@@ -42,7 +44,7 @@ extends AbstractTadsObject(id) {
     // We are implementing in IntrinsicClass itself
     // TODO: the meta class might have a super class, in which case we will have to ask
     // the super class(es) whether it inherits from the class defined by objectId
-    objectId == metaClassId
+    throw new UnsupportedOperationException("not implemented yet")
   }
 }
 
@@ -65,6 +67,7 @@ class IntrinsicClassMetaClass extends SystemMetaClass {
            "MODIFIER OBJ: %d\n",
            objectId, byteCount, metaClassIndex, modifierObjId)
     println("-------------------------------------------------------------")
-    new IntrinsicClass(new TadsObjectId(objectId), metaClassIndex, modifierObjId)
+    new IntrinsicClass(new TadsObjectId(objectId), this, metaClassIndex,
+                       modifierObjId)
   }
 }

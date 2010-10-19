@@ -37,7 +37,8 @@ import org.zmpp.base._
 // specify sizes will have no effect here.
 // Note: Vector indexes in TADS are, as all sequential types in TADS, in the
 // range [1..n], and *not* [0..n-1]
-class Vector(id: TadsObjectId) extends AbstractTadsObject(id) {
+class Vector(id: TadsObjectId, metaClass: MetaClass)
+extends AbstractTadsObject(id, metaClass) {
   val _container = new ArrayList[TadsValue]
 
   def init(numElements: Int) {
@@ -83,7 +84,7 @@ class VectorMetaClass extends SystemMetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val vector = new Vector(new TadsObjectId(objectId))
+    val vector = new Vector(new TadsObjectId(objectId), this)
     vector
   }
 
@@ -104,7 +105,7 @@ class VectorMetaClass extends SystemMetaClass {
     val arg0 = vmState.stack.pop
     val result = if (arg0.valueType == TypeIds.VmInt) {
       // we ignore this parameter, we do not allocate vectors with an initial size
-      new Vector(id)
+      new Vector(id, this)
     } else {
       throw new IllegalArgumentException("vector::constructor(), illegal " +
                                          "arg0 type")

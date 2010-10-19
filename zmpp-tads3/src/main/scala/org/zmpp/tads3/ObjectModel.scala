@@ -44,6 +44,9 @@ import org.zmpp.base._
 trait TadsObject {
   def id: TadsObjectId
   def isTransient: Boolean
+  def isClassObject: Boolean
+  def metaClass: MetaClass
+
   def isInstanceOf(objectId: Int): Boolean
 
   def findProperty(propertyId: Int): Property
@@ -52,8 +55,10 @@ trait TadsObject {
                       newValue: TadsValue): TadsValue
 }
 
-abstract class AbstractTadsObject(val id: TadsObjectId) extends TadsObject {
+abstract class AbstractTadsObject(val id: TadsObjectId,
+                                  val metaClass: MetaClass) extends TadsObject {
   var isTransient = false
+  def isClassObject = false
   def isInstanceOf(objectId: Int): Boolean = false
   def findProperty(propertyId: Int): Property = {
     throw new UnsupportedOperationException("findProperty() not implemented: " +
@@ -119,9 +124,6 @@ class ListMetaClass   extends SystemMetaClass {
 class IntClassModMetaClass extends SystemMetaClass {
   def name = "int-class-mod"
 }
-class RootObjectMetaClass extends SystemMetaClass {
-  def name = "root-object"
-}
 class CollectionMetaClass extends SystemMetaClass {
   def name = "collection"
 }
@@ -145,6 +147,12 @@ class LookupTableIteratorMetaClass extends SystemMetaClass {
 }
 class FileMetaClass extends SystemMetaClass {
   def name = "file"
+}
+
+// This is a special meta class that does not do much, its properties can be accessed
+// but there is only one root object in the system
+class RootObjectMetaClass extends SystemMetaClass {
+  def name = "root-object"
 }
 
 // Predefined symbols that the image defines. Can be accessed by the VM through
@@ -279,13 +287,13 @@ class ObjectManager(vmState: TadsVMState) {
   }
 
   // Enumeration of objects, this is the 
-  def firstObject(getInstances: Boolean, getClasses: Boolean,
-                  classId: Int = TadsObjectId.ObjectIdInvalid): TadsObject = {
+  def firstObject(enumInstances: Boolean, enumClasses: Boolean,
+                  classId: TadsObjectId = TadsObjectId.InvalidObject): TadsObject = {
     throw new UnsupportedOperationException("firstObject() not yet supported")
   }
-  def nextObject(getInstances: Boolean, getClasses: Boolean,
+  def nextObject(enumInstances: Boolean, enumClasses: Boolean,
                  previousObject: Int = TadsObjectId.ObjectIdInvalid,
-                 classId: Int = TadsObjectId.ObjectIdInvalid): TadsObject = {
+                 classId: TadsObjectId = TadsObjectId.InvalidObject): TadsObject = {
     throw new UnsupportedOperationException("previousObject() not yet supported")
   }
 }

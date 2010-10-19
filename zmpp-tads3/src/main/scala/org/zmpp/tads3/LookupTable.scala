@@ -32,7 +32,8 @@ import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
-class LookupTable(id: TadsObjectId) extends AbstractTadsObject(id) {
+class LookupTable(id: TadsObjectId, metaClass: MetaClass)
+extends AbstractTadsObject(id, metaClass) {
 }
 
 class LookupTableMetaClass extends SystemMetaClass {
@@ -42,7 +43,7 @@ class LookupTableMetaClass extends SystemMetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val lookupTable = new LookupTable(new TadsObjectId(objectId))
+    val lookupTable = new LookupTable(new TadsObjectId(objectId), this)
     lookupTable
   }
 }

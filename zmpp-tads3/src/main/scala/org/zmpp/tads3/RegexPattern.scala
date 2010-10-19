@@ -32,7 +32,8 @@ import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
-class RegexPattern(id: TadsObjectId) extends AbstractTadsObject(id) {
+class RegexPattern(id: TadsObjectId, metaClass: MetaClass)
+extends AbstractTadsObject(id, metaClass) {
 }
 
 class RegexPatternMetaClass extends SystemMetaClass {
@@ -42,7 +43,7 @@ class RegexPatternMetaClass extends SystemMetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val regexPat = new RegexPattern(new TadsObjectId(objectId))
+    val regexPat = new RegexPattern(new TadsObjectId(objectId), this)
     regexPat
   }
 }

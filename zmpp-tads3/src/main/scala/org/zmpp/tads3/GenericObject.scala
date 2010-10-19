@@ -56,8 +56,10 @@ import org.zmpp.base._
 // ...
 // UINT2 load_image_property_ID_N
 // DATAHOLDER load_image_property_value_N 
-class GenericObject(id: TadsObjectId, objectManager: ObjectManager)
-extends AbstractTadsObject(id) {
+class GenericObject(id: TadsObjectId, metaClass: MetaClass,
+                    override val isClassObject: Boolean,
+                    objectManager: ObjectManager)
+extends AbstractTadsObject(id, metaClass) {
   val superClassIds = new ArrayList[Int]
   val properties    = new ArrayList[Property]
 
@@ -85,6 +87,10 @@ extends AbstractTadsObject(id) {
   }
 }
 
+object GenericObjectMetaClass {
+  val FlagIsClass = 0x0001
+}
+
 class GenericObjectMetaClass extends SystemMetaClass {
   def name = "tads-object"
   override def createFromImage(objectManager: ObjectManager,
@@ -93,11 +99,16 @@ class GenericObjectMetaClass extends SystemMetaClass {
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
     import TadsConstants._
-    val genericObject = new GenericObject(new TadsObjectId(objectId),
-                                          objectManager)
+    import GenericObjectMetaClass._
+
     val superClassCount = imageMem.shortAt(objDataAddr)
     val propertyCount   = imageMem.shortAt(objDataAddr + 2)
     val flags           = imageMem.shortAt(objDataAddr + 4)
+    val isClassObject   = (flags & FlagIsClass) == FlagIsClass
+
+    val genericObject = new GenericObject(new TadsObjectId(objectId), this,
+                                          isClassObject,
+                                          objectManager)
     for (index <- 0 until superClassCount) {
       genericObject.superClassIds.add(imageMem.shortAt(objDataAddr + 6 +
                                                        index * 4))
