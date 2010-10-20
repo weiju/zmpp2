@@ -46,8 +46,8 @@ trait TadsObject {
   def isTransient: Boolean
   def isClassObject: Boolean
   def metaClass: MetaClass
-
-  def isInstanceOf(objectId: Int): Boolean
+  def isOfMetaClass(meta: MetaClass): Boolean
+  def isInstanceOf(obj: TadsObject): Boolean
 
   def findProperty(propertyId: Int): Property
   def valueAtIndex(index: Int): TadsValue
@@ -59,7 +59,16 @@ abstract class AbstractTadsObject(val id: TadsObjectId,
                                   val metaClass: MetaClass) extends TadsObject {
   var isTransient = false
   def isClassObject = false
-  def isInstanceOf(objectId: Int): Boolean = false
+  def isOfMetaClass(meta: MetaClass) = metaClass == meta
+  def isInstanceOf(obj: TadsObject): Boolean = {
+    // the obj parameter needs to be an instance of the IntrinsicClass metaclass
+    if (obj.isOfMetaClass(ObjectSystem.MetaClasses("intrinsic-class"))) {
+      // TODO: GET this object's meta class and compare, either if
+      // equal or instance
+      false
+    }
+    false
+  }
   def findProperty(propertyId: Int): Property = {
     throw new UnsupportedOperationException("findProperty() not implemented: " +
                                           getClass.getName)
@@ -72,6 +81,9 @@ abstract class AbstractTadsObject(val id: TadsObjectId,
   }
 }
 
+// A null object for quick comparison
+object InvalidObject extends AbstractTadsObject(new TadsObjectId(0), null)
+
 class Property(val id: Int, val valueType: Int, val value: Int,
                val definingObject: Int) {
   override def toString = {
@@ -82,6 +94,8 @@ class Property(val id: Int, val valueType: Int, val value: Int,
 
 // The abstract interface to a TADS3 meta class.
 trait MetaClass {
+  def id: Int
+  def id_=(value: Int)
   def name: String
   def createFromStack(id: TadsObjectId, vmState: TadsVMState,
                       argc: Int): TadsObject
@@ -99,6 +113,7 @@ trait MetaClass {
 // Instead of complaining, I'll just see how they are implemented in QTads and
 // document it by myself
 abstract class SystemMetaClass extends MetaClass {
+  var id: Int = 0
   def createFromStack(id: TadsObjectId, vmState: TadsVMState,
                       argc: Int): TadsObject = {
     throw new UnsupportedOperationException("createFromStack not yet " +
@@ -235,6 +250,7 @@ class ObjectManager(vmState: TadsVMState) {
     val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
                       else "000000"
     _metaClassMap(index) = ObjectSystem.MetaClasses(name)
+    _metaClassMap(index).id = index
   }
 
   def addMetaClassPropertyId(index: Int, propertyId: Int) {
@@ -279,16 +295,22 @@ class ObjectManager(vmState: TadsVMState) {
   // **** Query Functions
   // **********************************************************************
 
+  def metaClassForIndex(index: Int) = _metaClassMap(index)
+
   def objectWithId(id: Int) = {
     if (_objectCache.contains(id)) _objectCache(id)
-    else {
-      throw new ObjectNotFoundException
-    }
+    else InvalidObject
   }
 
   // Enumeration of objects, this is the 
   def firstObject(enumInstances: Boolean, enumClasses: Boolean,
                   classId: TadsObjectId = TadsObjectId.InvalidObject): TadsObject = {
+    val matchClass = objectWithId(classId.value)
+    for (entry <- _objectCache) { // entries are pairs of (key, value)
+      val currentObj = entry._2
+      // TODO: comparison: if classId is not invalid, then enumerate the objects
+      // which are instances of matchClass
+    }
     throw new UnsupportedOperationException("firstObject() not yet supported")
   }
   def nextObject(enumInstances: Boolean, enumClasses: Boolean,

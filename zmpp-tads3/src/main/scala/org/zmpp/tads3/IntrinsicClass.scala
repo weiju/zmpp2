@@ -32,18 +32,20 @@ import scala.collection.JavaConversions._
 import java.util.ArrayList
 import org.zmpp.base._
 
+/*
+ * An instance of IntrinsicClass represents an intrinsic meta class within
+ * the TadsObject hierarchy. This is because intrinsic metaclasses are
+ * objects of the VM, while TadsObject's exist in the game space. The load
+ * image specifies the mapping between intrinsic VM objects and game objects
+ * which is established at image load time.
+ * We just follow the scheme of the reference implementation here.
+ */
 class IntrinsicClass(id: TadsObjectId, metaClass: MetaClass,
-                     val metaClassIndex: Int,
+                     val representedMetaClass: MetaClass,
                      val modifierObjId: Int)
 extends AbstractTadsObject(id, metaClass) {
   override def isClassObject = true
-  override def isInstanceOf(objectId: Int): Boolean = {
-    // The reference implementation looks up here whether this object is
-    // 1. an instance of IntrinsicClass
-    // 2. if this object's metaclass index matches the given object id
-    // We are implementing in IntrinsicClass itself
-    // TODO: the meta class might have a super class, in which case we will have to ask
-    // the super class(es) whether it inherits from the class defined by objectId
+  override def isInstanceOf(obj: TadsObject): Boolean = {
     throw new UnsupportedOperationException("not implemented yet")
   }
 }
@@ -67,7 +69,9 @@ class IntrinsicClassMetaClass extends SystemMetaClass {
            "MODIFIER OBJ: %d\n",
            objectId, byteCount, metaClassIndex, modifierObjId)
     println("-------------------------------------------------------------")
-    new IntrinsicClass(new TadsObjectId(objectId), this, metaClassIndex,
+    new IntrinsicClass(new TadsObjectId(objectId), this,
+                       objectManager.metaClassForIndex(metaClassIndex),
                        modifierObjId)
+    // TODO: Assign this object to the metaclass
   }
 }

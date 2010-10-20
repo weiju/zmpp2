@@ -58,15 +58,20 @@ import org.zmpp.base._
 // DATAHOLDER load_image_property_value_N 
 class GenericObject(id: TadsObjectId, metaClass: MetaClass,
                     override val isClassObject: Boolean,
+                    superClassCount: Int,
+                    propertyCount: Int,
                     objectManager: ObjectManager)
 extends AbstractTadsObject(id, metaClass) {
-  val superClassIds = new ArrayList[Int]
-  val properties    = new ArrayList[Property]
+  val superClassIds = new Array[Int](superClassCount)
+  val properties    = new Array[Property](propertyCount)
 
-  override def isInstanceOf(objectId: Int): Boolean = {
-    // TODO: This check checks user-defined class hierarchies
-    throw new UnsupportedOperationException("isInstanceOf() not yet implemented: " +
-                                            getClass.getName)
+  override def isInstanceOf(obj: TadsObject): Boolean = {
+    for (superClassId <- superClassIds) {
+      if (objectManager.objectWithId(superClassId) == obj) return true
+      // TODO: we might have to check whether the super class inherits
+      // from obj
+    }
+    super.isInstanceOf(obj)
   }
   override def findProperty(propertyId: Int):Property = {
     val prop = findPropertyInThis(propertyId)
@@ -107,11 +112,12 @@ class GenericObjectMetaClass extends SystemMetaClass {
     val isClassObject   = (flags & FlagIsClass) == FlagIsClass
 
     val genericObject = new GenericObject(new TadsObjectId(objectId), this,
-                                          isClassObject,
+                                          isClassObject, superClassCount,
+                                          propertyCount,
                                           objectManager)
     for (index <- 0 until superClassCount) {
-      genericObject.superClassIds.add(imageMem.shortAt(objDataAddr + 6 +
-                                                       index * 4))
+      genericObject.superClassIds(index) = imageMem.shortAt(objDataAddr + 6 +
+                                                            index * 4)
     }
     val propertyOffset = objDataAddr + 6 + superClassCount * 4
     for (index <- 0 until propertyCount) {
@@ -120,8 +126,8 @@ class GenericObjectMetaClass extends SystemMetaClass {
       val propertyType  = imageMem.byteAt(propAddr + 2)
       val propertyValue = TypeIds.valueForType(propertyType,
                                                imageMem.intAt(propAddr + 3))
-      genericObject.properties.add(new Property(propertyId, propertyType,
-                                                propertyValue, objectId))
+      genericObject.properties(index) = new Property(propertyId, propertyType,
+                                                     propertyValue, objectId)
     }
     genericObject
   }
