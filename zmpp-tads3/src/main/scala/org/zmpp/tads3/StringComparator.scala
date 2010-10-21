@@ -33,10 +33,10 @@ import scala.collection.JavaConversions._
 import org.zmpp.base._
 
 class StringComparator(id: TadsObjectId, metaClass: MetaClass)
-extends AbstractTadsObject(id, metaClass) {
+extends TadsObject(id, metaClass) {
 }
 
-class StringComparatorMetaClass extends SystemMetaClass {
+class StringComparatorMetaClass extends MetaClass {
   def name = "string-comparator"
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: Int,

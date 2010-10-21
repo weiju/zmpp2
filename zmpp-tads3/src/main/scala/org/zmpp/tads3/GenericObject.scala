@@ -61,7 +61,7 @@ class GenericObject(id: TadsObjectId, metaClass: MetaClass,
                     superClassCount: Int,
                     propertyCount: Int,
                     objectManager: ObjectManager)
-extends AbstractTadsObject(id, metaClass) {
+extends TadsObject(id, metaClass) {
   val superClassIds = new Array[Int](superClassCount)
   val properties    = new Array[Property](propertyCount)
 
@@ -96,7 +96,7 @@ object GenericObjectMetaClass {
   val FlagIsClass = 0x0001
 }
 
-class GenericObjectMetaClass extends SystemMetaClass {
+class GenericObjectMetaClass extends MetaClass {
   def name = "tads-object"
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: Int,
@@ -110,6 +110,7 @@ class GenericObjectMetaClass extends SystemMetaClass {
     val propertyCount   = imageMem.shortAt(objDataAddr + 2)
     val flags           = imageMem.shortAt(objDataAddr + 4)
     val isClassObject   = (flags & FlagIsClass) == FlagIsClass
+    val id              = new TadsObjectId(objectId)
 
     val genericObject = new GenericObject(new TadsObjectId(objectId), this,
                                           isClassObject, superClassCount,
@@ -126,8 +127,10 @@ class GenericObjectMetaClass extends SystemMetaClass {
       val propertyType  = imageMem.byteAt(propAddr + 2)
       val propertyValue = TypeIds.valueForType(propertyType,
                                                imageMem.intAt(propAddr + 3))
-      genericObject.properties(index) = new Property(propertyId, propertyType,
-                                                     propertyValue, objectId)
+      genericObject.properties(index) =
+        new Property(propertyId,
+                     TadsValue.create(propertyType, propertyValue),
+                     id)
     }
     genericObject
   }

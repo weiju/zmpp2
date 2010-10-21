@@ -41,22 +41,8 @@ import scala.collection.JavaConversions._
 import java.util.TreeMap
 import org.zmpp.base._
 
-trait TadsObject {
-  def id: TadsObjectId
-  def isTransient: Boolean
-  def isClassObject: Boolean
-  def metaClass: MetaClass
-  def isOfMetaClass(meta: MetaClass): Boolean
-  def isInstanceOf(obj: TadsObject): Boolean
-
-  def findProperty(propertyId: Int): Property
-  def valueAtIndex(index: Int): TadsValue
-  def setValueAtIndex(index: Int,
-                      newValue: TadsValue): TadsValue
-}
-
-abstract class AbstractTadsObject(val id: TadsObjectId,
-                                  val metaClass: MetaClass) extends TadsObject {
+abstract class TadsObject(val id: TadsObjectId,
+                          val metaClass: MetaClass) {
   var isTransient = false
   def isClassObject = false
   def isOfMetaClass(meta: MetaClass) = metaClass == meta
@@ -82,27 +68,16 @@ abstract class AbstractTadsObject(val id: TadsObjectId,
 }
 
 // A null object for quick comparison
-object InvalidObject extends AbstractTadsObject(new TadsObjectId(0), null)
+object InvalidObject extends TadsObject(InvalidObjectId, null)
 
-class Property(val id: Int, val valueType: Int, val value: Int,
-               val definingObject: Int) {
+class Property(val id: Int, tadsValue: TadsValue,
+               val definingObject: TadsObjectId) {
+  def valueType = tadsValue.valueType
+  def value = tadsValue.value
   override def toString = {
-    "Property (id = %d type: %d value: %d def. obj: %d)".format(
-      id, valueType, value, definingObject)
+    "Property (id = %d value: %s def. obj: %s)".format(
+      id, tadsValue, definingObject)
   }
-}
-
-// The abstract interface to a TADS3 meta class.
-trait MetaClass {
-  def id: Int
-  def id_=(value: Int)
-  def name: String
-  def createFromStack(id: TadsObjectId, vmState: TadsVMState,
-                      argc: Int): TadsObject
-  def createFromImage(objectManager: ObjectManager,
-                      imageMem: Memory, objectId: Int, objDataAddr: Int,
-                      numBytes: Int, isTransient: Boolean): TadsObject
-  def supportsVersion(version: String): Boolean
 }
 
 // Define all system meta classes that we know so far
@@ -112,8 +87,8 @@ trait MetaClass {
 // QTads' source code.
 // Instead of complaining, I'll just see how they are implemented in QTads and
 // document it by myself
-abstract class SystemMetaClass extends MetaClass {
-  var id: Int = 0
+abstract class MetaClass {
+  def name: String
   def createFromStack(id: TadsObjectId, vmState: TadsVMState,
                       argc: Int): TadsObject = {
     throw new UnsupportedOperationException("createFromStack not yet " +
@@ -128,45 +103,52 @@ abstract class SystemMetaClass extends MetaClass {
                                             "metaclass '%s'".format(name))
   }
   def supportsVersion(version: String) = true
+
+  // After being loaded, its dependency id and the VM state
+  // can be directly accessed through its members.
+  // This is so each object only needs to store the reference to its
+  // meta class, but can still query the system state if necessary
+  var id: Int = 0
+  var vmState: TadsVMState = null
 }
-class StringMetaClass extends SystemMetaClass {
+class StringMetaClass extends MetaClass {
   def name = "string"
 }
-class ListMetaClass   extends SystemMetaClass {
+class ListMetaClass   extends MetaClass {
   def name = "list"
 }
 
-class IntClassModMetaClass extends SystemMetaClass {
+class IntClassModMetaClass extends MetaClass {
   def name = "int-class-mod"
 }
-class CollectionMetaClass extends SystemMetaClass {
+class CollectionMetaClass extends MetaClass {
   def name = "collection"
 }
-class IteratorMetaClass extends SystemMetaClass {
+class IteratorMetaClass extends MetaClass {
   def name = "iterator"
 }
-class IndexedIteratorMetaClass extends SystemMetaClass {
+class IndexedIteratorMetaClass extends MetaClass {
   def name = "indexed-iterator"
 }
-class CharacterSetMetaClass extends SystemMetaClass {
+class CharacterSetMetaClass extends MetaClass {
   def name = "character-set"
 }
-class ByteArrayMetaClass extends SystemMetaClass {
+class ByteArrayMetaClass extends MetaClass {
   def name = "bytearray"
 }
-class WeakRefLookupTableMetaClass extends SystemMetaClass {
+class WeakRefLookupTableMetaClass extends MetaClass {
   def name = "weakreflookuptable"
 }
-class LookupTableIteratorMetaClass extends SystemMetaClass {
+class LookupTableIteratorMetaClass extends MetaClass {
   def name = "lookuptable-iterator"
 }
-class FileMetaClass extends SystemMetaClass {
+class FileMetaClass extends MetaClass {
   def name = "file"
 }
 
 // This is a special meta class that does not do much, its properties can be accessed
 // but there is only one root object in the system
-class RootObjectMetaClass extends SystemMetaClass {
+class RootObjectMetaClass extends MetaClass {
   def name = "root-object"
 }
 
@@ -250,7 +232,8 @@ class ObjectManager(vmState: TadsVMState) {
     val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
                       else "000000"
     _metaClassMap(index) = ObjectSystem.MetaClasses(name)
-    _metaClassMap(index).id = index
+    _metaClassMap(index).id      = index
+    _metaClassMap(index).vmState = vmState
   }
 
   def addMetaClassPropertyId(index: Int, propertyId: Int) {
@@ -263,6 +246,9 @@ class ObjectManager(vmState: TadsVMState) {
                                                             objectId, objAddr,
                                                             numBytes, isTransient)
     _objectCache(objectId) = obj
+    // set the maximum object id higher so that after we loaded all
+    // static objects, we have a start object id
+    if (obj.id.value > _maxObjectId) _maxObjectId = obj.id.value + 1
   }
 
   def reset {
@@ -281,7 +267,6 @@ class ObjectManager(vmState: TadsVMState) {
     val id = new TadsObjectId(newId)
     val obj = _metaClassMap(metaClassId).createFromStack(id, vmState, argc)
     _objectCache(id.value) = obj
-    //printf("CREATED OBJECT WITH ID: %d\n", id)
     id
   }
 
@@ -304,18 +289,17 @@ class ObjectManager(vmState: TadsVMState) {
 
   // Enumeration of objects, this is the 
   def firstObject(enumInstances: Boolean, enumClasses: Boolean,
-                  classId: TadsObjectId = TadsObjectId.InvalidObject): TadsObject = {
-    val matchClass = objectWithId(classId.value)
+                  matchClass: TadsObject): TadsObject = {
     for (entry <- _objectCache) { // entries are pairs of (key, value)
       val currentObj = entry._2
-      // TODO: comparison: if classId is not invalid, then enumerate the objects
-      // which are instances of matchClass
+      var shouldBeChecked = true
+      if (!enumInstances && !currentObj.isClassObject) shouldBeChecked = false
+      if (!enumClasses && currentObj.isClassObject) shouldBeChecked = false
+      if (shouldBeChecked) { // TODO: ignore list and string objects
+        if (matchClass == InvalidObject) return currentObj
+        if (currentObj.isInstanceOf(matchClass)) return currentObj
+      }
     }
-    throw new UnsupportedOperationException("firstObject() not yet supported")
-  }
-  def nextObject(enumInstances: Boolean, enumClasses: Boolean,
-                 previousObject: Int = TadsObjectId.ObjectIdInvalid,
-                 classId: TadsObjectId = TadsObjectId.InvalidObject): TadsObject = {
-    throw new UnsupportedOperationException("previousObject() not yet supported")
+    InvalidObject
   }
 }

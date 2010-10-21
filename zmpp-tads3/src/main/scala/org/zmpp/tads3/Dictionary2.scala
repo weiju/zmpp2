@@ -61,10 +61,10 @@ import org.zmpp.base._
 // contents.
 
 class Dictionary2(id: TadsObjectId, metaClass: MetaClass)
-extends AbstractTadsObject(id, metaClass) {
+extends TadsObject(id, metaClass) {
 }
 
-class Dictionary2MetaClass extends SystemMetaClass {
+class Dictionary2MetaClass extends MetaClass {
   def name = "dictionary2"
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: Int,

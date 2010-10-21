@@ -33,10 +33,10 @@ import scala.collection.JavaConversions._
 import org.zmpp.base._
 
 class RegexPattern(id: TadsObjectId, metaClass: MetaClass)
-extends AbstractTadsObject(id, metaClass) {
+extends TadsObject(id, metaClass) {
 }
 
-class RegexPatternMetaClass extends SystemMetaClass {
+class RegexPatternMetaClass extends MetaClass {
   def name = "regex-pattern"
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: Int,

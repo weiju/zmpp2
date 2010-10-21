@@ -33,10 +33,10 @@ import scala.collection.JavaConversions._
 import org.zmpp.base._
 
 class LookupTable(id: TadsObjectId, metaClass: MetaClass)
-extends AbstractTadsObject(id, metaClass) {
+extends TadsObject(id, metaClass) {
 }
 
-class LookupTableMetaClass extends SystemMetaClass {
+class LookupTableMetaClass extends MetaClass {
   def name = "lookuptable"
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: Int,

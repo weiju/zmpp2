@@ -38,20 +38,17 @@ import org.zmpp.base._
 // Note: Vector indexes in TADS are, as all sequential types in TADS, in the
 // range [1..n], and *not* [0..n-1]
 class Vector(id: TadsObjectId, metaClass: MetaClass)
-extends AbstractTadsObject(id, metaClass) {
-  val _container = new ArrayList[TadsValue]
+extends TadsObject(id, metaClass) {
+  private val _container = new ArrayList[TadsValue]
 
   def init(numElements: Int) {
     printf("initialize %d elements\n", numElements)
     for (i <- 0 until numElements) _container.add(TadsNil)
   }
-  override def findProperty(propertyId: Int) = {
-    throw new UnsupportedOperationException("TODO")
-  }
   def add(value: TadsValue) {
     _container.add(value)
   }
-  override def valueAtIndex(index: Int): TadsValue = _container(index)
+  override def valueAtIndex(index: Int): TadsValue = _container(index - 1)
   override def setValueAtIndex(index: Int, newValue: TadsValue): TadsObjectId = {
     val oldValue = _container(index - 1)
     _container(index - 1) = newValue
@@ -76,7 +73,7 @@ extends AbstractTadsObject(id, metaClass) {
 // DATAHOLDER element[2]
 //
 // Object extension: TODO
-class VectorMetaClass extends SystemMetaClass {
+class VectorMetaClass extends MetaClass {
   def name = "vector"
 
   override def createFromImage(objectManager: ObjectManager,

@@ -163,29 +163,33 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
   private def firstObj(argc: Int) {
     import TadsGenFunctionSet._
     // set default values for enumeration
-    var classId: TadsObjectId = TadsObjectId.InvalidObject
+    var matchClass: TadsObject = InvalidObject
     var flags = EnumInstances
 
     printf("tads-gen.firstObj(), argc = %d\n", argc)
     // process up to 2 optional parameters (class?, flags?)
     if (argc == 2) {
-      classId = _vmState.stack.pop.asInstanceOf[TadsObjectId]
+      val matchClassId = _vmState.stack.pop.value
+      matchClass = _vmState.objectManager.objectWithId(matchClassId)
       flags    = _vmState.stack.pop.value
     } else if (argc == 1) {
       val arg = _vmState.stack.pop
       if (arg.valueType == TypeIds.VmInt) {
         flags = arg.value
       } else if (arg.valueType == TypeIds.VmObj) {
-        classId = arg.asInstanceOf[TadsObjectId]
+        val matchClassId = arg.value
+        matchClass = _vmState.objectManager.objectWithId(matchClassId)
       } else {
         throw new IllegalArgumentException("Illegal argument: %s".format(arg))
       }
     }
-    printf("CLASS IS: %s, FLAGS IS: %d\n", classId, flags)
+    printf("CLASS IS: %s, FLAGS IS: %d\n", matchClass.id, flags)
     val enumInstances = (flags & EnumInstances) == EnumInstances
     val enumClasses = (flags & EnumClasses) == EnumClasses
     val result = _vmState.objectManager.firstObject(enumInstances, enumClasses,
-                                                    classId)
+                                                    matchClass)
+    printf("FOUND OBJECT: %s\n", result.id)
+    _vmState.r0 = result.id
   }
   private def nextObj(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.nextObj() not implemented yet")

@@ -97,19 +97,13 @@ object TadsEmpty extends TadsValue {
   def valueType = TypeIds.VmEmpty
   override def toString = "EMPTY"
 }
-
-class TadsListConstant extends TadsValue {
+class TadsListConstant(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmList
   override def toString = "list"
 }
 class TadsPropertyId(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmProp
   override def toString = "property (value = %d)".format(value)
-}
-
-object TadsObjectId {
-  val ObjectIdInvalid = 0
-  val InvalidObject = new TadsObjectId(ObjectIdInvalid)
 }
 class TadsObjectId(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmObj
@@ -119,24 +113,57 @@ class TadsCodeOffset(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmCodeOfs
   override def toString = "code-offset (value = %d)".format(value)
 }
-
-object TadsInteger {
-  val One = new TadsInteger(1)
-}
 class TadsInteger(override val value: Int) extends TadsValue {
   override def isTrue = value != 0
   def valueType = TypeIds.VmInt
   override def toString = "integer (value = %d)".format(value)
 }
-
 class TadsFunctionPointer(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmFuncPtr
   override def toString = "function-ptr (value = %d)".format(value)
 }
-
 class TadsStackRef(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmStack
   override def toString = "stack (value = %d)".format(value)
+}
+class TadsSString(override val value: Int) extends TadsValue {
+  def valueType = TypeIds.VmSString
+  override def toString = "sstring (value = %d)".format(value)
+}
+class TadsDString(override val value: Int) extends TadsValue {
+  def valueType = TypeIds.VmDString
+  override def toString = "dstring (value = %d)".format(value)
+}
+class TadsEnum(override val value: Int) extends TadsValue {
+  def valueType = TypeIds.VmEnum
+  override def toString = "enum (value = %d)".format(value)
+}
+
+object TadsInteger {
+  val One = new TadsInteger(1)
+}
+object InvalidObjectId extends TadsObjectId(0)
+object TadsValue {
+  def create(valueType: Int, value: Int): TadsValue = {
+    import TypeIds._
+    valueType match {
+      case VmNil     => TadsNil
+      case VmTrue    => TadsTrue
+      case VmStack   => new TadsStackRef(value)
+      case VmObj     => new TadsObjectId(value)
+      case VmProp    => new TadsPropertyId(value)
+      case VmInt     => new TadsInteger(value)
+      case VmSString => new TadsSString(value)
+      case VmDString => new TadsDString(value)
+      case VmList    => new TadsListConstant(value)
+      case VmCodeOfs => new TadsCodeOffset(value)
+      case VmFuncPtr => new TadsFunctionPointer(value)
+      case VmEmpty   => TadsEmpty
+      case VmEnum    => new TadsEnum(value)
+      case _         => throw new IllegalArgumentException("illegal value type: "
+                                                           + valueType)
+    }
+  }
 }
 
 class Stack {
@@ -184,67 +211,79 @@ class Stack {
 
 // The machine opcodes
 object Opcodes {
-  val Push1        = 0x02
-  val PushNil      = 0x08
-  val PushFnPtr    = 0x0b
-  val RetNil       = 0x51
-  val Call         = 0x58
-  val GetPropSelf  = 0x63
-  val ObjGetProp   = 0x66
-  val GetLcl1      = 0x80
-  val GetArg1      = 0x82
-  val GetArg2      = 0x83
-  val PushSelf     = 0x84
-  val Dup          = 0x88
-  val GetR0        = 0x8b
-  val JNil         = 0x9e
-  val JR0T         = 0xa0
-  val BuiltinA     = 0xb1
-  val BuiltinB     = 0xb2
-  val BuiltinC     = 0xb3
-  val BuiltinD     = 0xb4
-  val Builtin1     = 0xb5
-  val Builtin2     = 0xb6
-  val New1         = 0xc0
-  val SetLcl1      = 0xe0
-  val SetInd       = 0xe4
-  val SetLcl1R0    = 0xee
-  val SetIndLcl1I8 = 0xef
-  val BP           = 0xf1
-  val Nop          = 0xf2
+  val Push1           = 0x02
+  val PushNil         = 0x08
+  val PushFnPtr       = 0x0b
+  val RetNil          = 0x51
+  val Call            = 0x58
+  val PtrCall         = 0x59
+  val GetProp         = 0x60
+  val CallProp        = 0x61
+  val PtrCallProp     = 0x62
+  val GetPropSelf     = 0x63
+  val CallPropSelf    = 0x64
+  val PtrCallPropSelf = 0x65
+  val ObjGetProp      = 0x66
+  val GetLcl1         = 0x80
+  val GetArg1         = 0x82
+  val GetArg2         = 0x83
+  val PushSelf        = 0x84
+  val Dup             = 0x88
+  val GetR0           = 0x8b
+  val JNil            = 0x9e
+  val JR0T            = 0xa0
+  val BuiltinA        = 0xb1
+  val BuiltinB        = 0xb2
+  val BuiltinC        = 0xb3
+  val BuiltinD        = 0xb4
+  val Builtin1        = 0xb5
+  val Builtin2        = 0xb6
+  val New1            = 0xc0
+  val SetLcl1         = 0xe0
+  val SetInd          = 0xe4
+  val SetLcl1R0       = 0xee
+  val SetIndLcl1I8    = 0xef
+  val BP              = 0xf1
+  val Nop             = 0xf2
 }
 
 object OpcodeNames {
   import Opcodes._
   val Names = Map(
-    BP           -> "BP",
-    Builtin1     -> "BUILTIN1",
-    Builtin2     -> "BUILTIN2",
-    BuiltinA     -> "BUILTIN_A",
-    BuiltinB     -> "BUILTIN_B",
-    BuiltinC     -> "BUILTIN_C",
-    BuiltinD     -> "BUILTIN_D",
-    Call         -> "CALL",
-    Dup          -> "DUP",
-    GetArg1      -> "GETARG1",
-    GetArg2      -> "GETARG2",
-    GetLcl1      -> "GETLCL1",
-    GetPropSelf  -> "GETPROPSELF",
-    GetR0        -> "GETR0",
-    JNil         -> "JNIL",
-    JR0T         -> "JR0T",
-    New1         -> "NEW1",
-    Nop          -> "NOP",
-    ObjGetProp   -> "OBJGETPROP",
-    Push1        -> "PUSH_1",
-    PushNil      -> "PUSHNIL",
-    PushFnPtr    -> "PUSHFNPTR",
-    PushSelf     -> "PUSHSELF",
-    RetNil       -> "RETNIL",
-    SetInd       -> "SETIND",
-    SetIndLcl1I8 -> "SETINDLCL1I8",
-    SetLcl1      -> "SETLCL1",
-    SetLcl1R0    -> "SETLCL1R0"
+    BP              -> "BP",
+    Builtin1        -> "BUILTIN1",
+    Builtin2        -> "BUILTIN2",
+    BuiltinA        -> "BUILTIN_A",
+    BuiltinB        -> "BUILTIN_B",
+    BuiltinC        -> "BUILTIN_C",
+    BuiltinD        -> "BUILTIN_D",
+    Call            -> "CALL",
+    CallProp        -> "CALLPROP",
+    CallPropSelf    -> "CALLPROPSELF",
+    Dup             -> "DUP",
+    GetArg1         -> "GETARG1",
+    GetArg2         -> "GETARG2",
+    GetLcl1         -> "GETLCL1",
+    GetProp         -> "GETPROP",
+    GetPropSelf     -> "GETPROPSELF",
+    GetR0           -> "GETR0",
+    JNil            -> "JNIL",
+    JR0T            -> "JR0T",
+    New1            -> "NEW1",
+    Nop             -> "NOP",
+    ObjGetProp      -> "OBJGETPROP",
+    PtrCall         -> "PTRCALL",
+    PtrCallProp     -> "PTRCALLPROP",
+    Push1           -> "PUSH_1",
+    PushNil         -> "PUSHNIL",
+    PushFnPtr       -> "PUSHFNPTR",
+    PushSelf        -> "PUSHSELF",
+    PtrCallPropSelf -> "PTRCALLPROPSELF",
+    RetNil          -> "RETNIL",
+    SetInd          -> "SETIND",
+    SetIndLcl1I8    -> "SETINDLCL1I8",
+    SetLcl1         -> "SETLCL1",
+    SetLcl1R0       -> "SETLCL1R0"
   )
   def opcodeName(opcodeNum: Int) = {
     if (Names.contains(opcodeNum)) Names(opcodeNum)
@@ -256,3 +295,4 @@ object OpcodeNames {
 // Exceptions
 class CannotIndexTypeException extends Exception
 class ObjectNotFoundException extends Exception
+class FuncPtrValRequiredException extends Exception

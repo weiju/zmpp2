@@ -65,9 +65,10 @@ class TadsVMState {
 
     // call initial function
     // push empty list on stack - QTads puts command line arguments in that list
-    val argList = new TadsListConstant
+    val argList = new TadsListConstant(0)
     stack.push(argList)
-    doCall(1, image.startEntryPoint, 0, 0, 0, 0)
+    doCall(1, image.startEntryPoint, 0,
+           InvalidObjectId, InvalidObjectId, InvalidObjectId)
   }
 
   def nextCodeByte = {
@@ -92,8 +93,8 @@ class TadsVMState {
   }
 
   def doCall(argc: Int, targetOffs: Int,
-             targetProp: Int, origTargetObj: Int, definingObj: Int,
-             self: Int) {
+             targetProp: Int, origTargetObj: TadsObjectId,
+             definingObj: TadsObjectId, self: TadsObjectId) {
 
     val methodHeader = image.methodHeaderAt(targetOffs)
 /*
@@ -108,14 +109,14 @@ class TadsVMState {
     // The TM says push nil if there is no target property, the reference
     // implementation pushes property id 0, we do that, too, for the moment
     stack.pushPropertyId(targetProp)
-    if (self == 0) { // VMInvalidObj
+    if (self == InvalidObjectId) { // VMInvalidObj
       stack.pushNil // target object
       stack.pushNil // defining object
       stack.pushNil // self object
     } else {
-      stack.pushObjectId(origTargetObj)
-      stack.pushObjectId(definingObj)
-      stack.pushObjectId(self)
+      stack.push(origTargetObj)
+      stack.push(definingObj)
+      stack.push(self)
     }
     // The spec says 'compute the offset from the current method header of
     // the next instruction execute and push the result'. This simply means
@@ -196,9 +197,14 @@ class TadsVM {
         _functionSetMapper.callBuiltin(nextByteOperand, nextShortOperand,
                                        nextByteOperand)
       case Call         =>
-        _state.doCall(nextByteOperand, nextIntOperand, 0, 0, 0, 0)
+        _state.doCall(nextByteOperand, nextIntOperand, 0,
+                      InvalidObjectId, InvalidObjectId, InvalidObjectId)
       case Dup          => _state.stack.dup
-      case GetArg1      => _state.stack.push(_state.getParam(nextByteOperand))
+      case GetArg1      =>
+        val argnum = nextByteOperand
+        printf("GetArg1 - ARGNUM = %d\n", argnum)
+        _state.stack.push(_state.getParam(argnum))
+        //_state.stack.push(_state.getParam(nextByteOperand))
       case GetArg2      => _state.stack.push(_state.getParam(nextShortOperand))
       case GetLcl1      => _state.stack.push(_state.getLocal(nextByteOperand))        
       case GetPropSelf  =>
@@ -210,6 +216,34 @@ class TadsVM {
         _state.r0 = _state.objectManager.createFromStack(nextByteOperand, nextByteOperand)
       case Nop          => // do nothing
       case ObjGetProp   => objGetProp(nextIntOperand, nextShortOperand)
+      case PtrCall      =>
+        val argc = nextByteOperand
+        val stackVal = _state.stack.pop
+        if (stackVal.valueType == TypeIds.VmProp) {
+          println("PROP CALL !")
+        }
+        if (stackVal.valueType == TypeIds.VmObj) {
+          printf("OBJ PROP CALL, OBJ = %d\n", stackVal.value)
+          val obj  = _state.objectManager.objectWithId(stackVal.value)
+          val symb = _state.image.symbolicNames("ObjectCallProp")
+          if (symb != null && symb.valueType == TypeIds.VmProp) {
+            printf("SYM: %s TYP: %d VAL: %d\n", symb.name, symb.valueType, symb.value)
+            val prop = obj.findProperty(symb.value)
+            printf("PROP FOUND: %s\n", prop)
+            // TODO: Call prop
+          }
+        }
+        if (stackVal.valueType == TypeIds.VmFuncPtr) {
+          println("FUNC CALL !")
+        }
+        if (stackVal.valueType == TypeIds.VmFuncPtr ||
+            stackVal.valueType == TypeIds.VmObj ||
+            stackVal.valueType == TypeIds.VmProp) {
+          println("CALL A FUNCTION BY PTR: " + stackVal)
+        } else {
+          throw new FuncPtrValRequiredException
+        }
+        throw new UnsupportedOperationException("PtrCall not supported yet")
       case Push1        => _state.stack.push1
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
       case PushNil      => _state.stack.pushNil
@@ -256,7 +290,7 @@ class TadsVM {
   private def objGetProp(objId: Int, propId: Int) {
     val obj = _state.objectManager.objectWithId(objId)
     val prop = obj.findProperty(propId)
-    if (prop != null) evalProperty(objId, prop, propId)
+    if (prop != null) evalProperty(obj.id, prop, propId)
     else {
       // TODO: check if propNotDefined is available
       throw new UnsupportedOperationException("TODO: property not found, " +
@@ -264,9 +298,10 @@ class TadsVM {
     }
   }
 
-  private def evalProperty(selfId: Int, property: Property, propertyId: Int) {
+  private def evalProperty(self: TadsObjectId, property: Property,
+                           propertyId: Int) {
     import TypeIds._
-    printf("evalProperty(%s) [self = %d]\n", property, selfId)
+    printf("evalProperty(%s) [self = %s]\n", property, self)
     property.valueType match {
       case VmNil     => _state.r0 = TadsNil
       case VmTrue    => _state.r0 = TadsTrue
@@ -274,8 +309,8 @@ class TadsVM {
       case VmProp    => _state.r0 = new TadsPropertyId(property.value)
       case VmInt     => _state.r0 = new TadsInteger(property.value)
       case VmCodeOfs =>
-        _state.doCall(0, property.value, propertyId, selfId,
-                      property.definingObject, selfId)
+        _state.doCall(0, property.value, propertyId, self,
+                      property.definingObject, self)
       case VmDString =>
         throw new UnsupportedOperationException("TODO: DOUBLE QUOTED STRING")
       case _ =>
