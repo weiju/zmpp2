@@ -200,6 +200,7 @@ class TadsVM {
       case GetArg2      => _state.stack.push(_state.getParam(nextShortOperand))
       case GetLcl1      => _state.stack.push(_state.getLocal(nextByteOperand))
       case GetProp      => objGetProp(_state.stack.pop, nextShortOperand)
+      case GetPropR0    => objGetProp(_state.r0, nextShortOperand)
       case GetPropSelf  =>
         objGetProp(_state.currentSelf, nextShortOperand)
       case GetR0        => _state.stack.push(_state.r0)
@@ -285,14 +286,22 @@ class TadsVM {
   }
 
   private def objGetProp(targetVal: TadsValue, propId: Int) {
-    val obj = _state.objectManager.objectWithId(targetVal)
-    val prop = obj.findProperty(propId)
-    if (prop != null) evalProperty(targetVal.asInstanceOf[TadsObjectId], prop)
-    else {
-      // TODO: check if propNotDefined is available
-      throw new UnsupportedOperationException("TODO: property not found, " +
-                                              "check for propNotDefined")
-    }
+    if (targetVal.valueType == TypeIds.VmObj) {
+      val obj = _state.objectManager.objectWithId(targetVal)
+      printf("objGetProp(%s, %d), obj: %s\n", targetVal, propId, obj)
+      val prop = obj.findProperty(propId)
+      if (prop != null) evalProperty(targetVal.asInstanceOf[TadsObjectId], prop)
+      else {
+        // TODO: check if propNotDefined is available
+        throw new UnsupportedOperationException("TODO: property not found, " +
+                                                "check for propNotDefined")
+      }
+    } else if (targetVal.valueType == TypeIds.VmList) {
+      throw new UnsupportedOperationException("cannot handle list constants yet")
+    } else if (targetVal.valueType == TypeIds.VmSString ||
+               targetVal.valueType == TypeIds.VmDString) {
+      throw new UnsupportedOperationException("Cannot handle string constants yet")
+    } else throw new ObjectValRequiredException
   }
 
   private def evalProperty(self: TadsObjectId, property: Property) {

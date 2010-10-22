@@ -302,3 +302,4 @@ object OpcodeNames {
 class CannotIndexTypeException extends Exception
 class ObjectNotFoundException extends Exception
 class FuncPtrValRequiredException extends Exception
+class ObjectValRequiredException extends Exception

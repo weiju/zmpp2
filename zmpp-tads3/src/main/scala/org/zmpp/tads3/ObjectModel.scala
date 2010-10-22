@@ -114,9 +114,6 @@ abstract class MetaClass {
 class StringMetaClass extends MetaClass {
   def name = "string"
 }
-class ListMetaClass   extends MetaClass {
-  def name = "list"
-}
 
 class IntClassModMetaClass extends MetaClass {
   def name = "int-class-mod"
