@@ -77,11 +77,11 @@ class VectorMetaClass extends MetaClass {
   def name = "vector"
 
   override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: Int,
+                               imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val vector = new Vector(new TadsObjectId(objectId), this)
+    val vector = new Vector(objectId, this)
     vector
   }
 

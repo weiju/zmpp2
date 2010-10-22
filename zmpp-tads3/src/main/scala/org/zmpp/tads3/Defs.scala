@@ -238,9 +238,11 @@ object Opcodes {
   val BuiltinD        = 0xb4
   val Builtin1        = 0xb5
   val Builtin2        = 0xb6
+  val IdxInt8         = 0xbc
   val New1            = 0xc0
   val SetLcl1         = 0xe0
   val SetInd          = 0xe4
+  val SetSelf         = 0xeb
   val SetLcl1R0       = 0xee
   val SetIndLcl1I8    = 0xef
   val BP              = 0xf1
@@ -267,6 +269,7 @@ object OpcodeNames {
     GetProp         -> "GETPROP",
     GetPropSelf     -> "GETPROPSELF",
     GetR0           -> "GETR0",
+    IdxInt8         -> "IDXINT8",
     JNil            -> "JNIL",
     JR0T            -> "JR0T",
     New1            -> "NEW1",
@@ -283,7 +286,8 @@ object OpcodeNames {
     SetInd          -> "SETIND",
     SetIndLcl1I8    -> "SETINDLCL1I8",
     SetLcl1         -> "SETLCL1",
-    SetLcl1R0       -> "SETLCL1R0"
+    SetLcl1R0       -> "SETLCL1R0",
+    SetSelf         -> "SETSELF"
   )
   def opcodeName(opcodeNum: Int) = {
     if (Names.contains(opcodeNum)) Names(opcodeNum)

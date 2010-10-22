@@ -39,11 +39,11 @@ extends TadsObject(id, metaClass) {
 class RegexPatternMetaClass extends MetaClass {
   def name = "regex-pattern"
   override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: Int,
+                               imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val regexPat = new RegexPattern(new TadsObjectId(objectId), this)
+    val regexPat = new RegexPattern(objectId, this)
     regexPat
   }
 }

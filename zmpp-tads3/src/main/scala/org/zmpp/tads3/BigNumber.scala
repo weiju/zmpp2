@@ -63,8 +63,8 @@ import org.zmpp.base._
 // All other flag bits are reserved and should be set to zero.
 
 // The exponent field gives the base-10 exponent of the number.  This is
-// a signed quantity; a negative value indicates that the mantissa is to
-// be divided by (10 ^ abs(exponent)), and a positive value indicates
+// a signed quantity; a negative value indicates that the mantissa is tk
+
 // that the mantissa is to be multiplied by (10 ^ exponent).
 
 // There is an implicit decimal point before the first byte of the
@@ -76,11 +76,11 @@ extends TadsObject(id, metaClass) {
 class BigNumberMetaClass extends MetaClass {
   def name = "bignumber"
   override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: Int,
+                               imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val bigNum = new BigNumber(new TadsObjectId(objectId), this)
+    val bigNum = new BigNumber(objectId, this)
     bigNum
   }
 }

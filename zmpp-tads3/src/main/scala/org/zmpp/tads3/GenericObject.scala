@@ -99,7 +99,7 @@ object GenericObjectMetaClass {
 class GenericObjectMetaClass extends MetaClass {
   def name = "tads-object"
   override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: Int,
+                               imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
@@ -110,9 +110,8 @@ class GenericObjectMetaClass extends MetaClass {
     val propertyCount   = imageMem.shortAt(objDataAddr + 2)
     val flags           = imageMem.shortAt(objDataAddr + 4)
     val isClassObject   = (flags & FlagIsClass) == FlagIsClass
-    val id              = new TadsObjectId(objectId)
 
-    val genericObject = new GenericObject(new TadsObjectId(objectId), this,
+    val genericObject = new GenericObject(objectId, this,
                                           isClassObject, superClassCount,
                                           propertyCount,
                                           objectManager)
@@ -130,7 +129,7 @@ class GenericObjectMetaClass extends MetaClass {
       genericObject.properties(index) =
         new Property(propertyId,
                      TadsValue.create(propertyType, propertyValue),
-                     id)
+                     objectId)
     }
     genericObject
   }

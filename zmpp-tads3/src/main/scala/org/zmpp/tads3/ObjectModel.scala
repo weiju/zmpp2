@@ -96,7 +96,7 @@ abstract class MetaClass {
                                             "metaclass '%s'".format(name))
   }
   def createFromImage(objectManager: ObjectManager,
-                      imageMem: Memory, objectId: Int, objDataAddr: Int,
+                      imageMem: Memory, objectId: TadsObjectId, objDataAddr: Int,
                       numBytes: Int, isTransient: Boolean): TadsObject = {
     throw new UnsupportedOperationException("createFromImage not yet " +
                                             "supported in " +
@@ -242,13 +242,14 @@ class ObjectManager(vmState: TadsVMState) {
   }
   def addStaticObject(imageMem: Memory, objectId: Int, metaClassIndex: Int,
                       objAddr: Int, numBytes: Int, isTransient: Boolean) {
+    val id = new TadsObjectId(objectId)
     val obj = _metaClassMap(metaClassIndex).createFromImage(this, imageMem,
-                                                            objectId, objAddr,
+                                                            id, objAddr,
                                                             numBytes, isTransient)
     _objectCache(objectId) = obj
     // set the maximum object id higher so that after we loaded all
     // static objects, we have a start object id
-    if (obj.id.value > _maxObjectId) _maxObjectId = obj.id.value + 1
+    if (objectId > _maxObjectId) _maxObjectId = objectId + 1
   }
 
   def reset {
@@ -282,10 +283,11 @@ class ObjectManager(vmState: TadsVMState) {
 
   def metaClassForIndex(index: Int) = _metaClassMap(index)
 
-  def objectWithId(id: Int) = {
+  def objectWithId(id: Int): TadsObject = {
     if (_objectCache.contains(id)) _objectCache(id)
-    else InvalidObject
+    else throw new ObjectNotFoundException
   }
+  def objectWithId(id: TadsValue): TadsObject = objectWithId(id.value)
 
   // Enumeration of objects, this is the 
   def firstObject(enumInstances: Boolean, enumClasses: Boolean,

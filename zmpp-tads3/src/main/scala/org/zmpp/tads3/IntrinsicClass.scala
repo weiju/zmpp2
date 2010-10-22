@@ -57,7 +57,7 @@ extends TadsObject(id, metaClass) {
 class IntrinsicClassMetaClass extends MetaClass {
   def name = "intrinsic-class"
   override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: Int,
+                               imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
@@ -65,11 +65,11 @@ class IntrinsicClassMetaClass extends MetaClass {
     val metaClassIndex = imageMem.shortAt(objDataAddr + 2)
     val modifierObjId  = imageMem.intAt(objDataAddr + 4)
     println("-------------------------------------------------------------")
-    printf("CREATING INTRINSIC CLASS %d, # BYTES: %d, METACLASS: %d " +
+    printf("CREATING INTRINSIC CLASS %s, # BYTES: %d, METACLASS: %d " +
            "MODIFIER OBJ: %d\n",
            objectId, byteCount, metaClassIndex, modifierObjId)
     println("-------------------------------------------------------------")
-    new IntrinsicClass(new TadsObjectId(objectId), this,
+    new IntrinsicClass(objectId, this,
                        objectManager.metaClassForIndex(metaClassIndex),
                        modifierObjId)
     // TODO: Assign this object to the metaclass

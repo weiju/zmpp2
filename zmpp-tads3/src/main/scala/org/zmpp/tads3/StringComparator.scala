@@ -39,11 +39,11 @@ extends TadsObject(id, metaClass) {
 class StringComparatorMetaClass extends MetaClass {
   def name = "string-comparator"
   override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: Int,
+                               imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val stringComp = new StringComparator(new TadsObjectId(objectId), this)
+    val stringComp = new StringComparator(objectId, this)
     stringComp
   }
 }

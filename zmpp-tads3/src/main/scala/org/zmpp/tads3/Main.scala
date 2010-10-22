@@ -97,12 +97,6 @@ class TadsVMState {
              definingObj: TadsObjectId, self: TadsObjectId) {
 
     val methodHeader = image.methodHeaderAt(targetOffs)
-/*
-    printf("# params = %d\n", methodHeader.paramCount)
-    printf("# locals = %d\n", methodHeader.localCount)
-    printf("max stack slots = %d\n", methodHeader.maxStackSlots)
-    printf("ex tab offs = %d\n", methodHeader.exceptionTableOffset)
-    printf("debug rec offs = %d\n", methodHeader.debugRecordOffset)*/
     r0 = TadsNil
 
     // allocate stack frame
@@ -145,6 +139,7 @@ class TadsVMState {
     stack.setValueAt(fp + localNumber, value)
   }
   def currentSelf = stack.valueAt(fp - 5)
+  def currentSelf_=(value: TadsValue) = stack.setValueAt(fp - 5, value)
 }
 
 class TadsVM {
@@ -206,44 +201,20 @@ class TadsVM {
         _state.stack.push(_state.getParam(argnum))
         //_state.stack.push(_state.getParam(nextByteOperand))
       case GetArg2      => _state.stack.push(_state.getParam(nextShortOperand))
-      case GetLcl1      => _state.stack.push(_state.getLocal(nextByteOperand))        
+      case GetLcl1      => _state.stack.push(_state.getLocal(nextByteOperand))
+      case GetProp      =>
+        throw new UnsupportedOperationException("GETPROP NOT SUPPORTED YET")
       case GetPropSelf  =>
         objGetProp(_state.currentSelf.value, nextShortOperand)
       case GetR0        => _state.stack.push(_state.r0)
+      case IdxInt8      => index(nextByteOperand)
       case JNil         => branchIfTrue(_state.stack.pop == TadsNil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
       case New1         =>
         _state.r0 = _state.objectManager.createFromStack(nextByteOperand, nextByteOperand)
       case Nop          => // do nothing
       case ObjGetProp   => objGetProp(nextIntOperand, nextShortOperand)
-      case PtrCall      =>
-        val argc = nextByteOperand
-        val stackVal = _state.stack.pop
-        if (stackVal.valueType == TypeIds.VmProp) {
-          println("PROP CALL !")
-        }
-        if (stackVal.valueType == TypeIds.VmObj) {
-          printf("OBJ PROP CALL, OBJ = %d\n", stackVal.value)
-          val obj  = _state.objectManager.objectWithId(stackVal.value)
-          val symb = _state.image.symbolicNames("ObjectCallProp")
-          if (symb != null && symb.valueType == TypeIds.VmProp) {
-            printf("SYM: %s TYP: %d VAL: %d\n", symb.name, symb.valueType, symb.value)
-            val prop = obj.findProperty(symb.value)
-            printf("PROP FOUND: %s\n", prop)
-            // TODO: Call prop
-          }
-        }
-        if (stackVal.valueType == TypeIds.VmFuncPtr) {
-          println("FUNC CALL !")
-        }
-        if (stackVal.valueType == TypeIds.VmFuncPtr ||
-            stackVal.valueType == TypeIds.VmObj ||
-            stackVal.valueType == TypeIds.VmProp) {
-          println("CALL A FUNCTION BY PTR: " + stackVal)
-        } else {
-          throw new FuncPtrValRequiredException
-        }
-        throw new UnsupportedOperationException("PtrCall not supported yet")
+      case PtrCall      => ptrCall(nextByteOperand)
       case Push1        => _state.stack.push1
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
       case PushNil      => _state.stack.pushNil
@@ -263,6 +234,7 @@ class TadsVM {
         _state.setLocal(localNumber, setInd(containerVal, index, newVal))
       case SetLcl1      => _state.setLocal(nextByteOperand, _state.stack.pop)
       case SetLcl1R0    => _state.setLocal(nextByteOperand, _state.r0)
+      case SetSelf      => _state.currentSelf = _state.stack.pop
       case _            =>
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"
                                                 .format(opcode))
@@ -270,6 +242,36 @@ class TadsVM {
     // DEBUGGING
     //println("R0 = " + _state.r0)
     //println(_state.stack)
+  }
+
+  // instruction implementations
+  private def index(indexVal: Int) {
+    val value = _state.stack.pop
+    if (value.valueType == TypeIds.VmList) {
+      throw new UnsupportedOperationException("indexing lists not supported yet")
+    } else if (value.valueType == TypeIds.VmObj) {
+      val pushValue =
+        _state.objectManager.objectWithId(value).valueAtIndex(indexVal)
+      _state.stack.push(pushValue)
+    } else throw new CannotIndexTypeException
+  }
+
+  private def ptrCall(argc: Int) {
+    val stackVal = _state.stack.pop
+    if (stackVal.valueType == TypeIds.VmProp) {
+      throw new UnsupportedOperationException("PtrCall with PROP not supported yet")
+    } else if (stackVal.valueType == TypeIds.VmObj) {
+      printf("OBJ PROP CALL, OBJ = %d\n", stackVal.value)
+      val obj  = _state.objectManager.objectWithId(stackVal.value)
+      val symb = _state.image.symbolicNames("ObjectCallProp")
+      if (symb != null && symb.valueType == TypeIds.VmProp) {
+        printf("SYM: %s TYP: %d VAL: %d\n", symb.name, symb.valueType, symb.value)
+        val prop = obj.findProperty(symb.value)
+        _state.doCall(argc, prop.value, 0, obj.id, obj.id, obj.id)
+      } else throw new FuncPtrValRequiredException
+    } else if (stackVal.valueType == TypeIds.VmFuncPtr) {
+      throw new UnsupportedOperationException("PtrCall with FuncPtr not supported yet")
+    } else throw new FuncPtrValRequiredException
   }
 
   private def setInd(containerVal: TadsValue, index: Int, newVal: TadsValue) = {
@@ -290,7 +292,7 @@ class TadsVM {
   private def objGetProp(objId: Int, propId: Int) {
     val obj = _state.objectManager.objectWithId(objId)
     val prop = obj.findProperty(propId)
-    if (prop != null) evalProperty(obj.id, prop, propId)
+    if (prop != null) evalProperty(obj.id, prop)
     else {
       // TODO: check if propNotDefined is available
       throw new UnsupportedOperationException("TODO: property not found, " +
@@ -298,8 +300,7 @@ class TadsVM {
     }
   }
 
-  private def evalProperty(self: TadsObjectId, property: Property,
-                           propertyId: Int) {
+  private def evalProperty(self: TadsObjectId, property: Property) {
     import TypeIds._
     printf("evalProperty(%s) [self = %s]\n", property, self)
     property.valueType match {
@@ -309,7 +310,7 @@ class TadsVM {
       case VmProp    => _state.r0 = new TadsPropertyId(property.value)
       case VmInt     => _state.r0 = new TadsInteger(property.value)
       case VmCodeOfs =>
-        _state.doCall(0, property.value, propertyId, self,
+        _state.doCall(0, property.value, property.id, self,
                       property.definingObject, self)
       case VmDString =>
         throw new UnsupportedOperationException("TODO: DOUBLE QUOTED STRING")

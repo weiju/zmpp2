@@ -67,11 +67,11 @@ extends TadsObject(id, metaClass) {
 class Dictionary2MetaClass extends MetaClass {
   def name = "dictionary2"
   override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: Int,
+                               imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val dictionary = new Dictionary2(new TadsObjectId(objectId), this)
+    val dictionary = new Dictionary2(objectId, this)
     dictionary
   }
 }

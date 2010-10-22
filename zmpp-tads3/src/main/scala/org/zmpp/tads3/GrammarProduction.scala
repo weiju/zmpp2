@@ -78,11 +78,11 @@ extends TadsObject(id, metaClass) {
 class GrammarProductionMetaClass extends MetaClass {
   def name = "grammar-production"
   override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: Int,
+                               imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val grammarProd = new GrammarProduction(new TadsObjectId(objectId), this)
+    val grammarProd = new GrammarProduction(objectId, this)
     grammarProd
   }
 }

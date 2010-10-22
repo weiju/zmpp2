@@ -51,11 +51,11 @@ class AnonFuncPtrMetaClass extends MetaClass {
   def name = "anon-func-ptr"
 
   override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: Int,
+                               imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val anonFuncPtr = new AnonFuncPtr(new TadsObjectId(objectId), this)
+    val anonFuncPtr = new AnonFuncPtr(objectId, this)
     anonFuncPtr
   }
 

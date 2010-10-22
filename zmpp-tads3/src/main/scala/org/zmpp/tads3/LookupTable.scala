@@ -39,11 +39,11 @@ extends TadsObject(id, metaClass) {
 class LookupTableMetaClass extends MetaClass {
   def name = "lookuptable"
   override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: Int,
+                               imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val lookupTable = new LookupTable(new TadsObjectId(objectId), this)
+    val lookupTable = new LookupTable(objectId, this)
     lookupTable
   }
 }
