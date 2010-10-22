@@ -64,11 +64,13 @@ class IntrinsicClassMetaClass extends MetaClass {
     val byteCount      = imageMem.shortAt(objDataAddr)
     val metaClassIndex = imageMem.shortAt(objDataAddr + 2)
     val modifierObjId  = imageMem.intAt(objDataAddr + 4)
+/*
     println("-------------------------------------------------------------")
     printf("CREATING INTRINSIC CLASS %s, # BYTES: %d, METACLASS: %d " +
            "MODIFIER OBJ: %d\n",
            objectId, byteCount, metaClassIndex, modifierObjId)
     println("-------------------------------------------------------------")
+    */
     new IntrinsicClass(objectId, this,
                        objectManager.metaClassForIndex(metaClassIndex),
                        modifierObjId)

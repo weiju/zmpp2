@@ -196,16 +196,12 @@ class TadsVM {
                       InvalidObjectId, InvalidObjectId, InvalidObjectId)
       case Dup          => _state.stack.dup
       case GetArg1      =>
-        val argnum = nextByteOperand
-        printf("GetArg1 - ARGNUM = %d\n", argnum)
-        _state.stack.push(_state.getParam(argnum))
-        //_state.stack.push(_state.getParam(nextByteOperand))
+        _state.stack.push(_state.getParam(nextByteOperand))
       case GetArg2      => _state.stack.push(_state.getParam(nextShortOperand))
       case GetLcl1      => _state.stack.push(_state.getLocal(nextByteOperand))
-      case GetProp      =>
-        throw new UnsupportedOperationException("GETPROP NOT SUPPORTED YET")
+      case GetProp      => objGetProp(_state.stack.pop, nextShortOperand)
       case GetPropSelf  =>
-        objGetProp(_state.currentSelf.value, nextShortOperand)
+        objGetProp(_state.currentSelf, nextShortOperand)
       case GetR0        => _state.stack.push(_state.r0)
       case IdxInt8      => index(nextByteOperand)
       case JNil         => branchIfTrue(_state.stack.pop == TadsNil)
@@ -213,7 +209,8 @@ class TadsVM {
       case New1         =>
         _state.r0 = _state.objectManager.createFromStack(nextByteOperand, nextByteOperand)
       case Nop          => // do nothing
-      case ObjGetProp   => objGetProp(nextIntOperand, nextShortOperand)
+      case ObjGetProp   => objGetProp(new TadsObjectId(nextIntOperand),
+                                      nextShortOperand)
       case PtrCall      => ptrCall(nextByteOperand)
       case Push1        => _state.stack.push1
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
@@ -229,8 +226,6 @@ class TadsVM {
         val containerVal = _state.getLocal(localNumber)
         val index        = nextByteOperand
         val newVal       = _state.stack.pop
-        printf("SETINDLCL1I8 LCL: %d CONTAINER: %s INDEX: %d NEWVAL: %s\n",
-               localNumber, containerVal, index, newVal)
         _state.setLocal(localNumber, setInd(containerVal, index, newVal))
       case SetLcl1      => _state.setLocal(nextByteOperand, _state.stack.pop)
       case SetLcl1R0    => _state.setLocal(nextByteOperand, _state.r0)
@@ -289,10 +284,10 @@ class TadsVM {
     else nextShortOperand // skip branch word
   }
 
-  private def objGetProp(objId: Int, propId: Int) {
-    val obj = _state.objectManager.objectWithId(objId)
+  private def objGetProp(targetVal: TadsValue, propId: Int) {
+    val obj = _state.objectManager.objectWithId(targetVal)
     val prop = obj.findProperty(propId)
-    if (prop != null) evalProperty(obj.id, prop)
+    if (prop != null) evalProperty(targetVal.asInstanceOf[TadsObjectId], prop)
     else {
       // TODO: check if propNotDefined is available
       throw new UnsupportedOperationException("TODO: property not found, " +
@@ -309,6 +304,7 @@ class TadsVM {
       case VmObj     => _state.r0 = new TadsObjectId(property.value)
       case VmProp    => _state.r0 = new TadsPropertyId(property.value)
       case VmInt     => _state.r0 = new TadsInteger(property.value)
+      case VmList    => _state.r0 = new TadsListConstant(property.value)
       case VmCodeOfs =>
         _state.doCall(0, property.value, property.id, self,
                       property.definingObject, self)
