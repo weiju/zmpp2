@@ -88,7 +88,10 @@ class Property(val id: Int, tadsValue: TadsValue,
 // Instead of complaining, I'll just see how they are implemented in QTads and
 // document it by myself
 abstract class MetaClass {
+  private val propertyMap = new TreeMap[Int, Int]
   def name: String
+  def superMeta: MetaClass
+  def reset = propertyMap.clear
   def createFromStack(id: TadsObjectId, vmState: TadsVMState,
                       argc: Int): TadsObject = {
     throw new UnsupportedOperationException("createFromStack not yet " +
@@ -104,49 +107,90 @@ abstract class MetaClass {
   }
   def supportsVersion(version: String) = true
 
+  def evalClassProperty(obj: TadsObject, propertyId: Int): Boolean = {
+    var functionIndex = functionIndexForProperty(propertyId)
+    printf("'%s': function index found for prop %d = %d\n",
+           name, propertyId, functionIndex)
+    if (functionIndex == -1) {
+      if (superMeta != null) superMeta.evalClassProperty(obj, propertyId)
+      else false
+    } else {
+      // found, try to evaluate
+      printf("FOUND PROPERTY %d in metaclass '%s', at index: %d\n",
+           propertyId, name, functionIndex)
+    }
+    false
+  }
+
   // After being loaded, its dependency id and the VM state
   // can be directly accessed through its members.
   // This is so each object only needs to store the reference to its
   // meta class, but can still query the system state if necessary
   var id: Int = 0
   var vmState: TadsVMState = null
+
+  // The static property map defines the mapping from a property id to
+  // an index into the meta class's function table
+  // (property id -> function vector index)
+  // it should be cleared when loading a new image to
+  // reload the mappings
+  def addFunctionMapping(propertyId: Int, functionIndex: Int) {
+    propertyMap(propertyId) = functionIndex
+  }
+  def functionIndexForProperty(propertyId: Int) = {
+    if (propertyMap.containsKey(propertyId)) propertyMap(propertyId)
+    else -1
+  }
 }
+
+object TadsObjectMetaClass extends MetaClass {
+  def name = "object"
+  override def superMeta = null
+}
+
 class StringMetaClass extends MetaClass {
   def name = "string"
+  override def superMeta = TadsObjectMetaClass
 }
 
 class IntClassModMetaClass extends MetaClass {
   def name = "int-class-mod"
-}
-class CollectionMetaClass extends MetaClass {
-  def name = "collection"
+  override def superMeta = TadsObjectMetaClass
 }
 class IteratorMetaClass extends MetaClass {
   def name = "iterator"
+  override def superMeta = TadsObjectMetaClass
 }
 class IndexedIteratorMetaClass extends MetaClass {
   def name = "indexed-iterator"
+  override def superMeta = TadsObjectMetaClass
 }
 class CharacterSetMetaClass extends MetaClass {
   def name = "character-set"
+  override def superMeta = TadsObjectMetaClass
 }
 class ByteArrayMetaClass extends MetaClass {
   def name = "bytearray"
+  override def superMeta = TadsObjectMetaClass
 }
 class WeakRefLookupTableMetaClass extends MetaClass {
   def name = "weakreflookuptable"
+  override def superMeta = TadsObjectMetaClass
 }
 class LookupTableIteratorMetaClass extends MetaClass {
   def name = "lookuptable-iterator"
+  override def superMeta = TadsObjectMetaClass
 }
 class FileMetaClass extends MetaClass {
   def name = "file"
+  override def superMeta = TadsObjectMetaClass
 }
 
 // This is a special meta class that does not do much, its properties can be accessed
 // but there is only one root object in the system
 class RootObjectMetaClass extends MetaClass {
   def name = "root-object"
+  override def superMeta = TadsObjectMetaClass
 }
 
 // Predefined symbols that the image defines. Can be accessed by the VM through
@@ -224,18 +268,19 @@ class ObjectManager(vmState: TadsVMState) {
 
   private def image : TadsImage = vmState.image
 
-  def addMetaClassDependency(index: Int, nameString: String) {
+  def addMetaClassDependency(metaClassIndex: Int, nameString: String) {
     val name = nameString.split("/")(0)
     val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
                       else "000000"
-    _metaClassMap(index) = ObjectSystem.MetaClasses(name)
-    _metaClassMap(index).id      = index
-    _metaClassMap(index).vmState = vmState
+    _metaClassMap(metaClassIndex) = metaClassForName(name)
+    _metaClassMap(metaClassIndex).reset
+    _metaClassMap(metaClassIndex).id      = metaClassIndex
+    _metaClassMap(metaClassIndex).vmState = vmState
   }
 
-  def addMetaClassPropertyId(index: Int, propertyId: Int) {
-    // TODO: Add property ids to the specified meta class
-    // (we should first find out what it means)
+  def addMetaClassPropertyId(metaClassIndex: Int, propertyIndex: Int,
+                             propertyId: Int) {
+    _metaClassMap(metaClassIndex).addFunctionMapping(propertyId, propertyIndex)
   }
   def addStaticObject(imageMem: Memory, objectId: Int, metaClassIndex: Int,
                       objAddr: Int, numBytes: Int, isTransient: Boolean) {
@@ -278,8 +323,8 @@ class ObjectManager(vmState: TadsVMState) {
   // **** Query Functions
   // **********************************************************************
 
-  def metaClassForIndex(index: Int) = _metaClassMap(index)
-
+  def metaClassForIndex(index: Int): MetaClass = _metaClassMap(index)
+  def metaClassForName(name: String): MetaClass = ObjectSystem.MetaClasses(name)
   def objectWithId(id: Int): TadsObject = {
     if (_objectCache.contains(id)) _objectCache(id)
     else throw new ObjectNotFoundException

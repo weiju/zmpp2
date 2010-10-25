@@ -297,6 +297,13 @@ class TadsVM {
                                                 "check for propNotDefined")
       }
     } else if (targetVal.valueType == TypeIds.VmList) {
+      // use constant list property evaluator
+      // the targetValue is an offset into the list pool, not into the static
+      // object pool !!!!
+      // val obj = TODO
+      val list = null // TODO
+      val listMeta = _state.objectManager.metaClassForName("list")
+      listMeta.evalClassProperty(list, propId)
       throw new UnsupportedOperationException("cannot handle list constants yet")
     } else if (targetVal.valueType == TypeIds.VmSString ||
                targetVal.valueType == TypeIds.VmDString) {

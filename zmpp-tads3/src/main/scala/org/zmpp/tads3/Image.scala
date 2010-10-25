@@ -263,7 +263,7 @@ class TadsImage(val memory: Memory) {
       objectManager.addMetaClassDependency(i, namebuffer.toString)
       val propbase = addr + 3 + numEntryNameBytes + 2
       for (j <- 0 until numPropertyIds) {
-        objectManager.addMetaClassPropertyId(i, memory.shortAt(propbase + j * 2))
+        objectManager.addMetaClassPropertyId(i, j, memory.shortAt(propbase + j * 2))
       }
       addr += entrySize
     }

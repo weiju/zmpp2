@@ -38,6 +38,7 @@ extends TadsObject(id, metaClass) {
 
 class RegexPatternMetaClass extends MetaClass {
   def name = "regex-pattern"
+  override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,

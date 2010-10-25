@@ -38,6 +38,7 @@ extends TadsObject(id, metaClass) {
 
 class LookupTableMetaClass extends MetaClass {
   def name = "lookuptable"
+  override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,

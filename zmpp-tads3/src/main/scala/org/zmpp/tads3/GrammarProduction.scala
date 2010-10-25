@@ -77,6 +77,7 @@ extends TadsObject(id, metaClass) {
 
 class GrammarProductionMetaClass extends MetaClass {
   def name = "grammar-production"
+  override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,

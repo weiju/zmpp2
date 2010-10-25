@@ -49,6 +49,7 @@ extends Vector(id, metaClass) {
 
 class AnonFuncPtrMetaClass extends MetaClass {
   def name = "anon-func-ptr"
+  override def superMeta = TadsObjectMetaClass
 
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: TadsObjectId,

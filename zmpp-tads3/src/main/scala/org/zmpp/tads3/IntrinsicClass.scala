@@ -56,6 +56,7 @@ extends TadsObject(id, metaClass) {
 // UINT4 modifier_object_id
 class IntrinsicClassMetaClass extends MetaClass {
   def name = "intrinsic-class"
+  override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,

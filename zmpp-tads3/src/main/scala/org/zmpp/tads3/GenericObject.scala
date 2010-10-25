@@ -98,6 +98,7 @@ object GenericObjectMetaClass {
 
 class GenericObjectMetaClass extends MetaClass {
   def name = "tads-object"
+  override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,
