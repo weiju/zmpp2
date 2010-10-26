@@ -56,15 +56,15 @@ import org.zmpp.base._
 // ...
 // UINT2 load_image_property_ID_N
 // DATAHOLDER load_image_property_value_N 
-class GenericObject(id: TadsObjectId, metaClass: MetaClass,
+class GenericObject(id: TadsObjectId,
                     override val isClassObject: Boolean,
                     superClassCount: Int,
-                    propertyCount: Int,
-                    objectManager: ObjectManager)
-extends TadsObject(id, metaClass) {
+                    propertyCount: Int)
+extends TadsObject(id) {
   val superClassIds = new Array[Int](superClassCount)
   val properties    = new Array[Property](propertyCount)
-
+  def metaClass = GenericObjectMetaClass
+  def objectManager = vmState.objectManager
   override def isInstanceOf(obj: TadsObject): Boolean = {
     for (superClassId <- superClassIds) {
       if (objectManager.objectWithId(superClassId) == obj) return true
@@ -96,8 +96,7 @@ object GenericObjectMetaClass extends MetaClass {
   val FlagIsClass = 0x0001
   def name = "tads-object"
   override def superMeta = TadsObjectMetaClass
-  override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: TadsObjectId,
+  override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
@@ -108,10 +107,9 @@ object GenericObjectMetaClass extends MetaClass {
     val flags           = imageMem.shortAt(objDataAddr + 4)
     val isClassObject   = (flags & FlagIsClass) == FlagIsClass
 
-    val genericObject = new GenericObject(objectId, this,
+    val genericObject = new GenericObject(objectId,
                                           isClassObject, superClassCount,
-                                          propertyCount,
-                                          objectManager)
+                                          propertyCount)
     for (index <- 0 until superClassCount) {
       genericObject.superClassIds(index) = imageMem.shortAt(objDataAddr + 6 +
                                                             index * 4)

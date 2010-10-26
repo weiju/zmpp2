@@ -37,10 +37,11 @@ import org.zmpp.base._
 // specify sizes will have no effect here.
 // Note: Vector indexes in TADS are, as all sequential types in TADS, in the
 // range [1..n], and *not* [0..n-1]
-class Vector(id: TadsObjectId, metaClass: MetaClass)
-extends TadsObject(id, metaClass) {
+class Vector(id: TadsObjectId)
+extends TadsObject(id) {
   private val _container = new ArrayList[TadsValue]
 
+  def metaClass: MetaClass = VectorMetaClass
   def init(numElements: Int) {
     printf("initialize %d elements\n", numElements)
     for (i <- 0 until numElements) _container.add(TadsNil)
@@ -77,12 +78,11 @@ object VectorMetaClass extends MetaClass {
   def name = "vector"
   override def superMeta = CollectionMetaClass
 
-  override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: TadsObjectId,
+  override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val vector = new Vector(objectId, this)
+    val vector = new Vector(objectId)
     vector
   }
 
@@ -94,8 +94,7 @@ object VectorMetaClass extends MetaClass {
   //   - (list): copy elements
   //   - (object:vector) copy elements
   // 
-  override def createFromStack(id: TadsObjectId, vmState: TadsVMState,
-                               argc: Int) = {
+  override def createFromStack(id: TadsObjectId, argc: Int) = {
     if (argc < 1 || argc > 2) {
       throw new IllegalArgumentException("vector::constructor(), argc " +
                                          "must be 1 or 2")
@@ -103,7 +102,7 @@ object VectorMetaClass extends MetaClass {
     val arg0 = vmState.stack.pop
     val result = if (arg0.valueType == TypeIds.VmInt) {
       // we ignore this parameter, we do not allocate vectors with an initial size
-      new Vector(id, this)
+      new Vector(id)
     } else {
       throw new IllegalArgumentException("vector::constructor(), illegal " +
                                          "arg0 type")

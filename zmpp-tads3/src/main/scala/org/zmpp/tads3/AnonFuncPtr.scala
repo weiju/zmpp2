@@ -36,8 +36,9 @@ import org.zmpp.base._
  * an arbitrary number of context objects.
  * As a nice side effect, this automatically implements the indexed access.
  */
-class AnonFuncPtr(id: TadsObjectId, metaClass: MetaClass)
-extends Vector(id, metaClass) {
+class AnonFuncPtr(id: TadsObjectId)
+extends Vector(id) {
+  override def metaClass: MetaClass = AnonFuncPtrMetaClass
   override def findProperty(propertyId: Int): Property = {
     val objectCallProp = metaClass.vmState.image.symbolicNames("ObjectCallProp")
     if (propertyId == objectCallProp.value) {
@@ -51,17 +52,15 @@ object AnonFuncPtrMetaClass extends MetaClass {
   def name = "anon-func-ptr"
   override def superMeta = TadsObjectMetaClass
 
-  override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: TadsObjectId,
+  override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val anonFuncPtr = new AnonFuncPtr(objectId, this)
+    val anonFuncPtr = new AnonFuncPtr(objectId)
     anonFuncPtr
   }
 
-  override def createFromStack(id: TadsObjectId, vmState: TadsVMState,
-                               argc: Int) = {
+  override def createFromStack(id: TadsObjectId, argc: Int) = {
     if (argc < 1) {
       throw new IllegalArgumentException("%s: createFromStack() needs at " +
                                          "least 1 " +
@@ -74,7 +73,7 @@ object AnonFuncPtrMetaClass extends MetaClass {
                                          "argument type: %d\n".format(
                                          name, functionPtr.valueType))
     }
-    val result = new AnonFuncPtr(id, this)
+    val result = new AnonFuncPtr(id)
     result.add(functionPtr)
     // copy (argc - 1) context objects into the result object
     for (i <- 1 until argc) result.add(vmState.stack.pop)

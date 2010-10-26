@@ -41,10 +41,12 @@ import scala.collection.JavaConversions._
 import java.util.TreeMap
 import org.zmpp.base._
 
-abstract class TadsObject(val id: TadsObjectId,
-                          val metaClass: MetaClass) {
+abstract class TadsObject(val id: TadsObjectId) {
   var isTransient = false
   def isClassObject = false
+  def metaClass: MetaClass
+  def vmState = metaClass.vmState
+  
   def isOfMetaClass(meta: MetaClass) = metaClass == meta
   def isInstanceOf(obj: TadsObject): Boolean = {
     // the obj parameter needs to be an instance of the IntrinsicClass metaclass
@@ -72,7 +74,9 @@ abstract class TadsObject(val id: TadsObjectId,
 }
 
 // A null object for quick comparison
-object InvalidObject extends TadsObject(InvalidObjectId, null)
+object InvalidObject extends TadsObject(InvalidObjectId) {
+  def metaClass = null
+}
 
 class Property(val id: Int, tadsValue: TadsValue,
                val definingObject: TadsObjectId) {
@@ -100,14 +104,13 @@ abstract class MetaClass {
   // class properties feels cleaner this way
   def superMeta: MetaClass
   def reset = propertyMap.clear
-  def createFromStack(id: TadsObjectId, vmState: TadsVMState,
+  def createFromStack(id: TadsObjectId,
                       argc: Int): TadsObject = {
     throw new UnsupportedOperationException("createFromStack not yet " +
                                             "supported in " +
                                             "metaclass '%s'".format(name))
   }
-  def createFromImage(objectManager: ObjectManager,
-                      imageMem: Memory, objectId: TadsObjectId, objDataAddr: Int,
+  def createFromImage(objectId: TadsObjectId, objDataAddr: Int,
                       numBytes: Int, isTransient: Boolean): TadsObject = {
     throw new UnsupportedOperationException("createFromImage not yet " +
                                             "supported in " +
@@ -137,6 +140,8 @@ abstract class MetaClass {
   // meta class, but can still query the system state if necessary
   var id: Int = 0
   var vmState: TadsVMState = null
+  def imageMem = vmState.image.memory
+  def objectManager = vmState.objectManager
 
   // The static property map defines the mapping from a property id to
   // an index into the meta class's function table
@@ -292,11 +297,10 @@ class ObjectManager(vmState: TadsVMState) {
                              propertyId: Int) {
     _metaClassMap(metaClassIndex).addFunctionMapping(propertyId, propertyIndex)
   }
-  def addStaticObject(imageMem: Memory, objectId: Int, metaClassIndex: Int,
+  def addStaticObject(objectId: Int, metaClassIndex: Int,
                       objAddr: Int, numBytes: Int, isTransient: Boolean) {
     val id = new TadsObjectId(objectId)
-    val obj = _metaClassMap(metaClassIndex).createFromImage(this, imageMem,
-                                                            id, objAddr,
+    val obj = _metaClassMap(metaClassIndex).createFromImage(id, objAddr,
                                                             numBytes, isTransient)
     _objectCache(objectId) = obj
     // set the maximum object id higher so that after we loaded all
@@ -318,7 +322,7 @@ class ObjectManager(vmState: TadsVMState) {
 
   def createFromStack(argc: Int, metaClassId: Int) = {
     val id = new TadsObjectId(newId)
-    val obj = _metaClassMap(metaClassId).createFromStack(id, vmState, argc)
+    val obj = _metaClassMap(metaClassId).createFromStack(id, argc)
     _objectCache(id.value) = obj
     id
   }

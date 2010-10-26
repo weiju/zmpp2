@@ -198,6 +198,15 @@ class TadsImage(val memory: Memory) {
   def codeIntAt(offset: Int) = {
     memory.intAt(_constantPools(PoolTypes.ByteCode).addressForOffset(offset))
   }
+  def constantDataByteAt(offset: Int) = {
+    memory.byteAt(_constantPools(PoolTypes.ConstantData).addressForOffset(offset))
+  }
+  def constantDataShortAt(offset: Int) = {
+    memory.shortAt(_constantPools(PoolTypes.ConstantData).addressForOffset(offset))
+  }
+  def constantDataIntAt(offset: Int) = {
+    memory.intAt(_constantPools(PoolTypes.ConstantData).addressForOffset(offset))
+  }
   
   def methodHeaderAt(offset: Int) = {
     val addr = _constantPools(PoolTypes.ByteCode).addressForOffset(offset)
@@ -219,13 +228,6 @@ class TadsImage(val memory: Memory) {
     val poolId    = memory.shortAt(blockHeader.dataAddress)
     val pageIndex = memory.intAt(blockHeader.dataAddress + 2)
     val xor       = memory.byteAt(blockHeader.dataAddress + 6)
-    /*
-    if (poolId == 1 && pageIndex == 0) {
-      printf("first code page found, addr = $%02x size = %d\n",
-             blockHeader.dataAddress + 7, blockHeader.dataSize - 7)
-      val bcaddr = blockHeader.dataAddress + 7
-      printPage(bcaddr, blockHeader.dataSize - 7)
-    }*/
     _constantPools(poolId).addPage(pageIndex,
       new ConstantPoolPage(blockHeader.dataAddress + 7,
                            blockHeader.dataSize - 7, xor.asInstanceOf[Byte]))
@@ -304,7 +306,7 @@ class TadsImage(val memory: Memory) {
                      else memory.shortAt(objAddr + 4)
       //printf("OBJ ID: %d #BYTES: %d\n", objId, numBytes)
       objAddr += (if (isLarge) 8 else 6)
-      objectManager.addStaticObject(memory, objId, metaClassIndex, objAddr, numBytes,
+      objectManager.addStaticObject(objId, metaClassIndex, objAddr, numBytes,
                                     isTransient)
       objAddr += numBytes
     }

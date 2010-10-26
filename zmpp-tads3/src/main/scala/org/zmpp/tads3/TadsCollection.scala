@@ -30,9 +30,9 @@ package org.zmpp.tads3
 
 import org.zmpp.base._
 
-class TadsCollection(id: TadsObjectId, metaClass: MetaClass)
-extends TadsObject(id, metaClass) {
-
+class TadsCollection(id: TadsObjectId)
+extends TadsObject(id) {
+  def metaClass = CollectionMetaClass
   override def toString = {
     "Collection object"
   }
