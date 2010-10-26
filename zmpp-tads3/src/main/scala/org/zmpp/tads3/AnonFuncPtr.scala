@@ -47,7 +47,7 @@ extends Vector(id, metaClass) {
   }
 }
 
-class AnonFuncPtrMetaClass extends MetaClass {
+object AnonFuncPtrMetaClass extends MetaClass {
   def name = "anon-func-ptr"
   override def superMeta = TadsObjectMetaClass
 

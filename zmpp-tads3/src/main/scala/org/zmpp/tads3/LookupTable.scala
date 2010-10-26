@@ -36,9 +36,9 @@ class LookupTable(id: TadsObjectId, metaClass: MetaClass)
 extends TadsObject(id, metaClass) {
 }
 
-class LookupTableMetaClass extends MetaClass {
+object LookupTableMetaClass extends MetaClass {
   def name = "lookuptable"
-  override def superMeta = vmState.objectManager.metaClassForName("collection")
+  override def superMeta = CollectionMetaClass
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: TadsObjectId,
                                objDataAddr: Int,

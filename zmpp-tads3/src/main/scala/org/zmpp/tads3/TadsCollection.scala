@@ -58,7 +58,7 @@ extends TadsObject(id, metaClass) {
  * 1: createIterator()
  * 2: createLiveIterator()
  */
-class CollectionMetaClass extends MetaClass {
+object CollectionMetaClass extends MetaClass {
   def name = "collection"
   def superMeta = TadsObjectMetaClass
 }

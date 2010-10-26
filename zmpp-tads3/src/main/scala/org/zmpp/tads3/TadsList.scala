@@ -39,7 +39,7 @@ extends TadsObject(id, metaClass) {
 
 }
 
-class ListMetaClass extends MetaClass {
+object ListMetaClass extends MetaClass {
   def name = "list"
-  def superMeta = vmState.objectManager.metaClassForName("collection")
+  def superMeta = CollectionMetaClass
 }

@@ -73,7 +73,7 @@ class BigNumber(id: TadsObjectId, metaClass: MetaClass)
 extends TadsObject(id, metaClass) {
 }
 
-class BigNumberMetaClass extends MetaClass {
+object BigNumberMetaClass extends MetaClass {
   def name = "bignumber"
   override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectManager: ObjectManager,

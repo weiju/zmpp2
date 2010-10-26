@@ -92,11 +92,8 @@ extends TadsObject(id, metaClass) {
   }
 }
 
-object GenericObjectMetaClass {
+object GenericObjectMetaClass extends MetaClass {
   val FlagIsClass = 0x0001
-}
-
-class GenericObjectMetaClass extends MetaClass {
   def name = "tads-object"
   override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectManager: ObjectManager,
@@ -105,7 +102,6 @@ class GenericObjectMetaClass extends MetaClass {
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
     import TadsConstants._
-    import GenericObjectMetaClass._
 
     val superClassCount = imageMem.shortAt(objDataAddr)
     val propertyCount   = imageMem.shortAt(objDataAddr + 2)

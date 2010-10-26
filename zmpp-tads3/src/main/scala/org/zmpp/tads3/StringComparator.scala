@@ -36,7 +36,7 @@ class StringComparator(id: TadsObjectId, metaClass: MetaClass)
 extends TadsObject(id, metaClass) {
 }
 
-class StringComparatorMetaClass extends MetaClass {
+object StringComparatorMetaClass extends MetaClass {
   def name = "string-comparator"
   override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectManager: ObjectManager,

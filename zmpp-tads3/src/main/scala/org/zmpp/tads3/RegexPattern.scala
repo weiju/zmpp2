@@ -36,7 +36,7 @@ class RegexPattern(id: TadsObjectId, metaClass: MetaClass)
 extends TadsObject(id, metaClass) {
 }
 
-class RegexPatternMetaClass extends MetaClass {
+object RegexPatternMetaClass extends MetaClass {
   def name = "regex-pattern"
   override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectManager: ObjectManager,

@@ -64,7 +64,7 @@ class Dictionary2(id: TadsObjectId, metaClass: MetaClass)
 extends TadsObject(id, metaClass) {
 }
 
-class Dictionary2MetaClass extends MetaClass {
+object Dictionary2MetaClass extends MetaClass {
   def name = "dictionary2"
   override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectManager: ObjectManager,

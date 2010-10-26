@@ -73,9 +73,9 @@ extends TadsObject(id, metaClass) {
 // DATAHOLDER element[2]
 //
 // Object extension: TODO
-class VectorMetaClass extends MetaClass {
+object VectorMetaClass extends MetaClass {
   def name = "vector"
-  override def superMeta = vmState.objectManager.metaClassForName("collection")
+  override def superMeta = CollectionMetaClass
 
   override def createFromImage(objectManager: ObjectManager,
                                imageMem: Memory, objectId: TadsObjectId,

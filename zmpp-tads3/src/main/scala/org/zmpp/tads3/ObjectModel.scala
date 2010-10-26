@@ -48,7 +48,7 @@ abstract class TadsObject(val id: TadsObjectId,
   def isOfMetaClass(meta: MetaClass) = metaClass == meta
   def isInstanceOf(obj: TadsObject): Boolean = {
     // the obj parameter needs to be an instance of the IntrinsicClass metaclass
-    if (obj.isOfMetaClass(ObjectSystem.MetaClasses("intrinsic-class"))) {
+    if (obj.isOfMetaClass(IntrinsicClassMetaClass)) {
       // TODO: GET this object's meta class and compare, either if
       // equal or instance
       false
@@ -91,8 +91,6 @@ class Property(val id: Int, tadsValue: TadsValue,
 // QTads' source code.
 // Instead of complaining, I'll just see how they are implemented in QTads and
 // document it by myself
-// Consider: It might make sense to make all concrete MetaClasses in the system
-// objects (Singletons)
 abstract class MetaClass {
   private val propertyMap = new TreeMap[Int, Int]
   def name: String
@@ -160,47 +158,47 @@ object TadsObjectMetaClass extends MetaClass {
   override def superMeta = null
 }
 
-class StringMetaClass extends MetaClass {
+object StringMetaClass extends MetaClass {
   def name = "string"
   override def superMeta = TadsObjectMetaClass
 }
 
-class IntClassModMetaClass extends MetaClass {
+object IntClassModMetaClass extends MetaClass {
   def name = "int-class-mod"
   override def superMeta = TadsObjectMetaClass
 }
-class IteratorMetaClass extends MetaClass {
+object IteratorMetaClass extends MetaClass {
   def name = "iterator"
   override def superMeta = TadsObjectMetaClass
 }
-class IndexedIteratorMetaClass extends MetaClass {
+object IndexedIteratorMetaClass extends MetaClass {
   def name = "indexed-iterator"
   override def superMeta = TadsObjectMetaClass
 }
-class CharacterSetMetaClass extends MetaClass {
+object CharacterSetMetaClass extends MetaClass {
   def name = "character-set"
   override def superMeta = TadsObjectMetaClass
 }
-class ByteArrayMetaClass extends MetaClass {
+object ByteArrayMetaClass extends MetaClass {
   def name = "bytearray"
   override def superMeta = TadsObjectMetaClass
 }
-class WeakRefLookupTableMetaClass extends MetaClass {
+object WeakRefLookupTableMetaClass extends MetaClass {
   def name = "weakreflookuptable"
   override def superMeta = TadsObjectMetaClass
 }
-class LookupTableIteratorMetaClass extends MetaClass {
+object LookupTableIteratorMetaClass extends MetaClass {
   def name = "lookuptable-iterator"
   override def superMeta = TadsObjectMetaClass
 }
-class FileMetaClass extends MetaClass {
+object FileMetaClass extends MetaClass {
   def name = "file"
   override def superMeta = TadsObjectMetaClass
 }
 
 // This is a special meta class that does not do much, its properties can be accessed
 // but there is only one root object in the system
-class RootObjectMetaClass extends MetaClass {
+object RootObjectMetaClass extends MetaClass {
   def name = "root-object"
   override def superMeta = TadsObjectMetaClass
 }
@@ -241,29 +239,29 @@ object ObjectSystem {
   // when initializing the game, this map can be used to map the image
   // identifiers for metaclass dependencies to the actual meta classes that
   // the ZMPP TADS3 VM supports
-  val MetaClasses = Map(
-    "tads-object"          -> new GenericObjectMetaClass,
-    "string"               -> new StringMetaClass,
-    "list"                 -> new ListMetaClass,
-    "vector"               -> new VectorMetaClass,
-    "lookuptable"          -> new LookupTableMetaClass,
-    "dictionary2"          -> new Dictionary2MetaClass,
-    "grammar-production"   -> new GrammarProductionMetaClass,
-    "anon-func-ptr"        -> new AnonFuncPtrMetaClass,
-    "int-class-mod"        -> new IntClassModMetaClass,
-    "root-object"          -> new RootObjectMetaClass,
-    "intrinsic-class"      -> new IntrinsicClassMetaClass,
-    "collection"           -> new CollectionMetaClass,
-    "iterator"             -> new IteratorMetaClass,
-    "indexed-iterator"     -> new IndexedIteratorMetaClass,
-    "character-set"        -> new CharacterSetMetaClass,
-    "bytearray"            -> new ByteArrayMetaClass,
-    "regex-pattern"        -> new RegexPatternMetaClass,
-    "weakreflookuptable"   -> new WeakRefLookupTableMetaClass,
-    "lookuptable-iterator" -> new LookupTableIteratorMetaClass,
-    "file"                 -> new FileMetaClass,
-    "string-comparator"    -> new StringComparatorMetaClass,
-    "bignumber"            -> new BigNumberMetaClass)
+  val MetaClasses: Map[String, MetaClass] = Map(
+    "tads-object"          -> GenericObjectMetaClass,
+    "string"               -> StringMetaClass,
+    "list"                 -> ListMetaClass,
+    "vector"               -> VectorMetaClass,
+    "lookuptable"          -> LookupTableMetaClass,
+    "dictionary2"          -> Dictionary2MetaClass,
+    "grammar-production"   -> GrammarProductionMetaClass,
+    "anon-func-ptr"        -> AnonFuncPtrMetaClass,
+    "int-class-mod"        -> IntClassModMetaClass,
+    "root-object"          -> RootObjectMetaClass,
+    "intrinsic-class"      -> IntrinsicClassMetaClass,
+    "collection"           -> CollectionMetaClass,
+    "iterator"             -> IteratorMetaClass,
+    "indexed-iterator"     -> IndexedIteratorMetaClass,
+    "character-set"        -> CharacterSetMetaClass,
+    "bytearray"            -> ByteArrayMetaClass,
+    "regex-pattern"        -> RegexPatternMetaClass,
+    "weakreflookuptable"   -> WeakRefLookupTableMetaClass,
+    "lookuptable-iterator" -> LookupTableIteratorMetaClass,
+    "file"                 -> FileMetaClass,
+    "string-comparator"    -> StringComparatorMetaClass,
+    "bignumber"            -> BigNumberMetaClass)
 }
 
 // The object manager handles instantiation and management of objects.
@@ -284,7 +282,7 @@ class ObjectManager(vmState: TadsVMState) {
     val name = nameString.split("/")(0)
     val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
                       else "000000"
-    _metaClassMap(metaClassIndex) = metaClassForName(name)
+    _metaClassMap(metaClassIndex) = ObjectSystem.MetaClasses(name)
     _metaClassMap(metaClassIndex).reset
     _metaClassMap(metaClassIndex).id      = metaClassIndex
     _metaClassMap(metaClassIndex).vmState = vmState
@@ -336,7 +334,6 @@ class ObjectManager(vmState: TadsVMState) {
   // **********************************************************************
 
   def metaClassForIndex(index: Int): MetaClass = _metaClassMap(index)
-  def metaClassForName(name: String): MetaClass = ObjectSystem.MetaClasses(name)
   def objectWithId(id: Int): TadsObject = {
     if (_objectCache.contains(id)) _objectCache(id)
     else throw new ObjectNotFoundException

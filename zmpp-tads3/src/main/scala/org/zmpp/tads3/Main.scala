@@ -302,7 +302,7 @@ class TadsVM {
       // object pool !!!!
       // val obj = TODO
       val list = null // TODO
-      val listMeta = _state.objectManager.metaClassForName("list")
+      val listMeta = ListMetaClass
       listMeta.evalClassProperty(list, propId)
       throw new UnsupportedOperationException("cannot handle list constants yet")
     } else if (targetVal.valueType == TypeIds.VmSString ||
