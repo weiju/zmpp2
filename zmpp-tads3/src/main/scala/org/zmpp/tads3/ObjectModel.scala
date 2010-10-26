@@ -65,6 +65,10 @@ abstract class TadsObject(val id: TadsObjectId,
   def setValueAtIndex(index: Int, newValue: TadsValue): TadsValue = {
     throw new UnsupportedOperationException("setValueAtIndex() not implemented")
   }
+
+  def callMethodWithIndex(index: Int, argc: Int) {
+    throw new UnsupportedOperationException("callMethodWithIndex not supported")
+  }
 }
 
 // A null object for quick comparison
@@ -87,9 +91,15 @@ class Property(val id: Int, tadsValue: TadsValue,
 // QTads' source code.
 // Instead of complaining, I'll just see how they are implemented in QTads and
 // document it by myself
+// Consider: It might make sense to make all concrete MetaClasses in the system
+// objects (Singletons)
 abstract class MetaClass {
   private val propertyMap = new TreeMap[Int, Int]
   def name: String
+
+  // instead of creating a parallel inheritance hierarchy of meta classes
+  // we model the super relationship with aggregation. I think that evaluating
+  // class properties feels cleaner this way
   def superMeta: MetaClass
   def reset = propertyMap.clear
   def createFromStack(id: TadsObjectId, vmState: TadsVMState,
@@ -118,6 +128,7 @@ abstract class MetaClass {
       // found, try to evaluate
       printf("FOUND PROPERTY %d in metaclass '%s', at index: %d\n",
            propertyId, name, functionIndex)
+      obj.callMethodWithIndex(functionIndex, 0)
     }
     false
   }
@@ -143,6 +154,7 @@ abstract class MetaClass {
   }
 }
 
+// The top level meta class
 object TadsObjectMetaClass extends MetaClass {
   def name = "object"
   override def superMeta = null

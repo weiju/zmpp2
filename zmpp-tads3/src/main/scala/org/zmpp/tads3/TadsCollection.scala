@@ -1,5 +1,5 @@
 /*
- * Created on 2010/10/13
+ * Created on 2010/10/22
  * Copyright (c) 2010, Wei-ju Wu.
  * All rights reserved.
  *
@@ -28,23 +28,37 @@
  */
 package org.zmpp.tads3
 
-import java.util.ArrayList
-import scala.collection.JavaConversions._
 import org.zmpp.base._
 
-class LookupTable(id: TadsObjectId, metaClass: MetaClass)
+class TadsCollection(id: TadsObjectId, metaClass: MetaClass)
 extends TadsObject(id, metaClass) {
+
+  override def toString = {
+    "Collection object"
+  }
+  val FunctionVector = Array(createIterator _, createLiveIterator _)
+  def undef(argc: Int) {
+    throw new UnsupportedOperationException("undefined")
+  }
+  def createIterator(argc: Int) {
+    println("createIterator() TODO")
+  }
+  def createLiveIterator(argc: Int) {
+    println("createLiveIterator")
+    throw new UnsupportedOperationException("createLiveIterator")
+  }
+  override def callMethodWithIndex(index: Int, argc: Int) {
+    FunctionVector(index)(argc)
+  }
 }
 
-class LookupTableMetaClass extends MetaClass {
-  def name = "lookuptable"
-  override def superMeta = vmState.objectManager.metaClassForName("collection")
-  override def createFromImage(objectManager: ObjectManager,
-                               imageMem: Memory, objectId: TadsObjectId,
-                               objDataAddr: Int,
-                               numBytes: Int,
-                               isTransient: Boolean): TadsObject = {
-    val lookupTable = new LookupTable(objectId, this)
-    lookupTable
-  }
+/**
+ * Function vector:
+ * 0: undef
+ * 1: createIterator()
+ * 2: createLiveIterator()
+ */
+class CollectionMetaClass extends MetaClass {
+  def name = "collection"
+  def superMeta = TadsObjectMetaClass
 }
