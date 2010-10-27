@@ -41,16 +41,16 @@ import scala.collection.JavaConversions._
 import java.util.TreeMap
 import org.zmpp.base._
 
-abstract class TadsObject(val id: TadsObjectId) {
+abstract class TadsObject(val id: TadsObjectId, val metaClass: MetaClass) {
   var isTransient = false
   def isClassObject = false
-  def metaClass: MetaClass
   def vmState = metaClass.vmState
+  def objectSystem = vmState.objectSystem
   
   def isOfMetaClass(meta: MetaClass) = metaClass == meta
   def isInstanceOf(obj: TadsObject): Boolean = {
     // the obj parameter needs to be an instance of the IntrinsicClass metaclass
-    if (obj.isOfMetaClass(IntrinsicClassMetaClass)) {
+    if (obj.isOfMetaClass(objectSystem.metaClassForName("intrinsic-class"))) {
       // TODO: GET this object's meta class and compare, either if
       // equal or instance
       false
@@ -74,8 +74,7 @@ abstract class TadsObject(val id: TadsObjectId) {
 }
 
 // A null object for quick comparison
-object InvalidObject extends TadsObject(InvalidObjectId) {
-  def metaClass = null
+object InvalidObject extends TadsObject(InvalidObjectId, null) {
 }
 
 class Property(val id: Int, tadsValue: TadsValue,
@@ -102,7 +101,7 @@ abstract class MetaClass {
   // instead of creating a parallel inheritance hierarchy of meta classes
   // we model the super relationship with aggregation. I think that evaluating
   // class properties feels cleaner this way
-  def superMeta: MetaClass
+  def superMeta: MetaClass = null
   def reset = propertyMap.clear
   def createFromStack(id: TadsObjectId,
                       argc: Int): TadsObject = {
@@ -141,7 +140,7 @@ abstract class MetaClass {
   var id: Int = 0
   var vmState: TadsVMState = null
   def imageMem = vmState.image.memory
-  def objectManager = vmState.objectManager
+  def objectSystem = vmState.objectSystem
 
   // The static property map defines the mapping from a property id to
   // an index into the meta class's function table
@@ -158,54 +157,43 @@ abstract class MetaClass {
 }
 
 // The top level meta class
-object TadsObjectMetaClass extends MetaClass {
+class TadsObjectMetaClass extends MetaClass {
   def name = "object"
-  override def superMeta = null
 }
 
-object StringMetaClass extends MetaClass {
+class StringMetaClass extends MetaClass {
   def name = "string"
-  override def superMeta = TadsObjectMetaClass
 }
 
-object IntClassModMetaClass extends MetaClass {
+class IntClassModMetaClass extends MetaClass {
   def name = "int-class-mod"
-  override def superMeta = TadsObjectMetaClass
 }
-object IteratorMetaClass extends MetaClass {
+class IteratorMetaClass extends MetaClass {
   def name = "iterator"
-  override def superMeta = TadsObjectMetaClass
 }
-object IndexedIteratorMetaClass extends MetaClass {
+class IndexedIteratorMetaClass extends MetaClass {
   def name = "indexed-iterator"
-  override def superMeta = TadsObjectMetaClass
 }
-object CharacterSetMetaClass extends MetaClass {
+class CharacterSetMetaClass extends MetaClass {
   def name = "character-set"
-  override def superMeta = TadsObjectMetaClass
 }
-object ByteArrayMetaClass extends MetaClass {
+class ByteArrayMetaClass extends MetaClass {
   def name = "bytearray"
-  override def superMeta = TadsObjectMetaClass
 }
-object WeakRefLookupTableMetaClass extends MetaClass {
+class WeakRefLookupTableMetaClass extends MetaClass {
   def name = "weakreflookuptable"
-  override def superMeta = TadsObjectMetaClass
 }
-object LookupTableIteratorMetaClass extends MetaClass {
+class LookupTableIteratorMetaClass extends MetaClass {
   def name = "lookuptable-iterator"
-  override def superMeta = TadsObjectMetaClass
 }
-object FileMetaClass extends MetaClass {
+class FileMetaClass extends MetaClass {
   def name = "file"
-  override def superMeta = TadsObjectMetaClass
 }
 
 // This is a special meta class that does not do much, its properties can be accessed
 // but there is only one root object in the system
-object RootObjectMetaClass extends MetaClass {
+class RootObjectMetaClass extends MetaClass {
   def name = "root-object"
-  override def superMeta = TadsObjectMetaClass
 }
 
 // Predefined symbols that the image defines. Can be accessed by the VM through
@@ -239,36 +227,6 @@ object PredefinedSymbols {
   val UnknownCharSetException = "CharacterSet.UnknownCharSetException"
 }
 
-object ObjectSystem {
-  // map the unique meta class names to the system meta classes
-  // when initializing the game, this map can be used to map the image
-  // identifiers for metaclass dependencies to the actual meta classes that
-  // the ZMPP TADS3 VM supports
-  val MetaClasses: Map[String, MetaClass] = Map(
-    "tads-object"          -> GenericObjectMetaClass,
-    "string"               -> StringMetaClass,
-    "list"                 -> ListMetaClass,
-    "vector"               -> VectorMetaClass,
-    "lookuptable"          -> LookupTableMetaClass,
-    "dictionary2"          -> Dictionary2MetaClass,
-    "grammar-production"   -> GrammarProductionMetaClass,
-    "anon-func-ptr"        -> AnonFuncPtrMetaClass,
-    "int-class-mod"        -> IntClassModMetaClass,
-    "root-object"          -> RootObjectMetaClass,
-    "intrinsic-class"      -> IntrinsicClassMetaClass,
-    "collection"           -> CollectionMetaClass,
-    "iterator"             -> IteratorMetaClass,
-    "indexed-iterator"     -> IndexedIteratorMetaClass,
-    "character-set"        -> CharacterSetMetaClass,
-    "bytearray"            -> ByteArrayMetaClass,
-    "regex-pattern"        -> RegexPatternMetaClass,
-    "weakreflookuptable"   -> WeakRefLookupTableMetaClass,
-    "lookuptable-iterator" -> LookupTableIteratorMetaClass,
-    "file"                 -> FileMetaClass,
-    "string-comparator"    -> StringComparatorMetaClass,
-    "bignumber"            -> BigNumberMetaClass)
-}
-
 // The object manager handles instantiation and management of objects.
 // It is an extension of the VM state, because it represents the current state
 // of all objects in the system.
@@ -276,7 +234,35 @@ object ObjectSystem {
 // 1. reset before loading a new file
 // 2. during loading the image, add metaclass dependencies as they come in
 // 3. then load the classes as they come in
-class ObjectManager(vmState: TadsVMState) {
+class ObjectSystem(vmState: TadsVMState) {
+  // map the unique meta class names to the system meta classes
+  // when initializing the game, this map can be used to map the image
+  // identifiers for metaclass dependencies to the actual meta classes that
+  // the ZMPP TADS3 VM supports
+  val MetaClasses: Map[String, MetaClass] = Map(
+    "tads-object"          -> new GenericObjectMetaClass,
+    "string"               -> new StringMetaClass,
+    "list"                 -> new ListMetaClass,
+    "vector"               -> new VectorMetaClass,
+    "lookuptable"          -> new LookupTableMetaClass,
+    "dictionary2"          -> new Dictionary2MetaClass,
+    "grammar-production"   -> new GrammarProductionMetaClass,
+    "anon-func-ptr"        -> new AnonFuncPtrMetaClass,
+    "int-class-mod"        -> new IntClassModMetaClass,
+    "root-object"          -> new RootObjectMetaClass,
+    "intrinsic-class"      -> new IntrinsicClassMetaClass,
+    "collection"           -> new CollectionMetaClass,
+    "iterator"             -> new IteratorMetaClass,
+    "indexed-iterator"     -> new IndexedIteratorMetaClass,
+    "character-set"        -> new CharacterSetMetaClass,
+    "bytearray"            -> new ByteArrayMetaClass,
+    "regex-pattern"        -> new RegexPatternMetaClass,
+    "weakreflookuptable"   -> new WeakRefLookupTableMetaClass,
+    "lookuptable-iterator" -> new LookupTableIteratorMetaClass,
+    "file"                 -> new FileMetaClass,
+    "string-comparator"    -> new StringComparatorMetaClass,
+    "bignumber"            -> new BigNumberMetaClass)
+
   private var _maxObjectId       = 0
   private val _objectCache       = new TreeMap[Int, TadsObject]
   private val _metaClassMap      = new TreeMap[Int, MetaClass]
@@ -287,7 +273,7 @@ class ObjectManager(vmState: TadsVMState) {
     val name = nameString.split("/")(0)
     val version = if (nameString.split("/").length == 2) nameString.split("/")(1)
                       else "000000"
-    _metaClassMap(metaClassIndex) = ObjectSystem.MetaClasses(name)
+    _metaClassMap(metaClassIndex) = MetaClasses(name)
     _metaClassMap(metaClassIndex).reset
     _metaClassMap(metaClassIndex).id      = metaClassIndex
     _metaClassMap(metaClassIndex).vmState = vmState
@@ -338,6 +324,7 @@ class ObjectManager(vmState: TadsVMState) {
   // **********************************************************************
 
   def metaClassForIndex(index: Int): MetaClass = _metaClassMap(index)
+  def metaClassForName(name: String): MetaClass = MetaClasses(name)
   def objectWithId(id: Int): TadsObject = {
     if (_objectCache.contains(id)) _objectCache(id)
     else throw new ObjectNotFoundException

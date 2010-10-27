@@ -48,7 +48,7 @@ class TadsVMState {
   private var _memory : Memory = null
   var image: TadsImage        = null
   val stack = new Stack
-  val objectManager = new ObjectManager(this)
+  val objectSystem = new ObjectSystem(this)
   var runState = RunStates.Running
   
   // Registers (TODO: current savepoint, savepoint count)
@@ -60,7 +60,7 @@ class TadsVMState {
 
   def reset(imageMem: Memory) {
     image = new TadsImage(imageMem)
-    objectManager.reset
+    objectSystem.reset
     image.readData(this)
 
     // call initial function
@@ -208,7 +208,7 @@ class TadsVM {
       case JNil         => branchIfTrue(_state.stack.pop == TadsNil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
       case New1         =>
-        _state.r0 = _state.objectManager.createFromStack(nextByteOperand, nextByteOperand)
+        _state.r0 = _state.objectSystem.createFromStack(nextByteOperand, nextByteOperand)
       case Nop          => // do nothing
       case ObjGetProp   => objGetProp(new TadsObjectId(nextIntOperand),
                                       nextShortOperand)
@@ -247,7 +247,7 @@ class TadsVM {
       throw new UnsupportedOperationException("indexing lists not supported yet")
     } else if (value.valueType == TypeIds.VmObj) {
       val pushValue =
-        _state.objectManager.objectWithId(value).valueAtIndex(indexVal)
+        _state.objectSystem.objectWithId(value).valueAtIndex(indexVal)
       _state.stack.push(pushValue)
     } else throw new CannotIndexTypeException
   }
@@ -258,7 +258,7 @@ class TadsVM {
       throw new UnsupportedOperationException("PtrCall with PROP not supported yet")
     } else if (stackVal.valueType == TypeIds.VmObj) {
       printf("OBJ PROP CALL, OBJ = %d\n", stackVal.value)
-      val obj  = _state.objectManager.objectWithId(stackVal.value)
+      val obj  = _state.objectSystem.objectWithId(stackVal.value)
       val symb = _state.image.symbolicNames("ObjectCallProp")
       if (symb != null && symb.valueType == TypeIds.VmProp) {
         printf("SYM: %s TYP: %d VAL: %d\n", symb.name, symb.valueType, symb.value)
@@ -272,7 +272,7 @@ class TadsVM {
 
   private def setInd(containerVal: TadsValue, index: Int, newVal: TadsValue) = {
     if (containerVal.valueType == TypeIds.VmObj) {
-      val obj = _state.objectManager.objectWithId(containerVal.value)
+      val obj = _state.objectSystem.objectWithId(containerVal.value)
       obj.setValueAtIndex(index, newVal)
     } else if (containerVal.valueType == TypeIds.VmList) {
       throw new UnsupportedOperationException("SETINDxxx not supported " +
@@ -287,7 +287,7 @@ class TadsVM {
 
   private def objGetProp(targetVal: TadsValue, propId: Int) {
     if (targetVal.valueType == TypeIds.VmObj) {
-      val obj = _state.objectManager.objectWithId(targetVal)
+      val obj = _state.objectSystem.objectWithId(targetVal)
       printf("objGetProp(%s, %d), obj: %s\n", targetVal, propId, obj)
       val prop = obj.findProperty(propId)
       if (prop != null) evalProperty(targetVal.asInstanceOf[TadsObjectId], prop)
@@ -302,7 +302,7 @@ class TadsVM {
       // object pool !!!!
       // val obj = TODO
       val list = null // TODO
-      val listMeta = ListMetaClass
+      val listMeta = _state.objectSystem.metaClassForName("list")
       listMeta.evalClassProperty(list, propId)
       throw new UnsupportedOperationException("cannot handle list constants yet")
     } else if (targetVal.valueType == TypeIds.VmSString ||

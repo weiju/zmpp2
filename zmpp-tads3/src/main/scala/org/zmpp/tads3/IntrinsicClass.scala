@@ -40,11 +40,10 @@ import org.zmpp.base._
  * which is established at image load time.
  * We just follow the scheme of the reference implementation here.
  */
-class IntrinsicClass(id: TadsObjectId,
+class IntrinsicClass(id: TadsObjectId, metaClass: MetaClass,
                      val representedMetaClass: MetaClass,
                      val modifierObjId: Int)
-extends TadsObject(id) {
-  def metaClass = IntrinsicClassMetaClass
+extends TadsObject(id, metaClass) {
   override def isClassObject = true
   override def isInstanceOf(obj: TadsObject): Boolean = {
     throw new UnsupportedOperationException("not implemented yet")
@@ -55,9 +54,8 @@ extends TadsObject(id) {
 // UINT2 byte_count of the data block (currently 8)
 // UINT2 metaclass_dependency_table_index
 // UINT4 modifier_object_id
-object IntrinsicClassMetaClass extends MetaClass {
+class IntrinsicClassMetaClass extends MetaClass {
   def name = "intrinsic-class"
-  override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
@@ -72,8 +70,8 @@ object IntrinsicClassMetaClass extends MetaClass {
            objectId, byteCount, metaClassIndex, modifierObjId)
     println("-------------------------------------------------------------")
     */
-    new IntrinsicClass(objectId,
-                       objectManager.metaClassForIndex(metaClassIndex),
+    new IntrinsicClass(objectId, this,
+                       objectSystem.metaClassForIndex(metaClassIndex),
                        modifierObjId)
     // TODO: Assign this object to the metaclass
   }

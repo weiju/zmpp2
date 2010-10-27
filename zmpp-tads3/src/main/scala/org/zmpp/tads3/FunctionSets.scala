@@ -170,7 +170,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     // process up to 2 optional parameters (class?, flags?)
     if (argc == 2) {
       val matchClassId = _vmState.stack.pop.value
-      matchClass = _vmState.objectManager.objectWithId(matchClassId)
+      matchClass = _vmState.objectSystem.objectWithId(matchClassId)
       flags    = _vmState.stack.pop.value
     } else if (argc == 1) {
       val arg = _vmState.stack.pop
@@ -178,7 +178,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
         flags = arg.value
       } else if (arg.valueType == TypeIds.VmObj) {
         val matchClassId = arg.value
-        matchClass = _vmState.objectManager.objectWithId(matchClassId)
+        matchClass = _vmState.objectSystem.objectWithId(matchClassId)
       } else {
         throw new IllegalArgumentException("Illegal argument: %s".format(arg))
       }
@@ -186,7 +186,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     printf("CLASS IS: %s, FLAGS IS: %d\n", matchClass.id, flags)
     val enumInstances = (flags & EnumInstances) == EnumInstances
     val enumClasses = (flags & EnumClasses) == EnumClasses
-    val result = _vmState.objectManager.firstObject(enumInstances, enumClasses,
+    val result = _vmState.objectSystem.firstObject(enumInstances, enumClasses,
                                                     matchClass)
     printf("FOUND OBJECT: %s\n", result.id)
     _vmState.r0 = result.id

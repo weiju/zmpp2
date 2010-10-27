@@ -30,12 +30,9 @@ package org.zmpp.tads3
 
 import org.zmpp.base._
 
-class TadsCollection(id: TadsObjectId)
-extends TadsObject(id) {
-  def metaClass = CollectionMetaClass
-  override def toString = {
-    "Collection object"
-  }
+class TadsCollection(id: TadsObjectId, metaClass: MetaClass)
+extends TadsObject(id, metaClass) {
+  override def toString = "Collection object"
   val FunctionVector = Array(createIterator _, createLiveIterator _)
   def undef(argc: Int) {
     throw new UnsupportedOperationException("undefined")
@@ -58,7 +55,6 @@ extends TadsObject(id) {
  * 1: createIterator()
  * 2: createLiveIterator()
  */
-object CollectionMetaClass extends MetaClass {
+class CollectionMetaClass extends MetaClass {
   def name = "collection"
-  def superMeta = TadsObjectMetaClass
 }

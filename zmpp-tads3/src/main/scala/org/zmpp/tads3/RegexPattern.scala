@@ -32,19 +32,17 @@ import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
-class RegexPattern(id: TadsObjectId)
-extends TadsObject(id) {
-  def metaClass = RegexPatternMetaClass
+class RegexPattern(id: TadsObjectId, metaClass: MetaClass)
+extends TadsObject(id, metaClass) {
 }
 
-object RegexPatternMetaClass extends MetaClass {
+class RegexPatternMetaClass extends MetaClass {
   def name = "regex-pattern"
-  override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val regexPat = new RegexPattern(objectId)
+    val regexPat = new RegexPattern(objectId, this)
     regexPat
   }
 }

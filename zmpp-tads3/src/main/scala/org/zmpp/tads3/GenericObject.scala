@@ -56,18 +56,16 @@ import org.zmpp.base._
 // ...
 // UINT2 load_image_property_ID_N
 // DATAHOLDER load_image_property_value_N 
-class GenericObject(id: TadsObjectId,
+class GenericObject(id: TadsObjectId, metaClass: MetaClass,
                     override val isClassObject: Boolean,
                     superClassCount: Int,
                     propertyCount: Int)
-extends TadsObject(id) {
+extends TadsObject(id, metaClass) {
   val superClassIds = new Array[Int](superClassCount)
   val properties    = new Array[Property](propertyCount)
-  def metaClass = GenericObjectMetaClass
-  def objectManager = vmState.objectManager
   override def isInstanceOf(obj: TadsObject): Boolean = {
     for (superClassId <- superClassIds) {
-      if (objectManager.objectWithId(superClassId) == obj) return true
+      if (objectSystem.objectWithId(superClassId) == obj) return true
       // TODO: we might have to check whether the super class inherits
       // from obj
     }
@@ -79,7 +77,7 @@ extends TadsObject(id) {
     // not found in object -> try super class properties
     for (superClassId <- superClassIds) {
       printf("not found, try super class: %d\n", superClassId)
-      val superClass = objectManager.objectWithId(superClassId)
+      val superClass = objectSystem.objectWithId(superClassId)
       val prop = superClass.findProperty(propertyId)
       if (prop != null) return prop
     }
@@ -92,22 +90,23 @@ extends TadsObject(id) {
   }
 }
 
-object GenericObjectMetaClass extends MetaClass {
+object GenericObjectMetaClass {
   val FlagIsClass = 0x0001
+}
+class GenericObjectMetaClass extends MetaClass {
   def name = "tads-object"
-  override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
     import TadsConstants._
-
+    import GenericObjectMetaClass._
     val superClassCount = imageMem.shortAt(objDataAddr)
     val propertyCount   = imageMem.shortAt(objDataAddr + 2)
     val flags           = imageMem.shortAt(objDataAddr + 4)
     val isClassObject   = (flags & FlagIsClass) == FlagIsClass
 
-    val genericObject = new GenericObject(objectId,
+    val genericObject = new GenericObject(objectId, this,
                                           isClassObject, superClassCount,
                                           propertyCount)
     for (index <- 0 until superClassCount) {

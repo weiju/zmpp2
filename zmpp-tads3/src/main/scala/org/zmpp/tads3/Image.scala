@@ -150,8 +150,8 @@ class TadsImage(val memory: Memory) {
         case "CPPG" => addConstantPoolPage(blockHeader)
         case "ENTP" => _entp = blockHeader
         case "FNSD" => readFunctionSetDependencies(blockHeader)
-        case "MCLD" => readMetaclassDependencies(blockHeader, vmState.objectManager)
-        case "OBJS" => readStaticObjectBlock(blockHeader, vmState.objectManager)
+        case "MCLD" => readMetaclassDependencies(blockHeader, vmState.objectSystem)
+        case "OBJS" => readStaticObjectBlock(blockHeader, vmState.objectSystem)
         case "SYMD" => readSymbolicNameBlock(blockHeader)
         case _ =>
           printf("UNHANDLED BLOCK: %s\n", blockHeader.toString)
@@ -251,7 +251,7 @@ class TadsImage(val memory: Memory) {
   }
   
   private def readMetaclassDependencies(blockHeader: BlockHeader,
-                                        objectManager: ObjectManager) {
+                                        objectSystem: ObjectSystem) {
     val numEntries = memory.shortAt(blockHeader.dataAddress)
     var addr = blockHeader.dataAddress + 2
     for (i <- 0 until numEntries) {
@@ -262,10 +262,10 @@ class TadsImage(val memory: Memory) {
         namebuffer.append(memory.byteAt(addr + 3 + j).asInstanceOf[Char])
       }
       val numPropertyIds = memory.shortAt(addr + 3 + numEntryNameBytes)
-      objectManager.addMetaClassDependency(i, namebuffer.toString)
+      objectSystem.addMetaClassDependency(i, namebuffer.toString)
       val propbase = addr + 3 + numEntryNameBytes + 2
       for (j <- 0 until numPropertyIds) {
-        objectManager.addMetaClassPropertyId(i, j, memory.shortAt(propbase + j * 2))
+        objectSystem.addMetaClassPropertyId(i, j, memory.shortAt(propbase + j * 2))
       }
       addr += entrySize
     }
@@ -287,7 +287,7 @@ class TadsImage(val memory: Memory) {
   }
 
   private def readStaticObjectBlock(blockHeader: BlockHeader,
-                                    objectManager: ObjectManager) {
+                                    objectSystem: ObjectSystem) {
     val dataAddress = blockHeader.dataAddress
     val numObjects     = memory.shortAt(dataAddress)
     val metaClassIndex = memory.shortAt(dataAddress + 2)
@@ -306,7 +306,7 @@ class TadsImage(val memory: Memory) {
                      else memory.shortAt(objAddr + 4)
       //printf("OBJ ID: %d #BYTES: %d\n", objId, numBytes)
       objAddr += (if (isLarge) 8 else 6)
-      objectManager.addStaticObject(objId, metaClassIndex, objAddr, numBytes,
+      objectSystem.addStaticObject(objId, metaClassIndex, objAddr, numBytes,
                                     isTransient)
       objAddr += numBytes
     }

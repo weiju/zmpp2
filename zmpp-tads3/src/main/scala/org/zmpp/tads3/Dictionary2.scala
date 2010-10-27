@@ -60,19 +60,17 @@ import org.zmpp.base._
 // obfuscation in the image file to prevent casual browsing of the image
 // contents.
 
-class Dictionary2(id: TadsObjectId)
-extends TadsObject(id) {
-  def metaClass = Dictionary2MetaClass
+class Dictionary2(id: TadsObjectId, metaClass: MetaClass)
+extends TadsObject(id, metaClass) {
 }
 
-object Dictionary2MetaClass extends MetaClass {
+class Dictionary2MetaClass extends MetaClass {
   def name = "dictionary2"
-  override def superMeta = TadsObjectMetaClass
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val dictionary = new Dictionary2(objectId)
+    val dictionary = new Dictionary2(objectId, this)
     dictionary
   }
 }

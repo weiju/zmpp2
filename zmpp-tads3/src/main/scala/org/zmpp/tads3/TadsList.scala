@@ -30,16 +30,12 @@ package org.zmpp.tads3
 
 import org.zmpp.base._
 
-class TadsList(id: TadsObjectId)
-extends TadsObject(id) {
-  def metaClass = ListMetaClass
-  override def toString = {
-    "List object"
-  }
-
+class TadsList(id: TadsObjectId, metaClass: MetaClass)
+extends TadsObject(id, metaClass) {
+  override def toString = "List object"
 }
 
-object ListMetaClass extends MetaClass {
+class ListMetaClass extends MetaClass {
   def name = "list"
-  def superMeta = CollectionMetaClass
+  override def superMeta = objectSystem.metaClassForName("collection")
 }
