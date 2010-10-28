@@ -239,10 +239,12 @@ class ObjectSystem(vmState: TadsVMState) {
   // when initializing the game, this map can be used to map the image
   // identifiers for metaclass dependencies to the actual meta classes that
   // the ZMPP TADS3 VM supports
+  val _listMetaClass = new ListMetaClass
+
   val MetaClasses: Map[String, MetaClass] = Map(
     "tads-object"          -> new GenericObjectMetaClass,
     "string"               -> new StringMetaClass,
-    "list"                 -> new ListMetaClass,
+    "list"                 -> _listMetaClass,
     "vector"               -> new VectorMetaClass,
     "lookuptable"          -> new LookupTableMetaClass,
     "dictionary2"          -> new Dictionary2MetaClass,
@@ -266,6 +268,7 @@ class ObjectSystem(vmState: TadsVMState) {
   private var _maxObjectId       = 0
   private val _objectCache       = new TreeMap[Int, TadsObject]
   private val _metaClassMap      = new TreeMap[Int, MetaClass]
+  private val _constantCache     = new TreeMap[Int, TadsObject] 
 
   private def image : TadsImage = vmState.image
 
@@ -295,8 +298,10 @@ class ObjectSystem(vmState: TadsVMState) {
   }
 
   def reset {
+    _maxObjectId = 0
     _metaClassMap.clear
     _objectCache.clear
+    _constantCache.clear
   }
 
   // create a unique object id
@@ -330,6 +335,15 @@ class ObjectSystem(vmState: TadsVMState) {
     else throw new ObjectNotFoundException
   }
   def objectWithId(id: TadsValue): TadsObject = objectWithId(id.value)
+  def listConstantWithOffset(offset: TadsListConstant) = {
+    if (_constantCache.containsKey(offset.value)) _constantCache(offset.value)
+    else {
+      val id = new TadsObjectId(newId)
+      val list = _listMetaClass.createListConstant(id, offset)
+      _objectCache(id.value) = list
+      list
+    }
+  }
 
   // Enumeration of objects, this is the 
   def firstObject(enumInstances: Boolean, enumClasses: Boolean,

@@ -38,4 +38,7 @@ extends TadsObject(id, metaClass) {
 class ListMetaClass extends MetaClass {
   def name = "list"
   override def superMeta = objectSystem.metaClassForName("collection")
+  def createListConstant(id: TadsObjectId, offset: TadsListConstant) = {
+    new TadsList(id, this)
+  }
 }

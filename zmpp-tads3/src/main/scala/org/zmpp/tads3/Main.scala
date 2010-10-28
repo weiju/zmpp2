@@ -300,8 +300,8 @@ class TadsVM {
       // use constant list property evaluator
       // the targetValue is an offset into the list pool, not into the static
       // object pool !!!!
-      // val obj = TODO
-      val list = null // TODO
+      val list = _state.objectSystem.listConstantWithOffset(
+        targetVal.asInstanceOf[TadsListConstant])
       val listMeta = _state.objectSystem.metaClassForName("list")
       listMeta.evalClassProperty(list, propId)
       throw new UnsupportedOperationException("cannot handle list constants yet")
