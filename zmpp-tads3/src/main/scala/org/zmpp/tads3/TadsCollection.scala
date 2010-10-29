@@ -30,23 +30,10 @@ package org.zmpp.tads3
 
 import org.zmpp.base._
 
-class TadsCollection(id: TadsObjectId, metaClass: MetaClass)
+abstract class TadsCollection(id: TadsObjectId, metaClass: MetaClass)
 extends TadsObject(id, metaClass) {
   override def toString = "Collection object"
-  val FunctionVector = Array(createIterator _, createLiveIterator _)
-  def undef(argc: Int) {
-    throw new UnsupportedOperationException("undefined")
-  }
-  def createIterator(argc: Int) {
-    println("createIterator() TODO")
-  }
-  def createLiveIterator(argc: Int) {
-    println("createLiveIterator")
-    throw new UnsupportedOperationException("createLiveIterator")
-  }
-  override def callMethodWithIndex(index: Int, argc: Int) {
-    FunctionVector(index)(argc)
-  }
+  def createIterator(argc: Int): TadsValue
 }
 
 /**
@@ -57,4 +44,21 @@ extends TadsObject(id, metaClass) {
  */
 class CollectionMetaClass extends MetaClass {
   def name = "collection"
+
+  val FunctionVector = Array(undef _, createIterator _, createLiveIterator _)
+  def undef(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("undefined")
+  }
+  def createIterator(obj: TadsObject, argc: Int): TadsValue = {
+    obj.asInstanceOf[TadsCollection].createIterator(argc)
+  }
+  def createLiveIterator(obj: TadsObject, argc: Int): TadsValue = {
+    println("createLiveIterator")
+    throw new UnsupportedOperationException("createLiveIterator")
+  }
+
+  override def callMethodWithIndex(obj: TadsObject, index: Int,
+                                   argc: Int): TadsValue = {
+    FunctionVector(index)(obj, argc)
+  }
 }

@@ -85,9 +85,7 @@ object PoolTypes {
   val ByteCode     = 1
   val ConstantData = 2
 }
-class ConstantPoolPage(val dataAddress: Int, size: Int, xorMask: Byte) {
-  var _dataBytes: Array[Byte] = null
-}
+class ConstantPoolPage(val dataAddress: Int, size: Int)
 
 class ConstantPool(val id: Int, val numPages: Int, val pageSize: Int) {
   val _pages = new Array[ConstantPoolPage](numPages)
@@ -225,12 +223,20 @@ class TadsImage(val memory: Memory) {
     println
   }
   private def addConstantPoolPage(blockHeader: BlockHeader) {
-    val poolId    = memory.shortAt(blockHeader.dataAddress)
-    val pageIndex = memory.intAt(blockHeader.dataAddress + 2)
-    val xor       = memory.byteAt(blockHeader.dataAddress + 6)
+    val poolId      = memory.shortAt(blockHeader.dataAddress)
+    val pageIndex   = memory.intAt(blockHeader.dataAddress + 2)
+    val xor         = memory.byteAt(blockHeader.dataAddress + 6)
+    val dataAddress = blockHeader.dataAddress + 7
+    val dataSize    = blockHeader.dataSize - 7
     _constantPools(poolId).addPage(pageIndex,
-      new ConstantPoolPage(blockHeader.dataAddress + 7,
-                           blockHeader.dataSize - 7, xor.asInstanceOf[Byte]))
+      new ConstantPoolPage(dataAddress, dataSize))
+
+    if (xor != 0) {
+      for (i <- 0 until dataSize) {
+        memory.setByteAt(dataAddress + i,
+                         memory.byteAt(dataAddress + i) ^ xor)
+      }
+    }
   }
 
   private def readPoolDef(blockHeader: BlockHeader) {

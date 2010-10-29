@@ -99,7 +99,7 @@ object TadsEmpty extends TadsValue {
 }
 class TadsListConstant(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmList
-  override def toString = "list"
+  override def toString = "list (offset = %d)".format(value)
 }
 class TadsPropertyId(override val value: Int) extends TadsValue {
   def valueType = TypeIds.VmProp

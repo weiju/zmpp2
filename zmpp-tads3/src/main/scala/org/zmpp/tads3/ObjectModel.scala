@@ -67,10 +67,6 @@ abstract class TadsObject(val id: TadsObjectId, val metaClass: MetaClass) {
   def setValueAtIndex(index: Int, newValue: TadsValue): TadsValue = {
     throw new UnsupportedOperationException("setValueAtIndex() not implemented")
   }
-
-  def callMethodWithIndex(index: Int, argc: Int) {
-    throw new UnsupportedOperationException("callMethodWithIndex not supported")
-  }
 }
 
 // A null object for quick comparison
@@ -94,6 +90,9 @@ class Property(val id: Int, tadsValue: TadsValue,
 // QTads' source code.
 // Instead of complaining, I'll just see how they are implemented in QTads and
 // document it by myself
+// Meta classes only inherit conceptually from each other, through the superMeta
+// relationship, this makes it easier to selectively evaluate static class
+// properties
 abstract class MetaClass {
   private val propertyMap = new TreeMap[Int, Int]
   def name: String
@@ -117,6 +116,11 @@ abstract class MetaClass {
   }
   def supportsVersion(version: String) = true
 
+  def callMethodWithIndex(obj: TadsObject, index: Int,
+                          argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("callMethodWithIndex not supported")
+  }
+
   def evalClassProperty(obj: TadsObject, propertyId: Int): Boolean = {
     var functionIndex = functionIndexForProperty(propertyId)
     printf("'%s': function index found for prop %d = %d\n",
@@ -128,7 +132,7 @@ abstract class MetaClass {
       // found, try to evaluate
       printf("FOUND PROPERTY %d in metaclass '%s', at index: %d\n",
            propertyId, name, functionIndex)
-      obj.callMethodWithIndex(functionIndex, 0)
+      callMethodWithIndex(obj, functionIndex, 0)
     }
     false
   }

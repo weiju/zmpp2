@@ -30,15 +30,27 @@ package org.zmpp.tads3
 
 import org.zmpp.base._
 
+/*
+ * Lists are stored in the image as
+ * length n (ushort)
+ * n * size(DATAHOLDER)
+ */
 class TadsList(id: TadsObjectId, metaClass: MetaClass)
-extends TadsObject(id, metaClass) {
+extends TadsCollection(id, metaClass) {
   override def toString = "List object"
+  def createIterator(argc: Int): TadsValue = {
+    println("createIterator() list TODO")
+    TadsNil
+  }
 }
 
 class ListMetaClass extends MetaClass {
   def name = "list"
   override def superMeta = objectSystem.metaClassForName("collection")
   def createListConstant(id: TadsObjectId, offset: TadsListConstant) = {
+    val len = vmState.image.constantDataShortAt(offset.value)
+    printf("List offset = %s, len: %d\n", offset, len)
     new TadsList(id, this)
+    // TODO: Add elements
   }
 }
