@@ -236,8 +236,10 @@ class TadsVM {
                                                 .format(opcode))
     }
     // DEBUGGING
-    //println("R0 = " + _state.r0)
-    //println(_state.stack)
+    if (iteration >= 43) {
+      println("R0 = " + _state.r0)
+      println(_state.stack)
+    }
   }
 
   // instruction implementations
@@ -303,8 +305,9 @@ class TadsVM {
       val list = _state.objectSystem.listConstantWithOffset(
         targetVal.asInstanceOf[TadsListConstant])
       val listMeta = _state.objectSystem.metaClassForName("list")
-      listMeta.evalClassProperty(list, propId)
-      throw new UnsupportedOperationException("cannot handle list constants yet")
+      val result = listMeta.evalClassProperty(list, propId)
+      _state.r0 = result
+      //throw new UnsupportedOperationException("cannot handle list constants yet")
     } else if (targetVal.valueType == TypeIds.VmSString ||
                targetVal.valueType == TypeIds.VmDString) {
       throw new UnsupportedOperationException("Cannot handle string constants yet")

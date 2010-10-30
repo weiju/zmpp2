@@ -121,20 +121,17 @@ abstract class MetaClass {
     throw new UnsupportedOperationException("callMethodWithIndex not supported")
   }
 
-  def evalClassProperty(obj: TadsObject, propertyId: Int): Boolean = {
+  def evalClassProperty(obj: TadsObject, propertyId: Int): TadsValue = {
     var functionIndex = functionIndexForProperty(propertyId)
-    printf("'%s': function index found for prop %d = %d\n",
-           name, propertyId, functionIndex)
     if (functionIndex == -1) {
       if (superMeta != null) superMeta.evalClassProperty(obj, propertyId)
-      else false
+      else TadsNil
     } else {
       // found, try to evaluate
       printf("FOUND PROPERTY %d in metaclass '%s', at index: %d\n",
            propertyId, name, functionIndex)
       callMethodWithIndex(obj, functionIndex, 0)
     }
-    false
   }
 
   // After being loaded, its dependency id and the VM state
@@ -172,12 +169,6 @@ class StringMetaClass extends MetaClass {
 class IntClassModMetaClass extends MetaClass {
   def name = "int-class-mod"
 }
-class IteratorMetaClass extends MetaClass {
-  def name = "iterator"
-}
-class IndexedIteratorMetaClass extends MetaClass {
-  def name = "indexed-iterator"
-}
 class CharacterSetMetaClass extends MetaClass {
   def name = "character-set"
 }
@@ -186,9 +177,6 @@ class ByteArrayMetaClass extends MetaClass {
 }
 class WeakRefLookupTableMetaClass extends MetaClass {
   def name = "weakreflookuptable"
-}
-class LookupTableIteratorMetaClass extends MetaClass {
-  def name = "lookuptable-iterator"
 }
 class FileMetaClass extends MetaClass {
   def name = "file"
@@ -243,12 +231,14 @@ class ObjectSystem(vmState: TadsVMState) {
   // when initializing the game, this map can be used to map the image
   // identifiers for metaclass dependencies to the actual meta classes that
   // the ZMPP TADS3 VM supports
-  val _listMetaClass = new ListMetaClass
+  val listMetaClass            = new ListMetaClass
+  val indexedIteratorMetaClass = new IndexedIteratorMetaClass
+  val intrinsicClassMetaClass  = new IntrinsicClassMetaClass
 
   val MetaClasses: Map[String, MetaClass] = Map(
     "tads-object"          -> new GenericObjectMetaClass,
     "string"               -> new StringMetaClass,
-    "list"                 -> _listMetaClass,
+    "list"                 -> listMetaClass,
     "vector"               -> new VectorMetaClass,
     "lookuptable"          -> new LookupTableMetaClass,
     "dictionary2"          -> new Dictionary2MetaClass,
@@ -256,10 +246,10 @@ class ObjectSystem(vmState: TadsVMState) {
     "anon-func-ptr"        -> new AnonFuncPtrMetaClass,
     "int-class-mod"        -> new IntClassModMetaClass,
     "root-object"          -> new RootObjectMetaClass,
-    "intrinsic-class"      -> new IntrinsicClassMetaClass,
+    "intrinsic-class"      -> intrinsicClassMetaClass,
     "collection"           -> new CollectionMetaClass,
     "iterator"             -> new IteratorMetaClass,
-    "indexed-iterator"     -> new IndexedIteratorMetaClass,
+    "indexed-iterator"     -> indexedIteratorMetaClass,
     "character-set"        -> new CharacterSetMetaClass,
     "bytearray"            -> new ByteArrayMetaClass,
     "regex-pattern"        -> new RegexPatternMetaClass,
@@ -314,6 +304,7 @@ class ObjectSystem(vmState: TadsVMState) {
     _maxObjectId += 1
     _maxObjectId
   }
+  def newObjectId = new TadsObjectId(newId)
 
   def createFromStack(argc: Int, metaClassId: Int) = {
     val id = new TadsObjectId(newId)
@@ -343,7 +334,7 @@ class ObjectSystem(vmState: TadsVMState) {
     if (_constantCache.containsKey(offset.value)) _constantCache(offset.value)
     else {
       val id = new TadsObjectId(newId)
-      val list = _listMetaClass.createListConstant(id, offset)
+      val list = listMetaClass.createListConstant(id, offset)
       _objectCache(id.value) = list
       list
     }

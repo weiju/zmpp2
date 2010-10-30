@@ -29,6 +29,7 @@
 package org.zmpp.tads3
 
 import org.zmpp.base._
+import java.util.ArrayList
 
 /*
  * Lists are stored in the image as
@@ -37,10 +38,15 @@ import org.zmpp.base._
  */
 class TadsList(id: TadsObjectId, metaClass: MetaClass)
 extends TadsCollection(id, metaClass) {
+  private val _container = new ArrayList[TadsValue]
   override def toString = "List object"
+  def addElement(value: TadsValue) {
+    _container.add(value)
+  }
   def createIterator(argc: Int): TadsValue = {
-    println("createIterator() list TODO")
-    TadsNil
+    println("createIterator()")
+    val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
+    iter.id
   }
 }
 
@@ -48,9 +54,19 @@ class ListMetaClass extends MetaClass {
   def name = "list"
   override def superMeta = objectSystem.metaClassForName("collection")
   def createListConstant(id: TadsObjectId, offset: TadsListConstant) = {
-    val len = vmState.image.constantDataShortAt(offset.value)
+    import TadsConstants._
+    val poolOffset = offset.value
+    val len = vmState.image.constantDataShortAt(poolOffset)
     printf("List offset = %s, len: %d\n", offset, len)
-    new TadsList(id, this)
-    // TODO: Add elements
+    val list = new TadsList(id, this)
+    for (i <- 0 until len) {
+      val valueAddr = poolOffset + 1 + SizeDataHolder * i
+      val valueType = vmState.image.constantDataByteAt(valueAddr)
+      val value = TypeIds.valueForType(valueType,
+                                       vmState.image.constantDataIntAt(
+                                         valueAddr + 1))
+      list.addElement(TadsValue.create(valueType, value))
+    }
+    list
   }
 }
