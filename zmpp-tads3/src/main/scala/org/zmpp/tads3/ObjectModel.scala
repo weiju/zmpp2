@@ -305,7 +305,9 @@ class ObjectSystem(vmState: TadsVMState) {
     _maxObjectId
   }
   def newObjectId = new TadsObjectId(newId)
-
+  def registerObject(obj: TadsObject) {
+    _objectCache(obj.id.value) = obj
+  }
   def createFromStack(argc: Int, metaClassId: Int) = {
     val id = new TadsObjectId(newId)
     val obj = _metaClassMap(metaClassId).createFromStack(id, argc)

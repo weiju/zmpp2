@@ -200,6 +200,8 @@ class TadsVM {
       case GetArg2      => _state.stack.push(_state.getParam(nextShortOperand))
       case GetLcl1      => _state.stack.push(_state.getLocal(nextByteOperand))
       case GetProp      => objGetProp(_state.stack.pop, nextShortOperand)
+      case GetPropLcl1  =>
+        objGetProp(_state.getLocal(nextByteOperand), nextShortOperand)
       case GetPropR0    => objGetProp(_state.r0, nextShortOperand)
       case GetPropSelf  =>
         objGetProp(_state.currentSelf, nextShortOperand)
