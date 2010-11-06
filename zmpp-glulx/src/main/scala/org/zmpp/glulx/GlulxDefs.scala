@@ -205,6 +205,7 @@ object Opcodes {
   val Jfge          = 0x1c5
   val JisNaN        = 0x1c8
   val JisInf        = 0x1c9
+  val FyreCall      = 0x1000
   
   def name(opcodeNum: Int) = opcodeNum match {
     case AccelFunc     => "accelfunc"
@@ -249,6 +250,7 @@ object Opcodes {
     case Fsub          => "fsub"
     case FtoNumZ       => "ftonumz"
     case FtoNumN       => "ftonumn"
+    case FyreCall      => "fyrecall"
     case Gestalt       => "gestalt"
     case GetIOSys      => "getiosys"
     case GetMemSize    => "getmemsize"
@@ -371,6 +373,7 @@ object Opcodes {
     case Fsub          => 3
     case FtoNumN       => 2
     case FtoNumZ       => 2
+    case FyreCall      => 4
     case Gestalt       => 3
     case GetIOSys      => 2
     case GetMemSize    => 1
@@ -448,7 +451,7 @@ object Opcodes {
     case _ =>
       throw new IllegalArgumentException(
         "unknown opcode %02x: ".format(opcodeNum))
-  }  
+  }
 }
 
 class GlulxStoryHeader(mem : Memory) {
@@ -466,12 +469,19 @@ class GlulxStoryHeader(mem : Memory) {
 class Operand(var addressMode: Int, var value: Int) {
   def this() = this(0, 0)
   
-  override def toString = {
+  override def toString: String = {
     if (addressMode <= 3) "#$%02x".format(value)
     else if (addressMode >= 5 && addressMode <= 7) "MEM$%02x".format(value)
     else if (addressMode == 8) "(SP)"
     else if (addressMode >= 9 && addressMode <= 11) "L%02x".format(value)
     else "RAM$%02x".format(value)
+  }
+
+  def toString(state: GlulxVMState): String = {
+    val str = toString
+    if (addressMode >= 9 && addressMode <= 11) {
+      str + "[%02x]".format(state.getLocalShortAtAddress(value))
+    } else str
   }
 }
 
@@ -501,7 +511,9 @@ object GlulxGestalt {
       case TerpVersion  => 0x00010000
       case ResizeMem    => 1
       case Undo         => 1
-      case IOSystem     => if (param >= 0 && param <= 2) 1 else 0
+      case IOSystem     =>
+        // suppose we know FyreVM
+        if (param >= 0 && param <= 2 || param == 20) 1 else 0
       case Unicode      => 1
       case MemCopy      => 1
       case MAlloc       => 1
@@ -511,6 +523,17 @@ object GlulxGestalt {
       case _               => 0
     }
   }
+}
+
+object FyreCallCodes {
+  val ReadLine     = 1
+  val SetStyle     = 2
+  val ToLower      = 3
+  val ToUpper      = 4
+  val Channel      = 5
+  val EnableFilter = 6
+  val ReadKey      = 7
+  val SetVeneer    = 8
 }
 
 /**

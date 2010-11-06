@@ -525,7 +525,7 @@ class GlulxVMState extends VMState {
  ****
  **** VM main control
  ****
- ****************************************************************************/
+ */
 object GlulxVM {
   val MaxLocalDescriptors = 255
   val MaxOperands         = 10
@@ -1112,6 +1112,35 @@ class GlulxVM {
   // ***********************************************************************
   // ***** Dispatch
   // *********************************
+  def executeFyreCall {
+    println("executeFyreCall()")
+    val code = getOperand(0)
+    val operand1 = getOperand(1)
+    val operand2 = getOperand(2)
+    val operand3 = getOperand(3)
+    import FyreCallCodes._
+    code match {
+      case ReadLine =>
+        logger.info("fyrecall.readLine()")
+      case SetStyle =>
+        logger.info("fyrecall.setStyle()")
+      case ToLower =>
+        logger.info("fyrecall.toLower()")
+      case ToUpper =>
+        logger.info("fyrecall.toUpper()")
+      case Channel =>
+        logger.info("fyrecall.channel()")
+      case EnableFilter =>
+        logger.info("fyrecall.enableFilter()")
+      case ReadKey =>
+        logger.info("fyrecall.readKey()")
+      case SetVeneer =>
+        logger.info("fyrecall.setVeneer()")
+      case _ =>
+        logger.info("unknown fyrecall: " + code)
+    }
+  }
+
   def executeInstruction {
     import Opcodes._
     _opcodeNum match {
@@ -1259,6 +1288,7 @@ class GlulxVM {
         storeAtOperand(1, GlulxFloat.ftonumn(getOperand(0)))
       case FtoNumZ =>
         storeAtOperand(1, GlulxFloat.ftonumz(getOperand(0)))
+      case FyreCall => executeFyreCall
       case Gestalt =>
         val selector = getOperand(0)
         val arg      = getOperand(1)
@@ -1416,9 +1446,10 @@ class GlulxVM {
         val iosys = getOperand(0)
         val rock  = getOperand(1)
         currentIOSystem = iosys match {
-          case 0 => new NullIOSystem(this, rock)
-          case 1 => new FilterIOSystem(this, rock)
-          case 2 => new GlkIOSystem(this, _glk, rock)
+          case 0  => new NullIOSystem(this, rock)
+          case 1  => new FilterIOSystem(this, rock)
+          case 2  => new GlkIOSystem(this, _glk, rock)
+          case 20 => new ChannelIOSystem(this, rock)
           case _ =>
             throw new UnsupportedOperationException(
               "IO system[%d] not supported".format(iosys))
@@ -1511,18 +1542,17 @@ class GlulxVM {
     val pc = state.pc
     decodeOpcodeNum
     readOperands
-/*
+
     // for debugging
     val builder = new StringBuilder
     builder.append("%04d: $%04x - @%s".format(iterations, pc, Opcodes.name(_opcodeNum)))
     val numOperands = Opcodes.numOperands(_opcodeNum)
     for (i <- 0 until numOperands) {
-      builder.append(" %s".format(_operands(i)))
+      builder.append(" %s".format(_operands(i).toString(state)))
     }
     builder.append(" {FP = %d SP = %d} ".format(state.fp, state.sp))
     builder.append(" " + state.stackValuesAsString)
     logger.info(builder.toString)
-*/
     
     executeInstruction
     iterations += 1
