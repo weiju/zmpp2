@@ -41,10 +41,10 @@ import scala.collection.JavaConversions._
 import java.util.TreeMap
 import org.zmpp.base._
 
-abstract class TadsObject(val id: TadsObjectId, val metaClass: MetaClass) {
+abstract class TadsObject(val id: TadsObjectId, val vmState: TadsVMState) {
   var isTransient = false
   def isClassObject = false
-  def vmState = metaClass.vmState
+  def metaClass: MetaClass
   def objectSystem = vmState.objectSystem
   
   def isOfMetaClass(meta: MetaClass) = metaClass == meta
@@ -71,6 +71,7 @@ abstract class TadsObject(val id: TadsObjectId, val metaClass: MetaClass) {
 
 // A null object for quick comparison
 object InvalidObject extends TadsObject(InvalidObjectId, null) {
+  def metaClass = null
 }
 
 class Property(val id: Int, tadsValue: TadsValue,
@@ -149,6 +150,7 @@ abstract class MetaClass {
   // it should be cleared when loading a new image to
   // reload the mappings
   def addFunctionMapping(propertyId: Int, functionIndex: Int) {
+    printf("%s.addFunctionMapping(%d, %d)\n", name, propertyId, functionIndex)
     propertyMap(propertyId) = functionIndex
   }
   def functionIndexForProperty(propertyId: Int) = {
@@ -231,33 +233,45 @@ class ObjectSystem(vmState: TadsVMState) {
   // when initializing the game, this map can be used to map the image
   // identifiers for metaclass dependencies to the actual meta classes that
   // the ZMPP TADS3 VM supports
-  val listMetaClass            = new ListMetaClass
-  val indexedIteratorMetaClass = new IndexedIteratorMetaClass
-  val intrinsicClassMetaClass  = new IntrinsicClassMetaClass
+  val anonFuncPtrMetaClass       = new AnonFuncPtrMetaClass
+  val bigNumberMetaClass         = new BigNumberMetaClass
+  val collectionMetaClass        = new CollectionMetaClass
+  val dictionary2MetaClass       = new Dictionary2MetaClass
+  val genericObjectMetaClass     = new GenericObjectMetaClass
+  val grammarProductionMetaClass = new GrammarProductionMetaClass
+  val indexedIteratorMetaClass   = new IndexedIteratorMetaClass
+  val intrinsicClassMetaClass    = new IntrinsicClassMetaClass
+  val iteratorMetaClass          = new IteratorMetaClass
+  val listMetaClass              = new ListMetaClass
+  val lookupTableMetaClass       = new LookupTableMetaClass
+  val regexPatternMetaClass      = new RegexPatternMetaClass
+  val stringMetaClass            = new StringMetaClass
+  val stringComparatorMetaClass  = new StringComparatorMetaClass
+  val vectorMetaClass            = new VectorMetaClass
 
   val MetaClasses: Map[String, MetaClass] = Map(
-    "tads-object"          -> new GenericObjectMetaClass,
-    "string"               -> new StringMetaClass,
+    "tads-object"          -> genericObjectMetaClass,
+    "string"               -> stringMetaClass,
     "list"                 -> listMetaClass,
-    "vector"               -> new VectorMetaClass,
-    "lookuptable"          -> new LookupTableMetaClass,
-    "dictionary2"          -> new Dictionary2MetaClass,
-    "grammar-production"   -> new GrammarProductionMetaClass,
-    "anon-func-ptr"        -> new AnonFuncPtrMetaClass,
+    "vector"               -> vectorMetaClass,
+    "lookuptable"          -> lookupTableMetaClass,
+    "dictionary2"          -> dictionary2MetaClass,
+    "grammar-production"   -> grammarProductionMetaClass,
+    "anon-func-ptr"        -> anonFuncPtrMetaClass,
     "int-class-mod"        -> new IntClassModMetaClass,
     "root-object"          -> new RootObjectMetaClass,
     "intrinsic-class"      -> intrinsicClassMetaClass,
-    "collection"           -> new CollectionMetaClass,
-    "iterator"             -> new IteratorMetaClass,
+    "collection"           -> collectionMetaClass,
+    "iterator"             -> iteratorMetaClass,
     "indexed-iterator"     -> indexedIteratorMetaClass,
     "character-set"        -> new CharacterSetMetaClass,
     "bytearray"            -> new ByteArrayMetaClass,
-    "regex-pattern"        -> new RegexPatternMetaClass,
+    "regex-pattern"        -> regexPatternMetaClass,
     "weakreflookuptable"   -> new WeakRefLookupTableMetaClass,
     "lookuptable-iterator" -> new LookupTableIteratorMetaClass,
     "file"                 -> new FileMetaClass,
-    "string-comparator"    -> new StringComparatorMetaClass,
-    "bignumber"            -> new BigNumberMetaClass)
+    "string-comparator"    -> stringComparatorMetaClass,
+    "bignumber"            -> bigNumberMetaClass)
 
   private var _maxObjectId       = 0
   private val _objectCache       = new TreeMap[Int, TadsObject]

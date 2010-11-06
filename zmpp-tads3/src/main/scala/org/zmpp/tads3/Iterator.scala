@@ -28,12 +28,41 @@
  */
 package org.zmpp.tads3
 
-class Iterator(id: TadsObjectId, metaClass: MetaClass)
-extends TadsObject(id, metaClass) {
+abstract class Iterator(id: TadsObjectId, vmState: TadsVMState)
+extends TadsObject(id, vmState) {
+  private val FunctionVector = Array(undef _, getNext _, isNextAvail _, resetIter _,
+                                     getCurKey _, getCurVal _)
+
+  def metaClass: MetaClass = objectSystem.iteratorMetaClass
+
+  def undef(argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("undefined property")
+  }
+  def getNext(argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("undefined property")
+  }
+  def isNextAvail(argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("undefined property")
+  }
+  def resetIter(argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("undefined property")
+  }
+  def getCurKey(argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("undefined property")
+  }
+  def getCurVal(argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("undefined property")
+  }
+  override def findProperty(propertyId: Int): Property = {
+    val idx = objectSystem.iteratorMetaClass.functionIndexForProperty(propertyId)
+    throw new UnsupportedOperationException("undefined fun: " + propertyId +
+                                            " idx = " + idx)
+  }
 }
 
-class IndexedIterator(id: TadsObjectId, metaClass: MetaClass)
-extends Iterator(id, metaClass) {
+class IndexedIterator(id: TadsObjectId, vmState: TadsVMState)
+extends Iterator(id, vmState) {
+  override def metaClass: MetaClass = objectSystem.indexedIteratorMetaClass
 }
 
 class LookupTableIteratorMetaClass extends MetaClass {
@@ -47,7 +76,7 @@ class IndexedIteratorMetaClass extends MetaClass {
   def name = "indexed-iterator"
   def createIterator(coll: TadsCollection): IndexedIterator = {
     val id = objectSystem.newObjectId
-    val iter = new IndexedIterator(id, this)
+    val iter = new IndexedIterator(id, vmState)
     objectSystem.registerObject(iter)
     iter
   }

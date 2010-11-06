@@ -36,8 +36,9 @@ import org.zmpp.base._
  * an arbitrary number of context objects.
  * As a nice side effect, this automatically implements the indexed access.
  */
-class AnonFuncPtr(id: TadsObjectId, metaClass: MetaClass)
-extends Vector(id, metaClass) {
+class AnonFuncPtr(id: TadsObjectId, vmState: TadsVMState)
+extends Vector(id, vmState) {
+  override def metaClass: MetaClass = objectSystem.anonFuncPtrMetaClass
   override def findProperty(propertyId: Int): Property = {
     val objectCallProp = metaClass.vmState.image.symbolicNames("ObjectCallProp")
     if (propertyId == objectCallProp.value) {
@@ -55,7 +56,7 @@ class AnonFuncPtrMetaClass extends MetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val anonFuncPtr = new AnonFuncPtr(objectId, this)
+    val anonFuncPtr = new AnonFuncPtr(objectId, vmState)
     anonFuncPtr
   }
 
@@ -72,7 +73,7 @@ class AnonFuncPtrMetaClass extends MetaClass {
                                          "argument type: %d\n".format(
                                          name, functionPtr.valueType))
     }
-    val result = new AnonFuncPtr(id, this)
+    val result = new AnonFuncPtr(id, vmState)
     result.add(functionPtr)
     // copy (argc - 1) context objects into the result object
     for (i <- 1 until argc) result.add(vmState.stack.pop)

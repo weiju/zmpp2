@@ -69,8 +69,9 @@ import org.zmpp.base._
 
 // There is an implicit decimal point before the first byte of the
 // mantissa.
-class BigNumber(id: TadsObjectId, metaClass: MetaClass)
-extends TadsObject(id, metaClass) {
+class BigNumber(id: TadsObjectId, vmState: TadsVMState)
+extends TadsObject(id, vmState) {
+  def metaClass = objectSystem.bigNumberMetaClass
 }
 
 class BigNumberMetaClass extends MetaClass {
@@ -79,7 +80,7 @@ class BigNumberMetaClass extends MetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val bigNum = new BigNumber(objectId, this)
+    val bigNum = new BigNumber(objectId, vmState)
     bigNum
   }
 }

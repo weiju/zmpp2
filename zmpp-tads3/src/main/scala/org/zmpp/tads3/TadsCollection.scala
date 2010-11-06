@@ -30,8 +30,9 @@ package org.zmpp.tads3
 
 import org.zmpp.base._
 
-abstract class TadsCollection(id: TadsObjectId, metaClass: MetaClass)
-extends TadsObject(id, metaClass) {
+abstract class TadsCollection(id: TadsObjectId, vmState: TadsVMState)
+extends TadsObject(id, vmState) {
+  def metaClass: MetaClass = objectSystem.collectionMetaClass
   override def toString = "Collection object"
   def createIterator(argc: Int): TadsValue
 }

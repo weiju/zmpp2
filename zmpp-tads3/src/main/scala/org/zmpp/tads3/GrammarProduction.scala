@@ -71,8 +71,9 @@ import org.zmpp.base._
 
 // VMGRAM_MATCH_STAR - no additional data 
 
-class GrammarProduction(id: TadsObjectId, metaClass: MetaClass)
-extends TadsObject(id, metaClass) {
+class GrammarProduction(id: TadsObjectId, vmState: TadsVMState)
+extends TadsObject(id, vmState) {
+  def metaClass = objectSystem.grammarProductionMetaClass
 }
 
 class GrammarProductionMetaClass extends MetaClass {
@@ -81,7 +82,7 @@ class GrammarProductionMetaClass extends MetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val grammarProd = new GrammarProduction(objectId, this)
+    val grammarProd = new GrammarProduction(objectId, vmState)
     grammarProd
   }
 }

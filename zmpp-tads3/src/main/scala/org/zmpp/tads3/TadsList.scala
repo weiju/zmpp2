@@ -36,9 +36,11 @@ import java.util.ArrayList
  * length n (ushort)
  * n * size(DATAHOLDER)
  */
-class TadsList(id: TadsObjectId, metaClass: MetaClass)
-extends TadsCollection(id, metaClass) {
+class TadsList(id: TadsObjectId, vmState: TadsVMState)
+extends TadsCollection(id, vmState) {
   private val _container = new ArrayList[TadsValue]
+
+  override def metaClass: MetaClass = objectSystem.listMetaClass
   override def toString = "List object"
   def addElement(value: TadsValue) {
     _container.add(value)
@@ -58,7 +60,7 @@ class ListMetaClass extends MetaClass {
     val poolOffset = offset.value
     val len = vmState.image.constantDataShortAt(poolOffset)
     printf("List offset = %s, len: %d\n", offset, len)
-    val list = new TadsList(id, this)
+    val list = new TadsList(id, vmState)
     for (i <- 0 until len) {
       val valueAddr = poolOffset + 1 + SizeDataHolder * i
       val valueType = vmState.image.constantDataByteAt(valueAddr)

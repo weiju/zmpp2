@@ -60,8 +60,9 @@ import org.zmpp.base._
 // obfuscation in the image file to prevent casual browsing of the image
 // contents.
 
-class Dictionary2(id: TadsObjectId, metaClass: MetaClass)
-extends TadsObject(id, metaClass) {
+class Dictionary2(id: TadsObjectId, vmState: TadsVMState)
+extends TadsObject(id, vmState) {
+  def metaClass = objectSystem.dictionary2MetaClass
 }
 
 class Dictionary2MetaClass extends MetaClass {
@@ -70,7 +71,7 @@ class Dictionary2MetaClass extends MetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): TadsObject = {
-    val dictionary = new Dictionary2(objectId, this)
+    val dictionary = new Dictionary2(objectId, vmState)
     dictionary
   }
 }

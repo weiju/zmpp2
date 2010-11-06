@@ -56,11 +56,13 @@ import org.zmpp.base._
 // ...
 // UINT2 load_image_property_ID_N
 // DATAHOLDER load_image_property_value_N 
-class GenericObject(id: TadsObjectId, metaClass: MetaClass,
+class GenericObject(id: TadsObjectId, vmState: TadsVMState,
                     override val isClassObject: Boolean,
                     superClassCount: Int,
                     propertyCount: Int)
-extends TadsObject(id, metaClass) {
+extends TadsObject(id, vmState) {
+  def metaClass = objectSystem.genericObjectMetaClass
+
   val superClassIds = new Array[Int](superClassCount)
   val properties    = new Array[Property](propertyCount)
   override def isInstanceOf(obj: TadsObject): Boolean = {
@@ -106,7 +108,7 @@ class GenericObjectMetaClass extends MetaClass {
     val flags           = imageMem.shortAt(objDataAddr + 4)
     val isClassObject   = (flags & FlagIsClass) == FlagIsClass
 
-    val genericObject = new GenericObject(objectId, this,
+    val genericObject = new GenericObject(objectId, vmState,
                                           isClassObject, superClassCount,
                                           propertyCount)
     for (index <- 0 until superClassCount) {
