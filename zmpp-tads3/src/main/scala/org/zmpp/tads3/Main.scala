@@ -209,6 +209,7 @@ class TadsVM {
       case IdxInt8      => index(nextByteOperand)
       case JNil         => branchIfTrue(_state.stack.pop == TadsNil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
+      case JR0F         => branchIfTrue(!_state.r0.isTrue)
       case New1         =>
         _state.r0 = _state.objectSystem.createFromStack(nextByteOperand, nextByteOperand)
       case Nop          => // do nothing
@@ -219,6 +220,8 @@ class TadsVM {
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
       case PushNil      => _state.stack.pushNil
       case PushSelf     => _state.stack.push(_state.currentSelf)
+      case RetNil       =>
+        throw new UnsupportedOperationException("RETNIL TODO")
       case SetInd       =>
         val indexVal     = _state.stack.pop
         val containerVal = _state.stack.pop
@@ -238,7 +241,7 @@ class TadsVM {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration >= 43) {
+    if (iteration >= 45) {
       println("R0 = " + _state.r0)
       println(_state.stack)
     }

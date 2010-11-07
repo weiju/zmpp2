@@ -234,6 +234,7 @@ object Opcodes {
   val GetR0           = 0x8b
   val JNil            = 0x9e
   val JR0T            = 0xa0
+  val JR0F            = 0xa1
   val BuiltinA        = 0xb1
   val BuiltinB        = 0xb2
   val BuiltinC        = 0xb3
@@ -276,6 +277,7 @@ object OpcodeNames {
     IdxInt8         -> "IDXINT8",
     JNil            -> "JNIL",
     JR0T            -> "JR0T",
+    JR0F            -> "JR0F",
     New1            -> "NEW1",
     Nop             -> "NOP",
     ObjGetProp      -> "OBJGETPROP",

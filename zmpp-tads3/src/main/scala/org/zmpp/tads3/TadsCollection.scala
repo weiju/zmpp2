@@ -35,6 +35,7 @@ extends TadsObject(id, vmState) {
   def metaClass: MetaClass = objectSystem.collectionMetaClass
   override def toString = "Collection object"
   def createIterator(argc: Int): TadsValue
+  def size: Int
 }
 
 /**

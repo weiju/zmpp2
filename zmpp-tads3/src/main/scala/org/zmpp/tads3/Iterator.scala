@@ -41,9 +41,7 @@ extends TadsObject(id, vmState) {
   def getNext(argc: Int): TadsValue = {
     throw new UnsupportedOperationException("undefined property")
   }
-  def isNextAvail(argc: Int): TadsValue = {
-    throw new UnsupportedOperationException("undefined property")
-  }
+  def isNextAvail(argc: Int): TadsValue
   def resetIter(argc: Int): TadsValue = {
     throw new UnsupportedOperationException("undefined property")
   }
@@ -55,14 +53,20 @@ extends TadsObject(id, vmState) {
   }
   override def findProperty(propertyId: Int): Property = {
     val idx = objectSystem.iteratorMetaClass.functionIndexForProperty(propertyId)
-    throw new UnsupportedOperationException("undefined fun: " + propertyId +
-                                            " idx = " + idx)
+    new Property(propertyId, FunctionVector(idx)(0), id)
   }
 }
 
-class IndexedIterator(id: TadsObjectId, vmState: TadsVMState)
+class IndexedIterator(id: TadsObjectId, vmState: TadsVMState,
+                      collection: TadsCollection)
 extends Iterator(id, vmState) {
   override def metaClass: MetaClass = objectSystem.indexedIteratorMetaClass
+  private var currentIndex =  1
+
+  def isNextAvail(argc: Int): TadsValue = {
+    if (currentIndex <= collection.size) TadsTrue
+    else TadsNil
+  }
 }
 
 class LookupTableIteratorMetaClass extends MetaClass {
@@ -76,7 +80,7 @@ class IndexedIteratorMetaClass extends MetaClass {
   def name = "indexed-iterator"
   def createIterator(coll: TadsCollection): IndexedIterator = {
     val id = objectSystem.newObjectId
-    val iter = new IndexedIterator(id, vmState)
+    val iter = new IndexedIterator(id, vmState, coll)
     objectSystem.registerObject(iter)
     iter
   }

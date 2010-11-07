@@ -29,12 +29,14 @@
 package org.zmpp.tads3
 
 import org.zmpp.base._
+import scala.collection.JavaConversions._
 import java.util.ArrayList
 
 /*
  * Lists are stored in the image as
  * length n (ushort)
  * n * size(DATAHOLDER)
+ * Very similar to Vector
  */
 class TadsList(id: TadsObjectId, vmState: TadsVMState)
 extends TadsCollection(id, vmState) {
@@ -42,8 +44,15 @@ extends TadsCollection(id, vmState) {
 
   override def metaClass: MetaClass = objectSystem.listMetaClass
   override def toString = "List object"
+  def size = _container.size
   def addElement(value: TadsValue) {
     _container.add(value)
+  }
+  override def valueAtIndex(index: Int): TadsValue = _container(index - 1)
+  override def setValueAtIndex(index: Int, newValue: TadsValue): TadsObjectId = {
+    val oldValue = _container(index - 1)
+    _container(index - 1) = newValue
+    id // return this object
   }
   def createIterator(argc: Int): TadsValue = {
     println("createIterator()")

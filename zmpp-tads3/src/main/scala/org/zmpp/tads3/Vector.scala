@@ -38,14 +38,15 @@ import org.zmpp.base._
 // Note: Vector indexes in TADS are, as all sequential types in TADS, in the
 // range [1..n], and *not* [0..n-1]
 class Vector(id: TadsObjectId, vmState: TadsVMState)
-extends TadsObject(id, vmState) {
+extends TadsCollection(id, vmState) {
   private val _container = new ArrayList[TadsValue]
 
-  def metaClass: MetaClass = objectSystem.vectorMetaClass
+  override def metaClass: MetaClass = objectSystem.vectorMetaClass
   def init(numElements: Int) {
     printf("initialize %d elements\n", numElements)
     for (i <- 0 until numElements) _container.add(TadsNil)
   }
+  def size = _container.size
   def add(value: TadsValue) {
     _container.add(value)
   }
@@ -54,6 +55,11 @@ extends TadsObject(id, vmState) {
     val oldValue = _container(index - 1)
     _container(index - 1) = newValue
     id // return this object
+  }
+  def createIterator(argc: Int): TadsValue = {
+    println("createIterator()")
+    val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
+    iter.id
   }
 
   override def toString = {
