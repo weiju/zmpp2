@@ -81,6 +81,14 @@ abstract class TadsValue {
   def isTrue = true
   def valueType: Int
   def value = 0
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case other:TadsValue =>
+        valueType == other.valueType && value == other.value
+      case _ => false
+    }
+  }
 }
 
 object TadsNil extends TadsValue {

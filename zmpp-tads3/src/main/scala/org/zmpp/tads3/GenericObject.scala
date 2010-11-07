@@ -65,6 +65,10 @@ extends TadsObject(id, vmState) {
 
   val superClassIds = new Array[Int](superClassCount)
   val properties    = new Array[Property](propertyCount)
+  override def toString = {
+    "GenericObject[%s, isClassObject: %b, # super: %d, #props: %d]".format(
+      id, isClassObject, superClassCount, propertyCount)
+  }
   override def isInstanceOf(obj: TadsObject): Boolean = {
     for (superClassId <- superClassIds) {
       if (objectSystem.objectWithId(superClassId) == obj) return true

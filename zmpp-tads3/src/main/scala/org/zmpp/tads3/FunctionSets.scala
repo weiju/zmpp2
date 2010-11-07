@@ -160,13 +160,14 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
   private def getArg(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.getArg() not implemented yet")
   }
-  private def firstObj(argc: Int) {
+
+  private def enumObjParams(argc: Int) = {
     import TadsGenFunctionSet._
     // set default values for enumeration
     var matchClass: TadsObject = InvalidObject
     var flags = EnumInstances
 
-    printf("tads-gen.firstObj(), argc = %d\n", argc)
+    printf("tads-gen.enumObjParams(), argc = %d\n", argc)
     // process up to 2 optional parameters (class?, flags?)
     if (argc == 2) {
       val matchClassId = _vmState.stack.pop.value
@@ -186,13 +187,22 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     printf("CLASS IS: %s, FLAGS IS: %d\n", matchClass.id, flags)
     val enumInstances = (flags & EnumInstances) == EnumInstances
     val enumClasses = (flags & EnumClasses) == EnumClasses
-    val result = _vmState.objectSystem.firstObject(enumInstances, enumClasses,
-                                                    matchClass)
+    new EnumObjectParams(matchClass, enumInstances, enumClasses)
+  }
+  private def firstObj(argc: Int) {
+    val result = _vmState.objectSystem.firstObject(enumObjParams(argc))
     printf("FOUND OBJECT: %s\n", result.id)
     _vmState.r0 = result.id
   }
   private def nextObj(argc: Int) {
-    throw new UnsupportedOperationException("tads-gen.nextObj() not implemented yet")
+    // the previous object is on top of the stack, and is part of the
+    // arguments
+    val previousObject = _vmState.stack.pop.asInstanceOf[TadsObjectId]
+    val enumParams = enumObjParams(argc - 1)
+    printf("nextObj(), prevObj: %s, params: %s\n", previousObject, enumParams)
+    val result = _vmState.objectSystem.nextObject(previousObject, enumParams)
+    printf("FOUND OBJECT: %s\n", result.id)
+    _vmState.r0 = result.id
   }
   private def randomize(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.randomize() not implemented yet")

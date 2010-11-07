@@ -357,18 +357,48 @@ class ObjectSystem(vmState: TadsVMState) {
   }
 
   // Enumeration of objects, this is the 
-  def firstObject(enumInstances: Boolean, enumClasses: Boolean,
-                  matchClass: TadsObject): TadsObject = {
+  def firstObject(enumParams: EnumObjectParams): TadsObject = {
     for (entry <- _objectCache) { // entries are pairs of (key, value)
       val currentObj = entry._2
       var shouldBeChecked = true
-      if (!enumInstances && !currentObj.isClassObject) shouldBeChecked = false
-      if (!enumClasses && currentObj.isClassObject) shouldBeChecked = false
-      if (shouldBeChecked) { // TODO: ignore list and string objects
-        if (matchClass == InvalidObject) return currentObj
-        if (currentObj.isInstanceOf(matchClass)) return currentObj
+      if (!enumParams.enumInstances && !currentObj.isClassObject) shouldBeChecked = false
+      if (!enumParams.enumClasses && currentObj.isClassObject) shouldBeChecked = false
+      // TODO: ignore list and string objects
+      if (shouldBeChecked) {
+        if (enumParams.matchClass == InvalidObject) return currentObj
+        if (currentObj.isInstanceOf(enumParams.matchClass)) return currentObj
       }
     }
     InvalidObject
+  }
+  def nextObject(prevObject: TadsObjectId, enumParams: EnumObjectParams): TadsObject = {
+    for (entry <- _objectCache) { // entries are pairs of (key, value)
+      val currentObj      = entry._2
+      var shouldBeChecked = true
+      var previousFound   = false
+      if (!enumParams.enumInstances && !currentObj.isClassObject) shouldBeChecked = false
+      if (!enumParams.enumClasses && currentObj.isClassObject) shouldBeChecked = false
+
+      // handle previous object detection
+      if (prevObject != InvalidObjectId && !previousFound) shouldBeChecked = false
+      if (prevObject != InvalidObjectId && currentObj.id == prevObject) {
+        printf("PREVIOUS FOUND !!!!\n")
+        previousFound = true
+      }
+      // TODO: ignore list and string objects
+      if (shouldBeChecked) {
+        if (enumParams.matchClass == InvalidObject) return currentObj
+        if (currentObj.isInstanceOf(enumParams.matchClass)) return currentObj
+      }
+    }
+    InvalidObject
+  }
+}
+
+class EnumObjectParams(val matchClass: TadsObject, val enumInstances: Boolean,
+                       val enumClasses: Boolean) {
+  override def toString = {
+    "EnumObjectParams[matchClass: %s, enumInstances: %b, enumClasses: %b]".format(
+      matchClass, enumInstances, enumClasses)
   }
 }
