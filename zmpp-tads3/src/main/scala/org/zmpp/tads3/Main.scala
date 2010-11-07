@@ -56,6 +56,9 @@ class TadsVMState {
   var ip = 0                // instruction pointer
   var ep = 0                // current function entry pointer
   def sp = stack.sp         // stack pointer
+  def sp_=(newsp: Int) {
+    stack.sp = newsp
+  } 
   var fp = 0                // frame pointer
 
   def reset(imageMem: Memory) {
@@ -92,6 +95,20 @@ class TadsVMState {
     ip += branchOffset
   }
 
+  def doReturn {
+    sp = fp
+    fp = stack.pop.value
+    val argc = stack.pop.value
+    ep = stack.pop.value
+    val callerOffset = stack.pop.value
+    // clean the rest of this invocation from the stack (self, definingObj,
+    // origTargetObj, targetProp and args)
+    for (i <- 0 until (argc + 4)) stack.pop
+    if (callerOffset == 0) {
+      throw new UnsupportedOperationException("TODO halt machine")
+    }
+    ip = ep + callerOffset
+  }
   def doCall(argc: Int, targetOffs: Int,
              targetProp: Int, origTargetObj: TadsObjectId,
              definingObj: TadsObjectId, self: TadsObjectId) {
@@ -221,7 +238,8 @@ class TadsVM {
       case PushNil      => _state.stack.pushNil
       case PushSelf     => _state.stack.push(_state.currentSelf)
       case RetNil       =>
-        throw new UnsupportedOperationException("RETNIL TODO")
+        _state.r0 = TadsNil
+        _state.doReturn
       case SetInd       =>
         val indexVal     = _state.stack.pop
         val containerVal = _state.stack.pop
