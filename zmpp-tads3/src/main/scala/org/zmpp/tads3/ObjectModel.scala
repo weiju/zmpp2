@@ -356,26 +356,15 @@ class ObjectSystem(vmState: TadsVMState) {
     }
   }
 
-  // Enumeration of objects, this is the 
+  // Enumeration of objects
   def firstObject(enumParams: EnumObjectParams): TadsObject = {
-    for (entry <- _objectCache) { // entries are pairs of (key, value)
-      val currentObj = entry._2
-      var shouldBeChecked = true
-      if (!enumParams.enumInstances && !currentObj.isClassObject) shouldBeChecked = false
-      if (!enumParams.enumClasses && currentObj.isClassObject) shouldBeChecked = false
-      // TODO: ignore list and string objects
-      if (shouldBeChecked) {
-        if (enumParams.matchClass == InvalidObject) return currentObj
-        if (currentObj.isInstanceOf(enumParams.matchClass)) return currentObj
-      }
-    }
-    InvalidObject
+    nextObject(InvalidObjectId, enumParams)
   }
   def nextObject(prevObject: TadsObjectId, enumParams: EnumObjectParams): TadsObject = {
+    var previousFound   = false
     for (entry <- _objectCache) { // entries are pairs of (key, value)
       val currentObj      = entry._2
       var shouldBeChecked = true
-      var previousFound   = false
       if (!enumParams.enumInstances && !currentObj.isClassObject) shouldBeChecked = false
       if (!enumParams.enumClasses && currentObj.isClassObject) shouldBeChecked = false
 

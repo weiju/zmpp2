@@ -192,7 +192,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
   private def firstObj(argc: Int) {
     val result = _vmState.objectSystem.firstObject(enumObjParams(argc))
     printf("FOUND OBJECT: %s\n", result.id)
-    _vmState.r0 = result.id
+    _vmState.r0 = if (result == InvalidObject) TadsNil else result.id
   }
   private def nextObj(argc: Int) {
     // the previous object is on top of the stack, and is part of the
@@ -202,7 +202,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     printf("nextObj(), prevObj: %s, params: %s\n", previousObject, enumParams)
     val result = _vmState.objectSystem.nextObject(previousObject, enumParams)
     printf("FOUND OBJECT: %s\n", result.id)
-    _vmState.r0 = result.id
+    _vmState.r0 = if (result == InvalidObject) TadsNil else result.id
   }
   private def randomize(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.randomize() not implemented yet")

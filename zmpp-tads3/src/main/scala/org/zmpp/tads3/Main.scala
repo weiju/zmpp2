@@ -224,6 +224,7 @@ class TadsVM {
         objGetProp(_state.currentSelf, nextShortOperand)
       case GetR0        => _state.stack.push(_state.r0)
       case IdxInt8      => index(nextByteOperand)
+      case Jmp          => _state.doBranch
       case JNil         => branchIfTrue(_state.stack.pop == TadsNil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
       case JR0F         => branchIfTrue(!_state.r0.isTrue)
@@ -237,6 +238,7 @@ class TadsVM {
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
       case PushNil      => _state.stack.pushNil
       case PushSelf     => _state.stack.push(_state.currentSelf)
+      case PushTrue     => _state.stack.push(TadsTrue)
       case RetNil       =>
         _state.r0 = TadsNil
         _state.doReturn
@@ -253,6 +255,11 @@ class TadsVM {
         _state.setLocal(localNumber, setInd(containerVal, index, newVal))
       case SetLcl1      => _state.setLocal(nextByteOperand, _state.stack.pop)
       case SetLcl1R0    => _state.setLocal(nextByteOperand, _state.r0)
+      case SetPropSelf  =>
+        val newVal = _state.stack.pop
+        val propId = nextShortOperand
+        printf("@setpropself %d (newval = %s)\n", propId, newVal)
+        throw new UnsupportedOperationException("setpropself TODO")
       case SetSelf      => _state.currentSelf = _state.stack.pop
       case _            =>
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"

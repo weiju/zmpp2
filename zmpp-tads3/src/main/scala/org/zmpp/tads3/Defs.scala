@@ -181,7 +181,6 @@ class Stack {
 
   def size = _stack.length
   def pushNil = push(TadsNil)
-
   def pushPropertyId(id: Int) = push(new TadsPropertyId(id))
   def pushObjectId(id: Int) = push(new TadsObjectId(id))
   def pushCodeOffset(offset: Int) = push(new TadsCodeOffset(offset))
@@ -221,6 +220,7 @@ class Stack {
 object Opcodes {
   val Push1           = 0x02
   val PushNil         = 0x08
+  val PushTrue        = 0x09
   val PushFnPtr       = 0x0b
   val RetNil          = 0x51
   val Call            = 0x58
@@ -240,6 +240,7 @@ object Opcodes {
   val PushSelf        = 0x84
   val Dup             = 0x88
   val GetR0           = 0x8b
+  val Jmp             = 0x91
   val JNil            = 0x9e
   val JR0T            = 0xa0
   val JR0F            = 0xa1
@@ -253,6 +254,7 @@ object Opcodes {
   val New1            = 0xc0
   val SetLcl1         = 0xe0
   val SetInd          = 0xe4
+  val SetPropSelf     = 0xe7
   val SetSelf         = 0xeb
   val SetLcl1R0       = 0xee
   val SetIndLcl1I8    = 0xef
@@ -283,6 +285,7 @@ object OpcodeNames {
     GetPropSelf     -> "GETPROPSELF",
     GetR0           -> "GETR0",
     IdxInt8         -> "IDXINT8",
+    Jmp             -> "JMP",
     JNil            -> "JNIL",
     JR0T            -> "JR0T",
     JR0F            -> "JR0F",
@@ -295,12 +298,14 @@ object OpcodeNames {
     PushNil         -> "PUSHNIL",
     PushFnPtr       -> "PUSHFNPTR",
     PushSelf        -> "PUSHSELF",
+    PushTrue        -> "PUSHTRUE",
     PtrCallPropSelf -> "PTRCALLPROPSELF",
     RetNil          -> "RETNIL",
     SetInd          -> "SETIND",
     SetIndLcl1I8    -> "SETINDLCL1I8",
     SetLcl1         -> "SETLCL1",
     SetLcl1R0       -> "SETLCL1R0",
+    SetPropSelf     -> "SETPROPSELF",
     SetSelf         -> "SETSELF"
   )
   def opcodeName(opcodeNum: Int) = {

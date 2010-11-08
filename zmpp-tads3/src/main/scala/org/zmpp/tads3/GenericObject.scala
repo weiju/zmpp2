@@ -70,7 +70,10 @@ extends TadsObject(id, vmState) {
       id, isClassObject, superClassCount, propertyCount)
   }
   override def isInstanceOf(obj: TadsObject): Boolean = {
+    //printf("GenericObject.isInstanceOf() obj = %s\n", id)
+    
     for (superClassId <- superClassIds) {
+      //printf("GenericObject.isInstanceOf() super = %d\n", superClassId)
       if (objectSystem.objectWithId(superClassId) == obj) return true
       // TODO: we might have to check whether the super class inherits
       // from obj
