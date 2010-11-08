@@ -65,6 +65,8 @@ extends TadsObject(id, vmState) {
 
   val superClassIds = new Array[Int](superClassCount)
   val properties    = new Array[Property](propertyCount)
+  val extProperties = new ArrayList[Property]
+
   override def toString = {
     "GenericObject[%s, isClassObject: %b, # super: %d, #props: %d]".format(
       id, isClassObject, superClassCount, propertyCount)
@@ -93,9 +95,23 @@ extends TadsObject(id, vmState) {
     null
   }
 
-  def findPropertyInThis(propertyId: Int): Property = {
+  private def findPropertyInThis(propertyId: Int): Property = {
+    // intentionally not using find() here
     for (prop <- properties) if (prop.id == propertyId) return prop
+    for (prop <- extProperties) if (prop.id == propertyId) return prop
     null
+  }
+
+  override def setProperty(propertyId: Int, newValue: TadsValue) {
+    val prop = findPropertyInThis(propertyId)
+    if (prop == null) {
+      printf("prop not found creating new one")
+      val newProp = new Property(propertyId, newValue, this.id)
+    } else {
+      printf("prop found updating existing one")
+      prop.tadsValue = newValue
+    }
+    // TODO: UNDO
   }
 }
 

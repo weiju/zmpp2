@@ -61,6 +61,10 @@ abstract class TadsObject(val id: TadsObjectId, val vmState: TadsVMState) {
     throw new UnsupportedOperationException("findProperty() not implemented: " +
                                           getClass.getName)
   }
+  def setProperty(propertyId: Int, newValue: TadsValue) {
+    throw new UnsupportedOperationException("setProperty() not implemented: " +
+                                            getClass.getName)
+  }
   def valueAtIndex(index: Int): TadsValue = {
     throw new UnsupportedOperationException("valueAtIndex() not implemented")
   }
@@ -74,7 +78,7 @@ object InvalidObject extends TadsObject(InvalidObjectId, null) {
   def metaClass = null
 }
 
-class Property(val id: Int, tadsValue: TadsValue,
+class Property(val id: Int, var tadsValue: TadsValue,
                val definingObject: TadsObjectId) {
   def valueType = tadsValue.valueType
   def value = tadsValue.value

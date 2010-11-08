@@ -256,17 +256,15 @@ class TadsVM {
       case SetLcl1      => _state.setLocal(nextByteOperand, _state.stack.pop)
       case SetLcl1R0    => _state.setLocal(nextByteOperand, _state.r0)
       case SetPropSelf  =>
-        val newVal = _state.stack.pop
-        val propId = nextShortOperand
-        printf("@setpropself %d (newval = %s)\n", propId, newVal)
-        throw new UnsupportedOperationException("setpropself TODO")
+        objSetProp(_state.currentSelf, nextShortOperand,
+                   _state.stack.pop)
       case SetSelf      => _state.currentSelf = _state.stack.pop
       case _            =>
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration >= 45) {
+    if (iteration >= 102) {
       println("R0 = " + _state.r0)
       println(_state.stack)
     }
@@ -315,6 +313,14 @@ class TadsVM {
   private def branchIfTrue(condition: Boolean) {
     if (condition) _state.doBranch
     else nextShortOperand // skip branch word
+  }
+
+  private def objSetProp(targetVal: TadsValue, propId: Int,
+                         newVal: TadsValue) {
+    if (targetVal.valueType == TypeIds.VmObj) {
+      val obj = _state.objectSystem.objectWithId(targetVal)
+      obj.setProperty(propId, newVal)
+    } else throw new ObjectValRequiredException
   }
 
   private def objGetProp(targetVal: TadsValue, propId: Int) {
