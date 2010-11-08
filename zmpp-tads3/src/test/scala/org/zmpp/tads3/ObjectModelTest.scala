@@ -37,14 +37,22 @@ object ObjectModelSpecRunner extends ConsoleRunner(ObjectModelSpec)
 object ObjectModelSpec extends Specification {
   "TadsObjectId" should {
     "be equal" in {
-      val objId42    = new TadsObjectId(42)
-      val objId43    = new TadsObjectId(43)
-      val objId42too = new TadsObjectId(42)
-      objId42    must_== objId42
-      objId42    must_== objId42too
-      objId42too must_== objId42
-      objId42    must_!= objId43
-      objId43    must_!= objId42
+      val objId42      = new TadsObjectId(42)
+      val objId43      = new TadsObjectId(43)
+      val objId42too   = new TadsObjectId(42)
+      val objId42three = TadsValue.create(TypeIds.VmObj, 42)
+      val int42        = TadsValue.create(TypeIds.VmInt, 42)
+
+      objId42      must_== objId42
+      objId42      must_== objId42too
+      objId42too   must_== objId42
+      objId42      must_== objId42three
+      objId42three must_== objId42
+
+      objId42      must_!= objId43
+      objId43      must_!= objId42
+      int42        must_!= objId42
+      objId42      must_!= int42
     }
   }
 }
