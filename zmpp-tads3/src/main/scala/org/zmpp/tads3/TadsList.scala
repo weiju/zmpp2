@@ -41,7 +41,6 @@ import java.util.ArrayList
 class TadsList(id: TadsObjectId, vmState: TadsVMState)
 extends TadsCollection(id, vmState) {
   private val _container = new ArrayList[TadsValue]
-
   override def metaClass: MetaClass = objectSystem.listMetaClass
   override def toString = "List object"
   def size = _container.size
@@ -64,6 +63,95 @@ extends TadsCollection(id, vmState) {
 class ListMetaClass extends MetaClass {
   def name = "list"
   override def superMeta = objectSystem.metaClassForName("collection")
+
+  val FunctionVector = Array(undef _, subset _, map _, len _,
+                             sublist _, intersect _, indexOf _,
+                             car _, cdr _, indexWhich _, forEach _,
+                             valWhich _, lastIndexOf _, lastIndexWhich _,
+                             lastValWhich _, countOf _, countWhich _,
+                             getUnique _, appendUnique _, append _,
+                             sort _, prepend _, insertAt _, removeElementAt _,
+                             removeRange _, forEachAssoc _)
+
+  def undef(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("undefined")
+  }
+  def subset(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("subset")
+  }
+  def map(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("map")
+  }
+  def len(obj: TadsObject, argc: Int): TadsValue = {
+    new TadsInteger(obj.asInstanceOf[TadsList].size)
+  }
+  def sublist(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("sublist")
+  }
+  def intersect(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("intersect")
+  }
+  def indexOf(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("indexOf")
+  }
+  def car(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("car")
+  }
+  def cdr(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("cdr")
+  }
+  def indexWhich(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("indexWhich")
+  }
+  def forEach(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("forEach")
+  }
+  def valWhich(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("valWhich")
+  }
+  def lastIndexOf(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("lastIndexOf")
+  }
+  def lastIndexWhich(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("lastIndexWhich")
+  }
+  def lastValWhich(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("lastValWhich")
+  }
+  def countOf(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("countOf")
+  }
+  def countWhich(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("countWhich")
+  }
+  def getUnique(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("getUnique")
+  }
+  def appendUnique(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("appendUnique")
+  }
+  def append(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("append")
+  }
+  def sort(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("sort")
+  }
+  def prepend(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("prepend")
+  }
+  def insertAt(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("insertAt")
+  }
+  def removeElementAt(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("removeElementAt")
+  }
+  def removeRange(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("removeRange")
+  }
+  def forEachAssoc(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("forEachAssoc")
+  }
+
   def createListConstant(id: TadsObjectId, offset: TadsListConstant) = {
     import TadsConstants._
     val poolOffset = offset.value
@@ -79,5 +167,10 @@ class ListMetaClass extends MetaClass {
       list.addElement(TadsValue.create(valueType, value))
     }
     list
+  }
+
+  override def callMethodWithIndex(obj: TadsObject, index: Int,
+                                   argc: Int): TadsValue = {
+    FunctionVector(index)(obj, argc)
   }
 }
