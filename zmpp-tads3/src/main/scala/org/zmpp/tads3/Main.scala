@@ -233,6 +233,7 @@ class TadsVM {
       case Nop          => // do nothing
       case ObjGetProp   => objGetProp(new TadsObjectId(nextIntOperand),
                                       nextShortOperand)
+      case OneLcl1      => _state.setLocal(nextByteOperand, TadsInteger.One)
       case PtrCall      => ptrCall(nextByteOperand)
       case Push1        => _state.stack.push1
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
@@ -241,6 +242,9 @@ class TadsVM {
       case PushTrue     => _state.stack.push(TadsTrue)
       case RetNil       =>
         _state.r0 = TadsNil
+        _state.doReturn
+      case RetVal       =>
+        _state.r0 = _state.stack.pop
         _state.doReturn
       case SetInd       =>
         val indexVal     = _state.stack.pop
@@ -255,6 +259,8 @@ class TadsVM {
         _state.setLocal(localNumber, setInd(containerVal, index, newVal))
       case SetLcl1      => _state.setLocal(nextByteOperand, _state.stack.pop)
       case SetLcl1R0    => _state.setLocal(nextByteOperand, _state.r0)
+      case SetProp      =>
+        objSetProp(_state.stack.pop, nextShortOperand, _state.stack.pop)
       case SetPropSelf  =>
         objSetProp(_state.currentSelf, nextShortOperand,
                    _state.stack.pop)

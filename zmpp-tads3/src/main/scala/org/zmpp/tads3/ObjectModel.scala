@@ -123,7 +123,8 @@ abstract class MetaClass {
 
   def callMethodWithIndex(obj: TadsObject, index: Int,
                           argc: Int): TadsValue = {
-    throw new UnsupportedOperationException("callMethodWithIndex not supported")
+    throw new UnsupportedOperationException(
+      "%s: callMethodWithIndex not supported".format(name))
   }
 
   def evalClassProperty(obj: TadsObject, propertyId: Int): TadsValue = {
