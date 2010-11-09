@@ -218,7 +218,10 @@ class Stack {
 
 // The machine opcodes
 object Opcodes {
+  val Push0           = 0x01
   val Push1           = 0x02
+  val PushInt8        = 0x03
+  val PushInt         = 0x04
   val PushNil         = 0x08
   val PushTrue        = 0x09
   val PushFnPtr       = 0x0b
@@ -317,7 +320,10 @@ object OpcodeNames {
     OneLcl1         -> "ONELCL1",
     PtrCall         -> "PTRCALL",
     PtrCallProp     -> "PTRCALLPROP",
+    Push0           -> "PUSH_0",
     Push1           -> "PUSH_1",
+    PushInt         -> "PUSHINT",
+    PushInt8        -> "PUSHINT8",
     PushNil         -> "PUSHNIL",
     PushFnPtr       -> "PUSHFNPTR",
     PushSelf        -> "PUSHSELF",

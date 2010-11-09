@@ -175,6 +175,7 @@ class TadsVM {
   def nextShortOperand  = _state.nextCodeShort
   def nextIntOperand    = _state.nextCodeInt
   def nextSignedShortOperand = Types.signExtend16(nextShortOperand)
+  def nextSignedByteOperand  = Types.signExtend8(nextByteOperand)
 
   def doTurn {
     while (_state.runState == RunStates.Running) {
@@ -242,6 +243,7 @@ class TadsVM {
       case PtrCall      => ptrCall(nextByteOperand)
       case Push1        => _state.stack.push1
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
+      case PushInt8     => _state.stack.pushInt(nextSignedByteOperand)
       case PushNil      => _state.stack.pushNil
       case PushSelf     => _state.stack.push(_state.currentSelf)
       case PushTrue     => _state.stack.push(TadsTrue)
