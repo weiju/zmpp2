@@ -224,6 +224,11 @@ class TadsVM {
         objGetProp(_state.currentSelf, nextShortOperand)
       case GetR0        => _state.stack.push(_state.r0)
       case IdxInt8      => index(nextByteOperand)
+      case Jgt          =>
+        // note the order of arguments
+        val val2 = _state.stack.pop
+        val val1 = _state.stack.pop
+        branchIfTrue(compare(val1, val2) > 0)
       case Jmp          => _state.doBranch
       case JNil         => branchIfTrue(_state.stack.pop == TadsNil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
@@ -274,6 +279,23 @@ class TadsVM {
       println("R0 = " + _state.r0)
       println(_state.stack)
     }
+  }
+
+  // generic comparison function on TadsValues
+  // used by conditional branches and comparison instructions
+  // < 0 => value1 < value2
+  //   0 => value1 == value2
+  // > 0 => value1 > value2
+  private def compare(value1: TadsValue, value2: TadsValue): Int = {
+    import TypeIds._
+    if (value1.valueType == VmInt && value2.valueType == VmInt) {
+      value1.value - value2.value
+    } else if ((value1.valueType == VmSString || value1.valueType == VmDString) &&
+               (value2.valueType == VmSString || value2.valueType == VmDString)) {
+      throw new UnsupportedOperationException("TODO string compare")
+    } else if (value1.valueType == VmObj) {
+      throw new UnsupportedOperationException("TODO object compare")
+    } else throw new InvalidComparisonException
   }
 
   // instruction implementations

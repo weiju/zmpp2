@@ -242,6 +242,14 @@ object Opcodes {
   val Dup             = 0x88
   val GetR0           = 0x8b
   val Jmp             = 0x91
+  val Jt              = 0x92
+  val Jf              = 0x93
+  val Je              = 0x94
+  val Jne             = 0x95
+  val Jgt             = 0x96
+  val Jge             = 0x97
+  val Jlt             = 0x98
+  val Jle             = 0x99
   val JNil            = 0x9e
   val JR0T            = 0xa0
   val JR0F            = 0xa1
@@ -290,10 +298,18 @@ object OpcodeNames {
     GetPropSelf     -> "GETPROPSELF",
     GetR0           -> "GETR0",
     IdxInt8         -> "IDXINT8",
+    Je              -> "JE",
+    Jf              -> "JF",
+    Jge             -> "JGE",
+    Jgt             -> "JGT",
+    Jle             -> "JLE",
+    Jlt             -> "JLT",
     Jmp             -> "JMP",
+    Jne             -> "JNE",
     JNil            -> "JNIL",
     JR0T            -> "JR0T",
     JR0F            -> "JR0F",
+    Jt              -> "JT",
     New1            -> "NEW1",
     Nop             -> "NOP",
     ObjGetProp      -> "OBJGETPROP",
@@ -330,3 +346,4 @@ class CannotIndexTypeException extends Exception
 class ObjectNotFoundException extends Exception
 class FuncPtrValRequiredException extends Exception
 class ObjectValRequiredException extends Exception
+class InvalidComparisonException extends Exception
