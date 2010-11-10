@@ -46,10 +46,11 @@ object TadsVMState {
 }
 class TadsVMState {
   private var _memory : Memory = null
-  var image: TadsImage        = null
-  val stack = new Stack
-  val objectSystem = new ObjectSystem(this)
-  var runState = RunStates.Running
+  var image: TadsImage         = null
+  val stack                    = new Stack
+  val objectSystem             = new ObjectSystem(this)
+  var runState                 = RunStates.Running
+  var startTime : Long         = 0
   
   // Registers (TODO: current savepoint, savepoint count)
   var r0: TadsValue = null // data register R0
@@ -62,7 +63,8 @@ class TadsVMState {
   var fp = 0                // frame pointer
 
   def reset(imageMem: Memory) {
-    image = new TadsImage(imageMem)
+    startTime = System.currentTimeMillis
+    image     = new TadsImage(imageMem)
     objectSystem.reset
     image.readData(this)
 
@@ -247,8 +249,12 @@ class TadsVM {
       case PushNil      => _state.stack.pushNil
       case PushSelf     => _state.stack.push(_state.currentSelf)
       case PushTrue     => _state.stack.push(TadsTrue)
+      case Ret          => _state.doReturn
       case RetNil       =>
         _state.r0 = TadsNil
+        _state.doReturn
+      case RetTrue      =>
+        _state.r0 = TadsTrue
         _state.doReturn
       case RetVal       =>
         _state.r0 = _state.stack.pop

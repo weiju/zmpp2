@@ -227,6 +227,8 @@ object Opcodes {
   val PushFnPtr       = 0x0b
   val RetVal          = 0x50
   val RetNil          = 0x51
+  val RetTrue         = 0x52
+  val Ret             = 0x54
   val Call            = 0x58
   val PtrCall         = 0x59
   val GetProp         = 0x60
@@ -330,7 +332,9 @@ object OpcodeNames {
     PushTrue        -> "PUSHTRUE",
     PtrCallPropSelf -> "PTRCALLPROPSELF",
     PtrSetProp      -> "PTRSETPROP",
+    Ret             -> "RET",
     RetNil          -> "RETNIL",
+    RetTrue         -> "RETTRUE",
     RetVal          -> "RETVAL",
     SetInd          -> "SETIND",
     SetIndLcl1I8    -> "SETINDLCL1I8",

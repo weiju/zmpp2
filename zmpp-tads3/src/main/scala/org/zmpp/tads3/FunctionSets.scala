@@ -148,8 +148,10 @@ class T3VMFunctionSet extends IntrinsicFunctionSet {
 // ***********************************************************************
 object TadsGenFunctionSet {
   // enumeration flag values
-  val EnumInstances = 1
-  val EnumClasses   = 2
+  val EnumInstances      = 1
+  val EnumClasses        = 2
+  val GetTimeDateAndTime = 1
+  val GetTimeTicks       = 2
 }
 
 class TadsGenFunctionSet extends IntrinsicFunctionSet {
@@ -217,7 +219,17 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-gen.toInteger() not implemented yet")
   }
   private def getTime(argc: Int) {
-    throw new UnsupportedOperationException("tads-gen.getTime() not implemented yet")
+    val timeType = if (argc == 1) _vmState.stack.pop.value
+                   else TadsGenFunctionSet.GetTimeDateAndTime
+    printf("argc: %d, timeType = %d\n", argc, timeType)
+    if (timeType == TadsGenFunctionSet.GetTimeDateAndTime) {
+      throw new UnsupportedOperationException("tads-gen.getTime(1) not implemented yet")
+    } else if (timeType == TadsGenFunctionSet.GetTimeTicks) {
+      val currentTicks = System.currentTimeMillis - _vmState.startTime
+      _vmState.r0 = new TadsInteger(currentTicks.asInstanceOf[Int])
+    } else {
+      throw new IllegalArgumentException("tads-gen.getTime(%d)".format(timeType))
+    }
   }
   private def rexMatch(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.rexMatch() not implemented yet")
