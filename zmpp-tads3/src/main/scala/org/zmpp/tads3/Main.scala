@@ -214,17 +214,17 @@ class TadsVM {
       case Call         =>
         _state.doCall(nextByteOperand, nextIntOperand, 0,
                       InvalidObjectId, InvalidObjectId, InvalidObjectId)
+      case CallProp     => callProp(nextByteOperand, _state.stack.pop,
+                                    nextShortOperand)
       case Dup          => _state.stack.dup
       case GetArg1      =>
         _state.stack.push(_state.getParam(nextByteOperand))
       case GetArg2      => _state.stack.push(_state.getParam(nextShortOperand))
       case GetLcl1      => _state.stack.push(_state.getLocal(nextByteOperand))
-      case GetProp      => objGetProp(_state.stack.pop, nextShortOperand)
-      case GetPropLcl1  =>
-        objGetProp(_state.getLocal(nextByteOperand), nextShortOperand)
-      case GetPropR0    => objGetProp(_state.r0, nextShortOperand)
-      case GetPropSelf  =>
-        objGetProp(_state.currentSelf, nextShortOperand)
+      case GetProp      => callProp(0, _state.stack.pop, nextShortOperand)
+      case GetPropLcl1  => callProp(0, _state.getLocal(nextByteOperand), nextShortOperand)
+      case GetPropR0    => callProp(0, _state.r0, nextShortOperand)
+      case GetPropSelf  => callProp(0, _state.currentSelf, nextShortOperand)
       case GetR0        => _state.stack.push(_state.r0)
       case IdxInt8      => index(nextByteOperand)
       case Jgt          =>
@@ -239,8 +239,11 @@ class TadsVM {
       case New1         =>
         _state.r0 = _state.objectSystem.createFromStack(nextByteOperand, nextByteOperand)
       case Nop          => // do nothing
-      case ObjGetProp   => objGetProp(new TadsObjectId(nextIntOperand),
-                                      nextShortOperand)
+      case ObjCallProp  =>
+        callProp(nextByteOperand, new TadsObjectId(nextIntOperand),
+                 nextShortOperand)
+      case ObjGetProp   => callProp(0, new TadsObjectId(nextIntOperand),
+                                    nextShortOperand)
       case OneLcl1      => _state.setLocal(nextByteOperand, TadsInteger.One)
       case PtrCall      => ptrCall(nextByteOperand)
       case Push1        => _state.stack.push1
@@ -283,7 +286,7 @@ class TadsVM {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration >= 102) {
+    if (iteration >= 268) {
       println("R0 = " + _state.r0)
       println(_state.stack)
     }
@@ -359,10 +362,13 @@ class TadsVM {
     } else throw new ObjectValRequiredException
   }
 
-  private def objGetProp(targetVal: TadsValue, propId: Int) {
+  private def callProp(argc: Int, targetVal: TadsValue, propId: Int) {
+    printf("callProp(%s, %d, %d)\n", targetVal, argc, propId)
+    if (argc > 0) throw new UnsupportedOperationException("callProp TODO")
+
     if (targetVal.valueType == TypeIds.VmObj) {
       val obj = _state.objectSystem.objectWithId(targetVal)
-      printf("objGetProp(%s, %d), obj: %s\n", targetVal, propId, obj)
+      printf("callProp(%s, %d), obj: %s\n", targetVal, propId, obj)
       val prop = obj.findProperty(propId)
       if (prop != null) evalProperty(targetVal.asInstanceOf[TadsObjectId], prop)
       else {
