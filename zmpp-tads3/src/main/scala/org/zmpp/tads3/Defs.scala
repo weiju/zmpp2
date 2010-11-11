@@ -222,6 +222,9 @@ object Opcodes {
   val Push1           = 0x02
   val PushInt8        = 0x03
   val PushInt         = 0x04
+  val PushStr         = 0x05
+  val PushLst         = 0x06
+  val PushObj         = 0x07
   val PushNil         = 0x08
   val PushTrue        = 0x09
   val PushFnPtr       = 0x0b
@@ -265,6 +268,7 @@ object Opcodes {
   val BuiltinD        = 0xb4
   val Builtin1        = 0xb5
   val Builtin2        = 0xb6
+  val IdxLcl1Int8     = 0xbb
   val IdxInt8         = 0xbc
   val New1            = 0xc0
   val OneLcl1         = 0xda
@@ -304,6 +308,7 @@ object OpcodeNames {
     GetPropSelf     -> "GETPROPSELF",
     GetR0           -> "GETR0",
     IdxInt8         -> "IDXINT8",
+    IdxLcl1Int8     -> "IDXLCL1INT8",
     Je              -> "JE",
     Jf              -> "JF",
     Jge             -> "JGE",
@@ -326,11 +331,14 @@ object OpcodeNames {
     PtrCallProp     -> "PTRCALLPROP",
     Push0           -> "PUSH_0",
     Push1           -> "PUSH_1",
+    PushFnPtr       -> "PUSHFNPTR",
     PushInt         -> "PUSHINT",
     PushInt8        -> "PUSHINT8",
+    PushLst         -> "PUSHLST",
     PushNil         -> "PUSHNIL",
-    PushFnPtr       -> "PUSHFNPTR",
+    PushObj         -> "PUSHOBJ",
     PushSelf        -> "PUSHSELF",
+    PushStr         -> "PUSHSTR",
     PushTrue        -> "PUSHTRUE",
     PtrCallPropSelf -> "PTRCALLPROPSELF",
     PtrSetProp      -> "PTRSETPROP",

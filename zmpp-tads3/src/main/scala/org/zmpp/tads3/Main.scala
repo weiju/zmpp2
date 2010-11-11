@@ -250,6 +250,7 @@ class TadsVM {
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
       case PushInt8     => _state.stack.pushInt(nextSignedByteOperand)
       case PushNil      => _state.stack.pushNil
+      case PushObj      => _state.stack.pushObjectId(nextIntOperand)
       case PushSelf     => _state.stack.push(_state.currentSelf)
       case PushTrue     => _state.stack.push(TadsTrue)
       case Ret          => _state.doReturn
@@ -362,16 +363,23 @@ class TadsVM {
     } else throw new ObjectValRequiredException
   }
 
+  // one of the central functions of the VM: evaluating properties
+  // the general strategy is to look up the property first
+  // (pre-evaluation can happen here) and then evaluate the property
+  // that was found. The reference implementation splits this into
+  // a no-eval and an eval step, which is combined here for the moment
+  // to see whether we find a factorization that fits better into the
+  // Scala application context
   private def callProp(argc: Int, targetVal: TadsValue, propId: Int) {
     printf("callProp(%s, %d, %d)\n", targetVal, argc, propId)
-    if (argc > 0) throw new UnsupportedOperationException("callProp TODO")
 
     if (targetVal.valueType == TypeIds.VmObj) {
       val obj = _state.objectSystem.objectWithId(targetVal)
-      printf("callProp(%s, %d), obj: %s\n", targetVal, propId, obj)
+      printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
       val prop = obj.findProperty(propId)
-      if (prop != null) evalProperty(targetVal.asInstanceOf[TadsObjectId], prop)
-      else {
+      if (prop != null) {
+        evalProperty(targetVal.asInstanceOf[TadsObjectId], prop, argc)
+      } else {
         // TODO: check if propNotDefined is available
         throw new UnsupportedOperationException("TODO: property not found, " +
                                                 "check for propNotDefined")
@@ -380,19 +388,20 @@ class TadsVM {
       // use constant list property evaluator
       // the targetValue is an offset into the list pool, not into the static
       // object pool !!!!
+      if (argc > 0) throw new UnsupportedOperationException("callProp TODO list")
+
       val list = _state.objectSystem.listConstantWithOffset(
         targetVal.asInstanceOf[TadsListConstant])
       val listMeta = _state.objectSystem.metaClassForName("list")
       val result = listMeta.evalClassProperty(list, propId)
       _state.r0 = result
-      //throw new UnsupportedOperationException("cannot handle list constants yet")
     } else if (targetVal.valueType == TypeIds.VmSString ||
                targetVal.valueType == TypeIds.VmDString) {
       throw new UnsupportedOperationException("Cannot handle string constants yet")
     } else throw new ObjectValRequiredException
   }
 
-  private def evalProperty(self: TadsObjectId, property: Property) {
+  private def evalProperty(self: TadsObjectId, property: Property, argc: Int) {
     import TypeIds._
     printf("evalProperty(%s) [self = %s]\n", property, self)
     property.valueType match {
@@ -403,7 +412,7 @@ class TadsVM {
       case VmInt     => _state.r0 = new TadsInteger(property.value)
       case VmList    => _state.r0 = new TadsListConstant(property.value)
       case VmCodeOfs =>
-        _state.doCall(0, property.value, property.id, self,
+        _state.doCall(argc, property.value, property.id, self,
                       property.definingObject, self)
       case VmDString =>
         throw new UnsupportedOperationException("TODO: DOUBLE QUOTED STRING")
