@@ -42,9 +42,17 @@ object RunStates {
 }
 
 object TadsVMState {
-  val StackOffsetArg1 = -9
+  // frame pointer offsets, note that they are "off by one" compared to
+  // the reference implementation because our stack organiztion is
+  // slightly different
+  val FpOffsetArg1           = -9
+  val FpOffsetTargetProp     = -8
+  val FpOffsetOriginalTarget = -7
+  val FpOffsetDefiningObject = -6
+  val FpOffsetSelf           = -5
 }
 class TadsVMState {
+  import TadsVMState._
   private var _memory : Memory = null
   var image: TadsImage         = null
   val stack                    = new Stack
@@ -149,7 +157,7 @@ class TadsVMState {
   }
   
   // function argument acccess, indexing is 0-based
-  def getParam(index: Int) = stack.valueAt(fp + TadsVMState.StackOffsetArg1 - index)
+  def getParam(index: Int) = stack.valueAt(fp + FpOffsetArg1 - index)
 
   // local variable access. Note that Local variable access is based
   // on index 0 !!
@@ -157,8 +165,21 @@ class TadsVMState {
   def setLocal(localNumber: Int, value: TadsValue) {
     stack.setValueAt(fp + localNumber, value)
   }
-  def currentSelf = stack.valueAt(fp - 5)
-  def currentSelf_=(value: TadsValue) = stack.setValueAt(fp - 5, value)
+  def currentSelf = stack.valueAt(fp + FpOffsetSelf)
+  def currentSelf_=(value: TadsValue) = stack.setValueAt(fp + FpOffsetSelf, value)
+
+  def targetProperty = {
+    val prop = stack.valueAt(fp + FpOffsetTargetProp)
+    if (prop == TadsNil) InvalidPropertyId else prop
+  }
+  def originalTarget = {
+    val obj = stack.valueAt(fp + FpOffsetOriginalTarget)
+    if (obj == TadsNil) InvalidObjectId else obj
+  }
+  def definingObject = {
+    val obj = stack.valueAt(fp + FpOffsetDefiningObject)
+    if (obj == TadsNil) InvalidObjectId else obj
+  }
 }
 
 class TadsVM {
@@ -250,6 +271,7 @@ class TadsVM {
       case OneLcl1      => _state.setLocal(nextByteOperand, TadsInteger.One)
       case PtrCall      => ptrCall(nextByteOperand)
       case Push1        => _state.stack.push1
+      case PushCtxEle   => pushCtxEle(nextByteOperand)
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
       case PushInt8     => _state.stack.pushInt(nextSignedByteOperand)
       case PushNil      => _state.stack.pushNil
@@ -422,6 +444,16 @@ class TadsVM {
         throw new UnsupportedOperationException(
           "UNHANDLED TYPE: %d => STORE %d IN R0\n".format(property.valueType,
                                                           property.value))
+    }
+  }
+
+  private def pushCtxEle(elem: Int) {
+    printf("PUSHCTXELE, ELEM = %d HA\n", elem)
+    elem match { // not reused, so I just use the constants directly
+      case 1 => _state.stack.push(_state.targetProperty)
+      case 2 => _state.stack.push(_state.originalTarget)
+      case 3 => _state.stack.push(_state.definingObject)
+      case _ => throw new IllegalArgumentException("elem: " + elem)
     }
   }
 }

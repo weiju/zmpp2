@@ -151,6 +151,7 @@ object TadsInteger {
   val One = new TadsInteger(1)
 }
 object InvalidObjectId extends TadsObjectId(0)
+object InvalidPropertyId extends TadsPropertyId(0)
 object TadsValue {
   def create(valueType: Int, value: Int): TadsValue = {
     import TypeIds._
@@ -244,12 +245,17 @@ object Opcodes {
   val ObjCallProp     = 0x67
   val GetPropLcl1     = 0x6a
   val GetPropR0       = 0x6c
+  val PtrInherit      = 0x73
   val GetLcl1         = 0x80
   val GetArg1         = 0x82
   val GetArg2         = 0x83
   val PushSelf        = 0x84
   val Dup             = 0x88
   val GetR0           = 0x8b
+  val GetDbArgc       = 0x8c
+  val Swap            = 0x8d
+  val PushCtxEle      = 0x8e
+  val Switch          = 0x90
   val Jmp             = 0x91
   val Jt              = 0x92
   val Jf              = 0x93
@@ -301,6 +307,7 @@ object OpcodeNames {
     Dup             -> "DUP",
     GetArg1         -> "GETARG1",
     GetArg2         -> "GETARG2",
+    GetDbArgc       -> "GETDBARGC",
     GetLcl1         -> "GETLCL1",
     GetProp         -> "GETPROP",
     GetPropLcl1     -> "GETPROPLCL1",
@@ -331,6 +338,7 @@ object OpcodeNames {
     PtrCallProp     -> "PTRCALLPROP",
     Push0           -> "PUSH_0",
     Push1           -> "PUSH_1",
+    PushCtxEle      -> "PUSHCTXELE",
     PushFnPtr       -> "PUSHFNPTR",
     PushInt         -> "PUSHINT",
     PushInt8        -> "PUSHINT8",
@@ -341,6 +349,7 @@ object OpcodeNames {
     PushStr         -> "PUSHSTR",
     PushTrue        -> "PUSHTRUE",
     PtrCallPropSelf -> "PTRCALLPROPSELF",
+    PtrInherit      -> "PTRINHERIT",
     PtrSetProp      -> "PTRSETPROP",
     Ret             -> "RET",
     RetNil          -> "RETNIL",
@@ -352,7 +361,9 @@ object OpcodeNames {
     SetLcl1R0       -> "SETLCL1R0",
     SetProp         -> "SETPROP",
     SetPropSelf     -> "SETPROPSELF",
-    SetSelf         -> "SETSELF"
+    SetSelf         -> "SETSELF",
+    Swap            -> "SWAP",
+    Switch          -> "SWITCH"
   )
   def opcodeName(opcodeNum: Int) = {
     if (Names.contains(opcodeNum)) Names(opcodeNum)
