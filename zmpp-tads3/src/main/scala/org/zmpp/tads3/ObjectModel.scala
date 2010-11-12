@@ -57,7 +57,7 @@ abstract class TadsObject(val id: TadsObjectId, val vmState: TadsVMState) {
     }
     false
   }
-  def findProperty(propertyId: Int): Property = {
+  def getProperty(propertyId: Int, argc: Int): Property = {
     throw new UnsupportedOperationException("findProperty() not implemented: " +
                                           getClass.getName)
   }

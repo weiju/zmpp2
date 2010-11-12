@@ -46,6 +46,16 @@ extends TadsCollection(id, vmState) {
     printf("initialize %d elements\n", numElements)
     for (i <- 0 until numElements) _container.add(TadsNil)
   }
+
+  override def getProperty(propertyId: Int, argc: Int): Property = {
+    val idx = metaClass.functionIndexForProperty(propertyId)
+    if (idx >= 0) {
+      new Property(propertyId,
+                   metaClass.callMethodWithIndex(this, idx, argc),
+                   id)
+    } else super.getProperty(propertyId, argc)
+  }
+
   def size = _container.size
   def add(value: TadsValue) {
     _container.add(value)
@@ -83,6 +93,102 @@ extends TadsCollection(id, vmState) {
 class VectorMetaClass extends MetaClass {
   def name = "vector"
   override def superMeta = objectSystem.metaClassForName("collection")
+
+  val FunctionVector = Array(undef _,        toList _,          getSize _,
+                             copyFrom _,     fillVal _,         applyAll _,
+                             indexWhich _,   forEach _,         forEachAssoc _,
+                             mapAll _,       indexOf _,         valWhich _,
+                             lastIndexOf _,  lastIndexWhich _,  lastValWhich _,
+                             countOf _,      countWhich _,      getUnique _,
+                             appendUnique _, sort _,            setLength _,
+                             insertAt _,     removeElementAt _, removeRange _,
+                             append _,       prepend _,         appendAll _,
+                             removeElement _)
+
+  def undef(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("undefined")
+  }
+  def toList(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("toList")
+  }
+  def getSize(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("getSize")
+  }
+  def copyFrom(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("copyFrom")
+  }
+  def fillVal(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("fillVal")
+  }
+  def applyAll(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("applyAll")
+  }
+  def indexWhich(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("indexWhich")
+  }
+  def forEach(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("indexWhich")
+  }
+  def forEachAssoc(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("forEach")
+  }
+  def mapAll(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("mapAll")
+  }
+  def indexOf(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("indexOf")
+  }
+  def valWhich(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("valWhich")
+  }
+  def lastIndexOf(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("lastIndexOf")
+  }
+  def lastIndexWhich(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("lastIndexWhich")
+  }
+  def lastValWhich(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("lastValWhich")
+  }
+  def countOf(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("countOf")
+  }
+  def countWhich(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("countWhich")
+  }
+  def getUnique(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("getUnique")
+  }
+  def appendUnique(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("appendUnique")
+  }
+  def sort(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("sort")
+  }
+  def setLength(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("setLength")
+  }
+  def insertAt(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("insertAt")
+  }
+  def removeElementAt(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("removeElementAt")
+  }
+  def removeRange(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("removeRange")
+  }
+  def append(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("append")
+  }
+  def prepend(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("prepend")
+  }
+  def appendAll(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("appendAll")
+  }
+  def removeElement(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("removeElement")
+  }
 
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
@@ -125,5 +231,10 @@ class VectorMetaClass extends MetaClass {
       }
     }
     result
+  }
+
+  override def callMethodWithIndex(obj: TadsObject, index: Int,
+                                   argc: Int): TadsValue = {
+    FunctionVector(index)(obj, argc)
   }
 }

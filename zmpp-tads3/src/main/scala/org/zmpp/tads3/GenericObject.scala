@@ -82,14 +82,14 @@ extends TadsObject(id, vmState) {
     }
     super.isInstanceOf(obj)
   }
-  override def findProperty(propertyId: Int):Property = {
+  override def getProperty(propertyId: Int, argc: Int):Property = {
     val prop = findPropertyInThis(propertyId)
     if (prop != null) return prop
     // not found in object -> try super class properties
     for (superClassId <- superClassIds) {
       printf("not found, try super class: %d\n", superClassId)
       val superClass = objectSystem.objectWithId(superClassId)
-      val prop = superClass.findProperty(propertyId)
+      val prop = superClass.getProperty(propertyId, argc)
       if (prop != null) return prop
     }
     null

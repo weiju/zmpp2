@@ -39,12 +39,12 @@ import org.zmpp.base._
 class AnonFuncPtr(id: TadsObjectId, vmState: TadsVMState)
 extends Vector(id, vmState) {
   override def metaClass: MetaClass = objectSystem.anonFuncPtrMetaClass
-  override def findProperty(propertyId: Int): Property = {
+  override def getProperty(propertyId: Int, argc: Int): Property = {
     val objectCallProp = metaClass.vmState.image.symbolicNames("ObjectCallProp")
     if (propertyId == objectCallProp.value) {
       val propValue = valueAtIndex(1)
       new Property(propertyId, propValue, id)
-    } else super.findProperty(propertyId)
+    } else super.getProperty(propertyId, argc)
   }
 }
 

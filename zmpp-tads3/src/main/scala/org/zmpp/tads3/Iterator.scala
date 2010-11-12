@@ -51,9 +51,9 @@ extends TadsObject(id, vmState) {
   def getCurVal(argc: Int): TadsValue = {
     throw new UnsupportedOperationException("undefined property")
   }
-  override def findProperty(propertyId: Int): Property = {
+  override def getProperty(propertyId: Int, argc: Int): Property = {
     val idx = objectSystem.iteratorMetaClass.functionIndexForProperty(propertyId)
-    new Property(propertyId, FunctionVector(idx)(0), id)
+    new Property(propertyId, FunctionVector(idx)(argc), id)
   }
 }
 

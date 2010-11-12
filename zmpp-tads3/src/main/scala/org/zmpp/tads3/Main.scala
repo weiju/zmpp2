@@ -226,7 +226,8 @@ class TadsVM {
       case GetPropR0    => callProp(0, _state.r0, nextShortOperand)
       case GetPropSelf  => callProp(0, _state.currentSelf, nextShortOperand)
       case GetR0        => _state.stack.push(_state.r0)
-      case IdxInt8      => index(nextByteOperand)
+      case IdxInt8      => index(_state.stack.pop, nextByteOperand)
+      case IdxLcl1Int8  => index(_state.getLocal(nextByteOperand), nextByteOperand)
       case Jgt          =>
         // note the order of arguments
         val val2 = _state.stack.pop
@@ -311,13 +312,12 @@ class TadsVM {
   }
 
   // instruction implementations
-  private def index(indexVal: Int) {
-    val value = _state.stack.pop
-    if (value.valueType == TypeIds.VmList) {
+  private def index(targetValue: TadsValue, indexVal: Int) {
+    if (targetValue.valueType == TypeIds.VmList) {
       throw new UnsupportedOperationException("indexing lists not supported yet")
-    } else if (value.valueType == TypeIds.VmObj) {
+    } else if (targetValue.valueType == TypeIds.VmObj) {
       val pushValue =
-        _state.objectSystem.objectWithId(value).valueAtIndex(indexVal)
+        _state.objectSystem.objectWithId(targetValue).valueAtIndex(indexVal)
       _state.stack.push(pushValue)
     } else throw new CannotIndexTypeException
   }
@@ -332,7 +332,7 @@ class TadsVM {
       val symb = _state.image.symbolicNames("ObjectCallProp")
       if (symb != null && symb.valueType == TypeIds.VmProp) {
         printf("SYM: %s TYP: %d VAL: %d\n", symb.name, symb.valueType, symb.value)
-        val prop = obj.findProperty(symb.value)
+        val prop = obj.getProperty(symb.value, argc)
         _state.doCall(argc, prop.value, 0, obj.id, obj.id, obj.id)
       } else throw new FuncPtrValRequiredException
     } else if (stackVal.valueType == TypeIds.VmFuncPtr) {
@@ -376,7 +376,7 @@ class TadsVM {
     if (targetVal.valueType == TypeIds.VmObj) {
       val obj = _state.objectSystem.objectWithId(targetVal)
       printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
-      val prop = obj.findProperty(propId)
+      val prop = obj.getProperty(propId, argc)
       if (prop != null) {
         evalProperty(targetVal.asInstanceOf[TadsObjectId], prop, argc)
       } else {
