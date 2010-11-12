@@ -228,8 +228,10 @@ class TadsVM {
       case GetR0        => _state.stack.push(_state.r0)
       case IdxInt8      => index(_state.stack.pop, nextByteOperand)
       case IdxLcl1Int8  => index(_state.getLocal(nextByteOperand), nextByteOperand)
+      case Jf           => branchIfTrue(!_state.stack.pop.isTrue)
       case Jgt          =>
-        // note the order of arguments
+        // note the order of arguments, this is why we need to get them
+        // explicitly
         val val2 = _state.stack.pop
         val val1 = _state.stack.pop
         branchIfTrue(compare(val1, val2) > 0)

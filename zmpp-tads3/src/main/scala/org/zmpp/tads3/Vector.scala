@@ -49,6 +49,7 @@ extends TadsCollection(id, vmState) {
 
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val idx = metaClass.functionIndexForProperty(propertyId)
+    printf("vec prop idx = %d\n", idx)
     if (idx >= 0) {
       new Property(propertyId,
                    metaClass.callMethodWithIndex(this, idx, argc),
@@ -70,6 +71,12 @@ extends TadsCollection(id, vmState) {
     println("createIterator()")
     val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
     iter.id
+  }
+
+  def valWhich(cond: TadsValue): TadsValue = {
+    printf("valWhich(), cond = %s\n", cond)
+    if (size == 0) TadsNil
+    else throw new UnsupportedOperationException("TODO non-empty vector")
   }
 
   override def toString = {
@@ -94,16 +101,16 @@ class VectorMetaClass extends MetaClass {
   def name = "vector"
   override def superMeta = objectSystem.metaClassForName("collection")
 
-  val FunctionVector = Array(undef _,        toList _,          getSize _,
-                             copyFrom _,     fillVal _,         applyAll _,
-                             indexWhich _,   forEach _,         forEachAssoc _,
-                             mapAll _,       indexOf _,         valWhich _,
-                             lastIndexOf _,  lastIndexWhich _,  lastValWhich _,
-                             countOf _,      countWhich _,      getUnique _,
-                             appendUnique _, sort _,            setLength _,
-                             insertAt _,     removeElementAt _, removeRange _,
-                             append _,       prepend _,         appendAll _,
-                             removeElement _)
+  val FunctionVector = Array(undef _,        toList _,       getSize _,
+                             copyFrom _,     fillVal _,      subset _,
+                             applyAll _,     indexWhich _,   forEach _,
+                             forEachAssoc _, mapAll _,       indexOf _,
+                             valWhich _,     lastIndexOf _,  lastIndexWhich _,
+                             lastValWhich _, countOf _,      countWhich _,
+                             getUnique _,    appendUnique _, sort _,
+                             setLength _,    insertAt _,     removeElementAt _,
+                             removeRange _,  append _,       prepend _,
+                             appendAll _,    removeElement _)
 
   def undef(obj: TadsObject, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("undefined")
@@ -119,6 +126,9 @@ class VectorMetaClass extends MetaClass {
   }
   def fillVal(obj: TadsObject, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("fillVal")
+  }
+  def subset(obj: TadsObject, argc: Int): TadsValue = {
+    throw new UnsupportedOperationException("subset")
   }
   def applyAll(obj: TadsObject, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("applyAll")
@@ -139,7 +149,7 @@ class VectorMetaClass extends MetaClass {
     throw new UnsupportedOperationException("indexOf")
   }
   def valWhich(obj: TadsObject, argc: Int): TadsValue = {
-    throw new UnsupportedOperationException("valWhich")
+    obj.asInstanceOf[Vector].valWhich(vmState.stack.pop)
   }
   def lastIndexOf(obj: TadsObject, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("lastIndexOf")
