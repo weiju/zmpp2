@@ -270,6 +270,7 @@ class TadsVM {
                                     nextShortOperand)
       case OneLcl1      => _state.setLocal(nextByteOperand, TadsInteger.One)
       case PtrCall      => ptrCall(nextByteOperand)
+      case PtrInherit   => inheritProperty(nextByteOperand, _state.stack.pop)
       case Push1        => _state.stack.push1
       case PushCtxEle   => pushCtxEle(nextByteOperand)
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
@@ -445,6 +446,16 @@ class TadsVM {
           "UNHANDLED TYPE: %d => STORE %d IN R0\n".format(property.valueType,
                                                           property.value))
     }
+  }
+
+  private def inheritProperty(argc: Int, propId: TadsValue) {
+    val definingObject = _state.definingObject
+    val originalTarget = _state.originalTarget
+    val selfId         = _state.currentSelf
+    val self           = _state.objectSystem.objectWithId(selfId)
+    printf("inheritProperty(%d, %s), defobj = %s, orig = %s, selfId = %s self = %s\n",
+           argc, propId, definingObject, originalTarget, selfId, self)
+    throw new UnsupportedOperationException("inheritProperty not implemented yet")
   }
 
   private def pushCtxEle(elem: Int) {

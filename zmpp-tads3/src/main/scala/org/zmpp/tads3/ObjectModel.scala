@@ -71,6 +71,10 @@ abstract class TadsObject(val id: TadsObjectId, val vmState: TadsVMState) {
   def setValueAtIndex(index: Int, newValue: TadsValue): TadsValue = {
     throw new UnsupportedOperationException("setValueAtIndex() not implemented")
   }
+
+  def inheritProperty(propertyId: Int): TadsValue = {
+    throw new UnsupportedOperationException("inheritProperty() not implemented")
+  }
 }
 
 // A null object for quick comparison
@@ -99,6 +103,11 @@ class Property(val id: Int, var tadsValue: TadsValue,
 // relationship, this makes it easier to selectively evaluate static class
 // properties
 abstract class MetaClass {
+/*
+  val FunctionVector = Array(undef _,          ofKind _,   superClassList _,
+                             isPropDefined _,  propType _, propertyList _,
+                             propertyParams _, isClass _,  properInherited _,
+                             isTransient    _)*/
   private val propertyMap = new TreeMap[Int, Int]
   def name: String
 
