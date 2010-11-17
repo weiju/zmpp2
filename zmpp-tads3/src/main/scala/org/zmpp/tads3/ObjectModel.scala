@@ -242,7 +242,7 @@ object PredefinedSymbols {
 // 1. reset before loading a new file
 // 2. during loading the image, add metaclass dependencies as they come in
 // 3. then load the classes as they come in
-class ObjectSystem(vmState: TadsVMState) {
+class ObjectSystem {
   // map the unique meta class names to the system meta classes
   // when initializing the game, this map can be used to map the image
   // identifiers for metaclass dependencies to the actual meta classes that
@@ -291,8 +291,9 @@ class ObjectSystem(vmState: TadsVMState) {
   private val _objectCache       = new TreeMap[Int, TadsObject]
   private val _metaClassMap      = new TreeMap[Int, MetaClass]
   private val _constantCache     = new TreeMap[Int, TadsObject] 
-
-  private def image : TadsImage = vmState.image
+  private def image: TadsImage   = vmState.image
+  // public member
+  var vmState: TadsVMState       = null
 
   def addMetaClassDependency(metaClassIndex: Int, nameString: String) {
     val name = nameString.split("/")(0)

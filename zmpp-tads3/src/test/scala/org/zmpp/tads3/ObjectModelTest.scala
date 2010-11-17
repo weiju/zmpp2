@@ -55,4 +55,21 @@ object ObjectModelSpec extends Specification {
       objId42      must_!= int42
     }
   }
+  "ObjectSystem" should {
+    "be initialized" in {
+      val objectSystem = new ObjectSystem
+      val id1 = objectSystem.newObjectId
+      id1.value     must_== 1
+      id1.valueType must_== TypeIds.VmObj
+    }
+  }
+
+  "TadsObject" should {
+    "be created" in {
+      val objectSystem = new ObjectSystem
+      val vmState = new TadsVMState(objectSystem)
+      val obj = new GenericObject(new TadsObjectId(1), vmState, false, 1, 1)
+      obj.metaClass.name must_== "tads-object"
+    }
+  }
 }

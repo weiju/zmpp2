@@ -51,14 +51,15 @@ object TadsVMState {
   val FpOffsetDefiningObject = -6
   val FpOffsetSelf           = -5
 }
-class TadsVMState {
+class TadsVMState(val objectSystem: ObjectSystem) {
   import TadsVMState._
   private var _memory : Memory = null
   var image: TadsImage         = null
   val stack                    = new Stack
-  val objectSystem             = new ObjectSystem(this)
+//  val objectSystem             = new ObjectSystem(this)
   var runState                 = RunStates.Running
   var startTime : Long         = 0
+  objectSystem.vmState         = this
   
   // Registers (TODO: current savepoint, savepoint count)
   var r0: TadsValue = null // data register R0
@@ -183,7 +184,8 @@ class TadsVMState {
 }
 
 class TadsVM {
-  val _state                 = new TadsVMState
+  val objectSystem           = new ObjectSystem
+  val _state                 = new TadsVMState(objectSystem)
   val _functionSetMapper     = new IntrinsicFunctionSetMapper
   var iteration              = 1
 
@@ -485,7 +487,7 @@ object Tads3Main {
   }
   def readTads3File(file : File) = {
     // Little Endian format - Hello Intel-Lovers
-    val imageMem = new DefaultMemory(readFileData(file)).littleEndian
+    val imageMem     = new DefaultMemory(readFileData(file)).littleEndian
     _vm = new TadsVM
     _vm.init(imageMem)
     _vm
