@@ -33,17 +33,17 @@ import scala.collection.JavaConversions._
 import org.zmpp.base._
 
 class LookupTable(id: TadsObjectId, vmState: TadsVMState)
-extends TadsObject(id, vmState) {
+extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.lookupTableMetaClass
 }
 
-class LookupTableMetaClass extends MetaClass {
+class LookupTableMetaClass extends AbstractMetaClass {
   def name = "lookuptable"
   override def superMeta = objectSystem.metaClassForName("collection")
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
-                               isTransient: Boolean): TadsObject = {
+                               isTransient: Boolean): T3Object = {
     val lookupTable = new LookupTable(objectId, vmState)
     lookupTable
   }

@@ -41,14 +41,32 @@ import scala.collection.JavaConversions._
 import java.util.TreeMap
 import org.zmpp.base._
 
-abstract class TadsObject(val id: TadsObjectId, val vmState: TadsVMState) {
+// T3 object is the super interface of all objects in the TADS 3 system
+trait T3Object {
+  def id: TadsObjectId
+  def isTransient: Boolean
+  def isClassObject : Boolean
+  def metaClass: MetaClass
+  def isOfMetaClass(meta: MetaClass): Boolean
+  def isInstanceOf(obj: T3Object): Boolean
+  def getProperty(propertyId: Int, argc: Int): Property
+  def setProperty(propertyId: Int, newValue: TadsValue)
+  def valueAtIndex(index: Int): TadsValue
+  def setValueAtIndex(index: Int, newValue: TadsValue): TadsValue
+  def inheritProperty(propertyId: Int): TadsValue
+}
+
+// All classes in the ZMPP TADS3 implementation inherit from
+// this abstract base class
+abstract class AbstractT3Object(val id: TadsObjectId, val vmState: TadsVMState)
+extends T3Object {
   var isTransient = false
   def isClassObject = false
   def metaClass: MetaClass
   def objectSystem = vmState.objectSystem
   
   def isOfMetaClass(meta: MetaClass) = metaClass == meta
-  def isInstanceOf(obj: TadsObject): Boolean = {
+  def isInstanceOf(obj: T3Object): Boolean = {
     // the obj parameter needs to be an instance of the IntrinsicClass metaclass
     if (obj.isOfMetaClass(objectSystem.metaClassForName("intrinsic-class"))) {
       // TODO: GET this object's meta class and compare, either if
@@ -78,7 +96,7 @@ abstract class TadsObject(val id: TadsObjectId, val vmState: TadsVMState) {
 }
 
 // A null object for quick comparison
-object InvalidObject extends TadsObject(InvalidObjectId, null) {
+object InvalidObject extends AbstractT3Object(InvalidObjectId, null) {
   def metaClass = null
 }
 
@@ -102,41 +120,69 @@ class Property(val id: Int, var tadsValue: TadsValue,
 // Meta classes only inherit conceptually from each other, through the superMeta
 // relationship, this makes it easier to selectively evaluate static class
 // properties
-abstract class MetaClass {
+trait MetaClass {
+  // After being loaded, its dependency id and the VM state
+  // can be directly accessed through its members.
+  // This is so each object only needs to store the reference to its
+  // meta class, but can still query the system state if necessary
+  def id: Int
+  def id_=(value: Int)
+  def vmState: TadsVMState
+  def vmState_=(state: TadsVMState)
+  def name: String
+
+  // instead of creating a parallel inheritance hierarchy of meta classes
+  // we model the super relationship with aggregation. I think that evaluating
+  // class properties feels cleaner this way
+  def superMeta: MetaClass
+  def reset
+  def createFromStack(id: TadsObjectId, argc: Int): T3Object
+  def createFromImage(objectId: TadsObjectId, objDataAddr: Int,
+                      numBytes: Int, isTransient: Boolean): T3Object
+  def supportsVersion(version: String): Boolean
+  def callMethodWithIndex(obj: T3Object, index: Int,
+                          argc: Int): TadsValue
+  def evalClassProperty(obj: T3Object, propertyId: Int): TadsValue
+
+  // The static property map defines the mapping from a property id to
+  // an index into the meta class's function table
+  // (property id -> function vector index)
+  // it should be cleared when loading a new image to
+  // reload the mappings
+  def addFunctionMapping(propertyId: Int, functionIndex: Int)
+  def functionIndexForProperty(propertyId: Int): Int
+}
+
+abstract class AbstractMetaClass extends MetaClass {
 /*
   val FunctionVector = Array(undef _,          ofKind _,   superClassList _,
                              isPropDefined _,  propType _, propertyList _,
                              propertyParams _, isClass _,  properInherited _,
                              isTransient    _)*/
   private val propertyMap = new TreeMap[Int, Int]
-  def name: String
-
-  // instead of creating a parallel inheritance hierarchy of meta classes
-  // we model the super relationship with aggregation. I think that evaluating
-  // class properties feels cleaner this way
-  def superMeta: MetaClass = null
   def reset = propertyMap.clear
+  def superMeta: MetaClass = null
   def createFromStack(id: TadsObjectId,
-                      argc: Int): TadsObject = {
+                      argc: Int): T3Object = {
     throw new UnsupportedOperationException("createFromStack not yet " +
                                             "supported in " +
                                             "metaclass '%s'".format(name))
   }
   def createFromImage(objectId: TadsObjectId, objDataAddr: Int,
-                      numBytes: Int, isTransient: Boolean): TadsObject = {
+                      numBytes: Int, isTransient: Boolean): T3Object = {
     throw new UnsupportedOperationException("createFromImage not yet " +
                                             "supported in " +
                                             "metaclass '%s'".format(name))
   }
   def supportsVersion(version: String) = true
 
-  def callMethodWithIndex(obj: TadsObject, index: Int,
+  def callMethodWithIndex(obj: T3Object, index: Int,
                           argc: Int): TadsValue = {
     throw new UnsupportedOperationException(
       "%s: callMethodWithIndex not supported".format(name))
   }
 
-  def evalClassProperty(obj: TadsObject, propertyId: Int): TadsValue = {
+  def evalClassProperty(obj: T3Object, propertyId: Int): TadsValue = {
     var functionIndex = functionIndexForProperty(propertyId)
     if (functionIndex == -1) {
       if (superMeta != null) superMeta.evalClassProperty(obj, propertyId)
@@ -148,21 +194,10 @@ abstract class MetaClass {
       callMethodWithIndex(obj, functionIndex, 0)
     }
   }
-
-  // After being loaded, its dependency id and the VM state
-  // can be directly accessed through its members.
-  // This is so each object only needs to store the reference to its
-  // meta class, but can still query the system state if necessary
   var id: Int = 0
   var vmState: TadsVMState = null
   def imageMem = vmState.image.memory
   def objectSystem = vmState.objectSystem
-
-  // The static property map defines the mapping from a property id to
-  // an index into the meta class's function table
-  // (property id -> function vector index)
-  // it should be cleared when loading a new image to
-  // reload the mappings
   def addFunctionMapping(propertyId: Int, functionIndex: Int) {
     printf("%s.addFunctionMapping(%d, %d)\n", name, propertyId, functionIndex)
     propertyMap(propertyId) = functionIndex
@@ -174,33 +209,33 @@ abstract class MetaClass {
 }
 
 // The top level meta class
-class TadsObjectMetaClass extends MetaClass {
+class TadsObjectMetaClass extends AbstractMetaClass {
   def name = "object"
 }
 
-class StringMetaClass extends MetaClass {
+class StringMetaClass extends AbstractMetaClass {
   def name = "string"
 }
 
-class IntClassModMetaClass extends MetaClass {
+class IntClassModMetaClass extends AbstractMetaClass {
   def name = "int-class-mod"
 }
-class CharacterSetMetaClass extends MetaClass {
+class CharacterSetMetaClass extends AbstractMetaClass {
   def name = "character-set"
 }
-class ByteArrayMetaClass extends MetaClass {
+class ByteArrayMetaClass extends AbstractMetaClass {
   def name = "bytearray"
 }
-class WeakRefLookupTableMetaClass extends MetaClass {
+class WeakRefLookupTableMetaClass extends AbstractMetaClass {
   def name = "weakreflookuptable"
 }
-class FileMetaClass extends MetaClass {
+class FileMetaClass extends AbstractMetaClass {
   def name = "file"
 }
 
 // This is a special meta class that does not do much, its properties can be accessed
 // but there is only one root object in the system
-class RootObjectMetaClass extends MetaClass {
+class RootObjectMetaClass extends AbstractMetaClass {
   def name = "root-object"
 }
 
@@ -288,9 +323,9 @@ class ObjectSystem {
     "bignumber"            -> bigNumberMetaClass)
 
   private var _maxObjectId       = 0
-  private val _objectCache       = new TreeMap[Int, TadsObject]
+  private val _objectCache       = new TreeMap[Int, T3Object]
   private val _metaClassMap      = new TreeMap[Int, MetaClass]
-  private val _constantCache     = new TreeMap[Int, TadsObject] 
+  private val _constantCache     = new TreeMap[Int, T3Object] 
   private def image: TadsImage   = vmState.image
   // public member
   var vmState: TadsVMState       = null
@@ -334,7 +369,7 @@ class ObjectSystem {
     _maxObjectId
   }
   def newObjectId = new TadsObjectId(newId)
-  def registerObject(obj: TadsObject) {
+  def registerObject(obj: T3Object) {
     _objectCache(obj.id.value) = obj
   }
   def createFromStack(argc: Int, metaClassId: Int) = {
@@ -356,11 +391,11 @@ class ObjectSystem {
 
   def metaClassForIndex(index: Int): MetaClass = _metaClassMap(index)
   def metaClassForName(name: String): MetaClass = MetaClasses(name)
-  def objectWithId(id: Int): TadsObject = {
+  def objectWithId(id: Int): T3Object = {
     if (_objectCache.contains(id)) _objectCache(id)
     else throw new ObjectNotFoundException
   }
-  def objectWithId(id: TadsValue): TadsObject = objectWithId(id.value)
+  def objectWithId(id: TadsValue): T3Object = objectWithId(id.value)
   def listConstantWithOffset(offset: TadsListConstant) = {
     if (_constantCache.containsKey(offset.value)) _constantCache(offset.value)
     else {
@@ -372,10 +407,10 @@ class ObjectSystem {
   }
 
   // Enumeration of objects
-  def firstObject(enumParams: EnumObjectParams): TadsObject = {
+  def firstObject(enumParams: EnumObjectParams): T3Object = {
     nextObject(InvalidObjectId, enumParams)
   }
-  def nextObject(prevObject: TadsObjectId, enumParams: EnumObjectParams): TadsObject = {
+  def nextObject(prevObject: TadsObjectId, enumParams: EnumObjectParams): T3Object = {
     var previousFound   = false
     for (entry <- _objectCache) { // entries are pairs of (key, value)
       val currentObj      = entry._2
@@ -399,7 +434,7 @@ class ObjectSystem {
   }
 }
 
-class EnumObjectParams(val matchClass: TadsObject, val enumInstances: Boolean,
+class EnumObjectParams(val matchClass: T3Object, val enumInstances: Boolean,
                        val enumClasses: Boolean) {
   override def toString = {
     "EnumObjectParams[matchClass: %s, enumInstances: %b, enumClasses: %b]".format(

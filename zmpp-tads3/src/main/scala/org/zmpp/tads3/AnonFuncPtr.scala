@@ -48,14 +48,14 @@ extends Vector(id, vmState) {
   }
 }
 
-class AnonFuncPtrMetaClass extends MetaClass {
+class AnonFuncPtrMetaClass extends AbstractMetaClass {
   def name = "anon-func-ptr"
   override def superMeta = objectSystem.metaClassForName("vector")
 
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
-                               isTransient: Boolean): TadsObject = {
+                               isTransient: Boolean): T3Object = {
     val anonFuncPtr = new AnonFuncPtr(objectId, vmState)
     anonFuncPtr
   }

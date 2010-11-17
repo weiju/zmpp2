@@ -61,16 +61,16 @@ import org.zmpp.base._
 // contents.
 
 class Dictionary2(id: TadsObjectId, vmState: TadsVMState)
-extends TadsObject(id, vmState) {
+extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.dictionary2MetaClass
 }
 
-class Dictionary2MetaClass extends MetaClass {
+class Dictionary2MetaClass extends AbstractMetaClass {
   def name = "dictionary2"
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
-                               isTransient: Boolean): TadsObject = {
+                               isTransient: Boolean): T3Object = {
     val dictionary = new Dictionary2(objectId, vmState)
     dictionary
   }

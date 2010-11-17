@@ -29,7 +29,7 @@
 package org.zmpp.tads3
 
 abstract class Iterator(id: TadsObjectId, vmState: TadsVMState)
-extends TadsObject(id, vmState) {
+extends AbstractT3Object(id, vmState) {
   private val FunctionVector = Array(undef _, getNext _, isNextAvail _, resetIter _,
                                      getCurKey _, getCurVal _)
 
@@ -69,14 +69,14 @@ extends Iterator(id, vmState) {
   }
 }
 
-class LookupTableIteratorMetaClass extends MetaClass {
+class LookupTableIteratorMetaClass extends AbstractMetaClass {
   def name = "lookuptable-iterator"
 }
 
-class IteratorMetaClass extends MetaClass {
+class IteratorMetaClass extends AbstractMetaClass {
   def name = "iterator"
 }
-class IndexedIteratorMetaClass extends MetaClass {
+class IndexedIteratorMetaClass extends AbstractMetaClass {
   def name = "indexed-iterator"
   def createIterator(coll: TadsCollection): IndexedIterator = {
     val id = objectSystem.newObjectId

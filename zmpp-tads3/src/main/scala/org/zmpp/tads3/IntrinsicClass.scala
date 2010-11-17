@@ -43,10 +43,10 @@ import org.zmpp.base._
 class IntrinsicClass(id: TadsObjectId, vmState: TadsVMState,
                      val representedMetaClass: MetaClass,
                      val modifierObjId: Int)
-extends TadsObject(id, vmState) {
+extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.intrinsicClassMetaClass
   override def isClassObject = true
-  override def isInstanceOf(obj: TadsObject): Boolean = {
+  override def isInstanceOf(obj: T3Object): Boolean = {
     throw new UnsupportedOperationException("not implemented yet")
   }
 }
@@ -55,12 +55,12 @@ extends TadsObject(id, vmState) {
 // UINT2 byte_count of the data block (currently 8)
 // UINT2 metaclass_dependency_table_index
 // UINT4 modifier_object_id
-class IntrinsicClassMetaClass extends MetaClass {
+class IntrinsicClassMetaClass extends AbstractMetaClass {
   def name = "intrinsic-class"
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
-                               isTransient: Boolean): TadsObject = {
+                               isTransient: Boolean): T3Object = {
     val byteCount      = imageMem.shortAt(objDataAddr)
     val metaClassIndex = imageMem.shortAt(objDataAddr + 2)
     val modifierObjId  = imageMem.intAt(objDataAddr + 4)

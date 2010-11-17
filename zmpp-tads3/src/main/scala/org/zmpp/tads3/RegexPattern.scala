@@ -33,16 +33,16 @@ import scala.collection.JavaConversions._
 import org.zmpp.base._
 
 class RegexPattern(id: TadsObjectId, vmState: TadsVMState)
-extends TadsObject(id, vmState) {
+extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.regexPatternMetaClass
 }
 
-class RegexPatternMetaClass extends MetaClass {
+class RegexPatternMetaClass extends AbstractMetaClass {
   def name = "regex-pattern"
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
-                               isTransient: Boolean): TadsObject = {
+                               isTransient: Boolean): T3Object = {
     val regexPat = new RegexPattern(objectId, vmState)
     regexPat
   }

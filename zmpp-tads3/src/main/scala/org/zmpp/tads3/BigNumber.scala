@@ -70,16 +70,16 @@ import org.zmpp.base._
 // There is an implicit decimal point before the first byte of the
 // mantissa.
 class BigNumber(id: TadsObjectId, vmState: TadsVMState)
-extends TadsObject(id, vmState) {
+extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.bigNumberMetaClass
 }
 
-class BigNumberMetaClass extends MetaClass {
+class BigNumberMetaClass extends AbstractMetaClass {
   def name = "bignumber"
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
-                               isTransient: Boolean): TadsObject = {
+                               isTransient: Boolean): T3Object = {
     val bigNum = new BigNumber(objectId, vmState)
     bigNum
   }

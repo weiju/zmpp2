@@ -60,7 +60,7 @@ class GenericObject(id: TadsObjectId, vmState: TadsVMState,
                     override val isClassObject: Boolean,
                     superClassCount: Int,
                     propertyCount: Int)
-extends TadsObject(id, vmState) {
+extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.genericObjectMetaClass
 
   val superClassIds = new Array[Int](superClassCount)
@@ -71,7 +71,7 @@ extends TadsObject(id, vmState) {
     "GenericObject[%s, isClassObject: %b, # super: %d, #props: %d]".format(
       id, isClassObject, superClassCount, propertyCount)
   }
-  override def isInstanceOf(obj: TadsObject): Boolean = {
+  override def isInstanceOf(obj: T3Object): Boolean = {
     //printf("GenericObject.isInstanceOf() obj = %s\n", id)
     
     for (superClassId <- superClassIds) {
@@ -118,12 +118,12 @@ extends TadsObject(id, vmState) {
 object GenericObjectMetaClass {
   val FlagIsClass = 0x0001
 }
-class GenericObjectMetaClass extends MetaClass {
+class GenericObjectMetaClass extends AbstractMetaClass {
   def name = "tads-object"
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
-                               isTransient: Boolean): TadsObject = {
+                               isTransient: Boolean): T3Object = {
     import TadsConstants._
     import GenericObjectMetaClass._
     val superClassCount = imageMem.shortAt(objDataAddr)

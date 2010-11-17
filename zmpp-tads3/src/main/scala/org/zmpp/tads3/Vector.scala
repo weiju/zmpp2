@@ -97,7 +97,7 @@ extends TadsCollection(id, vmState) {
 // DATAHOLDER element[2]
 //
 // Object extension: TODO
-class VectorMetaClass extends MetaClass {
+class VectorMetaClass extends AbstractMetaClass {
   def name = "vector"
   override def superMeta = objectSystem.metaClassForName("collection")
 
@@ -112,98 +112,98 @@ class VectorMetaClass extends MetaClass {
                              removeRange _,  append _,       prepend _,
                              appendAll _,    removeElement _)
 
-  def undef(obj: TadsObject, argc: Int): TadsValue = {
+  def undef(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("undefined")
   }
-  def toList(obj: TadsObject, argc: Int): TadsValue = {
+  def toList(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("toList")
   }
-  def getSize(obj: TadsObject, argc: Int): TadsValue = {
+  def getSize(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("getSize")
   }
-  def copyFrom(obj: TadsObject, argc: Int): TadsValue = {
+  def copyFrom(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("copyFrom")
   }
-  def fillVal(obj: TadsObject, argc: Int): TadsValue = {
+  def fillVal(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("fillVal")
   }
-  def subset(obj: TadsObject, argc: Int): TadsValue = {
+  def subset(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("subset")
   }
-  def applyAll(obj: TadsObject, argc: Int): TadsValue = {
+  def applyAll(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("applyAll")
   }
-  def indexWhich(obj: TadsObject, argc: Int): TadsValue = {
+  def indexWhich(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("indexWhich")
   }
-  def forEach(obj: TadsObject, argc: Int): TadsValue = {
+  def forEach(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("indexWhich")
   }
-  def forEachAssoc(obj: TadsObject, argc: Int): TadsValue = {
+  def forEachAssoc(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("forEach")
   }
-  def mapAll(obj: TadsObject, argc: Int): TadsValue = {
+  def mapAll(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("mapAll")
   }
-  def indexOf(obj: TadsObject, argc: Int): TadsValue = {
+  def indexOf(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("indexOf")
   }
-  def valWhich(obj: TadsObject, argc: Int): TadsValue = {
+  def valWhich(obj: T3Object, argc: Int): TadsValue = {
     obj.asInstanceOf[Vector].valWhich(vmState.stack.pop)
   }
-  def lastIndexOf(obj: TadsObject, argc: Int): TadsValue = {
+  def lastIndexOf(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("lastIndexOf")
   }
-  def lastIndexWhich(obj: TadsObject, argc: Int): TadsValue = {
+  def lastIndexWhich(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("lastIndexWhich")
   }
-  def lastValWhich(obj: TadsObject, argc: Int): TadsValue = {
+  def lastValWhich(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("lastValWhich")
   }
-  def countOf(obj: TadsObject, argc: Int): TadsValue = {
+  def countOf(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("countOf")
   }
-  def countWhich(obj: TadsObject, argc: Int): TadsValue = {
+  def countWhich(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("countWhich")
   }
-  def getUnique(obj: TadsObject, argc: Int): TadsValue = {
+  def getUnique(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("getUnique")
   }
-  def appendUnique(obj: TadsObject, argc: Int): TadsValue = {
+  def appendUnique(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("appendUnique")
   }
-  def sort(obj: TadsObject, argc: Int): TadsValue = {
+  def sort(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("sort")
   }
-  def setLength(obj: TadsObject, argc: Int): TadsValue = {
+  def setLength(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("setLength")
   }
-  def insertAt(obj: TadsObject, argc: Int): TadsValue = {
+  def insertAt(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("insertAt")
   }
-  def removeElementAt(obj: TadsObject, argc: Int): TadsValue = {
+  def removeElementAt(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("removeElementAt")
   }
-  def removeRange(obj: TadsObject, argc: Int): TadsValue = {
+  def removeRange(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("removeRange")
   }
-  def append(obj: TadsObject, argc: Int): TadsValue = {
+  def append(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("append")
   }
-  def prepend(obj: TadsObject, argc: Int): TadsValue = {
+  def prepend(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("prepend")
   }
-  def appendAll(obj: TadsObject, argc: Int): TadsValue = {
+  def appendAll(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("appendAll")
   }
-  def removeElement(obj: TadsObject, argc: Int): TadsValue = {
+  def removeElement(obj: T3Object, argc: Int): TadsValue = {
     throw new UnsupportedOperationException("removeElement")
   }
 
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
-                               isTransient: Boolean): TadsObject = {
+                               isTransient: Boolean): T3Object = {
     val vector = new Vector(objectId, vmState)
     vector
   }
@@ -243,7 +243,7 @@ class VectorMetaClass extends MetaClass {
     result
   }
 
-  override def callMethodWithIndex(obj: TadsObject, index: Int,
+  override def callMethodWithIndex(obj: T3Object, index: Int,
                                    argc: Int): TadsValue = {
     FunctionVector(index)(obj, argc)
   }

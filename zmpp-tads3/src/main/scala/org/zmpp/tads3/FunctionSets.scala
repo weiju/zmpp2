@@ -166,7 +166,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
   private def enumObjParams(argc: Int) = {
     import TadsGenFunctionSet._
     // set default values for enumeration
-    var matchClass: TadsObject = InvalidObject
+    var matchClass: T3Object = InvalidObject
     var flags = EnumInstances
 
     printf("tads-gen.enumObjParams(), argc = %d\n", argc)

@@ -33,16 +33,16 @@ import scala.collection.JavaConversions._
 import org.zmpp.base._
 
 class StringComparator(id: TadsObjectId, vmState: TadsVMState)
-extends TadsObject(id, vmState) {
+extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.stringComparatorMetaClass
 }
 
-class StringComparatorMetaClass extends MetaClass {
+class StringComparatorMetaClass extends AbstractMetaClass {
   def name = "string-comparator"
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
-                               isTransient: Boolean): TadsObject = {
+                               isTransient: Boolean): T3Object = {
     val stringComp = new StringComparator(objectId, vmState)
     stringComp
   }
