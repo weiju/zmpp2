@@ -125,10 +125,8 @@ trait MetaClass {
   // can be directly accessed through its members.
   // This is so each object only needs to store the reference to its
   // meta class, but can still query the system state if necessary
-  def id: Int
-  def id_=(value: Int)
-  def vmState: TadsVMState
-  def vmState_=(state: TadsVMState)
+  var id: Int
+  var vmState: TadsVMState
   def name: String
 
   // instead of creating a parallel inheritance hierarchy of meta classes
@@ -203,15 +201,16 @@ abstract class AbstractMetaClass extends MetaClass {
   }
 }
 
-// The top level meta class
-/*
+// The top level meta class, the super meta of any other class
 class ObjectMetaClass extends AbstractMetaClass {
+/*
   val FunctionVector = Array(undef _,          ofKind _,   superClassList _,
                              isPropDefined _,  propType _, propertyList _,
                              propertyParams _, isClass _,  properInherited _,
                              isTransient    _)
+*/
   def name = "object"
-}*/
+}
 
 class StringMetaClass extends AbstractMetaClass {
   def name = "string"
@@ -282,21 +281,29 @@ class ObjectSystem {
   // when initializing the game, this map can be used to map the image
   // identifiers for metaclass dependencies to the actual meta classes that
   // the ZMPP TADS3 VM supports
-  val anonFuncPtrMetaClass       = new AnonFuncPtrMetaClass
-  val bigNumberMetaClass         = new BigNumberMetaClass
-  val collectionMetaClass        = new CollectionMetaClass
-  val dictionary2MetaClass       = new Dictionary2MetaClass
-  val tadsObjectMetaClass        = new TadsObjectMetaClass
-  val grammarProductionMetaClass = new GrammarProductionMetaClass
-  val indexedIteratorMetaClass   = new IndexedIteratorMetaClass
-  val intrinsicClassMetaClass    = new IntrinsicClassMetaClass
-  val iteratorMetaClass          = new IteratorMetaClass
-  val listMetaClass              = new ListMetaClass
-  val lookupTableMetaClass       = new LookupTableMetaClass
-  val regexPatternMetaClass      = new RegexPatternMetaClass
-  val stringMetaClass            = new StringMetaClass
-  val stringComparatorMetaClass  = new StringComparatorMetaClass
-  val vectorMetaClass            = new VectorMetaClass
+  val anonFuncPtrMetaClass         = new AnonFuncPtrMetaClass
+  val bigNumberMetaClass           = new BigNumberMetaClass
+  val byteArrayMetaClass           = new ByteArrayMetaClass
+  val characterSetMetaClass        = new CharacterSetMetaClass
+  val collectionMetaClass          = new CollectionMetaClass
+  val dictionary2MetaClass         = new Dictionary2MetaClass
+  val fileMetaClass                = new FileMetaClass
+  val grammarProductionMetaClass   = new GrammarProductionMetaClass
+  val indexedIteratorMetaClass     = new IndexedIteratorMetaClass
+  val intrinsicClassMetaClass      = new IntrinsicClassMetaClass
+  val intClassModMetaClass         = new IntClassModMetaClass
+  val iteratorMetaClass            = new IteratorMetaClass
+  val listMetaClass                = new ListMetaClass
+  val lookupTableMetaClass         = new LookupTableMetaClass
+  val lookupTableIteratorMetaClass = new LookupTableIteratorMetaClass
+  val objectMetaClass              = new ObjectMetaClass
+  val regexPatternMetaClass        = new RegexPatternMetaClass
+  val rootObjectMetaClass          = new RootObjectMetaClass
+  val stringMetaClass              = new StringMetaClass
+  val stringComparatorMetaClass    = new StringComparatorMetaClass
+  val tadsObjectMetaClass          = new TadsObjectMetaClass
+  val vectorMetaClass              = new VectorMetaClass
+  val weakRefLookupTableMetaClass  = new WeakRefLookupTableMetaClass
 
   val MetaClasses: Map[String, MetaClass] = Map(
     "tads-object"          -> tadsObjectMetaClass,
@@ -307,18 +314,18 @@ class ObjectSystem {
     "dictionary2"          -> dictionary2MetaClass,
     "grammar-production"   -> grammarProductionMetaClass,
     "anon-func-ptr"        -> anonFuncPtrMetaClass,
-    "int-class-mod"        -> new IntClassModMetaClass,
-    "root-object"          -> new RootObjectMetaClass,
+    "int-class-mod"        -> intClassModMetaClass,
+    "root-object"          -> rootObjectMetaClass,
     "intrinsic-class"      -> intrinsicClassMetaClass,
     "collection"           -> collectionMetaClass,
     "iterator"             -> iteratorMetaClass,
     "indexed-iterator"     -> indexedIteratorMetaClass,
-    "character-set"        -> new CharacterSetMetaClass,
-    "bytearray"            -> new ByteArrayMetaClass,
+    "character-set"        -> characterSetMetaClass,
+    "bytearray"            -> byteArrayMetaClass,
     "regex-pattern"        -> regexPatternMetaClass,
-    "weakreflookuptable"   -> new WeakRefLookupTableMetaClass,
-    "lookuptable-iterator" -> new LookupTableIteratorMetaClass,
-    "file"                 -> new FileMetaClass,
+    "weakreflookuptable"   -> weakRefLookupTableMetaClass,
+    "lookuptable-iterator" -> lookupTableIteratorMetaClass,
+    "file"                 -> fileMetaClass,
     "string-comparator"    -> stringComparatorMetaClass,
     "bignumber"            -> bigNumberMetaClass)
 
