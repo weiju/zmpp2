@@ -32,7 +32,7 @@ import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
-class LookupTable(id: TadsObjectId, vmState: TadsVMState)
+class LookupTable(id: T3ObjectId, vmState: TadsVMState)
 extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.lookupTableMetaClass
 }
@@ -40,7 +40,7 @@ extends AbstractT3Object(id, vmState) {
 class LookupTableMetaClass extends AbstractMetaClass {
   def name = "lookuptable"
   override def superMeta = objectSystem.metaClassForName("collection")
-  override def createFromImage(objectId: TadsObjectId,
+  override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {

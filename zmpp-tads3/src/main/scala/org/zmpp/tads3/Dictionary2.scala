@@ -60,14 +60,14 @@ import org.zmpp.base._
 // obfuscation in the image file to prevent casual browsing of the image
 // contents.
 
-class Dictionary2(id: TadsObjectId, vmState: TadsVMState)
+class Dictionary2(id: T3ObjectId, vmState: TadsVMState)
 extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.dictionary2MetaClass
 }
 
 class Dictionary2MetaClass extends AbstractMetaClass {
   def name = "dictionary2"
-  override def createFromImage(objectId: TadsObjectId,
+  override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {

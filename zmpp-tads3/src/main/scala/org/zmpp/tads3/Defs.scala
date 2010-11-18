@@ -77,98 +77,98 @@ object TadsConstants {
  * an integer value as well, which however is an offset into a constant
  * pool.
  */
-abstract class TadsValue {
+abstract class T3Value {
   def isTrue = true
   def valueType: Int
   def value = 0
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case other:TadsValue =>
+      case other:T3Value =>
         valueType == other.valueType && value == other.value
       case _ => false
     }
   }
 }
 
-object TadsNil extends TadsValue {
+object T3Nil extends T3Value {
   override def isTrue = false
   def valueType = TypeIds.VmNil
   override def toString = "NIL"
 }
-object TadsTrue extends TadsValue {
+object T3True extends T3Value {
   def valueType = TypeIds.VmTrue
   override def value = 1
   override def toString = "TRUE"
 }
-object TadsEmpty extends TadsValue {
+object T3Empty extends T3Value {
   def valueType = TypeIds.VmEmpty
   override def toString = "EMPTY"
 }
-class TadsListConstant(override val value: Int) extends TadsValue {
+class T3ListConstant(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmList
   override def toString = "list (offset = %d)".format(value)
 }
-class TadsPropertyId(override val value: Int) extends TadsValue {
+class T3PropertyId(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmProp
   override def toString = "property (value = %d)".format(value)
 }
-class TadsObjectId(override val value: Int) extends TadsValue {
+class T3ObjectId(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmObj
   override def toString = "objectid (value = %d)".format(value)
 }
-class TadsCodeOffset(override val value: Int) extends TadsValue {
+class T3CodeOffset(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmCodeOfs
   override def toString = "code-offset (value = %d)".format(value)
 }
-class TadsInteger(override val value: Int) extends TadsValue {
+class T3Integer(override val value: Int) extends T3Value {
   override def isTrue = value != 0
   def valueType = TypeIds.VmInt
   override def toString = "integer (value = %d)".format(value)
 }
-class TadsFunctionPointer(override val value: Int) extends TadsValue {
+class T3FunctionPointer(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmFuncPtr
   override def toString = "function-ptr (value = %d)".format(value)
 }
-class TadsStackRef(override val value: Int) extends TadsValue {
+class T3StackRef(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmStack
   override def toString = "stack (value = %d)".format(value)
 }
-class TadsSString(override val value: Int) extends TadsValue {
+class T3SString(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmSString
   override def toString = "sstring (value = %d)".format(value)
 }
-class TadsDString(override val value: Int) extends TadsValue {
+class T3DString(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmDString
   override def toString = "dstring (value = %d)".format(value)
 }
-class TadsEnum(override val value: Int) extends TadsValue {
+class T3Enum(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmEnum
   override def toString = "enum (value = %d)".format(value)
 }
 
-object TadsInteger {
-  val One = new TadsInteger(1)
+object T3Integer {
+  val One = new T3Integer(1)
 }
-object InvalidObjectId extends TadsObjectId(0)
-object InvalidPropertyId extends TadsPropertyId(0)
-object TadsValue {
-  def create(valueType: Int, value: Int): TadsValue = {
+object InvalidObjectId extends T3ObjectId(0)
+object InvalidPropertyId extends T3PropertyId(0)
+object T3Value {
+  def create(valueType: Int, value: Int): T3Value = {
     import TypeIds._
     valueType match {
-      case VmNil     => TadsNil
-      case VmTrue    => TadsTrue
-      case VmStack   => new TadsStackRef(value)
-      case VmObj     => new TadsObjectId(value)
-      case VmProp    => new TadsPropertyId(value)
-      case VmInt     => new TadsInteger(value)
-      case VmSString => new TadsSString(value)
-      case VmDString => new TadsDString(value)
-      case VmList    => new TadsListConstant(value)
-      case VmCodeOfs => new TadsCodeOffset(value)
-      case VmFuncPtr => new TadsFunctionPointer(value)
-      case VmEmpty   => TadsEmpty
-      case VmEnum    => new TadsEnum(value)
+      case VmNil     => T3Nil
+      case VmTrue    => T3True
+      case VmStack   => new T3StackRef(value)
+      case VmObj     => new T3ObjectId(value)
+      case VmProp    => new T3PropertyId(value)
+      case VmInt     => new T3Integer(value)
+      case VmSString => new T3SString(value)
+      case VmDString => new T3DString(value)
+      case VmList    => new T3ListConstant(value)
+      case VmCodeOfs => new T3CodeOffset(value)
+      case VmFuncPtr => new T3FunctionPointer(value)
+      case VmEmpty   => T3Empty
+      case VmEnum    => new T3Enum(value)
       case _         => throw new IllegalArgumentException("illegal value type: "
                                                            + valueType)
     }
@@ -177,31 +177,31 @@ object TadsValue {
 
 class Stack {
 
-  var _stack = new Array[TadsValue](300)
+  var _stack = new Array[T3Value](300)
   var sp = 0
 
   def size = _stack.length
-  def pushNil = push(TadsNil)
-  def pushPropertyId(id: Int) = push(new TadsPropertyId(id))
-  def pushObjectId(id: Int) = push(new TadsObjectId(id))
-  def pushCodeOffset(offset: Int) = push(new TadsCodeOffset(offset))
-  def pushFunctionPointer(offset: Int) = push(new TadsFunctionPointer(offset))
-  def pushInt(value: Int) = push(new TadsInteger(value))
-  def pushStackRef(value: Int) = push(new TadsStackRef(value))
-  def push1 = push(TadsInteger.One)
+  def pushNil = push(T3Nil)
+  def pushPropertyId(id: Int) = push(new T3PropertyId(id))
+  def pushObjectId(id: Int) = push(new T3ObjectId(id))
+  def pushCodeOffset(offset: Int) = push(new T3CodeOffset(offset))
+  def pushFunctionPointer(offset: Int) = push(new T3FunctionPointer(offset))
+  def pushInt(value: Int) = push(new T3Integer(value))
+  def pushStackRef(value: Int) = push(new T3StackRef(value))
+  def push1 = push(T3Integer.One)
 
-  def push(value: TadsValue) = {
+  def push(value: T3Value) = {
     _stack(sp) = value
     sp += 1
   }
-  def pop: TadsValue = {
+  def pop: T3Value = {
     sp -= 1
     _stack(sp)
   }
   def top = _stack(sp - 1)
   def dup = push(top)
   def valueAt(index: Int) = _stack(index)
-  def setValueAt(index: Int, value: TadsValue) = _stack(index) = value
+  def setValueAt(index: Int, value: T3Value) = _stack(index) = value
 
   override def toString = {
     val buffer = new StringBuilder

@@ -30,11 +30,11 @@ package org.zmpp.tads3
 
 import org.zmpp.base._
 
-abstract class TadsCollection(id: TadsObjectId, vmState: TadsVMState)
+abstract class TadsCollection(id: T3ObjectId, vmState: TadsVMState)
 extends AbstractT3Object(id, vmState) {
   def metaClass: MetaClass = objectSystem.collectionMetaClass
   override def toString = "Collection object"
-  def createIterator(argc: Int): TadsValue
+  def createIterator(argc: Int): T3Value
   def size: Int
 }
 
@@ -48,19 +48,19 @@ class CollectionMetaClass extends AbstractMetaClass {
   def name = "collection"
 
   val FunctionVector = Array(undef _, createIterator _, createLiveIterator _)
-  def undef(obj: T3Object, argc: Int): TadsValue = {
+  def undef(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined")
   }
-  def createIterator(obj: T3Object, argc: Int): TadsValue = {
+  def createIterator(obj: T3Object, argc: Int): T3Value = {
     obj.asInstanceOf[TadsCollection].createIterator(argc)
   }
-  def createLiveIterator(obj: T3Object, argc: Int): TadsValue = {
+  def createLiveIterator(obj: T3Object, argc: Int): T3Value = {
     println("createLiveIterator")
     throw new UnsupportedOperationException("createLiveIterator")
   }
 
   override def callMethodWithIndex(obj: T3Object, index: Int,
-                                   argc: Int): TadsValue = {
+                                   argc: Int): T3Value = {
     FunctionVector(index)(obj, argc)
   }
 }

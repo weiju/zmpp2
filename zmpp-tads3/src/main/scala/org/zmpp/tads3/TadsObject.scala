@@ -56,7 +56,7 @@ import org.zmpp.base._
 // ...
 // UINT2 load_image_property_ID_N
 // DATAHOLDER load_image_property_value_N 
-class TadsObject(id: TadsObjectId, vmState: TadsVMState,
+class TadsObject(id: T3ObjectId, vmState: TadsVMState,
                  override val isClassObject: Boolean,
                  superClassCount: Int,
                  propertyCount: Int)
@@ -102,7 +102,7 @@ extends AbstractT3Object(id, vmState) {
     null
   }
 
-  override def setProperty(propertyId: Int, newValue: TadsValue) {
+  override def setProperty(propertyId: Int, newValue: T3Value) {
     val prop = findPropertyInThis(propertyId)
     if (prop == null) {
       printf("prop not found creating new one")
@@ -120,7 +120,7 @@ object TadsObjectMetaClass {
 }
 class TadsObjectMetaClass extends AbstractMetaClass {
   def name = "tads-object"
-  override def createFromImage(objectId: TadsObjectId,
+  override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
@@ -147,7 +147,7 @@ class TadsObjectMetaClass extends AbstractMetaClass {
                                                imageMem.intAt(propAddr + 3))
       tadsObject.properties(index) =
         new Property(propertyId,
-                     TadsValue.create(propertyType, propertyValue),
+                     T3Value.create(propertyType, propertyValue),
                      objectId)
     }
     tadsObject

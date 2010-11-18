@@ -40,7 +40,7 @@ import org.zmpp.base._
  * which is established at image load time.
  * We just follow the scheme of the reference implementation here.
  */
-class IntrinsicClass(id: TadsObjectId, vmState: TadsVMState,
+class IntrinsicClass(id: T3ObjectId, vmState: TadsVMState,
                      val representedMetaClass: MetaClass,
                      val modifierObjId: Int)
 extends AbstractT3Object(id, vmState) {
@@ -57,7 +57,7 @@ extends AbstractT3Object(id, vmState) {
 // UINT4 modifier_object_id
 class IntrinsicClassMetaClass extends AbstractMetaClass {
   def name = "intrinsic-class"
-  override def createFromImage(objectId: TadsObjectId,
+  override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {

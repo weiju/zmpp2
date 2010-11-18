@@ -56,16 +56,15 @@ class TadsVMState(val objectSystem: ObjectSystem) {
   private var _memory : Memory = null
   var image: TadsImage         = null
   val stack                    = new Stack
-//  val objectSystem             = new ObjectSystem(this)
   var runState                 = RunStates.Running
   var startTime : Long         = 0
   objectSystem.vmState         = this
   
   // Registers (TODO: current savepoint, savepoint count)
-  var r0: TadsValue = null // data register R0
-  var ip = 0                // instruction pointer
-  var ep = 0                // current function entry pointer
-  def sp = stack.sp         // stack pointer
+  var r0: T3Value = null // data register R0
+  var ip = 0             // instruction pointer
+  var ep = 0             // current function entry pointer
+  def sp = stack.sp      // stack pointer
   def sp_=(newsp: Int) {
     stack.sp = newsp
   } 
@@ -79,7 +78,7 @@ class TadsVMState(val objectSystem: ObjectSystem) {
 
     // call initial function
     // push empty list on stack - QTads puts command line arguments in that list
-    val argList = new TadsListConstant(0)
+    val argList = new T3ListConstant(0)
     stack.push(argList)
     doCall(1, image.startEntryPoint, 0,
            InvalidObjectId, InvalidObjectId, InvalidObjectId)
@@ -121,11 +120,11 @@ class TadsVMState(val objectSystem: ObjectSystem) {
     ip = ep + callerOffset
   }
   def doCall(argc: Int, targetOffs: Int,
-             targetProp: Int, origTargetObj: TadsObjectId,
-             definingObj: TadsObjectId, self: TadsObjectId) {
+             targetProp: Int, origTargetObj: T3ObjectId,
+             definingObj: T3ObjectId, self: T3ObjectId) {
 
     val methodHeader = image.methodHeaderAt(targetOffs)
-    r0 = TadsNil
+    r0 = T3Nil
 
     // allocate stack frame
     // The TM says push nil if there is no target property, the reference
@@ -163,23 +162,23 @@ class TadsVMState(val objectSystem: ObjectSystem) {
   // local variable access. Note that Local variable access is based
   // on index 0 !!
   def getLocal(localNumber: Int) = stack.valueAt(fp + localNumber)
-  def setLocal(localNumber: Int, value: TadsValue) {
+  def setLocal(localNumber: Int, value: T3Value) {
     stack.setValueAt(fp + localNumber, value)
   }
   def currentSelf = stack.valueAt(fp + FpOffsetSelf)
-  def currentSelf_=(value: TadsValue) = stack.setValueAt(fp + FpOffsetSelf, value)
+  def currentSelf_=(value: T3Value) = stack.setValueAt(fp + FpOffsetSelf, value)
 
   def targetProperty = {
     val prop = stack.valueAt(fp + FpOffsetTargetProp)
-    if (prop == TadsNil) InvalidPropertyId else prop
+    if (prop == T3Nil) InvalidPropertyId else prop
   }
   def originalTarget = {
     val obj = stack.valueAt(fp + FpOffsetOriginalTarget)
-    if (obj == TadsNil) InvalidObjectId else obj
+    if (obj == T3Nil) InvalidObjectId else obj
   }
   def definingObject = {
     val obj = stack.valueAt(fp + FpOffsetDefiningObject)
-    if (obj == TadsNil) InvalidObjectId else obj
+    if (obj == T3Nil) InvalidObjectId else obj
   }
 }
 
@@ -259,18 +258,18 @@ class TadsVM {
         val val1 = _state.stack.pop
         branchIfTrue(compare(val1, val2) > 0)
       case Jmp          => _state.doBranch
-      case JNil         => branchIfTrue(_state.stack.pop == TadsNil)
+      case JNil         => branchIfTrue(_state.stack.pop == T3Nil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
       case JR0F         => branchIfTrue(!_state.r0.isTrue)
       case New1         =>
         _state.r0 = _state.objectSystem.createFromStack(nextByteOperand, nextByteOperand)
       case Nop          => // do nothing
       case ObjCallProp  =>
-        callProp(nextByteOperand, new TadsObjectId(nextIntOperand),
+        callProp(nextByteOperand, new T3ObjectId(nextIntOperand),
                  nextShortOperand)
-      case ObjGetProp   => callProp(0, new TadsObjectId(nextIntOperand),
+      case ObjGetProp   => callProp(0, new T3ObjectId(nextIntOperand),
                                     nextShortOperand)
-      case OneLcl1      => _state.setLocal(nextByteOperand, TadsInteger.One)
+      case OneLcl1      => _state.setLocal(nextByteOperand, T3Integer.One)
       case PtrCall      => ptrCall(nextByteOperand)
       case PtrInherit   => inheritProperty(nextByteOperand, _state.stack.pop)
       case Push1        => _state.stack.push1
@@ -280,13 +279,13 @@ class TadsVM {
       case PushNil      => _state.stack.pushNil
       case PushObj      => _state.stack.pushObjectId(nextIntOperand)
       case PushSelf     => _state.stack.push(_state.currentSelf)
-      case PushTrue     => _state.stack.push(TadsTrue)
+      case PushTrue     => _state.stack.push(T3True)
       case Ret          => _state.doReturn
       case RetNil       =>
-        _state.r0 = TadsNil
+        _state.r0 = T3Nil
         _state.doReturn
       case RetTrue      =>
-        _state.r0 = TadsTrue
+        _state.r0 = T3True
         _state.doReturn
       case RetVal       =>
         _state.r0 = _state.stack.pop
@@ -326,7 +325,7 @@ class TadsVM {
   // < 0 => value1 < value2
   //   0 => value1 == value2
   // > 0 => value1 > value2
-  private def compare(value1: TadsValue, value2: TadsValue): Int = {
+  private def compare(value1: T3Value, value2: T3Value): Int = {
     import TypeIds._
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       value1.value - value2.value
@@ -339,7 +338,7 @@ class TadsVM {
   }
 
   // instruction implementations
-  private def index(targetValue: TadsValue, indexVal: Int) {
+  private def index(targetValue: T3Value, indexVal: Int) {
     if (targetValue.valueType == TypeIds.VmList) {
       throw new UnsupportedOperationException("indexing lists not supported yet")
     } else if (targetValue.valueType == TypeIds.VmObj) {
@@ -367,7 +366,7 @@ class TadsVM {
     } else throw new FuncPtrValRequiredException
   }
 
-  private def setInd(containerVal: TadsValue, index: Int, newVal: TadsValue) = {
+  private def setInd(containerVal: T3Value, index: Int, newVal: T3Value) = {
     if (containerVal.valueType == TypeIds.VmObj) {
       val obj = _state.objectSystem.objectWithId(containerVal.value)
       obj.setValueAtIndex(index, newVal)
@@ -382,8 +381,8 @@ class TadsVM {
     else nextShortOperand // skip branch word
   }
 
-  private def objSetProp(targetVal: TadsValue, propId: Int,
-                         newVal: TadsValue) {
+  private def objSetProp(targetVal: T3Value, propId: Int,
+                         newVal: T3Value) {
     if (targetVal.valueType == TypeIds.VmObj) {
       val obj = _state.objectSystem.objectWithId(targetVal)
       obj.setProperty(propId, newVal)
@@ -397,7 +396,7 @@ class TadsVM {
   // a no-eval and an eval step, which is combined here for the moment
   // to see whether we find a factorization that fits better into the
   // Scala application context
-  private def callProp(argc: Int, targetVal: TadsValue, propId: Int) {
+  private def callProp(argc: Int, targetVal: T3Value, propId: Int) {
     printf("callProp(%s, %d, %d)\n", targetVal, argc, propId)
 
     if (targetVal.valueType == TypeIds.VmObj) {
@@ -405,7 +404,7 @@ class TadsVM {
       printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
       val prop = obj.getProperty(propId, argc)
       if (prop != null) {
-        evalProperty(targetVal.asInstanceOf[TadsObjectId], prop, argc)
+        evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc)
       } else {
         // TODO: check if propNotDefined is available
         throw new UnsupportedOperationException("TODO: property not found, " +
@@ -418,7 +417,7 @@ class TadsVM {
       if (argc > 0) throw new UnsupportedOperationException("callProp TODO list")
 
       val list = _state.objectSystem.listConstantWithOffset(
-        targetVal.asInstanceOf[TadsListConstant])
+        targetVal.asInstanceOf[T3ListConstant])
       val listMeta = _state.objectSystem.metaClassForName("list")
       val result = listMeta.evalClassProperty(list, propId)
       _state.r0 = result
@@ -428,16 +427,16 @@ class TadsVM {
     } else throw new ObjectValRequiredException
   }
 
-  private def evalProperty(self: TadsObjectId, property: Property, argc: Int) {
+  private def evalProperty(self: T3ObjectId, property: Property, argc: Int) {
     import TypeIds._
     printf("evalProperty(%s) [self = %s]\n", property, self)
     property.valueType match {
-      case VmNil     => _state.r0 = TadsNil
-      case VmTrue    => _state.r0 = TadsTrue
-      case VmObj     => _state.r0 = new TadsObjectId(property.value)
-      case VmProp    => _state.r0 = new TadsPropertyId(property.value)
-      case VmInt     => _state.r0 = new TadsInteger(property.value)
-      case VmList    => _state.r0 = new TadsListConstant(property.value)
+      case VmNil     => _state.r0 = T3Nil
+      case VmTrue    => _state.r0 = T3True
+      case VmObj     => _state.r0 = new T3ObjectId(property.value)
+      case VmProp    => _state.r0 = new T3PropertyId(property.value)
+      case VmInt     => _state.r0 = new T3Integer(property.value)
+      case VmList    => _state.r0 = new T3ListConstant(property.value)
       case VmCodeOfs =>
         _state.doCall(argc, property.value, property.id, self,
                       property.definingObject, self)
@@ -450,7 +449,7 @@ class TadsVM {
     }
   }
 
-  private def inheritProperty(argc: Int, propId: TadsValue) {
+  private def inheritProperty(argc: Int, propId: T3Value) {
     val definingObject = _state.definingObject
     val originalTarget = _state.originalTarget
     val selfId         = _state.currentSelf

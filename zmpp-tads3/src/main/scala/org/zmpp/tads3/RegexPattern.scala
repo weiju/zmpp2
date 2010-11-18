@@ -32,14 +32,14 @@ import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
-class RegexPattern(id: TadsObjectId, vmState: TadsVMState)
+class RegexPattern(id: T3ObjectId, vmState: TadsVMState)
 extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.regexPatternMetaClass
 }
 
 class RegexPatternMetaClass extends AbstractMetaClass {
   def name = "regex-pattern"
-  override def createFromImage(objectId: TadsObjectId,
+  override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {

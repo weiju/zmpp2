@@ -37,14 +37,14 @@ import org.zmpp.base._
 // specify sizes will have no effect here.
 // Note: Vector indexes in TADS are, as all sequential types in TADS, in the
 // range [1..n], and *not* [0..n-1]
-class Vector(id: TadsObjectId, vmState: TadsVMState)
+class Vector(id: T3ObjectId, vmState: TadsVMState)
 extends TadsCollection(id, vmState) {
-  private val _container = new ArrayList[TadsValue]
+  private val _container = new ArrayList[T3Value]
 
   override def metaClass: MetaClass = objectSystem.vectorMetaClass
   def init(numElements: Int) {
     printf("initialize %d elements\n", numElements)
-    for (i <- 0 until numElements) _container.add(TadsNil)
+    for (i <- 0 until numElements) _container.add(T3Nil)
   }
 
   override def getProperty(propertyId: Int, argc: Int): Property = {
@@ -58,24 +58,24 @@ extends TadsCollection(id, vmState) {
   }
 
   def size = _container.size
-  def add(value: TadsValue) {
+  def add(value: T3Value) {
     _container.add(value)
   }
-  override def valueAtIndex(index: Int): TadsValue = _container(index - 1)
-  override def setValueAtIndex(index: Int, newValue: TadsValue): TadsObjectId = {
+  override def valueAtIndex(index: Int): T3Value = _container(index - 1)
+  override def setValueAtIndex(index: Int, newValue: T3Value): T3ObjectId = {
     val oldValue = _container(index - 1)
     _container(index - 1) = newValue
     id // return this object
   }
-  def createIterator(argc: Int): TadsValue = {
+  def createIterator(argc: Int): T3Value = {
     println("createIterator()")
     val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
     iter.id
   }
 
-  def valWhich(cond: TadsValue): TadsValue = {
+  def valWhich(cond: T3Value): T3Value = {
     printf("valWhich(), cond = %s\n", cond)
-    if (size == 0) TadsNil
+    if (size == 0) T3Nil
     else throw new UnsupportedOperationException("TODO non-empty vector")
   }
 
@@ -112,95 +112,95 @@ class VectorMetaClass extends AbstractMetaClass {
                              removeRange _,  append _,       prepend _,
                              appendAll _,    removeElement _)
 
-  def undef(obj: T3Object, argc: Int): TadsValue = {
+  def undef(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined")
   }
-  def toList(obj: T3Object, argc: Int): TadsValue = {
+  def toList(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("toList")
   }
-  def getSize(obj: T3Object, argc: Int): TadsValue = {
+  def getSize(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("getSize")
   }
-  def copyFrom(obj: T3Object, argc: Int): TadsValue = {
+  def copyFrom(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("copyFrom")
   }
-  def fillVal(obj: T3Object, argc: Int): TadsValue = {
+  def fillVal(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("fillVal")
   }
-  def subset(obj: T3Object, argc: Int): TadsValue = {
+  def subset(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("subset")
   }
-  def applyAll(obj: T3Object, argc: Int): TadsValue = {
+  def applyAll(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("applyAll")
   }
-  def indexWhich(obj: T3Object, argc: Int): TadsValue = {
+  def indexWhich(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("indexWhich")
   }
-  def forEach(obj: T3Object, argc: Int): TadsValue = {
+  def forEach(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("indexWhich")
   }
-  def forEachAssoc(obj: T3Object, argc: Int): TadsValue = {
+  def forEachAssoc(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("forEach")
   }
-  def mapAll(obj: T3Object, argc: Int): TadsValue = {
+  def mapAll(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("mapAll")
   }
-  def indexOf(obj: T3Object, argc: Int): TadsValue = {
+  def indexOf(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("indexOf")
   }
-  def valWhich(obj: T3Object, argc: Int): TadsValue = {
+  def valWhich(obj: T3Object, argc: Int): T3Value = {
     obj.asInstanceOf[Vector].valWhich(vmState.stack.pop)
   }
-  def lastIndexOf(obj: T3Object, argc: Int): TadsValue = {
+  def lastIndexOf(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("lastIndexOf")
   }
-  def lastIndexWhich(obj: T3Object, argc: Int): TadsValue = {
+  def lastIndexWhich(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("lastIndexWhich")
   }
-  def lastValWhich(obj: T3Object, argc: Int): TadsValue = {
+  def lastValWhich(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("lastValWhich")
   }
-  def countOf(obj: T3Object, argc: Int): TadsValue = {
+  def countOf(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("countOf")
   }
-  def countWhich(obj: T3Object, argc: Int): TadsValue = {
+  def countWhich(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("countWhich")
   }
-  def getUnique(obj: T3Object, argc: Int): TadsValue = {
+  def getUnique(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("getUnique")
   }
-  def appendUnique(obj: T3Object, argc: Int): TadsValue = {
+  def appendUnique(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("appendUnique")
   }
-  def sort(obj: T3Object, argc: Int): TadsValue = {
+  def sort(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("sort")
   }
-  def setLength(obj: T3Object, argc: Int): TadsValue = {
+  def setLength(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("setLength")
   }
-  def insertAt(obj: T3Object, argc: Int): TadsValue = {
+  def insertAt(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("insertAt")
   }
-  def removeElementAt(obj: T3Object, argc: Int): TadsValue = {
+  def removeElementAt(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("removeElementAt")
   }
-  def removeRange(obj: T3Object, argc: Int): TadsValue = {
+  def removeRange(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("removeRange")
   }
-  def append(obj: T3Object, argc: Int): TadsValue = {
+  def append(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("append")
   }
-  def prepend(obj: T3Object, argc: Int): TadsValue = {
+  def prepend(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("prepend")
   }
-  def appendAll(obj: T3Object, argc: Int): TadsValue = {
+  def appendAll(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("appendAll")
   }
-  def removeElement(obj: T3Object, argc: Int): TadsValue = {
+  def removeElement(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("removeElement")
   }
 
-  override def createFromImage(objectId: TadsObjectId,
+  override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
@@ -216,7 +216,7 @@ class VectorMetaClass extends AbstractMetaClass {
   //   - (list): copy elements
   //   - (object:vector) copy elements
   // 
-  override def createFromStack(id: TadsObjectId, argc: Int) = {
+  override def createFromStack(id: T3ObjectId, argc: Int) = {
     if (argc < 1 || argc > 2) {
       throw new IllegalArgumentException("vector::constructor(), argc " +
                                          "must be 1 or 2")
@@ -244,7 +244,7 @@ class VectorMetaClass extends AbstractMetaClass {
   }
 
   override def callMethodWithIndex(obj: T3Object, index: Int,
-                                   argc: Int): TadsValue = {
+                                   argc: Int): T3Value = {
     FunctionVector(index)(obj, argc)
   }
 }

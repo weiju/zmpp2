@@ -38,22 +38,22 @@ import java.util.ArrayList
  * n * size(DATAHOLDER)
  * Very similar to Vector
  */
-class TadsList(id: TadsObjectId, vmState: TadsVMState)
+class TadsList(id: T3ObjectId, vmState: TadsVMState)
 extends TadsCollection(id, vmState) {
-  private val _container = new ArrayList[TadsValue]
+  private val _container = new ArrayList[T3Value]
   override def metaClass: MetaClass = objectSystem.listMetaClass
   override def toString = "List object"
   def size = _container.size
-  def addElement(value: TadsValue) {
+  def addElement(value: T3Value) {
     _container.add(value)
   }
-  override def valueAtIndex(index: Int): TadsValue = _container(index - 1)
-  override def setValueAtIndex(index: Int, newValue: TadsValue): TadsObjectId = {
+  override def valueAtIndex(index: Int): T3Value = _container(index - 1)
+  override def setValueAtIndex(index: Int, newValue: T3Value): T3ObjectId = {
     val oldValue = _container(index - 1)
     _container(index - 1) = newValue
     id // return this object
   }
-  def createIterator(argc: Int): TadsValue = {
+  def createIterator(argc: Int): T3Value = {
     println("createIterator()")
     val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
     iter.id
@@ -73,86 +73,86 @@ class ListMetaClass extends AbstractMetaClass {
                              sort _, prepend _, insertAt _, removeElementAt _,
                              removeRange _, forEachAssoc _)
 
-  def undef(obj: T3Object, argc: Int): TadsValue = {
+  def undef(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined")
   }
-  def subset(obj: T3Object, argc: Int): TadsValue = {
+  def subset(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("subset")
   }
-  def map(obj: T3Object, argc: Int): TadsValue = {
+  def map(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("map")
   }
-  def len(obj: T3Object, argc: Int): TadsValue = {
-    new TadsInteger(obj.asInstanceOf[TadsList].size)
+  def len(obj: T3Object, argc: Int): T3Value = {
+    new T3Integer(obj.asInstanceOf[TadsList].size)
   }
-  def sublist(obj: T3Object, argc: Int): TadsValue = {
+  def sublist(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("sublist")
   }
-  def intersect(obj: T3Object, argc: Int): TadsValue = {
+  def intersect(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("intersect")
   }
-  def indexOf(obj: T3Object, argc: Int): TadsValue = {
+  def indexOf(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("indexOf")
   }
-  def car(obj: T3Object, argc: Int): TadsValue = {
+  def car(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("car")
   }
-  def cdr(obj: T3Object, argc: Int): TadsValue = {
+  def cdr(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("cdr")
   }
-  def indexWhich(obj: T3Object, argc: Int): TadsValue = {
+  def indexWhich(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("indexWhich")
   }
-  def forEach(obj: T3Object, argc: Int): TadsValue = {
+  def forEach(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("forEach")
   }
-  def valWhich(obj: T3Object, argc: Int): TadsValue = {
+  def valWhich(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("valWhich")
   }
-  def lastIndexOf(obj: T3Object, argc: Int): TadsValue = {
+  def lastIndexOf(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("lastIndexOf")
   }
-  def lastIndexWhich(obj: T3Object, argc: Int): TadsValue = {
+  def lastIndexWhich(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("lastIndexWhich")
   }
-  def lastValWhich(obj: T3Object, argc: Int): TadsValue = {
+  def lastValWhich(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("lastValWhich")
   }
-  def countOf(obj: T3Object, argc: Int): TadsValue = {
+  def countOf(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("countOf")
   }
-  def countWhich(obj: T3Object, argc: Int): TadsValue = {
+  def countWhich(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("countWhich")
   }
-  def getUnique(obj: T3Object, argc: Int): TadsValue = {
+  def getUnique(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("getUnique")
   }
-  def appendUnique(obj: T3Object, argc: Int): TadsValue = {
+  def appendUnique(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("appendUnique")
   }
-  def append(obj: T3Object, argc: Int): TadsValue = {
+  def append(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("append")
   }
-  def sort(obj: T3Object, argc: Int): TadsValue = {
+  def sort(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("sort")
   }
-  def prepend(obj: T3Object, argc: Int): TadsValue = {
+  def prepend(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("prepend")
   }
-  def insertAt(obj: T3Object, argc: Int): TadsValue = {
+  def insertAt(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("insertAt")
   }
-  def removeElementAt(obj: T3Object, argc: Int): TadsValue = {
+  def removeElementAt(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("removeElementAt")
   }
-  def removeRange(obj: T3Object, argc: Int): TadsValue = {
+  def removeRange(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("removeRange")
   }
-  def forEachAssoc(obj: T3Object, argc: Int): TadsValue = {
+  def forEachAssoc(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("forEachAssoc")
   }
 
-  def createListConstant(id: TadsObjectId, offset: TadsListConstant) = {
+  def createListConstant(id: T3ObjectId, offset: T3ListConstant) = {
     import TadsConstants._
     val poolOffset = offset.value
     val len = vmState.image.constantDataShortAt(poolOffset)
@@ -164,13 +164,13 @@ class ListMetaClass extends AbstractMetaClass {
       val value = TypeIds.valueForType(valueType,
                                        vmState.image.constantDataIntAt(
                                          valueAddr + 1))
-      list.addElement(TadsValue.create(valueType, value))
+      list.addElement(T3Value.create(valueType, value))
     }
     list
   }
 
   override def callMethodWithIndex(obj: T3Object, index: Int,
-                                   argc: Int): TadsValue = {
+                                   argc: Int): T3Value = {
     FunctionVector(index)(obj, argc)
   }
 }

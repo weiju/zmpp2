@@ -35,13 +35,13 @@ class ObjectModelTest extends JUnit4(ObjectModelSpec)
 object ObjectModelSpecRunner extends ConsoleRunner(ObjectModelSpec)
 
 object ObjectModelSpec extends Specification {
-  "TadsObjectId" should {
+  "T3ObjectId" should {
     "be equal" in {
-      val objId42      = new TadsObjectId(42)
-      val objId43      = new TadsObjectId(43)
-      val objId42too   = new TadsObjectId(42)
-      val objId42three = TadsValue.create(TypeIds.VmObj, 42)
-      val int42        = TadsValue.create(TypeIds.VmInt, 42)
+      val objId42      = new T3ObjectId(42)
+      val objId43      = new T3ObjectId(43)
+      val objId42too   = new T3ObjectId(42)
+      val objId42three = T3Value.create(TypeIds.VmObj, 42)
+      val int42        = T3Value.create(TypeIds.VmInt, 42)
 
       objId42      must_== objId42
       objId42      must_== objId42too
@@ -68,7 +68,7 @@ object ObjectModelSpec extends Specification {
     "be created" in {
       val objectSystem = new ObjectSystem
       val vmState = new TadsVMState(objectSystem)
-      val obj = new TadsObject(new TadsObjectId(1), vmState, false, 1, 1)
+      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 1, 1)
       obj.metaClass.name must_== "tads-object"
     }
   }

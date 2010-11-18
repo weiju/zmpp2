@@ -71,14 +71,14 @@ import org.zmpp.base._
 
 // VMGRAM_MATCH_STAR - no additional data 
 
-class GrammarProduction(id: TadsObjectId, vmState: TadsVMState)
+class GrammarProduction(id: T3ObjectId, vmState: TadsVMState)
 extends AbstractT3Object(id, vmState) {
   def metaClass = objectSystem.grammarProductionMetaClass
 }
 
 class GrammarProductionMetaClass extends AbstractMetaClass {
   def name = "grammar-production"
-  override def createFromImage(objectId: TadsObjectId,
+  override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {

@@ -36,7 +36,7 @@ import org.zmpp.base._
  * an arbitrary number of context objects.
  * As a nice side effect, this automatically implements the indexed access.
  */
-class AnonFuncPtr(id: TadsObjectId, vmState: TadsVMState)
+class AnonFuncPtr(id: T3ObjectId, vmState: TadsVMState)
 extends Vector(id, vmState) {
   override def metaClass: MetaClass = objectSystem.anonFuncPtrMetaClass
   override def getProperty(propertyId: Int, argc: Int): Property = {
@@ -52,7 +52,7 @@ class AnonFuncPtrMetaClass extends AbstractMetaClass {
   def name = "anon-func-ptr"
   override def superMeta = objectSystem.metaClassForName("vector")
 
-  override def createFromImage(objectId: TadsObjectId,
+  override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
@@ -60,7 +60,7 @@ class AnonFuncPtrMetaClass extends AbstractMetaClass {
     anonFuncPtr
   }
 
-  override def createFromStack(id: TadsObjectId, argc: Int) = {
+  override def createFromStack(id: T3ObjectId, argc: Int) = {
     if (argc < 1) {
       throw new IllegalArgumentException("%s: createFromStack() needs at " +
                                          "least 1 " +

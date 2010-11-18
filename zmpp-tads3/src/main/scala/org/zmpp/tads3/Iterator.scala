@@ -28,27 +28,27 @@
  */
 package org.zmpp.tads3
 
-abstract class Iterator(id: TadsObjectId, vmState: TadsVMState)
+abstract class Iterator(id: T3ObjectId, vmState: TadsVMState)
 extends AbstractT3Object(id, vmState) {
   private val FunctionVector = Array(undef _, getNext _, isNextAvail _, resetIter _,
                                      getCurKey _, getCurVal _)
 
   def metaClass: MetaClass = objectSystem.iteratorMetaClass
 
-  def undef(argc: Int): TadsValue = {
+  def undef(argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined property")
   }
-  def getNext(argc: Int): TadsValue = {
+  def getNext(argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined property")
   }
-  def isNextAvail(argc: Int): TadsValue
-  def resetIter(argc: Int): TadsValue = {
+  def isNextAvail(argc: Int): T3Value
+  def resetIter(argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined property")
   }
-  def getCurKey(argc: Int): TadsValue = {
+  def getCurKey(argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined property")
   }
-  def getCurVal(argc: Int): TadsValue = {
+  def getCurVal(argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined property")
   }
   override def getProperty(propertyId: Int, argc: Int): Property = {
@@ -57,15 +57,15 @@ extends AbstractT3Object(id, vmState) {
   }
 }
 
-class IndexedIterator(id: TadsObjectId, vmState: TadsVMState,
+class IndexedIterator(id: T3ObjectId, vmState: TadsVMState,
                       collection: TadsCollection)
 extends Iterator(id, vmState) {
   override def metaClass: MetaClass = objectSystem.indexedIteratorMetaClass
   private var currentIndex =  1
 
-  def isNextAvail(argc: Int): TadsValue = {
-    if (currentIndex <= collection.size) TadsTrue
-    else TadsNil
+  def isNextAvail(argc: Int): T3Value = {
+    if (currentIndex <= collection.size) T3True
+    else T3Nil
   }
 }
 

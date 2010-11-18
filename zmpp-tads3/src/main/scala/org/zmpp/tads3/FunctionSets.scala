@@ -67,7 +67,7 @@ abstract class IntrinsicFunctionSet {
 
 class T3VMFunctionSet extends IntrinsicFunctionSet {
   def name = "t3vm"
-  var _sayFuncPtr: TadsValue = null
+  var _sayFuncPtr: T3Value = null
 
   private def runGC(argc: Int) { println("t3vm.runGC() [not implemented]") }
   private def setSay(argc: Int) {
@@ -86,14 +86,14 @@ class T3VMFunctionSet extends IntrinsicFunctionSet {
   }
   private def getVMPreinitMode(argc: Int) {
     println("t3vm.getPreinitMode()")
-    _vmState.r0 = TadsNil // we are never in preinit mode
+    _vmState.r0 = T3Nil // we are never in preinit mode
   }
   private def debugTrace(argc: Int) {
     throw new UnsupportedOperationException("debugTrace() not implemented yet")
   }
   private def getGlobalSymbols(argc: Int) {
     println("t3vm.getGlobalSymbols()")
-    _vmState.r0 = TadsNil // TODO: our test game does not have a GSYM
+    _vmState.r0 = T3Nil // TODO: our test game does not have a GSYM
   }
   private def allocProp(argc: Int) {
     throw new UnsupportedOperationException("allocProp() not implemented yet")
@@ -194,17 +194,17 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
   private def firstObj(argc: Int) {
     val result = _vmState.objectSystem.firstObject(enumObjParams(argc))
     printf("FOUND OBJECT: %s\n", result.id)
-    _vmState.r0 = if (result == InvalidObject) TadsNil else result.id
+    _vmState.r0 = if (result == InvalidObject) T3Nil else result.id
   }
   private def nextObj(argc: Int) {
     // the previous object is on top of the stack, and is part of the
     // arguments
-    val previousObject = _vmState.stack.pop.asInstanceOf[TadsObjectId]
+    val previousObject = _vmState.stack.pop.asInstanceOf[T3ObjectId]
     val enumParams = enumObjParams(argc - 1)
     printf("nextObj(), prevObj: %s, params: %s\n", previousObject, enumParams)
     val result = _vmState.objectSystem.nextObject(previousObject, enumParams)
     printf("FOUND OBJECT: %s\n", result.id)
-    _vmState.r0 = if (result == InvalidObject) TadsNil else result.id
+    _vmState.r0 = if (result == InvalidObject) T3Nil else result.id
   }
   private def randomize(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.randomize() not implemented yet")
@@ -226,7 +226,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
       throw new UnsupportedOperationException("tads-gen.getTime(1) not implemented yet")
     } else if (timeType == TadsGenFunctionSet.GetTimeTicks) {
       val currentTicks = System.currentTimeMillis - _vmState.startTime
-      _vmState.r0 = new TadsInteger(currentTicks.asInstanceOf[Int])
+      _vmState.r0 = new T3Integer(currentTicks.asInstanceOf[Int])
     } else {
       throw new IllegalArgumentException("tads-gen.getTime(%d)".format(timeType))
     }

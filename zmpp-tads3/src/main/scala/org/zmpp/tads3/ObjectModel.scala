@@ -43,22 +43,22 @@ import org.zmpp.base._
 
 // T3 object is the super interface of all objects in the TADS 3 system
 trait T3Object {
-  def id: TadsObjectId
+  def id: T3ObjectId
   def isTransient: Boolean
   def isClassObject : Boolean
   def metaClass: MetaClass
   def isOfMetaClass(meta: MetaClass): Boolean
   def isInstanceOf(obj: T3Object): Boolean
   def getProperty(propertyId: Int, argc: Int): Property
-  def setProperty(propertyId: Int, newValue: TadsValue)
-  def valueAtIndex(index: Int): TadsValue
-  def setValueAtIndex(index: Int, newValue: TadsValue): TadsValue
-  def inheritProperty(propertyId: Int): TadsValue
+  def setProperty(propertyId: Int, newValue: T3Value)
+  def valueAtIndex(index: Int): T3Value
+  def setValueAtIndex(index: Int, newValue: T3Value): T3Value
+  def inheritProperty(propertyId: Int): T3Value
 }
 
 // All classes in the ZMPP TADS3 implementation inherit from
 // this abstract base class
-abstract class AbstractT3Object(val id: TadsObjectId, val vmState: TadsVMState)
+abstract class AbstractT3Object(val id: T3ObjectId, val vmState: TadsVMState)
 extends T3Object {
   var isTransient = false
   def isClassObject = false
@@ -79,18 +79,18 @@ extends T3Object {
     throw new UnsupportedOperationException("findProperty() not implemented: " +
                                           getClass.getName)
   }
-  def setProperty(propertyId: Int, newValue: TadsValue) {
+  def setProperty(propertyId: Int, newValue: T3Value) {
     throw new UnsupportedOperationException("setProperty() not implemented: " +
                                             getClass.getName)
   }
-  def valueAtIndex(index: Int): TadsValue = {
+  def valueAtIndex(index: Int): T3Value = {
     throw new UnsupportedOperationException("valueAtIndex() not implemented")
   }
-  def setValueAtIndex(index: Int, newValue: TadsValue): TadsValue = {
+  def setValueAtIndex(index: Int, newValue: T3Value): T3Value = {
     throw new UnsupportedOperationException("setValueAtIndex() not implemented")
   }
 
-  def inheritProperty(propertyId: Int): TadsValue = {
+  def inheritProperty(propertyId: Int): T3Value = {
     throw new UnsupportedOperationException("inheritProperty() not implemented")
   }
 }
@@ -100,8 +100,8 @@ object InvalidObject extends AbstractT3Object(InvalidObjectId, null) {
   def metaClass = null
 }
 
-class Property(val id: Int, var tadsValue: TadsValue,
-               val definingObject: TadsObjectId) {
+class Property(val id: Int, var tadsValue: T3Value,
+               val definingObject: T3ObjectId) {
   def valueType = tadsValue.valueType
   def value = tadsValue.value
   override def toString = {
@@ -136,13 +136,13 @@ trait MetaClass {
   // class properties feels cleaner this way
   def superMeta: MetaClass
   def reset
-  def createFromStack(id: TadsObjectId, argc: Int): T3Object
-  def createFromImage(objectId: TadsObjectId, objDataAddr: Int,
+  def createFromStack(id: T3ObjectId, argc: Int): T3Object
+  def createFromImage(objectId: T3ObjectId, objDataAddr: Int,
                       numBytes: Int, isTransient: Boolean): T3Object
   def supportsVersion(version: String): Boolean
   def callMethodWithIndex(obj: T3Object, index: Int,
-                          argc: Int): TadsValue
-  def evalClassProperty(obj: T3Object, propertyId: Int): TadsValue
+                          argc: Int): T3Value
+  def evalClassProperty(obj: T3Object, propertyId: Int): T3Value
 
   // The static property map defines the mapping from a property id to
   // an index into the meta class's function table
@@ -157,13 +157,13 @@ abstract class AbstractMetaClass extends MetaClass {
   private val propertyMap = new TreeMap[Int, Int]
   def reset = propertyMap.clear
   def superMeta: MetaClass = null
-  def createFromStack(id: TadsObjectId,
+  def createFromStack(id: T3ObjectId,
                       argc: Int): T3Object = {
     throw new UnsupportedOperationException("createFromStack not yet " +
                                             "supported in " +
                                             "metaclass '%s'".format(name))
   }
-  def createFromImage(objectId: TadsObjectId, objDataAddr: Int,
+  def createFromImage(objectId: T3ObjectId, objDataAddr: Int,
                       numBytes: Int, isTransient: Boolean): T3Object = {
     throw new UnsupportedOperationException("createFromImage not yet " +
                                             "supported in " +
@@ -172,16 +172,16 @@ abstract class AbstractMetaClass extends MetaClass {
   def supportsVersion(version: String) = true
 
   def callMethodWithIndex(obj: T3Object, index: Int,
-                          argc: Int): TadsValue = {
+                          argc: Int): T3Value = {
     throw new UnsupportedOperationException(
       "%s: callMethodWithIndex not supported".format(name))
   }
 
-  def evalClassProperty(obj: T3Object, propertyId: Int): TadsValue = {
+  def evalClassProperty(obj: T3Object, propertyId: Int): T3Value = {
     var functionIndex = functionIndexForProperty(propertyId)
     if (functionIndex == -1) {
       if (superMeta != null) superMeta.evalClassProperty(obj, propertyId)
-      else TadsNil
+      else T3Nil
     } else {
       // found, try to evaluate
       printf("FOUND PROPERTY %d in metaclass '%s', at index: %d\n",
@@ -346,7 +346,7 @@ class ObjectSystem {
   }
   def addStaticObject(objectId: Int, metaClassIndex: Int,
                       objAddr: Int, numBytes: Int, isTransient: Boolean) {
-    val id = new TadsObjectId(objectId)
+    val id = new T3ObjectId(objectId)
     val obj = _metaClassMap(metaClassIndex).createFromImage(id, objAddr,
                                                             numBytes, isTransient)
     _objectCache(objectId) = obj
@@ -368,12 +368,12 @@ class ObjectSystem {
     _maxObjectId += 1
     _maxObjectId
   }
-  def newObjectId = new TadsObjectId(newId)
+  def newObjectId = new T3ObjectId(newId)
   def registerObject(obj: T3Object) {
     _objectCache(obj.id.value) = obj
   }
   def createFromStack(argc: Int, metaClassId: Int) = {
-    val id = new TadsObjectId(newId)
+    val id = new T3ObjectId(newId)
     val obj = _metaClassMap(metaClassId).createFromStack(id, argc)
     _objectCache(id.value) = obj
     id
@@ -395,11 +395,11 @@ class ObjectSystem {
     if (_objectCache.contains(id)) _objectCache(id)
     else throw new ObjectNotFoundException
   }
-  def objectWithId(id: TadsValue): T3Object = objectWithId(id.value)
-  def listConstantWithOffset(offset: TadsListConstant) = {
+  def objectWithId(id: T3Value): T3Object = objectWithId(id.value)
+  def listConstantWithOffset(offset: T3ListConstant) = {
     if (_constantCache.containsKey(offset.value)) _constantCache(offset.value)
     else {
-      val id = new TadsObjectId(newId)
+      val id = new T3ObjectId(newId)
       val list = listMetaClass.createListConstant(id, offset)
       _objectCache(id.value) = list
       list
@@ -410,7 +410,7 @@ class ObjectSystem {
   def firstObject(enumParams: EnumObjectParams): T3Object = {
     nextObject(InvalidObjectId, enumParams)
   }
-  def nextObject(prevObject: TadsObjectId, enumParams: EnumObjectParams): T3Object = {
+  def nextObject(prevObject: T3ObjectId, enumParams: EnumObjectParams): T3Object = {
     var previousFound   = false
     for (entry <- _objectCache) { // entries are pairs of (key, value)
       val currentObj      = entry._2
