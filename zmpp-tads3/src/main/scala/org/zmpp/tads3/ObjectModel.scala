@@ -154,11 +154,6 @@ trait MetaClass {
 }
 
 abstract class AbstractMetaClass extends MetaClass {
-/*
-  val FunctionVector = Array(undef _,          ofKind _,   superClassList _,
-                             isPropDefined _,  propType _, propertyList _,
-                             propertyParams _, isClass _,  properInherited _,
-                             isTransient    _)*/
   private val propertyMap = new TreeMap[Int, Int]
   def reset = propertyMap.clear
   def superMeta: MetaClass = null
@@ -209,9 +204,14 @@ abstract class AbstractMetaClass extends MetaClass {
 }
 
 // The top level meta class
-class TadsObjectMetaClass extends AbstractMetaClass {
+/*
+class ObjectMetaClass extends AbstractMetaClass {
+  val FunctionVector = Array(undef _,          ofKind _,   superClassList _,
+                             isPropDefined _,  propType _, propertyList _,
+                             propertyParams _, isClass _,  properInherited _,
+                             isTransient    _)
   def name = "object"
-}
+}*/
 
 class StringMetaClass extends AbstractMetaClass {
   def name = "string"
@@ -286,7 +286,7 @@ class ObjectSystem {
   val bigNumberMetaClass         = new BigNumberMetaClass
   val collectionMetaClass        = new CollectionMetaClass
   val dictionary2MetaClass       = new Dictionary2MetaClass
-  val genericObjectMetaClass     = new GenericObjectMetaClass
+  val tadsObjectMetaClass        = new TadsObjectMetaClass
   val grammarProductionMetaClass = new GrammarProductionMetaClass
   val indexedIteratorMetaClass   = new IndexedIteratorMetaClass
   val intrinsicClassMetaClass    = new IntrinsicClassMetaClass
@@ -299,7 +299,7 @@ class ObjectSystem {
   val vectorMetaClass            = new VectorMetaClass
 
   val MetaClasses: Map[String, MetaClass] = Map(
-    "tads-object"          -> genericObjectMetaClass,
+    "tads-object"          -> tadsObjectMetaClass,
     "string"               -> stringMetaClass,
     "list"                 -> listMetaClass,
     "vector"               -> vectorMetaClass,

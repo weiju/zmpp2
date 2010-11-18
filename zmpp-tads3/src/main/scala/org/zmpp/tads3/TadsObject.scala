@@ -56,26 +56,26 @@ import org.zmpp.base._
 // ...
 // UINT2 load_image_property_ID_N
 // DATAHOLDER load_image_property_value_N 
-class GenericObject(id: TadsObjectId, vmState: TadsVMState,
-                    override val isClassObject: Boolean,
-                    superClassCount: Int,
-                    propertyCount: Int)
+class TadsObject(id: TadsObjectId, vmState: TadsVMState,
+                 override val isClassObject: Boolean,
+                 superClassCount: Int,
+                 propertyCount: Int)
 extends AbstractT3Object(id, vmState) {
-  def metaClass = objectSystem.genericObjectMetaClass
+  def metaClass = objectSystem.tadsObjectMetaClass
 
   val superClassIds = new Array[Int](superClassCount)
   val properties    = new Array[Property](propertyCount)
   val extProperties = new ArrayList[Property]
 
   override def toString = {
-    "GenericObject[%s, isClassObject: %b, # super: %d, #props: %d]".format(
+    "TadsObject[%s, isClassObject: %b, # super: %d, #props: %d]".format(
       id, isClassObject, superClassCount, propertyCount)
   }
   override def isInstanceOf(obj: T3Object): Boolean = {
-    //printf("GenericObject.isInstanceOf() obj = %s\n", id)
+    //printf("TadsObject.isInstanceOf() obj = %s\n", id)
     
     for (superClassId <- superClassIds) {
-      //printf("GenericObject.isInstanceOf() super = %d\n", superClassId)
+      //printf("TadsObject.isInstanceOf() super = %d\n", superClassId)
       if (objectSystem.objectWithId(superClassId) == obj) return true
       // TODO: we might have to check whether the super class inherits
       // from obj
@@ -115,28 +115,28 @@ extends AbstractT3Object(id, vmState) {
   }
 }
 
-object GenericObjectMetaClass {
+object TadsObjectMetaClass {
   val FlagIsClass = 0x0001
 }
-class GenericObjectMetaClass extends AbstractMetaClass {
+class TadsObjectMetaClass extends AbstractMetaClass {
   def name = "tads-object"
   override def createFromImage(objectId: TadsObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
     import TadsConstants._
-    import GenericObjectMetaClass._
+    import TadsObjectMetaClass._
     val superClassCount = imageMem.shortAt(objDataAddr)
     val propertyCount   = imageMem.shortAt(objDataAddr + 2)
     val flags           = imageMem.shortAt(objDataAddr + 4)
     val isClassObject   = (flags & FlagIsClass) == FlagIsClass
 
-    val genericObject = new GenericObject(objectId, vmState,
-                                          isClassObject, superClassCount,
-                                          propertyCount)
+    val tadsObject = new TadsObject(objectId, vmState,
+                                    isClassObject, superClassCount,
+                                    propertyCount)
     for (index <- 0 until superClassCount) {
-      genericObject.superClassIds(index) = imageMem.shortAt(objDataAddr + 6 +
-                                                            index * 4)
+      tadsObject.superClassIds(index) = imageMem.shortAt(objDataAddr + 6 +
+                                                         index * 4)
     }
     val propertyOffset = objDataAddr + 6 + superClassCount * 4
     for (index <- 0 until propertyCount) {
@@ -145,11 +145,11 @@ class GenericObjectMetaClass extends AbstractMetaClass {
       val propertyType  = imageMem.byteAt(propAddr + 2)
       val propertyValue = TypeIds.valueForType(propertyType,
                                                imageMem.intAt(propAddr + 3))
-      genericObject.properties(index) =
+      tadsObject.properties(index) =
         new Property(propertyId,
                      TadsValue.create(propertyType, propertyValue),
                      objectId)
     }
-    genericObject
+    tadsObject
   }
 }
