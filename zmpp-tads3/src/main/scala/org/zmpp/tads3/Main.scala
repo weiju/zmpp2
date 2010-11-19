@@ -61,10 +61,10 @@ class TadsVMState(val objectSystem: ObjectSystem) {
   objectSystem.vmState         = this
   
   // Registers (TODO: current savepoint, savepoint count)
-  var r0: T3Value = null // data register R0
-  var ip = 0             // instruction pointer
-  var ep = 0             // current function entry pointer
-  def sp = stack.sp      // stack pointer
+  var r0: T3Value = T3Nil // data register R0
+  var ip = 0              // instruction pointer
+  var ep = 0              // current function entry pointer
+  def sp = stack.sp       // stack pointer
   def sp_=(newsp: Int) {
     stack.sp = newsp
   } 

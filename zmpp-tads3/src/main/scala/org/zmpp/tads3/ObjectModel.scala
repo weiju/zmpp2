@@ -53,7 +53,7 @@ trait T3Object {
   def setProperty(propertyId: Int, newValue: T3Value)
   def valueAtIndex(index: Int): T3Value
   def setValueAtIndex(index: Int, newValue: T3Value): T3Value
-  def inheritProperty(propertyId: Int): T3Value
+  def inheritProperty(propertyId: Int, argc: Int): T3Value
 }
 
 // All classes in the ZMPP TADS3 implementation inherit from
@@ -90,7 +90,7 @@ extends T3Object {
     throw new UnsupportedOperationException("setValueAtIndex() not implemented")
   }
 
-  def inheritProperty(propertyId: Int): T3Value = {
+  def inheritProperty(propertyId: Int, argc: Int): T3Value = {
     throw new UnsupportedOperationException("inheritProperty() not implemented")
   }
 }
@@ -109,6 +109,7 @@ class Property(val id: Int, var tadsValue: T3Value,
       id, tadsValue, definingObject)
   }
 }
+object InvalidProperty extends Property(0, T3Nil, InvalidObjectId)
 
 // Define all system meta classes that we know so far
 // These are the current meta classes that are provided by the reference

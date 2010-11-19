@@ -82,29 +82,29 @@ extends AbstractT3Object(id, vmState) {
     }
     super.isInstanceOf(obj)
   }
-  override def getProperty(propertyId: Int, argc: Int):Property = {
+  override def getProperty(propertyId: Int, argc: Int): Property = {
     val prop = findPropertyInThis(propertyId)
-    if (prop != null) return prop
+    if (prop != InvalidProperty) return prop
     // not found in object -> try super class properties
     for (superClassId <- superClassIds) {
       printf("not found, try super class: %d\n", superClassId)
       val superClass = objectSystem.objectWithId(superClassId)
       val prop = superClass.getProperty(propertyId, argc)
-      if (prop != null) return prop
+      if (prop != InvalidProperty) return prop
     }
-    null
+    InvalidProperty
   }
 
   private def findPropertyInThis(propertyId: Int): Property = {
-    // intentionally not using find() here
-    for (prop <- properties) if (prop.id == propertyId) return prop
-    for (prop <- extProperties) if (prop.id == propertyId) return prop
-    null
+    val found = properties.find(p => p.id == propertyId)
+    if (found != None) return found.get
+    val foundExt = extProperties.find(p => p.id == propertyId)
+    if (foundExt != None) foundExt.get else InvalidProperty
   }
 
   override def setProperty(propertyId: Int, newValue: T3Value) {
     val prop = findPropertyInThis(propertyId)
-    if (prop == null) {
+    if (prop == InvalidProperty) {
       printf("prop not found creating new one")
       val newProp = new Property(propertyId, newValue, this.id)
     } else {
