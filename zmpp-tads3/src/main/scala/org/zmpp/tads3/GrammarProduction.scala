@@ -71,8 +71,8 @@ import org.zmpp.base._
 
 // VMGRAM_MATCH_STAR - no additional data 
 
-class GrammarProduction(id: T3ObjectId, vmState: TadsVMState)
-extends AbstractT3Object(id, vmState) {
+class GrammarProduction(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
+extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.grammarProductionMetaClass
 }
 
@@ -82,7 +82,6 @@ class GrammarProductionMetaClass extends AbstractMetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
-    val grammarProd = new GrammarProduction(objectId, vmState)
-    grammarProd
+    new GrammarProduction(objectId, vmState, isTransient)
   }
 }

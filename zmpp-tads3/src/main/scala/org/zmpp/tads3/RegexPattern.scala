@@ -32,8 +32,8 @@ import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
-class RegexPattern(id: T3ObjectId, vmState: TadsVMState)
-extends AbstractT3Object(id, vmState) {
+class RegexPattern(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
+extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.regexPatternMetaClass
 }
 
@@ -43,7 +43,7 @@ class RegexPatternMetaClass extends AbstractMetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
-    val regexPat = new RegexPattern(objectId, vmState)
+    val regexPat = new RegexPattern(objectId, vmState, isTransient)
     regexPat
   }
 }

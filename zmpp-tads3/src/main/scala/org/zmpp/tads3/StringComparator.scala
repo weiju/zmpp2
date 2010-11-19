@@ -32,8 +32,8 @@ import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
-class StringComparator(id: T3ObjectId, vmState: TadsVMState)
-extends AbstractT3Object(id, vmState) {
+class StringComparator(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
+extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.stringComparatorMetaClass
 }
 
@@ -43,7 +43,6 @@ class StringComparatorMetaClass extends AbstractMetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
-    val stringComp = new StringComparator(objectId, vmState)
-    stringComp
+    new StringComparator(objectId, vmState, isTransient)
   }
 }

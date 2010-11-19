@@ -68,7 +68,7 @@ object ObjectModelSpec extends Specification {
     "be created" in {
       val objectSystem = new ObjectSystem
       val vmState = new TadsVMState(objectSystem)
-      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 1, 1)
+      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 1, 1, false)
       obj.metaClass.name must_== "tads-object"
     }
   }

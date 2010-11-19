@@ -38,8 +38,8 @@ import java.util.ArrayList
  * n * size(DATAHOLDER)
  * Very similar to Vector
  */
-class TadsList(id: T3ObjectId, vmState: TadsVMState)
-extends TadsCollection(id, vmState) {
+class TadsList(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
+extends TadsCollection(id, vmState, isTransient) {
   private val _container = new ArrayList[T3Value]
   override def metaClass: MetaClass = objectSystem.listMetaClass
   override def toString = "List object"
@@ -157,7 +157,7 @@ class ListMetaClass extends AbstractMetaClass {
     val poolOffset = offset.value
     val len = vmState.image.constantDataShortAt(poolOffset)
     printf("List offset = %s, len: %d\n", offset, len)
-    val list = new TadsList(id, vmState)
+    val list = new TadsList(id, vmState, false) // TODO
     for (i <- 0 until len) {
       val valueAddr = poolOffset + 1 + SizeDataHolder * i
       val valueType = vmState.image.constantDataByteAt(valueAddr)

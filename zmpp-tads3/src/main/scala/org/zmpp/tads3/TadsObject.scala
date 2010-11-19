@@ -59,8 +59,9 @@ import org.zmpp.base._
 class TadsObject(id: T3ObjectId, vmState: TadsVMState,
                  override val isClassObject: Boolean,
                  superClassCount: Int,
-                 propertyCount: Int)
-extends AbstractT3Object(id, vmState) {
+                 propertyCount: Int,
+                 isTransient: Boolean)
+extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.tadsObjectMetaClass
 
   val superClassIds = new Array[Int](superClassCount)
@@ -140,7 +141,7 @@ class TadsObjectMetaClass extends AbstractMetaClass {
 
     val tadsObject = new TadsObject(objectId, vmState,
                                     isClassObject, superClassCount,
-                                    propertyCount)
+                                    propertyCount, isTransient)
     for (index <- 0 until superClassCount) {
       tadsObject.superClassIds(index) = imageMem.shortAt(objDataAddr + 6 +
                                                          index * 4)

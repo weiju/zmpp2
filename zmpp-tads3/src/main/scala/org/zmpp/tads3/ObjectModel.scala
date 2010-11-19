@@ -58,9 +58,9 @@ trait T3Object {
 
 // All classes in the ZMPP TADS3 implementation inherit from
 // this abstract base class
-abstract class AbstractT3Object(val id: T3ObjectId, val vmState: TadsVMState)
+abstract class AbstractT3Object(val id: T3ObjectId, val vmState: TadsVMState,
+                                val isTransient: Boolean)
 extends T3Object {
-  var isTransient = false
   def isClassObject = false
   def metaClass: MetaClass
   def objectSystem = vmState.objectSystem
@@ -96,7 +96,7 @@ extends T3Object {
 }
 
 // A null object for quick comparison
-object InvalidObject extends AbstractT3Object(InvalidObjectId, null) {
+object InvalidObject extends AbstractT3Object(InvalidObjectId, null, false) {
   def metaClass = null
 }
 
@@ -135,7 +135,8 @@ trait MetaClass {
   // class properties feels cleaner this way
   def superMeta: MetaClass
   def reset
-  def createFromStack(id: T3ObjectId, argc: Int): T3Object
+  def createFromStack(id: T3ObjectId, argc: Int,
+                      isTransient: Boolean = false): T3Object
   def createFromImage(objectId: T3ObjectId, objDataAddr: Int,
                       numBytes: Int, isTransient: Boolean): T3Object
   def supportsVersion(version: String): Boolean
@@ -157,7 +158,7 @@ abstract class AbstractMetaClass extends MetaClass {
   def reset = propertyMap.clear
   def superMeta: MetaClass = null
   def createFromStack(id: T3ObjectId,
-                      argc: Int): T3Object = {
+                      argc: Int, isTransient: Boolean): T3Object = {
     throw new UnsupportedOperationException("createFromStack not yet " +
                                             "supported in " +
                                             "metaclass '%s'".format(name))

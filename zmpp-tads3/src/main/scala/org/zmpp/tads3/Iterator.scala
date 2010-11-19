@@ -28,8 +28,8 @@
  */
 package org.zmpp.tads3
 
-abstract class Iterator(id: T3ObjectId, vmState: TadsVMState)
-extends AbstractT3Object(id, vmState) {
+abstract class Iterator(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
+extends AbstractT3Object(id, vmState, isTransient) {
   private val FunctionVector = Array(undef _, getNext _, isNextAvail _, resetIter _,
                                      getCurKey _, getCurVal _)
 
@@ -58,8 +58,8 @@ extends AbstractT3Object(id, vmState) {
 }
 
 class IndexedIterator(id: T3ObjectId, vmState: TadsVMState,
-                      collection: TadsCollection)
-extends Iterator(id, vmState) {
+                      collection: TadsCollection, isTransient: Boolean)
+extends Iterator(id, vmState, isTransient) {
   override def metaClass: MetaClass = objectSystem.indexedIteratorMetaClass
   private var currentIndex =  1
 
@@ -80,7 +80,7 @@ class IndexedIteratorMetaClass extends AbstractMetaClass {
   def name = "indexed-iterator"
   def createIterator(coll: TadsCollection): IndexedIterator = {
     val id = objectSystem.newObjectId
-    val iter = new IndexedIterator(id, vmState, coll)
+    val iter = new IndexedIterator(id, vmState, coll, true)
     objectSystem.registerObject(iter)
     iter
   }

@@ -32,8 +32,8 @@ import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
-class LookupTable(id: T3ObjectId, vmState: TadsVMState)
-extends AbstractT3Object(id, vmState) {
+class LookupTable(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
+extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.lookupTableMetaClass
 }
 
@@ -44,7 +44,6 @@ class LookupTableMetaClass extends AbstractMetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
-    val lookupTable = new LookupTable(objectId, vmState)
-    lookupTable
+    new LookupTable(objectId, vmState, isTransient)
   }
 }

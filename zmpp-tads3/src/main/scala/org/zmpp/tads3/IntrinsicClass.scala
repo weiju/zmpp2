@@ -42,8 +42,8 @@ import org.zmpp.base._
  */
 class IntrinsicClass(id: T3ObjectId, vmState: TadsVMState,
                      val representedMetaClass: MetaClass,
-                     val modifierObjId: Int)
-extends AbstractT3Object(id, vmState) {
+                     val modifierObjId: Int, isTransient: Boolean)
+extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.intrinsicClassMetaClass
   override def isClassObject = true
   override def isInstanceOf(obj: T3Object): Boolean = {
@@ -73,7 +73,7 @@ class IntrinsicClassMetaClass extends AbstractMetaClass {
     */
     new IntrinsicClass(objectId, vmState,
                        objectSystem.metaClassForIndex(metaClassIndex),
-                       modifierObjId)
+                       modifierObjId, isTransient)
     // TODO: Assign this object to the metaclass
   }
 }

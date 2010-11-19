@@ -36,8 +36,8 @@ import org.zmpp.base._
  * an arbitrary number of context objects.
  * As a nice side effect, this automatically implements the indexed access.
  */
-class AnonFuncPtr(id: T3ObjectId, vmState: TadsVMState)
-extends Vector(id, vmState) {
+class AnonFuncPtr(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
+extends Vector(id, vmState, isTransient) {
   override def metaClass: MetaClass = objectSystem.anonFuncPtrMetaClass
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val objectCallProp = metaClass.vmState.image.symbolicNames("ObjectCallProp")
@@ -56,11 +56,11 @@ class AnonFuncPtrMetaClass extends AbstractMetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
-    val anonFuncPtr = new AnonFuncPtr(objectId, vmState)
-    anonFuncPtr
+    new AnonFuncPtr(objectId, vmState, isTransient)
   }
 
-  override def createFromStack(id: T3ObjectId, argc: Int) = {
+  override def createFromStack(id: T3ObjectId, argc: Int,
+                               isTransient: Boolean) = {
     if (argc < 1) {
       throw new IllegalArgumentException("%s: createFromStack() needs at " +
                                          "least 1 " +
@@ -73,7 +73,7 @@ class AnonFuncPtrMetaClass extends AbstractMetaClass {
                                          "argument type: %d\n".format(
                                          name, functionPtr.valueType))
     }
-    val result = new AnonFuncPtr(id, vmState)
+    val result = new AnonFuncPtr(id, vmState, isTransient)
     result.add(functionPtr)
     // copy (argc - 1) context objects into the result object
     for (i <- 1 until argc) result.add(vmState.stack.pop)
