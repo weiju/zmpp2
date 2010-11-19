@@ -268,6 +268,7 @@ object Opcodes {
   val Jlt             = 0x98
   val Jle             = 0x99
   val JNil            = 0x9e
+  val JNotNil         = 0x9f
   val JR0T            = 0xa0
   val JR0F            = 0xa1
   val BuiltinA        = 0xb1
@@ -327,6 +328,7 @@ object OpcodeNames {
     Jmp             -> "JMP",
     Jne             -> "JNE",
     JNil            -> "JNIL",
+    JNotNil         -> "JNOTNIL",
     JR0T            -> "JR0T",
     JR0F            -> "JR0F",
     Jt              -> "JT",

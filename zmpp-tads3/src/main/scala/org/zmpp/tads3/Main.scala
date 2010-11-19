@@ -238,6 +238,8 @@ class TadsVM {
                       InvalidObjectId, InvalidObjectId, InvalidObjectId)
       case CallProp     => callProp(nextByteOperand, _state.stack.pop,
                                     nextShortOperand)
+      case CallPropSelf => callProp(nextByteOperand, _state.currentSelf,
+                                    nextShortOperand)
       case Dup          => _state.stack.dup
       case GetArg1      =>
         _state.stack.push(_state.getParam(nextByteOperand))
@@ -259,6 +261,7 @@ class TadsVM {
         branchIfTrue(compare(val1, val2) > 0)
       case Jmp          => _state.doBranch
       case JNil         => branchIfTrue(_state.stack.pop == T3Nil)
+      case JNotNil      => branchIfTrue(_state.stack.pop != T3Nil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
       case JR0F         => branchIfTrue(!_state.r0.isTrue)
       case New1         =>
