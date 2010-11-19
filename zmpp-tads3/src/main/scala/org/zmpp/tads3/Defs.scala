@@ -148,7 +148,8 @@ class T3Enum(override val value: Int) extends T3Value {
 }
 
 object T3Integer {
-  val One = new T3Integer(1)
+  val Zero = new T3Integer(0)
+  val One  = new T3Integer(1)
 }
 object InvalidObjectId extends T3ObjectId(0)
 object InvalidPropertyId extends T3PropertyId(0)
@@ -188,6 +189,7 @@ class Stack {
   def pushFunctionPointer(offset: Int) = push(new T3FunctionPointer(offset))
   def pushInt(value: Int) = push(new T3Integer(value))
   def pushStackRef(value: Int) = push(new T3StackRef(value))
+  def push0 = push(T3Integer.Zero)
   def push1 = push(T3Integer.One)
 
   def push(value: T3Value) = {

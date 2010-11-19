@@ -86,8 +86,15 @@ extends AbstractT3Object(id, vmState) {
     val prop = findPropertyInThis(propertyId)
     if (prop != InvalidProperty) return prop
     // not found in object -> try super class properties
+    findPropertyInSuperClasses(propertyId, argc)
+  }
+  override def inheritProperty(propertyId: Int, argc: Int): Property = {
+    findPropertyInSuperClasses(propertyId, argc)
+  }
+
+  private def findPropertyInSuperClasses(propertyId: Int, argc: Int): Property = {
     for (superClassId <- superClassIds) {
-      printf("not found, try super class: %d\n", superClassId)
+      printf("search prop %d in super class: %d\n", propertyId, superClassId)
       val superClass = objectSystem.objectWithId(superClassId)
       val prop = superClass.getProperty(propertyId, argc)
       if (prop != InvalidProperty) return prop

@@ -272,6 +272,7 @@ class TadsVM {
       case OneLcl1      => _state.setLocal(nextByteOperand, T3Integer.One)
       case PtrCall      => ptrCall(nextByteOperand)
       case PtrInherit   => inheritProperty(nextByteOperand, _state.stack.pop)
+      case Push0        => _state.stack.push0
       case Push1        => _state.stack.push1
       case PushCtxEle   => pushCtxEle(nextByteOperand)
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
@@ -314,7 +315,7 @@ class TadsVM {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration >= 268) {
+    if (iteration >= 509) {
       println("R0 = " + _state.r0)
       println(_state.stack)
     }
@@ -403,7 +404,7 @@ class TadsVM {
       val obj = _state.objectSystem.objectWithId(targetVal)
       printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
       val prop = obj.getProperty(propId, argc)
-      if (prop != null) {
+      if (prop != InvalidProperty) {
         evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc)
       } else {
         // TODO: check if propNotDefined is available
@@ -450,13 +451,17 @@ class TadsVM {
   }
 
   private def inheritProperty(argc: Int, propId: T3Value) {
-    val definingObject = _state.definingObject
-    val originalTarget = _state.originalTarget
-    val selfId         = _state.currentSelf
-    val self           = _state.objectSystem.objectWithId(selfId)
-    printf("inheritProperty(%d, %s), defobj = %s, orig = %s, selfId = %s self = %s\n",
-           argc, propId, definingObject, originalTarget, selfId, self)
-    throw new UnsupportedOperationException("inheritProperty not implemented yet")
+    val definingObject   = _state.objectSystem.objectWithId(_state.definingObject)
+    printf("inheritProperty(%d, %s), defobj = %s\n", argc, propId, definingObject)
+    val prop = definingObject.inheritProperty(propId.value, argc)
+    printf("PROP FOUND: %s\n", prop)
+    if (prop != InvalidProperty) {
+      evalProperty(_state.currentSelf.asInstanceOf[T3ObjectId], prop, argc)
+    } else {
+      // TODO: check if propNotDefined is available
+      throw new UnsupportedOperationException("TODO: property not found, " +
+                                              "check for propNotDefined")
+    }
   }
 
   private def pushCtxEle(elem: Int) {
