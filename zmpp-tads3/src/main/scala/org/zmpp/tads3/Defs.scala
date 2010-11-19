@@ -89,6 +89,9 @@ abstract class T3Value {
       case _ => false
     }
   }
+  // equals method under VM rules. These are according to the
+  // EQ instruction. The default is identical to the regular equals()
+  def t3vmEquals(other: T3Value): Boolean = equals(other)
 }
 
 object T3Nil extends T3Value {
@@ -104,10 +107,14 @@ object T3True extends T3Value {
 object T3Empty extends T3Value {
   def valueType = TypeIds.VmEmpty
   override def toString = "EMPTY"
+  override def t3vmEquals(other: T3Value): Boolean = false
 }
 class T3ListConstant(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmList
   override def toString = "list (offset = %d)".format(value)
+  override def t3vmEquals(other: T3Value): Boolean = {
+    throw new UnsupportedOperationException("not implemented yet")
+  }
 }
 class T3PropertyId(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmProp
@@ -116,6 +123,9 @@ class T3PropertyId(override val value: Int) extends T3Value {
 class T3ObjectId(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmObj
   override def toString = "objectid (value = %d)".format(value)
+  override def t3vmEquals(other: T3Value): Boolean = {
+    throw new UnsupportedOperationException("not implemented yet")
+  }
 }
 class T3CodeOffset(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmCodeOfs
@@ -141,6 +151,9 @@ class T3SString(override val value: Int) extends T3Value {
 class T3DString(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmDString
   override def toString = "dstring (value = %d)".format(value)
+  override def t3vmEquals(other: T3Value): Boolean = {
+    throw new UnsupportedOperationException("not implemented yet")
+  }
 }
 class T3Enum(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmEnum
@@ -231,6 +244,12 @@ object Opcodes {
   val PushNil         = 0x08
   val PushTrue        = 0x09
   val PushFnPtr       = 0x0b
+  val Eq              = 0x40
+  val Ne              = 0x41
+  val Lt              = 0x42
+  val Le              = 0x43
+  val Gt              = 0x44
+  val Ge              = 0x45
   val RetVal          = 0x50
   val RetNil          = 0x51
   val RetTrue         = 0x52
@@ -308,6 +327,8 @@ object OpcodeNames {
     CallProp        -> "CALLPROP",
     CallPropSelf    -> "CALLPROPSELF",
     Dup             -> "DUP",
+    Eq              -> "EQ",
+    Ge              -> "GE",
     GetArg1         -> "GETARG1",
     GetArg2         -> "GETARG2",
     GetDbArgc       -> "GETDBARGC",
@@ -317,6 +338,7 @@ object OpcodeNames {
     GetPropR0       -> "GETPROPR0",
     GetPropSelf     -> "GETPROPSELF",
     GetR0           -> "GETR0",
+    Gt              -> "GT",
     IdxInt8         -> "IDXINT8",
     IdxLcl1Int8     -> "IDXLCL1INT8",
     Je              -> "JE",
@@ -332,6 +354,9 @@ object OpcodeNames {
     JR0T            -> "JR0T",
     JR0F            -> "JR0F",
     Jt              -> "JT",
+    Le              -> "LE",
+    Lt              -> "LT",
+    Ne              -> "NE",
     New1            -> "NEW1",
     Nop             -> "NOP",
     ObjCallProp     -> "OBJCALLPROP",

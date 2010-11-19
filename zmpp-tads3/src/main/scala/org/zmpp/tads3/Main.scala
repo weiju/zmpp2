@@ -241,6 +241,9 @@ class TadsVM {
       case CallPropSelf => callProp(nextByteOperand, _state.currentSelf,
                                     nextShortOperand)
       case Dup          => _state.stack.dup
+      case Eq           =>
+        _state.r0 = if (t3vmEquals(_state.stack.pop, _state.stack.pop)) T3True
+                    else T3Nil
       case GetArg1      =>
         _state.stack.push(_state.getParam(nextByteOperand))
       case GetArg2      => _state.stack.push(_state.getParam(nextShortOperand))
@@ -264,6 +267,9 @@ class TadsVM {
       case JNotNil      => branchIfTrue(_state.stack.pop != T3Nil)
       case JR0T         => branchIfTrue(_state.r0.isTrue)
       case JR0F         => branchIfTrue(!_state.r0.isTrue)
+      case Ne           =>
+        _state.r0 = if (!t3vmEquals(_state.stack.pop, _state.stack.pop)) T3True
+                    else T3Nil
       case New1         =>
         _state.r0 = _state.objectSystem.createFromStack(nextByteOperand, nextByteOperand)
       case Nop          => // do nothing
@@ -318,7 +324,7 @@ class TadsVM {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration >= 509) {
+    if (iteration >= 558) {
       println("R0 = " + _state.r0)
       println(_state.stack)
     }
@@ -339,6 +345,9 @@ class TadsVM {
     } else if (value1.valueType == VmObj) {
       throw new UnsupportedOperationException("TODO object compare")
     } else throw new InvalidComparisonException
+  }
+  private def t3vmEquals(value1: T3Value, value2: T3Value): Boolean = {
+    value1.t3vmEquals(value2)
   }
 
   // instruction implementations

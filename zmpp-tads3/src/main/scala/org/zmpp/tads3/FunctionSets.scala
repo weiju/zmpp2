@@ -48,6 +48,7 @@ abstract class IntrinsicFunctionSet {
     _vmState       = vmState
   }
   def callFunction(argc: Int, functionIndex: Int)
+  def nextArg = _vmState.stack.pop
 }
 
 // ***********************************************************************
@@ -402,7 +403,22 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
                                             "not implemented yet")
   }
   private def bannerCreate(argc: Int) {
-    throw new UnsupportedOperationException("tads-io.bannerCreate() not implemented yet")
+    printf("bannerCreate(%d)\n", argc)
+    if (argc == 8) {
+      val parent     = nextArg
+      val where      = nextArg
+      val other      = nextArg
+      val windowType = nextArg
+      val align      = nextArg
+      val size       = nextArg
+      val sizeUnits  = nextArg
+      val style      = nextArg
+      printf("bannerCreate(%s, %s, %s, %s, %s, %s, %s, %s)\n", parent,
+             where, other, windowType, align, size, sizeUnits, style)
+      _vmState.r0 = new T3Integer(4711)
+    } else {
+      printf("bannerCreate(), invalid argument count: %d\n", argc)
+    }
   }
   private def bannerDelete(argc: Int) {
     throw new UnsupportedOperationException("tads-io.bannerDelete() not implemented yet")
