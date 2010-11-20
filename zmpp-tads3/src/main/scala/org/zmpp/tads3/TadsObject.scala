@@ -160,4 +160,24 @@ class TadsObjectMetaClass extends AbstractMetaClass {
     }
     tadsObject
   }
+
+  override def createFromStack(id: T3ObjectId, argc: Int,
+                               isTransient: Boolean): T3Object = {
+    printf("TadsObject.createFromStack(%d, %b)\n", argc, isTransient)
+    val superClass = if (argc > 0) vmState.stack.pop else T3Nil
+    val superClassCount = if (superClass == T3Nil) 0 else 1
+    val tadsObject = new TadsObject(id, vmState, false, superClassCount, 0,
+                                    isTransient)
+    val ctorProp = vmState.image.symbolicNames("Constructor").t3Value    
+    if (superClassCount == 1) tadsObject.superClassIds(0) = superClass.value
+    // if constructor defined, invoke it
+    val ctor = tadsObject.getProperty(ctorProp.value, 0)
+    if (ctor.valueType == TypeIds.VmCodeOfs) {
+      vmState.doCall(argc - 1, ctor.value, ctor.id, tadsObject.id,
+                     ctor.definingObject, tadsObject.id)
+    } else if (ctor != InvalidProperty) {
+      throw new UnsupportedOperationException("unknown constructor type: " + ctor)
+    }
+    tadsObject
+  }
 }

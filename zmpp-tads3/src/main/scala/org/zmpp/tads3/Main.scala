@@ -271,7 +271,8 @@ class TadsVM {
         _state.r0 = if (!t3vmEquals(_state.stack.pop, _state.stack.pop)) T3True
                     else T3Nil
       case New1         =>
-        _state.r0 = _state.objectSystem.createFromStack(nextByteOperand, nextByteOperand)
+        _state.r0 = _state.objectSystem.createFromStack(nextByteOperand,
+                                                        nextByteOperand, false)
       case Nop          => // do nothing
       case ObjCallProp  =>
         callProp(nextByteOperand, new T3ObjectId(nextIntOperand),
@@ -319,6 +320,9 @@ class TadsVM {
         objSetProp(_state.currentSelf, nextShortOperand,
                    _state.stack.pop)
       case SetSelf      => _state.currentSelf = _state.stack.pop
+      case TrNew1       =>
+        _state.r0 = _state.objectSystem.createFromStack(nextByteOperand,
+                                                        nextByteOperand, true)
       case _            =>
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"
                                                 .format(opcode))

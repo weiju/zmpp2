@@ -113,7 +113,10 @@ class FunctionSetDependency(nameString: String) {
 // Symbols are publicly known values in the image file that are
 // referenced by a textual name. The image file provides a mapping
 // from the name to the way the symbol can be accessed by the VM
-class SymbolicName(val name: String, val valueType: Int, val value: Int)
+class SymbolicName(val name: String, val valueType: Int, val value: Int) {
+  val t3Value = T3Value.create(valueType, value)
+  override def toString = "SymbolicName['%s' = %s]".format(name, t3Value)
+}
 
 class MethodHeader(val paramCount: Int, val localCount: Int,
                    val maxStackSlots: Int,
@@ -322,7 +325,7 @@ class TadsImage(val memory: Memory) {
     var current = blockHeader.dataAddress
     val numEntries = memory.shortAt(current)
     current += 2
-    //printf("# SYMBOLIC NAMES: %d\n", numEntries)
+    printf("# SYMBOLIC NAMES: %d\n", numEntries)
     for (i <- 0 until numEntries) {
       val valueType = memory.byteAt(current)
       val value = TypeIds.valueForType(valueType, memory.intAt(current + 1))
@@ -333,9 +336,8 @@ class TadsImage(val memory: Memory) {
         builder.append(memory.byteAt(current + 6 + j).asInstanceOf[Char])
       }
       val name = builder.toString
-      //printf("Adding symbol: '%s' t = %d, val = %d\n", name,
-      //       valueType, value)
       _symbolicNames(name) = new SymbolicName(name, valueType, value)
+      printf("Adding symbol: %s\n", _symbolicNames(name))
       current += 6 + numChars
     }
   }

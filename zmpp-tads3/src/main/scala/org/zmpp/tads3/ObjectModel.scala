@@ -136,7 +136,7 @@ trait MetaClass {
   def superMeta: MetaClass
   def reset
   def createFromStack(id: T3ObjectId, argc: Int,
-                      isTransient: Boolean = false): T3Object
+                      isTransient: Boolean): T3Object
   def createFromImage(objectId: T3ObjectId, objDataAddr: Int,
                       numBytes: Int, isTransient: Boolean): T3Object
   def supportsVersion(version: String): Boolean
@@ -194,7 +194,7 @@ abstract class AbstractMetaClass extends MetaClass {
   def imageMem = vmState.image.memory
   def objectSystem = vmState.objectSystem
   def addFunctionMapping(propertyId: Int, functionIndex: Int) {
-    printf("%s.addFunctionMapping(%d, %d)\n", name, propertyId, functionIndex)
+    //printf("%s.addFunctionMapping(%d, %d)\n", name, propertyId, functionIndex)
     propertyMap(propertyId) = functionIndex
   }
   def functionIndexForProperty(propertyId: Int) = {
@@ -381,9 +381,9 @@ class ObjectSystem {
   def registerObject(obj: T3Object) {
     _objectCache(obj.id.value) = obj
   }
-  def createFromStack(argc: Int, metaClassId: Int) = {
+  def createFromStack(argc: Int, metaClassId: Int, isTransient: Boolean) = {
     val id = new T3ObjectId(newId)
-    val obj = _metaClassMap(metaClassId).createFromStack(id, argc)
+    val obj = _metaClassMap(metaClassId).createFromStack(id, argc, isTransient)
     _objectCache(id.value) = obj
     id
   }
