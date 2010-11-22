@@ -35,6 +35,9 @@ class ObjectModelTest extends JUnit4(ObjectModelSpec)
 object ObjectModelSpecRunner extends ConsoleRunner(ObjectModelSpec)
 
 object ObjectModelSpec extends Specification {
+  var objectSystem : ObjectSystem = null
+  var vmState : TadsVMState = null
+
   "T3ObjectId" should {
     "be equal" in {
       val objId42      = new T3ObjectId(42)
@@ -65,11 +68,24 @@ object ObjectModelSpec extends Specification {
   }
 
   "TadsObject" should {
+    doBefore {
+      objectSystem = new ObjectSystem
+      vmState = new TadsVMState(objectSystem)
+    }
     "be created" in {
-      val objectSystem = new ObjectSystem
-      val vmState = new TadsVMState(objectSystem)
-      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 1, 1, false)
+      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 0, 0, false)
       obj.metaClass.name must_== "tads-object"
+    }
+    "get non-existing" in {
+      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 0, 0, false)
+      obj.getProperty(2831, 0) must_== InvalidProperty
+      obj.numProperties must_== 0
+    }
+    "set non-existing" in {
+      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 0, 0, false)
+      obj.setProperty(2831, T3Nil)
+      obj.numProperties must_== 1
+      obj.getProperty(2831, 0) must_!= InvalidProperty
     }
   }
 }

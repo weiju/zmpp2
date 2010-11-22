@@ -64,9 +64,13 @@ class TadsObject(id: T3ObjectId, vmState: TadsVMState,
 extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.tadsObjectMetaClass
 
+  // These should only be accessed from the MetaClass, we should find a better
+  // way to access these later
   val superClassIds = new Array[Int](superClassCount)
   val properties    = new Array[Property](propertyCount)
   val extProperties = new ArrayList[Property]
+  
+  def numProperties = properties.length + extProperties.size
 
   override def toString = {
     "TadsObject[%s, isClassObject: %b, # super: %d, #props: %d]".format(
@@ -113,8 +117,10 @@ extends AbstractT3Object(id, vmState, isTransient) {
   override def setProperty(propertyId: Int, newValue: T3Value) {
     val prop = findPropertyInThis(propertyId)
     if (prop == InvalidProperty) {
-      printf("prop not found creating new one")
+      printf("prop %d not found creating new one and setting to: %s (this: %s)\n",
+             propertyId, newValue, this)
       val newProp = new Property(propertyId, newValue, this.id)
+      extProperties.add(newProp)
     } else {
       printf("prop found updating existing one")
       prop.tadsValue = newValue

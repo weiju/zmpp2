@@ -266,6 +266,7 @@ object Opcodes {
   val ObjCallProp     = 0x67
   val GetPropLcl1     = 0x6a
   val GetPropR0       = 0x6c
+  val CallPropR0      = 0x6d
   val PtrInherit      = 0x73
   val GetLcl1         = 0x80
   val GetArg1         = 0x82
@@ -328,6 +329,7 @@ object OpcodeNames {
     BuiltinD        -> "BUILTIN_D",
     Call            -> "CALL",
     CallProp        -> "CALLPROP",
+    CallPropR0      -> "CALLPROPR0",
     CallPropSelf    -> "CALLPROPSELF",
     Dup             -> "DUP",
     Eq              -> "EQ",

@@ -238,6 +238,8 @@ class TadsVM {
                       InvalidObjectId, InvalidObjectId, InvalidObjectId)
       case CallProp     => callProp(nextByteOperand, _state.stack.pop,
                                     nextShortOperand)
+      case CallPropR0   => callProp(nextByteOperand, _state.r0,
+                                    nextShortOperand)
       case CallPropSelf => callProp(nextByteOperand, _state.currentSelf,
                                     nextShortOperand)
       case Dup          => _state.stack.dup
@@ -328,7 +330,7 @@ class TadsVM {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration >= 558) {
+    if (iteration >= 581) {
       println("R0 = " + _state.r0)
       println(_state.stack)
     }
@@ -421,6 +423,7 @@ class TadsVM {
       printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
       val prop = obj.getProperty(propId, argc)
       if (prop != InvalidProperty) {
+        printf("Property found: %s\n", prop)
         evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc)
       } else {
         // TODO: check if propNotDefined is available
