@@ -93,7 +93,8 @@ object VectorSpec extends Specification {
       vector.indexOf(value0) must_== 1
       vector.indexOf(value5) must_== 6
       vector.indexOf(value2) must_== 3
-      vector.indexOf(value6) must_== -1
+      // not found
+      vector.indexOf(value6) must_== 0
     }
   }
 }

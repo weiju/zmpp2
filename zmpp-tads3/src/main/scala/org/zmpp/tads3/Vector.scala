@@ -70,7 +70,11 @@ extends TadsCollection(id, vmState, isTransient) {
     for (i <- 0 until _container.size) {
       if (_container(i).t3vmEquals(value)) return i + 1
     }
-    return -1
+    return 0
+  }
+  def indexWhich(cond: T3Value): Int = {
+    printf("indexWhich(), cond: %s, len = %d\n", cond, size)
+    throw new UnsupportedOperationException("indexWhich() TODO")
   }
 
   override def valueAtIndex(index: Int): T3Value = _container(index - 1)
@@ -146,7 +150,10 @@ class VectorMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("applyAll")
   }
   def indexWhich(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("indexWhich")
+    if (argc == 1) {
+      val index = obj.asInstanceOf[Vector].indexWhich(vmState.stack.pop)
+      if (index == 0) T3Nil else new T3Integer(index)
+    } else throw new IllegalArgumentException("wrong arg count: " + argc)
   }
   def forEach(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("indexWhich")
@@ -162,7 +169,7 @@ class VectorMetaClass extends AbstractMetaClass {
       val value = vmState.stack.pop
       val index = obj.asInstanceOf[Vector].indexOf(value)
       printf("vector.indexOf(), argc = %d val = %s index = %d\n", argc, value, index)
-      if (index == -1) T3Nil else new T3Integer(index)
+      if (index == 0) T3Nil else new T3Integer(index)
     } else throw new IllegalArgumentException("wrong arg count")
   }
   def valWhich(obj: T3Object, argc: Int): T3Value = {
