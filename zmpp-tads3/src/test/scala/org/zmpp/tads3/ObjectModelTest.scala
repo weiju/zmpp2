@@ -36,6 +36,7 @@ object ObjectModelSpecRunner extends ConsoleRunner(ObjectModelSpec)
 
 object ObjectModelSpec extends Specification {
   var objectSystem : ObjectSystem = null
+  var functionSetMapper : IntrinsicFunctionSetMapper = null
   var vmState : TadsVMState = null
 
   "T3ObjectId" should {
@@ -69,8 +70,9 @@ object ObjectModelSpec extends Specification {
 
   "TadsObject" should {
     doBefore {
-      objectSystem = new ObjectSystem
-      vmState = new TadsVMState(objectSystem)
+      objectSystem      = new ObjectSystem
+      functionSetMapper = new IntrinsicFunctionSetMapper
+      vmState = new TadsVMState(objectSystem, functionSetMapper)
     }
     "be created" in {
       val obj = new TadsObject(new T3ObjectId(1), vmState, false, 0, 0, false)

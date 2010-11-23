@@ -36,12 +36,14 @@ object VectorSpecRunner extends ConsoleRunner(VectorSpec)
 
 object VectorSpec extends Specification {
   var objectSystem : ObjectSystem = null
+  var functionSetMapper : IntrinsicFunctionSetMapper = null
   var vmState : TadsVMState = null
 
   "Vector" should {
     doBefore {
       objectSystem = new ObjectSystem
-      vmState = new TadsVMState(objectSystem)
+      functionSetMapper = new IntrinsicFunctionSetMapper
+      vmState = new TadsVMState(objectSystem, functionSetMapper)
     }
     "be created" in {
       val vector = new Vector(new T3ObjectId(1), vmState, false)
