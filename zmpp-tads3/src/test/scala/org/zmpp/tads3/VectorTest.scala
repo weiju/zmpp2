@@ -55,5 +55,25 @@ object VectorSpec extends Specification {
       vector.size must_== 1
       vector.valueAtIndex(1) must_== value
     }
+    "insert an element at position 1" in {
+      val vector = new Vector(new T3ObjectId(1), vmState, false)
+      val value0 = new T3Integer(0)
+      val value1 = new T3Integer(1)
+      vector.append(value0)
+      vector.insertAt(1, value1)
+      vector.size must_== 2
+      vector.valueAtIndex(1) must_== value1
+      vector.valueAtIndex(2) must_== value0
+    }
+    "insert an element at the end" in {
+      val vector = new Vector(new T3ObjectId(1), vmState, false)
+      val value0 = new T3Integer(0)
+      val value1 = new T3Integer(1)
+      vector.append(value0)
+      vector.insertAt(2, value1)
+      vector.size must_== 2
+      vector.valueAtIndex(1) must_== value0
+      vector.valueAtIndex(2) must_== value1
+    }
   }
 }

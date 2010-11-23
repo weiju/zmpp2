@@ -59,6 +59,8 @@ extends TadsCollection(id, vmState, isTransient) {
 
   def size = _container.size
   def append(value: T3Value) = _container.add(value)
+  def insertAt(index: Int, value: T3Value) = _container.add(index - 1, value)
+
   override def valueAtIndex(index: Int): T3Value = _container(index - 1)
   override def setValueAtIndex(index: Int, newValue: T3Value): T3ObjectId = {
     val oldValue = _container(index - 1)
@@ -177,7 +179,18 @@ class VectorMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("setLength")
   }
   def insertAt(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("insertAt")
+    if (argc >= 2) {
+      val startIndex = vmState.stack.pop.value
+      printf("Vector.insertAt(%d), argc = %d\n", startIndex, argc)
+      for (i <- 0 until argc - 1) {
+        val value = vmState.stack.pop
+        printf("insert at index: %s value: %s\n", startIndex + i, value)
+        obj.asInstanceOf[Vector].insertAt(startIndex + i, value)
+      }
+      obj.id
+    } else {
+      throw new IllegalArgumentException("at least 2 parameters for insertAt()")
+    }
   }
   def removeElementAt(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("removeElementAt")
