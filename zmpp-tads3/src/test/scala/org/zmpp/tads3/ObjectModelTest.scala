@@ -83,9 +83,19 @@ object ObjectModelSpec extends Specification {
     }
     "set non-existing" in {
       val obj = new TadsObject(new T3ObjectId(1), vmState, false, 0, 0, false)
-      obj.setProperty(2831, T3Nil)
+      val testVal = new T3Integer(4711)
+      obj.setProperty(2831, testVal)
       obj.numProperties must_== 1
-      obj.getProperty(2831, 0) must_!= InvalidProperty
+      obj.getProperty(2831, 0).tadsValue must_== testVal
+    }
+    "overwrite existing" in {
+      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 0, 0, false)
+      val testVal1 = new T3Integer(4711)
+      val testVal2 = new T3Integer(4712)
+      obj.setProperty(2831, testVal1)
+      obj.setProperty(2831, testVal2)
+      obj.numProperties must_== 1
+      obj.getProperty(2831, 0).tadsValue must_== testVal2
     }
   }
 }

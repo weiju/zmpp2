@@ -74,9 +74,9 @@ class AnonFuncPtrMetaClass extends AbstractMetaClass {
                                          name, functionPtr.valueType))
     }
     val result = new AnonFuncPtr(id, vmState, isTransient)
-    result.add(functionPtr)
+    result.append(functionPtr)
     // copy (argc - 1) context objects into the result object
-    for (i <- 1 until argc) result.add(vmState.stack.pop)
+    for (i <- 1 until argc) result.append(vmState.stack.pop)
     result
   }
 }

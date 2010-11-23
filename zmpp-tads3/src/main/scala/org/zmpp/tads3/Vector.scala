@@ -44,7 +44,7 @@ extends TadsCollection(id, vmState, isTransient) {
   override def metaClass: MetaClass = objectSystem.vectorMetaClass
   def init(numElements: Int) {
     printf("initialize %d elements\n", numElements)
-    for (i <- 0 until numElements) _container.add(T3Nil)
+    for (i <- 0 until numElements) _container.append(T3Nil)
   }
 
   override def getProperty(propertyId: Int, argc: Int): Property = {
@@ -58,9 +58,7 @@ extends TadsCollection(id, vmState, isTransient) {
   }
 
   def size = _container.size
-  def add(value: T3Value) {
-    _container.add(value)
-  }
+  def append(value: T3Value) = _container.add(value)
   override def valueAtIndex(index: Int): T3Value = _container(index - 1)
   override def setValueAtIndex(index: Int, newValue: T3Value): T3ObjectId = {
     val oldValue = _container(index - 1)
@@ -188,6 +186,13 @@ class VectorMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("removeRange")
   }
   def append(obj: T3Object, argc: Int): T3Value = {
+    if (argc == 1) {
+      val arg = vmState.stack.pop
+      printf("obj(%s).append: %s\n", obj, arg)
+      obj.asInstanceOf[Vector].append(arg)
+    } else {
+      throw new IllegalArgumentException("wrong argument count: %d".format(argc))
+    }
     throw new UnsupportedOperationException("append")
   }
   def prepend(obj: T3Object, argc: Int): T3Value = {
