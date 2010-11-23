@@ -202,6 +202,7 @@ class Stack {
   def pushFunctionPointer(offset: Int) = push(new T3FunctionPointer(offset))
   def pushInt(value: Int) = push(new T3Integer(value))
   def pushStackRef(value: Int) = push(new T3StackRef(value))
+  def pushEnum(value: Int) = push(new T3Enum(value))
   def push0 = push(T3Integer.Zero)
   def push1 = push(T3Integer.One)
 
@@ -244,6 +245,7 @@ object Opcodes {
   val PushNil         = 0x08
   val PushTrue        = 0x09
   val PushFnPtr       = 0x0b
+  val PushEnum        = 0x0f
   val Inc             = 0x2e
   val Dec             = 0x2f
   val Eq              = 0x40
@@ -378,6 +380,7 @@ object OpcodeNames {
     Push0           -> "PUSH_0",
     Push1           -> "PUSH_1",
     PushCtxEle      -> "PUSHCTXELE",
+    PushEnum        -> "PUSHENUM",
     PushFnPtr       -> "PUSHFNPTR",
     PushInt         -> "PUSHINT",
     PushInt8        -> "PUSHINT8",

@@ -76,7 +76,7 @@ extends T3Object {
     false
   }
   def getProperty(propertyId: Int, argc: Int): Property = {
-    throw new UnsupportedOperationException("findProperty() not implemented: " +
+    throw new UnsupportedOperationException("getProperty() not implemented: " +
                                           getClass.getName)
   }
   def setProperty(propertyId: Int, newValue: T3Value) {

@@ -296,6 +296,7 @@ class TadsVM {
       case Push1        => _state.stack.push1
       case PushCtxEle   => pushCtxEle(nextByteOperand)
       case PushFnPtr    => _state.stack.pushFunctionPointer(nextIntOperand)
+      case PushEnum     => _state.stack.pushEnum(nextIntOperand)
       case PushInt8     => _state.stack.pushInt(nextSignedByteOperand)
       case PushNil      => _state.stack.pushNil
       case PushObj      => _state.stack.pushObjectId(nextIntOperand)

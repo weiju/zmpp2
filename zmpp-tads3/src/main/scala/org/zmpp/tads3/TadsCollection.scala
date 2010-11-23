@@ -33,10 +33,26 @@ import org.zmpp.base._
 abstract class TadsCollection(id: T3ObjectId, vmState: TadsVMState,
                               isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
+  // because of polymorphism, metaClass can't be relied on to make a
+  // static search, so we state the metaClass explicitly
+  // this meta class is not inherited, so we can use it in static searches
+  private def staticMetaClass: MetaClass = objectSystem.collectionMetaClass
   def metaClass: MetaClass = objectSystem.collectionMetaClass
   override def toString = "Collection object"
   def createIterator(argc: Int): T3Value
   def size: Int
+
+  // for collections, we search the static property list, which is
+  // in the object's meta class hierarchy
+  override def getProperty(propertyId: Int, argc: Int): Property = {
+    val idx = staticMetaClass.functionIndexForProperty(propertyId)
+    printf("collection prop idx = %d\n", idx)
+    if (idx >= 0) {
+      new Property(propertyId,
+                   staticMetaClass.callMethodWithIndex(this, idx, argc),
+                   id)
+    } else super.getProperty(propertyId, argc)
+  }
 }
 
 /**

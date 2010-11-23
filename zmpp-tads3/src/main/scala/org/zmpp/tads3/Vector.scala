@@ -41,18 +41,24 @@ class Vector(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends TadsCollection(id, vmState, isTransient) {
   private val _container = new ArrayList[T3Value]
 
+  // because of polymorphism, metaClass can't be relied on to make a
+  // static search, so we state the metaClass explicitly
+  // this meta class is not inherited, so we can use it in static searches
+  private def staticMetaClass: MetaClass = objectSystem.vectorMetaClass
   override def metaClass: MetaClass = objectSystem.vectorMetaClass
   def init(numElements: Int) {
     printf("initialize %d elements\n", numElements)
     for (i <- 0 until numElements) _container.append(T3Nil)
   }
 
+  // for collections, we search the static property list, which is
+  // in the object's meta class hierarchy
   override def getProperty(propertyId: Int, argc: Int): Property = {
-    val idx = metaClass.functionIndexForProperty(propertyId)
+    val idx = staticMetaClass.functionIndexForProperty(propertyId)
     printf("vec prop idx = %d\n", idx)
     if (idx >= 0) {
       new Property(propertyId,
-                   metaClass.callMethodWithIndex(this, idx, argc),
+                   staticMetaClass.callMethodWithIndex(this, idx, argc),
                    id)
     } else super.getProperty(propertyId, argc)
   }
