@@ -190,10 +190,10 @@ class VectorMetaClass extends AbstractMetaClass {
       val arg = vmState.stack.pop
       printf("obj(%s).append: %s\n", obj, arg)
       obj.asInstanceOf[Vector].append(arg)
+      obj.id
     } else {
       throw new IllegalArgumentException("wrong argument count: %d".format(argc))
     }
-    throw new UnsupportedOperationException("append")
   }
   def prepend(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("prepend")

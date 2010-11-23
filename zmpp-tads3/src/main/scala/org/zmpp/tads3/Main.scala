@@ -99,6 +99,12 @@ class TadsVMState(val objectSystem: ObjectSystem) {
     ip += 4
     retval
   }
+  def dataHolderValueAt(addr: Int) = {
+    val valueType = image.codeByteAt(addr)
+    T3Value.create(valueType,
+                   TypeIds.valueForType(valueType, image.codeIntAt(addr + 1)))
+  }
+
 
   def doBranch {
     val branchOffset = Types.signExtend16(image.codeShortAt(ip))
@@ -200,6 +206,7 @@ class TadsVM {
   def nextIntOperand    = _state.nextCodeInt
   def nextSignedShortOperand = Types.signExtend16(nextShortOperand)
   def nextSignedByteOperand  = Types.signExtend8(nextByteOperand)
+  def dataHolderValueAt(addr: Int)  = _state.dataHolderValueAt(addr)
 
   def doTurn {
     while (_state.runState == RunStates.Running) {
@@ -322,6 +329,31 @@ class TadsVM {
         objSetProp(_state.currentSelf, nextShortOperand,
                    _state.stack.pop)
       case SetSelf      => _state.currentSelf = _state.stack.pop
+      case Switch       =>
+        val controlVal = _state.stack.pop
+        val caseCount  = nextShortOperand
+        var p          = _state.ip
+        var counter    = 0
+        var terminateLoop = false
+        while (!terminateLoop) {
+          val currval = dataHolderValueAt(p)
+          if (controlVal.t3vmEquals(currval)) {
+            val branchOffset = Types.signExtend16(
+              _state.image.codeShortAt(p + TadsConstants.SizeDataHolder))
+            // note: the branch offset is calculated from the
+            // address of the offset
+            _state.ip = p + TadsConstants.SizeDataHolder + branchOffset
+            terminateLoop = true
+          }
+          counter += 1
+          p       += TadsConstants.SizeDataHolder + 2 // + branch offset
+          if (counter == caseCount) terminateLoop = true
+        }
+        if (counter == caseCount) {
+          //  we did not find a value, branch to default
+          val branchOffset = Types.signExtend16(_state.image.codeShortAt(p))
+          _state.ip = p + branchOffset
+        }
       case TrNew1       =>
         _state.r0 = _state.objectSystem.createFromStack(nextByteOperand,
                                                         nextByteOperand, true)
@@ -330,7 +362,7 @@ class TadsVM {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration >= 581) {
+    if (iteration >= 674) {
       println("R0 = " + _state.r0)
       println(_state.stack)
     }
