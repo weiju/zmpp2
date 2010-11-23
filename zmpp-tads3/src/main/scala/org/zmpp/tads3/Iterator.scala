@@ -38,18 +38,18 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def undef(argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined property")
   }
-  def getNext(argc: Int): T3Value = {
-    throw new UnsupportedOperationException("undefined property")
-  }
+
+  def getNext(argc: Int): T3Value
   def isNextAvail(argc: Int): T3Value
+
   def resetIter(argc: Int): T3Value = {
-    throw new UnsupportedOperationException("undefined property")
+    throw new UnsupportedOperationException("resetIter() not supported")
   }
   def getCurKey(argc: Int): T3Value = {
-    throw new UnsupportedOperationException("undefined property")
+    throw new UnsupportedOperationException("getCurKey() not supported")
   }
   def getCurVal(argc: Int): T3Value = {
-    throw new UnsupportedOperationException("undefined property")
+    throw new UnsupportedOperationException("getCurVal() not supported")
   }
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val idx = objectSystem.iteratorMetaClass.functionIndexForProperty(propertyId)
@@ -66,6 +66,11 @@ extends Iterator(id, vmState, isTransient) {
   def isNextAvail(argc: Int): T3Value = {
     if (currentIndex <= collection.size) T3True
     else T3Nil
+  }
+  def getNext(argc: Int): T3Value = {
+    val retval = collection.valueAtIndex(currentIndex)
+    currentIndex += 1
+    retval
   }
 }
 

@@ -80,7 +80,7 @@ extends TadsCollection(id, vmState, isTransient) {
     id // return this object
   }
   def createIterator(argc: Int): T3Value = {
-    println("createIterator()")
+    println("vector.createIterator()")
     val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
     iter.id
   }
