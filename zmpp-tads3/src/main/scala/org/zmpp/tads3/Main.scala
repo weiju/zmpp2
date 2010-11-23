@@ -264,6 +264,7 @@ class TadsVM {
       case GetR0        => _state.stack.push(_state.r0)
       case IdxInt8      => index(_state.stack.pop, nextByteOperand)
       case IdxLcl1Int8  => index(_state.getLocal(nextByteOperand), nextByteOperand)
+      case Inc          => _state.stack.push(add(_state.stack.pop, T3Integer.One))
       case Jf           => branchIfTrue(!_state.stack.pop.isTrue)
       case Jgt          =>
         // note the order of arguments, this is why we need to get them
@@ -366,6 +367,19 @@ class TadsVM {
       println("R0 = " + _state.r0)
       println(_state.stack)
     }
+  }
+
+  private def add(value1: T3Value, value2: T3Value): T3Value = {
+    import TypeIds._
+    if (value1.valueType == VmInt && value2.valueType == VmInt) {
+      new T3Integer(value1.value + value2.value)
+    } else if (value1.valueType == VmSString || value1.valueType == VmDString) {
+      throw new UnsupportedOperationException("String.add not yet supported")
+    } else if (value1.valueType == VmList) {
+      throw new UnsupportedOperationException("List.add not yet supported")
+    } else if (value1.valueType == VmObj) {
+      throw new UnsupportedOperationException("Object.add not yet supported")
+    } else throw new BadTypeAddException
   }
 
   // generic comparison function on TadsValues

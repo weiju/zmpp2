@@ -244,6 +244,8 @@ object Opcodes {
   val PushNil         = 0x08
   val PushTrue        = 0x09
   val PushFnPtr       = 0x0b
+  val Inc             = 0x2e
+  val Dec             = 0x2f
   val Eq              = 0x40
   val Ne              = 0x41
   val Lt              = 0x42
@@ -331,6 +333,7 @@ object OpcodeNames {
     CallProp        -> "CALLPROP",
     CallPropR0      -> "CALLPROPR0",
     CallPropSelf    -> "CALLPROPSELF",
+    Dec             -> "DEC",
     Dup             -> "DUP",
     Eq              -> "EQ",
     Ge              -> "GE",
@@ -346,6 +349,7 @@ object OpcodeNames {
     Gt              -> "GT",
     IdxInt8         -> "IDXINT8",
     IdxLcl1Int8     -> "IDXLCL1INT8",
+    Inc             -> "INC",
     Je              -> "JE",
     Jf              -> "JF",
     Jge             -> "JGE",
@@ -415,3 +419,4 @@ class ObjectNotFoundException extends Exception
 class FuncPtrValRequiredException extends Exception
 class ObjectValRequiredException extends Exception
 class InvalidComparisonException extends Exception
+class BadTypeAddException extends Exception
