@@ -55,6 +55,8 @@ class TadsVMState(val objectSystem: ObjectSystem,
   var image: TadsImage         = null
   val stack                    = new Stack
   var runState                 = RunStates.Running
+  // if callbackSP is >= 0, we are executing in a callback
+  var callbackSP               = -1
   var startTime : Long         = 0
   objectSystem.vmState         = this
   
@@ -124,6 +126,9 @@ class TadsVMState(val objectSystem: ObjectSystem,
       throw new UnsupportedOperationException("TODO halt machine")
     }
     ip = ep + callerOffset
+
+    // reset callback status to finished when we popped of its last call frame
+    if (sp == callbackSP) callbackSP = -1
   }
   def doCall(argc: Int, targetOffs: Int,
              targetProp: Int, origTargetObj: T3ObjectId,
@@ -221,16 +226,17 @@ class Executor(vmState: TadsVMState) {
       val obj = vmState.objectSystem.objectWithId(callback.value)
       printf("handle object [%s], using objectCallProp: [%s]\n", obj, objectCallProp)
       val prop = obj.getProperty(objectCallProp.value, 0)
-      printf("PROP FOUND: %s\n", prop)
+      printf("executeCallback() - PROP FOUND: %s\n", prop)
       if (prop.valueType == TypeIds.VmFuncPtr) {
         // Call the function
-        printf("SP BEFORE CALLBACK = %d\n", vmState.stack.sp)
-        vmState.doCall(argc, prop.value, 0, objectId,
-                       prop.definingObject, objectId)
         // and execute the callback until we return to the same point
         // we can return when after a return
         // sp[aftercall] = sp[beforecall] - argc
-        for (i <- 0 until 19) {
+        printf("SP BEFORE CALLBACK = %d\n", vmState.stack.sp)
+        vmState.callbackSP = vmState.stack.sp - argc
+        vmState.doCall(argc, prop.value, 0, objectId,
+                       prop.definingObject, objectId)
+        while (vmState.callbackSP >= 0) {
           executeInstruction
         }
         printf("SP AFTER CALLBACK = %d\n", vmState.stack.sp)
@@ -282,7 +288,7 @@ class Executor(vmState: TadsVMState) {
       case Dup          => vmState.stack.dup
       case Eq           =>
         vmState.r0 = if (t3vmEquals(vmState.stack.pop, vmState.stack.pop)) T3True
-                    else T3Nil
+                     else T3Nil
       case GetArg1      =>
         vmState.stack.push(vmState.getParam(nextByteOperand))
       case GetArg2      => vmState.stack.push(vmState.getParam(nextShortOperand))
@@ -394,10 +400,10 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration >= 674) {
+    //if (iteration >= 791) {
       println("R0 = " + vmState.r0)
-      println(vmState.stack)
-    }
+      //println(vmState.stack)
+    //}
   }
 
   private def add(value1: T3Value, value2: T3Value): T3Value = {
@@ -500,7 +506,7 @@ class Executor(vmState: TadsVMState) {
       printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
       val prop = obj.getProperty(propId, argc)
       if (prop != InvalidProperty) {
-        printf("Property found: %s\n", prop)
+        printf("callProp() - Property found: %s\n", prop)
         evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc)
       } else {
         // TODO: check if propNotDefined is available
@@ -550,7 +556,7 @@ class Executor(vmState: TadsVMState) {
     val definingObject   = vmState.objectSystem.objectWithId(vmState.definingObject)
     printf("inheritProperty(%d, %s), defobj = %s\n", argc, propId, definingObject)
     val prop = definingObject.inheritProperty(propId.value, argc)
-    printf("PROP FOUND: %s\n", prop)
+    printf("inheritProperty() - PROP FOUND: %s\n", prop)
     if (prop != InvalidProperty) {
       evalProperty(vmState.currentSelf.asInstanceOf[T3ObjectId], prop, argc)
     } else {

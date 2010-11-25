@@ -78,8 +78,8 @@ extends TadsCollection(id, vmState, isTransient) {
       vmState.stack.push(_container(i))
       val executor = new Executor(vmState)
       executor.executeCallback(cond, 1)
-      // check R0 here
-      //if (vmState.r0.isTrue) return i
+      // don't forget vector indices are 1-based !!
+      if (vmState.r0.isTrue) return (i + 1)
     }
     throw new UnsupportedOperationException("indexWhich() TODO")
   }
