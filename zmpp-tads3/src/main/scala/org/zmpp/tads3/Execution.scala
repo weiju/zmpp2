@@ -188,6 +188,11 @@ class TadsVMState(val objectSystem: ObjectSystem,
   }
 }
 
+// Executors execute a given sequence of instructions. Since an Executor knows all
+// the opcodes, it can both be used to implement the main execution control flow
+// as well as the callbacks that are invoked by the intrinsic function sets.
+// I believe that this is one of the cleaner solutions to realize the nested
+// execution in TADS3
 class Executor(vmState: TadsVMState) {
   val objectSystem           = vmState.objectSystem
   val functionSetMapper      = vmState.functionSetMapper
@@ -206,6 +211,39 @@ class Executor(vmState: TadsVMState) {
     }
   }
   
+  def executeCallback(callback: T3Value, argc: Int) {
+    printf("executeCallback(), %s, argc: %d\n", callback, argc)
+    if (callback.valueType == TypeIds.VmObj) {
+      // make sure the specified object defines "ObjectCallProp" and
+      // invoke it
+      val objectId = callback.asInstanceOf[T3ObjectId]
+      val objectCallProp = vmState.image.symbolicNames("ObjectCallProp")
+      val obj = vmState.objectSystem.objectWithId(callback.value)
+      printf("handle object [%s], using objectCallProp: [%s]\n", obj, objectCallProp)
+      val prop = obj.getProperty(objectCallProp.value, 0)
+      printf("PROP FOUND: %s\n", prop)
+      if (prop.valueType == TypeIds.VmFuncPtr) {
+        // Call the function
+        printf("SP BEFORE CALLBACK = %d\n", vmState.stack.sp)
+        vmState.doCall(argc, prop.value, 0, objectId,
+                       prop.definingObject, objectId)
+        // and execute the callback until we return to the same point
+        // we can return when after a return
+        // sp[aftercall] = sp[beforecall] - argc
+        for (i <- 0 until 19) {
+          executeInstruction
+        }
+        printf("SP AFTER CALLBACK = %d\n", vmState.stack.sp)
+      } else {
+        throw new IllegalArgumentException("ObjectCallProp is not a function pointer")
+      }
+    } else if (callback.valueType == TypeIds.VmFuncPtr) {
+      throw new UnsupportedOperationException("funcptr callback TODO")
+    } else {
+      throw new IllegalArgumentException("unsupported callback type: " + callback)
+    }
+  }
+
   def executeInstruction {
     val opcode = vmState.nextCodeByte
 

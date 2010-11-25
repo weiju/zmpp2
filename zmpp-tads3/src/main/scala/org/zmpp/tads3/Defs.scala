@@ -124,7 +124,9 @@ class T3ObjectId(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmObj
   override def toString = "objectid (value = %d)".format(value)
   override def t3vmEquals(other: T3Value): Boolean = {
-    throw new UnsupportedOperationException("not implemented yet")
+    printf("OBJEQLS-COMPARE: %s with %s\n", this, other)
+    if (this.equals(other)) true
+    else throw new UnsupportedOperationException("not implemented yet")
   }
 }
 class T3CodeOffset(override val value: Int) extends T3Value {

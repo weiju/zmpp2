@@ -74,6 +74,13 @@ extends TadsCollection(id, vmState, isTransient) {
   }
   def indexWhich(cond: T3Value): Int = {
     printf("indexWhich(), cond: %s, len = %d\n", cond, size)
+    for (i <- 0 until size) {
+      vmState.stack.push(_container(i))
+      val executor = new Executor(vmState)
+      executor.executeCallback(cond, 1)
+      // check R0 here
+      //if (vmState.r0.isTrue) return i
+    }
     throw new UnsupportedOperationException("indexWhich() TODO")
   }
 
