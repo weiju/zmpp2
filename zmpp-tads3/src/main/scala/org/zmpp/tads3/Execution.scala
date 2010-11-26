@@ -301,6 +301,9 @@ class Executor(vmState: TadsVMState) {
       case IdxInt8      => index(vmState.stack.pop, nextByteOperand)
       case IdxLcl1Int8  => index(vmState.getLocal(nextByteOperand), nextByteOperand)
       case Inc          => vmState.stack.push(add(vmState.stack.pop, T3Integer.One))
+      case Index        =>
+        val indexVal = vmState.stack.pop
+        index(vmState.stack.pop, indexVal.value)
       case Jf           => branchIfTrue(!vmState.stack.pop.isTrue)
       case Jgt          =>
         // note the order of arguments, this is why we need to get them

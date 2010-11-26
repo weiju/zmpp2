@@ -41,11 +41,22 @@ import java.util.ArrayList
 class TadsList(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends TadsCollection(id, vmState, isTransient) {
   private val _container = new ArrayList[T3Value]
+  private def staticMetaClass = objectSystem.listMetaClass
   override def metaClass: MetaClass = objectSystem.listMetaClass
   override def toString = "List object"
   def size = _container.size
   def initWith(seq: Seq[T3Value]) {
     seq.foreach(value => _container.add(value))
+  }
+
+  override def getProperty(propertyId: Int, argc: Int): Property = {
+    val idx = staticMetaClass.functionIndexForProperty(propertyId)
+    printf("list prop idx = %d\n", idx)
+    if (idx >= 0) {
+      new Property(propertyId,
+                   staticMetaClass.callMethodWithIndex(this, idx, argc),
+                   id)
+    } else super.getProperty(propertyId, argc)
   }
 
   def addElement(value: T3Value) {

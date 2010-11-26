@@ -154,7 +154,11 @@ class VectorMetaClass extends AbstractMetaClass {
     vector.toList(start, end)
   }
   def getSize(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("getSize")
+    if (argc == 0) {
+      new T3Integer(obj.asInstanceOf[Vector].size)
+    } else {
+      throw new IllegalArgumentException("getSize(): argc must be 0")
+    }
   }
   def copyFrom(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("copyFrom")
