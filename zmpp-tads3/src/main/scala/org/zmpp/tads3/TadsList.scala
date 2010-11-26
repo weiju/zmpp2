@@ -166,12 +166,17 @@ class ListMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("forEachAssoc")
   }
 
+  def createList(id: T3ObjectId, isTransient: Boolean = false) = {
+    new TadsList(id, vmState, isTransient)
+  }
+
   def createListConstant(id: T3ObjectId, offset: T3ListConstant) = {
     import TadsConstants._
     val poolOffset = offset.value
     val len = vmState.image.constantDataShortAt(poolOffset)
     printf("List offset = %s, len: %d\n", offset, len)
-    val list = new TadsListConstant(id, vmState, false) // TODO
+    val list = new TadsListConstant(id, vmState, false)
+    // TODO initWith()
     for (i <- 0 until len) {
       val valueAddr = poolOffset + 1 + SizeDataHolder * i
       val valueType = vmState.image.constantDataByteAt(valueAddr)

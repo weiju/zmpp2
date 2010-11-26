@@ -111,6 +111,14 @@ extends TadsCollection(id, vmState, isTransient) {
     builder.append("]")
     builder.toString
   }
+  def toList(start: Int, end: Int) = {
+    val list = objectSystem.listMetaClass.createList(objectSystem.newObjectId)
+    objectSystem.registerObject(list)
+    // subList is end index-exclusive
+    list.initWith(_container.subList(start - 1, end))
+    printf("toList(), start = %d end = %d, list len = %d\n", start, end, list.size)
+    list.id
+  }
 }
 
 // Image format for vector instances:
@@ -139,7 +147,11 @@ class VectorMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("undefined")
   }
   def toList(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("toList")
+    val vector = obj.asInstanceOf[Vector]
+    val start = if (argc > 0) vmState.stack.pop.value else 1
+    val end   = if (argc > 1) vmState.stack.pop.value else vector.size
+    if (argc > 2) throw new UnsupportedOperationException("toList has max 2 params")
+    vector.toList(start, end)
   }
   def getSize(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("getSize")
