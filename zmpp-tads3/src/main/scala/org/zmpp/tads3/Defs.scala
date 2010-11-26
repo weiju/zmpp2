@@ -310,6 +310,8 @@ object Opcodes {
   val New2            = 0xc1
   val TrNew1          = 0xc2
   val TrNew2          = 0xc3
+  val NilLcl1         = 0xd8
+  val NilLcl2         = 0xd9
   val OneLcl1         = 0xda
   val SetLcl1         = 0xe0
   val SetInd          = 0xe4
@@ -374,6 +376,8 @@ object OpcodeNames {
     Ne              -> "NE",
     New1            -> "NEW1",
     New2            -> "NEW2",
+    NilLcl1         -> "NILLCL1",
+    NilLcl2         -> "NILLCL2",
     Nop             -> "NOP",
     ObjCallProp     -> "OBJCALLPROP",
     ObjGetProp      -> "OBJGETPROP",

@@ -287,8 +287,9 @@ class Executor(vmState: TadsVMState) {
                                     nextShortOperand)
       case Dup          => vmState.stack.dup
       case Eq           =>
-        vmState.r0 = if (t3vmEquals(vmState.stack.pop, vmState.stack.pop)) T3True
-                     else T3Nil
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        vmState.r0 = if (t3vmEquals(val1, val2)) T3True else T3Nil
       case GetArg1      =>
         vmState.stack.push(vmState.getParam(nextByteOperand))
       case GetArg2      => vmState.stack.push(vmState.getParam(nextShortOperand))
@@ -311,7 +312,15 @@ class Executor(vmState: TadsVMState) {
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
         branchIfTrue(compare(val1, val2) > 0)
+      case Jlt          =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        branchIfTrue(compare(val1, val2) < 0)        
       case Jmp          => vmState.doBranch
+      case Jne          =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        branchIfTrue(!t3vmEquals(val1, val2))
       case JNil         => branchIfTrue(vmState.stack.pop == T3Nil)
       case JNotNil      => branchIfTrue(vmState.stack.pop != T3Nil)
       case JR0T         => branchIfTrue(vmState.r0.isTrue)
@@ -322,6 +331,7 @@ class Executor(vmState: TadsVMState) {
       case New1         =>
         vmState.r0 = vmState.objectSystem.createFromStack(nextByteOperand,
                                                         nextByteOperand, false)
+      case NilLcl1      => vmState.setLocal(nextByteOperand, T3Nil)
       case Nop          => // do nothing
       case ObjCallProp  =>
         callProp(nextByteOperand, new T3ObjectId(nextIntOperand),
