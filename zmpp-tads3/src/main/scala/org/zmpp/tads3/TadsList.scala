@@ -44,6 +44,10 @@ extends TadsCollection(id, vmState, isTransient) {
   override def metaClass: MetaClass = objectSystem.listMetaClass
   override def toString = "List object"
   def size = _container.size
+  def initWith(seq: Seq[T3Value]) {
+    seq.foreach(value => _container.add(value))
+  }
+
   def addElement(value: T3Value) {
     _container.add(value)
   }
@@ -57,6 +61,16 @@ extends TadsCollection(id, vmState, isTransient) {
     println("createIterator()")
     val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
     iter.id
+  }
+}
+
+class TadsListConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
+extends TadsList(id, vmState, isTransient) {
+  override def addElement(value: T3Value) {
+    throw new UnsupportedOperationException("can not add to list constant")
+  }
+  override def setValueAtIndex(index: Int, newValue: T3Value): T3ObjectId = {
+    throw new UnsupportedOperationException("can not set value in list constant")
   }
 }
 
@@ -157,7 +171,7 @@ class ListMetaClass extends AbstractMetaClass {
     val poolOffset = offset.value
     val len = vmState.image.constantDataShortAt(poolOffset)
     printf("List offset = %s, len: %d\n", offset, len)
-    val list = new TadsList(id, vmState, false) // TODO
+    val list = new TadsListConstant(id, vmState, false) // TODO
     for (i <- 0 until len) {
       val valueAddr = poolOffset + 1 + SizeDataHolder * i
       val valueType = vmState.image.constantDataByteAt(valueAddr)
