@@ -170,7 +170,10 @@ class TadsVMState(val objectSystem: ObjectSystem,
   }
   
   // function argument acccess, indexing is 0-based
-  def getParam(index: Int) = stack.valueAt(fp + FpOffsetArg1 - index)
+  def getArg(index: Int) = stack.valueAt(fp + FpOffsetArg1 - index)
+  def setArg(index: Int, value: T3Value) {
+    stack.setValueAt(fp + FpOffsetArg1 - index, value)
+  }
 
   // local variable access. Note that Local variable access is based
   // on index 0 !!
@@ -294,9 +297,10 @@ class Executor(vmState: TadsVMState) {
         val val1 = vmState.stack.pop
         vmState.r0 = if (t3vmEquals(val1, val2)) T3True else T3Nil
       case GetArg1      =>
-        vmState.stack.push(vmState.getParam(nextByteOperand))
-      case GetArg2      => vmState.stack.push(vmState.getParam(nextShortOperand))
+        vmState.stack.push(vmState.getArg(nextByteOperand))
+      case GetArg2      => vmState.stack.push(vmState.getArg(nextShortOperand))
       case GetLcl1      => vmState.stack.push(vmState.getLocal(nextByteOperand))
+      case GetLcl2      => vmState.stack.push(vmState.getLocal(nextShortOperand))
       case GetProp      => callProp(0, vmState.stack.pop, nextShortOperand)
       case GetPropLcl1  => callProp(0, vmState.getLocal(nextByteOperand), nextShortOperand)
       case GetPropR0    => callProp(0, vmState.r0, nextShortOperand)
@@ -340,8 +344,9 @@ class Executor(vmState: TadsVMState) {
                     else T3Nil
       case New1         =>
         vmState.r0 = vmState.objectSystem.createFromStack(nextByteOperand,
-                                                        nextByteOperand, false)
+                                                          nextByteOperand, false)
       case NilLcl1      => vmState.setLocal(nextByteOperand, T3Nil)
+      case NilLcl2      => vmState.setLocal(nextShortOperand, T3Nil)
       case Nop          => // do nothing
       case ObjCallProp  =>
         callProp(nextByteOperand, new T3ObjectId(nextIntOperand),
@@ -373,6 +378,8 @@ class Executor(vmState: TadsVMState) {
         vmState.r0 = vmState.stack.pop
         vmState.doReturn
       case Say          => say(nextIntOperand)
+      case SetArg1      => vmState.setArg(nextByteOperand, vmState.stack.pop)
+      case SetArg2      => vmState.setArg(nextShortOperand, vmState.stack.pop)
       case SetInd       =>
         val indexVal     = vmState.stack.pop
         val containerVal = vmState.stack.pop
@@ -385,6 +392,7 @@ class Executor(vmState: TadsVMState) {
         val newVal       = vmState.stack.pop
         vmState.setLocal(localNumber, setInd(containerVal, index, newVal))
       case SetLcl1      => vmState.setLocal(nextByteOperand, vmState.stack.pop)
+      case SetLcl2      => vmState.setLocal(nextShortOperand, vmState.stack.pop)
       case SetLcl1R0    => vmState.setLocal(nextByteOperand, vmState.r0)
       case SetProp      =>
         objSetProp(vmState.stack.pop, nextShortOperand, vmState.stack.pop)

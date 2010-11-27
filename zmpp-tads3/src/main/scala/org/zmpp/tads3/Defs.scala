@@ -280,6 +280,7 @@ object Opcodes {
   val CallPropR0      = 0x6d
   val PtrInherit      = 0x73
   val GetLcl1         = 0x80
+  val GetLcl2         = 0x81
   val GetArg1         = 0x82
   val GetArg2         = 0x83
   val PushSelf        = 0x84
@@ -317,10 +318,14 @@ object Opcodes {
   val TrNew1          = 0xc2
   val TrNew2          = 0xc3
   val IncLcl          = 0xd0
+  val DecLcl          = 0xd1
   val NilLcl1         = 0xd8
   val NilLcl2         = 0xd9
   val OneLcl1         = 0xda
   val SetLcl1         = 0xe0
+  val SetLcl2         = 0xe1
+  val SetArg1         = 0xe2
+  val SetArg2         = 0xe3
   val SetInd          = 0xe4
   val SetProp         = 0xe5
   val PtrSetProp      = 0xe6
@@ -348,6 +353,7 @@ object OpcodeNames {
     CallPropR0      -> "CALLPROPR0",
     CallPropSelf    -> "CALLPROPSELF",
     Dec             -> "DEC",
+    DecLcl          -> "DECLCL",
     Dup             -> "DUP",
     Eq              -> "EQ",
     Ge              -> "GE",
@@ -414,9 +420,12 @@ object OpcodeNames {
     RetTrue         -> "RETTRUE",
     RetVal          -> "RETVAL",
     Say             -> "SAY",
+    SetArg1         -> "SETARG1",
+    SetArg2         -> "SETARG2",
     SetInd          -> "SETIND",
     SetIndLcl1I8    -> "SETINDLCL1I8",
     SetLcl1         -> "SETLCL1",
+    SetLcl2         -> "SETLCL2",
     SetLcl1R0       -> "SETLCL1R0",
     SetProp         -> "SETPROP",
     SetPropSelf     -> "SETPROPSELF",
