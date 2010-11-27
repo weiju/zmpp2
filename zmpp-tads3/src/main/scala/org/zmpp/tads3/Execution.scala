@@ -291,6 +291,9 @@ class Executor(vmState: TadsVMState) {
                                     nextShortOperand)
       case CallPropSelf => callProp(nextByteOperand, vmState.currentSelf,
                                     nextShortOperand)
+      case DecLcl       =>
+        val localNum = nextShortOperand
+        vmState.setLocal(localNum, sub(vmState.getLocal(localNum), T3Integer.One))
       case Dup          => vmState.stack.dup
       case Eq           =>
         val val2 = vmState.stack.pop
@@ -433,10 +436,11 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
+/*
     if (iteration >= 935) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
-    }
+    }*/
   }
 
   private def say(poolOffset: Int) {
@@ -468,6 +472,22 @@ class Executor(vmState: TadsVMState) {
       throw new UnsupportedOperationException("Object.add not yet supported")
     } else {
       throw new BadTypeAddException
+    }
+  }
+
+  private def sub(value1: T3Value, value2: T3Value): T3Value = {
+    import TypeIds._
+    printf("SUB value1: %s value2: %s\n", value1, value2)
+    if (value1.valueType == VmInt && value2.valueType == VmInt) {
+      new T3Integer(value1.value - value2.value)
+    } else if (value1.valueType == VmSString || value1.valueType == VmDString) {
+      throw new UnsupportedOperationException("String.add not yet supported")
+    } else if (value1.valueType == VmList) {
+      throw new UnsupportedOperationException("List.add not yet supported")
+    } else if (value1.valueType == VmObj) {
+      throw new UnsupportedOperationException("Object.add not yet supported")
+    } else {
+      throw new BadTypeSubException
     }
   }
 

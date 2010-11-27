@@ -449,4 +449,5 @@ class FuncPtrValRequiredException extends Exception
 class ObjectValRequiredException extends Exception
 class InvalidComparisonException extends Exception
 class BadTypeAddException extends Exception
+class BadTypeSubException extends Exception
 class SayIsNotDefinedException extends Exception
