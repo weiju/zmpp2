@@ -189,11 +189,11 @@ class ListMetaClass extends AbstractMetaClass {
     val list = new TadsListConstant(id, vmState, false)
     // TODO initWith()
     for (i <- 0 until len) {
-      val valueAddr = poolOffset + 1 + SizeDataHolder * i
+      val valueAddr = poolOffset + 1 + DataHolder.Size * i
       val valueType = vmState.image.constantDataByteAt(valueAddr)
-      val value = TypeIds.valueForType(valueType,
-                                       vmState.image.constantDataIntAt(
-                                         valueAddr + 1))
+      val value = DataHolder.valueForType(valueType,
+                                          vmState.image.constantDataIntAt(
+                                            valueAddr + 1))
       list.addElement(T3Value.create(valueType, value))
     }
     list

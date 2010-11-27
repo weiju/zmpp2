@@ -52,18 +52,22 @@ object TypeIds {
   val VmEmpty      = 13 // empty value (for initializations)
   val VmNativeCode = 14 // native code ptr (unused in ZMPP)
   val VmEnum       = 15 // enumerated constant
+}
 
+// A data holder is defined in TADS3 as a prefix byte (specifying the type)
+// and a 4-byte value
+object DataHolder {
+  val Size = 5
+
+  // this method is typically invoked when extracting data holders
   // property values are truncated to unsigned 16 bit
-  def valueForType(typ: Int, value: Int) = {
-    if (typ == TypeIds.VmProp) value & 0xffff else value
+  def valueForType(valueType: Int, value: Int) = {
+    if (valueType == TypeIds.VmProp) value & 0xffff else value
   }
 }
 
 object TadsConstants {
   val SizePropertyId = 2
-  // A data holder is defined in TADS3 as a prefix byte (specifying the type)
-  // and a 4-byte value
-  val SizeDataHolder = 5
 }
 
 /***********************************************************************

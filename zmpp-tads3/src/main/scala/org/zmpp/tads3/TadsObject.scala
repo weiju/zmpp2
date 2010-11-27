@@ -154,11 +154,11 @@ class TadsObjectMetaClass extends AbstractMetaClass {
     }
     val propertyOffset = objDataAddr + 6 + superClassCount * 4
     for (index <- 0 until propertyCount) {
-      val propAddr = propertyOffset + (SizeDataHolder + SizePropertyId) * index
+      val propAddr = propertyOffset + (DataHolder.Size + SizePropertyId) * index
       val propertyId    = imageMem.shortAt(propAddr)
       val propertyType  = imageMem.byteAt(propAddr + 2)
-      val propertyValue = TypeIds.valueForType(propertyType,
-                                               imageMem.intAt(propAddr + 3))
+      val propertyValue = DataHolder.valueForType(propertyType,
+                                                  imageMem.intAt(propAddr + 3))
       tadsObject.properties(index) =
         new Property(propertyId,
                      T3Value.create(propertyType, propertyValue),

@@ -269,13 +269,27 @@ class VectorMetaClass extends AbstractMetaClass {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
-    new Vector(objectId, vmState, isTransient)
+    val vector = new Vector(objectId, vmState, isTransient)
+    // currently, we ignore numAllocated, we might need it for persistence
+    val numAllocated = imageMem.shortAt(objDataAddr)
+    val numUsed = imageMem.shortAt(objDataAddr + 2)
+    printf("Vector::createFromImage(), # alloc: %d, # used: %d\n",
+           numAllocated, numUsed)
+    // here come numUsed DATAHOLDERs
+    for (i <- 0 until numUsed) {
+      val currAddr = objDataAddr + 4 + i * DataHolder.Size
+      val valueType = imageMem.byteAt(currAddr)
+      val value = DataHolder.valueForType(valueType,
+                                          imageMem.intAt(currAddr + 1))
+      vector.append(T3Value.create(valueType, value))
+    }
+    vector
   }
 
   // This is the TADS Vector constructor.
   // Parameters
-  // arg0 (int): number of elements to allocate
-  // arg1 [optional], type can be
+  // numAllocated (int): number of elements to allocate
+  // initParam [optional], type can be
   //   - (int): number of elements to initialize
   //   - (list): copy elements
   //   - (object:vector) copy elements
@@ -286,19 +300,19 @@ class VectorMetaClass extends AbstractMetaClass {
       throw new IllegalArgumentException("vector::constructor(), argc " +
                                          "must be 1 or 2")
     }
-    val arg0 = vmState.stack.pop
-    val result = if (arg0.valueType == TypeIds.VmInt) {
+    val numAllocated = vmState.stack.pop
+    val result = if (numAllocated.valueType == TypeIds.VmInt) {
       // we ignore this parameter, we do not allocate vectors with an initial size
       new Vector(id, vmState, isTransient)
     } else {
       throw new IllegalArgumentException("vector::constructor(), illegal " +
-                                         "arg0 type")
+                                         "numAllocated type")
     }
     // second (optional argument)
     if (argc > 1) {
-      val arg1 = vmState.stack.pop
-      if (arg1.valueType == TypeIds.VmInt) {
-        result.init(arg1.value)
+      val initParam = vmState.stack.pop
+      if (initParam.valueType == TypeIds.VmInt) {
+        result.init(initParam.value)
       } else {
         throw new UnsupportedOperationException("vector::constructor(), " +
                                                 "arg1 type " +

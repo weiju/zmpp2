@@ -328,7 +328,7 @@ class TadsImage(val memory: Memory) {
     printf("# SYMBOLIC NAMES: %d\n", numEntries)
     for (i <- 0 until numEntries) {
       val valueType = memory.byteAt(current)
-      val value = TypeIds.valueForType(valueType, memory.intAt(current + 1))
+      val value = DataHolder.valueForType(valueType, memory.intAt(current + 1))
       val numChars = memory.byteAt(current + 5)
       // construct name
       val builder = new StringBuilder

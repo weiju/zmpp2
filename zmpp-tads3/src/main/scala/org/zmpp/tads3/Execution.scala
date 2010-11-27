@@ -106,7 +106,7 @@ class TadsVMState(val objectSystem: ObjectSystem,
   def dataHolderValueAt(addr: Int) = {
     val valueType = image.codeByteAt(addr)
     T3Value.create(valueType,
-                   TypeIds.valueForType(valueType, image.codeIntAt(addr + 1)))
+                   DataHolder.valueForType(valueType, image.codeIntAt(addr + 1)))
   }
 
 
@@ -311,6 +311,10 @@ class Executor(vmState: TadsVMState) {
       case Index        =>
         val indexVal = vmState.stack.pop
         index(vmState.stack.pop, indexVal.value)
+      case Je           =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        branchIfTrue(t3vmEquals(val1, val2))
       case Jf           => branchIfTrue(!vmState.stack.pop.isTrue)
       case Jgt          =>
         // note the order of arguments, this is why we need to get them
@@ -356,6 +360,7 @@ class Executor(vmState: TadsVMState) {
       case PushNil      => vmState.stack.pushNil
       case PushObj      => vmState.stack.pushObjectId(nextIntOperand)
       case PushSelf     => vmState.stack.push(vmState.currentSelf)
+      case PushStr      => vmState.stack.pushSString(nextIntOperand)
       case PushTrue     => vmState.stack.push(T3True)
       case Ret          => vmState.doReturn
       case RetNil       =>
@@ -397,14 +402,14 @@ class Executor(vmState: TadsVMState) {
           val currval = dataHolderValueAt(p)
           if (controlVal.t3vmEquals(currval)) {
             val branchOffset = Types.signExtend16(
-              vmState.image.codeShortAt(p + TadsConstants.SizeDataHolder))
+              vmState.image.codeShortAt(p + DataHolder.Size))
             // note: the branch offset is calculated from the
             // address of the offset
-            vmState.ip = p + TadsConstants.SizeDataHolder + branchOffset
+            vmState.ip = p + DataHolder.Size + branchOffset
             terminateLoop = true
           }
           counter += 1
-          p       += TadsConstants.SizeDataHolder + 2 // + branch offset
+          p       += DataHolder.Size + 2 // + branch offset
           if (counter == caseCount) terminateLoop = true
         }
         if (counter == caseCount) {
@@ -420,10 +425,10 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    //if (iteration >= 856) {
+    if (iteration >= 935) {
       println("R0 = " + vmState.r0)
-    //  println(vmState.stack)
-    //}
+      println(vmState.stack)
+    }
   }
 
   private def say(poolOffset: Int) {
