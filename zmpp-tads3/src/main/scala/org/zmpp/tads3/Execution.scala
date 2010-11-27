@@ -251,10 +251,11 @@ class Executor(vmState: TadsVMState) {
   }
 
   def executeInstruction {
-    val opcode = vmState.nextCodeByte
+    val opcode   = vmState.nextCodeByte
 
     // debug
-    printf("%04d: %s[%02x]\n", iteration, OpcodeNames.opcodeName(opcode), opcode)
+    printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
+           OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
     // debug
 
@@ -302,6 +303,9 @@ class Executor(vmState: TadsVMState) {
       case IdxInt8      => index(vmState.stack.pop, nextByteOperand)
       case IdxLcl1Int8  => index(vmState.getLocal(nextByteOperand), nextByteOperand)
       case Inc          => vmState.stack.push(add(vmState.stack.pop, T3Integer.One))
+      case IncLcl       =>
+        val localNum = nextShortOperand
+        vmState.setLocal(localNum, add(vmState.getLocal(localNum), T3Integer.One))
       case Index        =>
         val indexVal = vmState.stack.pop
         index(vmState.stack.pop, indexVal.value)
@@ -413,14 +417,15 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    //if (iteration >= 791) {
+    //if (iteration >= 856) {
       println("R0 = " + vmState.r0)
-      //println(vmState.stack)
+    //  println(vmState.stack)
     //}
   }
 
   private def add(value1: T3Value, value2: T3Value): T3Value = {
     import TypeIds._
+    printf("ADD value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       new T3Integer(value1.value + value2.value)
     } else if (value1.valueType == VmSString || value1.valueType == VmDString) {
@@ -429,7 +434,9 @@ class Executor(vmState: TadsVMState) {
       throw new UnsupportedOperationException("List.add not yet supported")
     } else if (value1.valueType == VmObj) {
       throw new UnsupportedOperationException("Object.add not yet supported")
-    } else throw new BadTypeAddException
+    } else {
+      throw new BadTypeAddException
+    }
   }
 
   // generic comparison function on TadsValues

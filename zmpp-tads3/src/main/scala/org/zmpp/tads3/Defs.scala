@@ -310,6 +310,7 @@ object Opcodes {
   val New2            = 0xc1
   val TrNew1          = 0xc2
   val TrNew2          = 0xc3
+  val IncLcl          = 0xd0
   val NilLcl1         = 0xd8
   val NilLcl2         = 0xd9
   val OneLcl1         = 0xda
@@ -357,6 +358,7 @@ object OpcodeNames {
     IdxInt8         -> "IDXINT8",
     IdxLcl1Int8     -> "IDXLCL1INT8",
     Inc             -> "INC",
+    IncLcl          -> "INCLCL",
     Index           -> "INDEX",
     Je              -> "JE",
     Jf              -> "JF",
