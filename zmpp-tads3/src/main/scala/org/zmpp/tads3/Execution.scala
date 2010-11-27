@@ -435,7 +435,7 @@ class Executor(vmState: TadsVMState) {
     } else if (vmState.sayFuncPtr.valueType == VmFuncPtr) {
       vmState.doCall(1, vmState.sayFuncPtr.value, 0, InvalidObjectId,
                      InvalidObjectId, InvalidObjectId)
-    } else if (vmState.sayFuncPtr.valueType == T3Nil) {
+    } else if (vmState.sayFuncPtr == T3Nil) {
       throw new SayIsNotDefinedException
     } else {
       throw new UnsupportedOperationException("SAY, undefined behavior")

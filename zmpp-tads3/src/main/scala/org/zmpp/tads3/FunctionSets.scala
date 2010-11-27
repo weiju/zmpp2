@@ -162,7 +162,17 @@ object TadsGenFunctionSet {
 class TadsGenFunctionSet extends IntrinsicFunctionSet {
   def name = "tads-gen"
   private def dataType(argc: Int) {
-    throw new UnsupportedOperationException("tads-gen.dataType() not implemented yet")
+    import TypeIds._
+    if (argc == 1) {
+      val value = vmState.stack.pop
+      val resultType = if (value.valueType == VmObj) {
+        throw new UnsupportedOperationException("dataType(obj) - TODO")
+      } else value.valueType
+      vmState.r0 = new T3Integer(resultType)
+    } else {
+      throw new IllegalArgumentException("tads-gen.dataType(), " +
+                                         "only 1 parameter allowed")
+    }
   }
   private def getArg(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.getArg() not implemented yet")
