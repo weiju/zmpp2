@@ -42,13 +42,13 @@ import scala.collection.mutable.HashMap
 // * might find the comments more useful.
 abstract class IntrinsicFunctionSet {
   def name: String
-  protected var _vmState: TadsVMState        = null
+  protected var vmState: TadsVMState = null
   
   def reset(vmState: TadsVMState) {
-    _vmState       = vmState
+    this.vmState = vmState
   }
   def callFunction(argc: Int, functionIndex: Int)
-  def nextArg = _vmState.stack.pop
+  def nextArg = vmState.stack.pop
 }
 
 // ***********************************************************************
@@ -68,13 +68,17 @@ abstract class IntrinsicFunctionSet {
 
 class T3VMFunctionSet extends IntrinsicFunctionSet {
   def name = "t3vm"
-  var _sayFuncPtr: T3Value = null
 
   private def runGC(argc: Int) { println("t3vm.runGC() [not implemented]") }
   private def setSay(argc: Int) {
+    import TypeIds._
     println("t3vm.setSay()")
     if (argc != 1) throw new IllegalArgumentException("setSay() argc must be 1")
-    _sayFuncPtr = _vmState.stack.pop
+    vmState.sayFuncPtr = vmState.stack.pop
+    if (vmState.sayFuncPtr.valueType != VmFuncPtr &&
+        vmState.sayFuncPtr.valueType != VmProp) {
+      throw new IllegalArgumentException("unsupported say func value")
+    }
   }
   private def getVMVsn(argc: Int) {
     throw new UnsupportedOperationException("t3vm.getVMVsn() not implemented yet")
@@ -87,14 +91,14 @@ class T3VMFunctionSet extends IntrinsicFunctionSet {
   }
   private def getVMPreinitMode(argc: Int) {
     println("t3vm.getPreinitMode()")
-    _vmState.r0 = T3Nil // we are never in preinit mode
+    vmState.r0 = T3Nil // we are never in preinit mode
   }
   private def debugTrace(argc: Int) {
     throw new UnsupportedOperationException("debugTrace() not implemented yet")
   }
   private def getGlobalSymbols(argc: Int) {
     println("t3vm.getGlobalSymbols()")
-    _vmState.r0 = T3Nil // TODO: our test game does not have a GSYM
+    vmState.r0 = T3Nil // TODO: our test game does not have a GSYM
   }
   private def allocProp(argc: Int) {
     throw new UnsupportedOperationException("allocProp() not implemented yet")
@@ -173,16 +177,16 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     printf("tads-gen.enumObjParams(), argc = %d\n", argc)
     // process up to 2 optional parameters (class?, flags?)
     if (argc == 2) {
-      val matchClassId = _vmState.stack.pop.value
-      matchClass = _vmState.objectSystem.objectWithId(matchClassId)
-      flags    = _vmState.stack.pop.value
+      val matchClassId = vmState.stack.pop.value
+      matchClass = vmState.objectSystem.objectWithId(matchClassId)
+      flags    = vmState.stack.pop.value
     } else if (argc == 1) {
-      val arg = _vmState.stack.pop
+      val arg = vmState.stack.pop
       if (arg.valueType == TypeIds.VmInt) {
         flags = arg.value
       } else if (arg.valueType == TypeIds.VmObj) {
         val matchClassId = arg.value
-        matchClass = _vmState.objectSystem.objectWithId(matchClassId)
+        matchClass = vmState.objectSystem.objectWithId(matchClassId)
       } else {
         throw new IllegalArgumentException("Illegal argument: %s".format(arg))
       }
@@ -193,19 +197,19 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     new EnumObjectParams(matchClass, enumInstances, enumClasses)
   }
   private def firstObj(argc: Int) {
-    val result = _vmState.objectSystem.firstObject(enumObjParams(argc))
+    val result = vmState.objectSystem.firstObject(enumObjParams(argc))
     printf("FOUND OBJECT: %s\n", result.id)
-    _vmState.r0 = if (result == InvalidObject) T3Nil else result.id
+    vmState.r0 = if (result == InvalidObject) T3Nil else result.id
   }
   private def nextObj(argc: Int) {
     // the previous object is on top of the stack, and is part of the
     // arguments
-    val previousObject = _vmState.stack.pop.asInstanceOf[T3ObjectId]
+    val previousObject = vmState.stack.pop.asInstanceOf[T3ObjectId]
     val enumParams = enumObjParams(argc - 1)
     printf("nextObj(), prevObj: %s, params: %s\n", previousObject, enumParams)
-    val result = _vmState.objectSystem.nextObject(previousObject, enumParams)
+    val result = vmState.objectSystem.nextObject(previousObject, enumParams)
     printf("FOUND OBJECT: %s\n", result.id)
-    _vmState.r0 = if (result == InvalidObject) T3Nil else result.id
+    vmState.r0 = if (result == InvalidObject) T3Nil else result.id
   }
   private def randomize(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.randomize() not implemented yet")
@@ -220,14 +224,14 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-gen.toInteger() not implemented yet")
   }
   private def getTime(argc: Int) {
-    val timeType = if (argc == 1) _vmState.stack.pop.value
+    val timeType = if (argc == 1) vmState.stack.pop.value
                    else TadsGenFunctionSet.GetTimeDateAndTime
     printf("argc: %d, timeType = %d\n", argc, timeType)
     if (timeType == TadsGenFunctionSet.GetTimeDateAndTime) {
       throw new UnsupportedOperationException("tads-gen.getTime(1) not implemented yet")
     } else if (timeType == TadsGenFunctionSet.GetTimeTicks) {
-      val currentTicks = System.currentTimeMillis - _vmState.startTime
-      _vmState.r0 = new T3Integer(currentTicks.asInstanceOf[Int])
+      val currentTicks = System.currentTimeMillis - vmState.startTime
+      vmState.r0 = new T3Integer(currentTicks.asInstanceOf[Int])
     } else {
       throw new IllegalArgumentException("tads-gen.getTime(%d)".format(timeType))
     }
@@ -415,7 +419,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
       val style      = nextArg
       printf("bannerCreate(%s, %s, %s, %s, %s, %s, %s, %s)\n", parent,
              where, other, windowType, align, size, sizeUnits, style)
-      _vmState.r0 = new T3Integer(4711)
+      vmState.r0 = new T3Integer(4711)
     } else {
       printf("bannerCreate(), invalid argument count: %d\n", argc)
     }
@@ -538,11 +542,15 @@ class T3TestFunctionSet extends IntrinsicFunctionSet {
 // * 
 // ***********************************************************************
 class IntrinsicFunctionSetMapper {
+  val t3vm    = new T3VMFunctionSet
+  val t3test  = new T3TestFunctionSet
+  val tadsGen = new TadsGenFunctionSet
+  val tadsIO  = new TadsIoFunctionSet
   val FunctionSets = Map(
-    "t3vm"     -> new T3VMFunctionSet,
-    "t3test"   -> new T3TestFunctionSet,
-    "tads-gen" -> new TadsGenFunctionSet,
-    "tads-io"  -> new TadsIoFunctionSet
+    "t3vm"     -> t3vm,
+    "t3test"   -> t3test,
+    "tads-gen" -> tadsGen,
+    "tads-io"  -> tadsIO
   )
   val _functionSets = new Array[IntrinsicFunctionSet](4)
 

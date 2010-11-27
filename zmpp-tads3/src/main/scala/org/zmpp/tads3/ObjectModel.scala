@@ -42,6 +42,14 @@ import java.util.TreeMap
 import org.zmpp.base._
 
 // T3 object is the super interface of all objects in the TADS 3 system
+// Note:
+// The metaClass member defines the actual type of an object and is
+// determined using Scala's/Java's normal inheritance mechanisms. We have
+// to keep in mind that when we try to call super.getProperty(), the
+// super implementation will in most cases need the non-polymorphic meta
+// class, which is impossible to determine with the metaClass member.
+// Therefore, each derived class defines a private member "staticMetaClass"
+// in order to implement getProperty() bypassing polymorphism.
 trait T3Object {
   def id: T3ObjectId
   def isTransient: Boolean

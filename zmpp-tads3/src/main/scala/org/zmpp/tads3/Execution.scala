@@ -55,10 +55,12 @@ class TadsVMState(val objectSystem: ObjectSystem,
   var image: TadsImage         = null
   val stack                    = new Stack
   var runState                 = RunStates.Running
+  objectSystem.vmState         = this
+
+  var sayFuncPtr : T3Value     = T3Nil
   // if callbackSP is >= 0, we are executing in a callback
   var callbackSP               = -1
   var startTime : Long         = 0
-  objectSystem.vmState         = this
   
   // Registers (TODO: current savepoint, savepoint count)
   var r0: T3Value = T3Nil // data register R0
@@ -365,6 +367,7 @@ class Executor(vmState: TadsVMState) {
       case RetVal       =>
         vmState.r0 = vmState.stack.pop
         vmState.doReturn
+      case Say          => say(nextIntOperand)
       case SetInd       =>
         val indexVal     = vmState.stack.pop
         val containerVal = vmState.stack.pop
@@ -421,6 +424,22 @@ class Executor(vmState: TadsVMState) {
       println("R0 = " + vmState.r0)
     //  println(vmState.stack)
     //}
+  }
+
+  private def say(poolOffset: Int) {
+    import TypeIds._
+    vmState.stack.pushSString(poolOffset)
+    if (vmState.sayFuncPtr.valueType == VmProp &&
+        vmState.currentSelf != T3Nil) {
+      throw new UnsupportedOperationException("SAY METHOD TODO")
+    } else if (vmState.sayFuncPtr.valueType == VmFuncPtr) {
+      vmState.doCall(1, vmState.sayFuncPtr.value, 0, InvalidObjectId,
+                     InvalidObjectId, InvalidObjectId)
+    } else if (vmState.sayFuncPtr.valueType == T3Nil) {
+      throw new SayIsNotDefinedException
+    } else {
+      throw new UnsupportedOperationException("SAY, undefined behavior")
+    }
   }
 
   private def add(value1: T3Value, value2: T3Value): T3Value = {

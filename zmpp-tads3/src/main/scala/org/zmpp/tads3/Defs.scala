@@ -205,6 +205,7 @@ class Stack {
   def pushInt(value: Int) = push(new T3Integer(value))
   def pushStackRef(value: Int) = push(new T3StackRef(value))
   def pushEnum(value: Int) = push(new T3Enum(value))
+  def pushSString(value: Int) = push(new T3SString(value))
   def push0 = push(T3Integer.Zero)
   def push1 = push(T3Integer.One)
 
@@ -297,6 +298,7 @@ object Opcodes {
   val JNotNil         = 0x9f
   val JR0T            = 0xa0
   val JR0F            = 0xa1
+  val Say             = 0xb0
   val BuiltinA        = 0xb1
   val BuiltinB        = 0xb2
   val BuiltinC        = 0xb3
@@ -407,6 +409,7 @@ object OpcodeNames {
     RetNil          -> "RETNIL",
     RetTrue         -> "RETTRUE",
     RetVal          -> "RETVAL",
+    Say             -> "SAY",
     SetInd          -> "SETIND",
     SetIndLcl1I8    -> "SETINDLCL1I8",
     SetLcl1         -> "SETLCL1",
@@ -433,3 +436,4 @@ class FuncPtrValRequiredException extends Exception
 class ObjectValRequiredException extends Exception
 class InvalidComparisonException extends Exception
 class BadTypeAddException extends Exception
+class SayIsNotDefinedException extends Exception
