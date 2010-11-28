@@ -29,6 +29,7 @@
 package org.zmpp.tads3
 
 import scala.collection.mutable.ArrayStack
+import org.zmpp.base.Memory
 
 /*
  * These type ids and their names are taken from the "T3 Portable Binary Encoding"
@@ -173,6 +174,12 @@ object T3Integer {
 object InvalidObjectId extends T3ObjectId(0)
 object InvalidPropertyId extends T3PropertyId(0)
 object T3Value {
+  def readDataHolder(memory: Memory, address: Int) = {
+    val valueType = memory.byteAt(address)
+    val value = DataHolder.valueForType(valueType,
+                                        memory.intAt(address + 1))
+    create(valueType, value)
+  }
   def create(valueType: Int, value: Int): T3Value = {
     import TypeIds._
     valueType match {

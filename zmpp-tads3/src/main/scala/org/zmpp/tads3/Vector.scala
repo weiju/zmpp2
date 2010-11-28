@@ -278,10 +278,7 @@ class VectorMetaClass extends AbstractMetaClass {
     // here come numUsed DATAHOLDERs
     for (i <- 0 until numUsed) {
       val currAddr = objDataAddr + 4 + i * DataHolder.Size
-      val valueType = imageMem.byteAt(currAddr)
-      val value = DataHolder.valueForType(valueType,
-                                          imageMem.intAt(currAddr + 1))
-      vector.append(T3Value.create(valueType, value))
+      vector.append(T3Value.readDataHolder(imageMem, currAddr))
     }
     vector
   }

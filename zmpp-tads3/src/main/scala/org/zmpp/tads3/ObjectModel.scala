@@ -222,10 +222,6 @@ class ObjectMetaClass extends AbstractMetaClass {
   def name = "object"
 }
 
-class StringMetaClass extends AbstractMetaClass {
-  def name = "string"
-}
-
 class IntClassModMetaClass extends AbstractMetaClass {
   def name = "int-class-mod"
 }
@@ -419,7 +415,18 @@ class ObjectSystem {
       val id = new T3ObjectId(newId)
       val list = listMetaClass.createListConstant(id, offset)
       _objectCache(id.value) = list
+      _constantCache(offset.value) = list
       list
+    }
+  }
+  def stringConstantWithOffset(offset: T3SString) = {
+    if (_constantCache.containsKey(offset.value)) _constantCache(offset.value)
+    else {
+      val id = new T3ObjectId(newId)
+      val string = stringMetaClass.createStringConstant(id, offset)
+      _objectCache(id.value) = string
+      _constantCache(offset.value) = string
+      string
     }
   }
 

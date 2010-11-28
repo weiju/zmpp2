@@ -32,18 +32,40 @@ import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
+// regex patterns are stored in the image as pointers to string constants
 class RegexPattern(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
+  var srcPattern: T3Value = T3Nil
+
   def metaClass = objectSystem.regexPatternMetaClass
+  def init(value: T3Value) {
+    srcPattern = value
+  }
+
+  def compile {
+    val str = objectSystem.stringConstantWithOffset(srcPattern.asInstanceOf[T3SString])
+  }
+
+  override def toString = {
+    val str = objectSystem.stringConstantWithOffset(srcPattern.asInstanceOf[T3SString])
+    "regex-pattern [%s]".format(str)
+  }
 }
 
 class RegexPatternMetaClass extends AbstractMetaClass {
   def name = "regex-pattern"
+
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
     val regexPat = new RegexPattern(objectId, vmState, isTransient)
-    regexPat
+    val sourceVal = T3Value.readDataHolder(imageMem, objDataAddr)
+    if (sourceVal.valueType == TypeIds.VmSString) {
+      regexPat.init(sourceVal)
+      regexPat
+    } else {
+      throw new UnsupportedOperationException("unsupported regex data type")
+    }
   }
 }
