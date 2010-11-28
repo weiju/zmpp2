@@ -267,6 +267,9 @@ class Executor(vmState: TadsVMState) {
 
     import Opcodes._
     opcode match {
+      case AddToLcl     =>
+        val localNum = nextShortOperand
+        vmState.setLocal(localNum, add(vmState.getLocal(localNum), vmState.stack.pop))
       case BP           =>
         throw new UnsupportedOperationException("Breakpoints not supported")
       case BuiltinA     =>
@@ -437,6 +440,10 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
+    if (iteration == 1100) {
+      vmState.runState = RunStates.Halted
+      printf("MAX DEBUG ITERATION REACHED")
+    }
 /*
     if (iteration >= 935) {
       println("R0 = " + vmState.r0)
@@ -463,12 +470,12 @@ class Executor(vmState: TadsVMState) {
     printf("ADD value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       new T3Integer(value1.value + value2.value)
-    } else if (value1.valueType == VmSString || value1.valueType == VmDString) {
-      throw new UnsupportedOperationException("String.add not yet supported")
+    } else if (value1.valueType == VmSString || value1.valueType == VmObj) {
+      val str1 = toT3Object(value1)
+      val str2 = toT3Object(value2)
+      (str1 + str2).id
     } else if (value1.valueType == VmList) {
       throw new UnsupportedOperationException("List.add not yet supported")
-    } else if (value1.valueType == VmObj) {
-      throw new UnsupportedOperationException("Object.add not yet supported")
     } else {
       throw new BadTypeAddException
     }
@@ -478,14 +485,24 @@ class Executor(vmState: TadsVMState) {
     printf("SUB value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       new T3Integer(value1.value - value2.value)
-    } else if (value1.valueType == VmSString || value1.valueType == VmDString) {
-      throw new UnsupportedOperationException("String.add not yet supported")
+    } else if (value1.valueType == VmSString) {
+      throw new UnsupportedOperationException("SString.sub not (yet) supported")
+    } else if (value1.valueType == VmDString) {
+      throw new UnsupportedOperationException("DString.sub not (yet) supported")
     } else if (value1.valueType == VmList) {
-      throw new UnsupportedOperationException("List.add not yet supported")
+      throw new UnsupportedOperationException("List.sub not yet supported")
     } else if (value1.valueType == VmObj) {
-      throw new UnsupportedOperationException("Object.add not yet supported")
+      throw new UnsupportedOperationException("Object.sub not yet supported")
     } else {
       throw new BadTypeSubException
+    }
+  }
+
+  private def toT3Object(value: T3Value): T3Object = {
+    if (value.valueType == VmSString) {
+      objectSystem.stringConstantWithOffset(value.asInstanceOf[T3SString])
+    } else {
+      objectSystem.objectWithId(value.asInstanceOf[T3ObjectId])
     }
   }
 
@@ -505,11 +522,14 @@ class Executor(vmState: TadsVMState) {
     } else throw new InvalidComparisonException
   }
   private def t3vmEquals(value1: T3Value, value2: T3Value): Boolean = {
+    printf("t3vmEquals(%s, %s)\n", value1, value2)
     if (value1.valueType == VmObj) {
-      if (value1.equals(value2)) true
+      if (value1.equals(value2)) true // the object ids are identical
       else {
         objectSystem.objectWithId(value1.asInstanceOf[T3ObjectId]).t3vmEquals(value2)
       }
+    } else if (value1.valueType == VmSString) {
+      toT3Object(value1).t3vmEquals(value2)
     } else value1.t3vmEquals(value2)
   }
 

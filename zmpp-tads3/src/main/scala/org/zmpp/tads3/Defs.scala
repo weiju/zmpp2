@@ -154,6 +154,10 @@ class T3StackRef(override val value: Int) extends T3Value {
 class T3SString(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmSString
   override def toString = "sstring (value = %d)".format(value)
+  override def t3vmEquals(other: T3Value): Boolean = {
+    throw new UnsupportedOperationException(
+      "comparison needs to be on the underlying string object")
+  }
 }
 class T3DString(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmDString
@@ -326,6 +330,12 @@ object Opcodes {
   val TrNew2          = 0xc3
   val IncLcl          = 0xd0
   val DecLcl          = 0xd1
+  val AddILcl1        = 0xd2
+  val AddILcl4        = 0xd3
+  val AddToLcl        = 0xd4
+  val SubFromLcl      = 0xd5
+  val ZeroLcl1        = 0xd6
+  val ZeroLcl2        = 0xd7
   val NilLcl1         = 0xd8
   val NilLcl2         = 0xd9
   val OneLcl1         = 0xda
@@ -348,6 +358,9 @@ object Opcodes {
 object OpcodeNames {
   import Opcodes._
   val Names = Map(
+    AddILcl1        -> "ADDILCL1",
+    AddILcl4        -> "ADDILCL4",
+    AddToLcl        -> "AddToLcl",
     BP              -> "BP",
     Builtin1        -> "BUILTIN1",
     Builtin2        -> "BUILTIN2",
@@ -437,10 +450,13 @@ object OpcodeNames {
     SetProp         -> "SETPROP",
     SetPropSelf     -> "SETPROPSELF",
     SetSelf         -> "SETSELF",
+    SubFromLcl      -> "SUBFROMLCL",
     Swap            -> "SWAP",
     Switch          -> "SWITCH",
     TrNew1          -> "TRNEW1",
-    TrNew2          -> "TRNEW2"
+    TrNew2          -> "TRNEW2",
+    ZeroLcl1        -> "ZEROLCL1",
+    ZeroLcl2        -> "ZEROLCL2"
   )
   def opcodeName(opcodeNum: Int) = {
     if (Names.contains(opcodeNum)) Names(opcodeNum)

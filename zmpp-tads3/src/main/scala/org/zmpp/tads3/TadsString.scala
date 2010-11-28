@@ -54,6 +54,13 @@ extends AbstractT3Object(id, vmState, isTransient) {
       throw new UnsupportedOperationException("unsupported T3value type")
     }
   }
+
+  override def +(other: T3Object): T3Object = {
+    val newStr = new TadsString(objectSystem.newObjectId, vmState, false)
+    newStr.init(this.string + other.asInstanceOf[TadsString].string)
+    objectSystem.registerObject(newStr)
+    newStr
+  }
 }
 
 class TadsStringConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)

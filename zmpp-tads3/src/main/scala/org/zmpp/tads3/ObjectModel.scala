@@ -63,6 +63,7 @@ trait T3Object {
   def setValueAtIndex(index: Int, newValue: T3Value): T3Value
   def inheritProperty(propertyId: Int, argc: Int): Property
   def t3vmEquals(other: T3Value): Boolean
+  def +(other: T3Object): T3Object
 }
 
 // All classes in the ZMPP TADS3 implementation inherit from
@@ -105,6 +106,10 @@ extends T3Object {
 
   def inheritProperty(propertyId: Int, argc: Int): Property = {
     throw new UnsupportedOperationException("inheritProperty() not implemented")
+  }
+
+  def +(other: T3Object): T3Object = {
+    throw new UnsupportedOperationException("+() not implemented")
   }
 }
 
