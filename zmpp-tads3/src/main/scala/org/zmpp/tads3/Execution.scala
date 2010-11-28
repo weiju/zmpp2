@@ -607,22 +607,12 @@ class Executor(vmState: TadsVMState) {
   private def evalProperty(self: T3ObjectId, property: Property, argc: Int) {
     printf("evalProperty(%s) [self = %s]\n", property, self)
     property.valueType match {
-      case VmNil     => vmState.r0 = T3Nil
-      case VmTrue    => vmState.r0 = T3True
-      case VmObj     => vmState.r0 = property.tadsValue
-      case VmProp    => vmState.r0 = property.tadsValue
-      case VmInt     => vmState.r0 = property.tadsValue
-      case VmList    => vmState.r0 = property.tadsValue
-      case VmEnum    => vmState.r0 = property.tadsValue
       case VmCodeOfs =>
         vmState.doCall(argc, property.value, property.id, self,
                       property.definingObject, self)
       case VmDString =>
         throw new UnsupportedOperationException("TODO: DOUBLE QUOTED STRING")
-      case _ =>
-        throw new UnsupportedOperationException(
-          "UNHANDLED TYPE: %d => STORE %d IN R0\n".format(property.valueType,
-                                                          property.value))
+      case _         => vmState.r0 = property.tadsValue
     }
   }
 
