@@ -29,6 +29,7 @@
 package org.zmpp.tads3
 
 import scala.collection.mutable.HashMap
+import T3Assert._
 
 // * These are the intrinsic function sets, as they are described in the TADS3
 // * System Manual, "The Intrinsics".
@@ -250,10 +251,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-gen.rexMatch() not implemented yet")
   }
   private def rexSearch(argc: Int) {
-    printf("rexSearch(), argc: %d\n", argc)
-    if (argc < 2 || argc > 3) {
-      throw new IllegalArgumentException("tads-gen.rexSearch() invalid argc")
-    }
+    argCountMustBe(argc, 2, 3)
     val pat = vmState.stack.pop
     val str = vmState.stack.pop
     val index = if (argc == 3) vmState.stack.pop else T3Integer.One
@@ -263,14 +261,31 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
 
     printf("rexSearch(), pat: %s (%s) str: %s (%s) index: %s\n", pat, patObj,
            str, searchStr, index)
-    patObj.asInstanceOf[RegexPattern].compile
-    throw new UnsupportedOperationException("tads-gen.rexSearch() not implemented yet")
+    //patObj.asInstanceOf[RegexPattern].compile
+    //throw new UnsupportedOperationException("tads-gen.rexSearch() not implemented yet")
+    // for now, return nil, because the first search returns nil
+    vmState.r0 = T3Nil
   }
   private def rexGroup(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.rexGroup() not implemented yet")
   }
   private def rexReplace(argc: Int) {
-    throw new UnsupportedOperationException("tads-gen.rexReplace() not implemented yet")
+    argCountMustBe(argc, 4, 5)
+    val pat = vmState.stack.pop
+    val str = vmState.stack.pop
+    val repl = vmState.stack.pop
+    val flags = vmState.stack.pop
+    val index = if (argc == 5) vmState.stack.pop else T3Integer.One
+    val patObj = vmState.objectSystem.objectWithId(pat.value)
+    val searchStr =
+      vmState.objectSystem.stringConstantWithOffset(str.asInstanceOf[T3SString])
+    val replaceStr =
+      vmState.objectSystem.stringConstantWithOffset(repl.asInstanceOf[T3SString])
+    printf("rexReplace(), pat: %s (%s) str: %s repl: %s, flags: %s index: %s\n",
+           pat, patObj, searchStr, replaceStr, flags, index)
+    // for now, we do not replace anything
+    vmState.r0 = searchStr.id
+    //throw new UnsupportedOperationException("tads-gen.rexReplace() not implemented yet")
   }
   private def savepoint(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.savepoint() not implemented yet")

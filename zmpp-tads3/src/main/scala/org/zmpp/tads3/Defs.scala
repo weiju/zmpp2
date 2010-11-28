@@ -458,3 +458,14 @@ class InvalidComparisonException extends Exception
 class BadTypeAddException extends Exception
 class BadTypeSubException extends Exception
 class SayIsNotDefinedException extends Exception
+
+object T3Assert {
+  def argCountMustBe(argc: Int, min: Int, max: Int = 0) {
+    if (max == 0 && argc != min) {
+      throw new IllegalArgumentException("argc must be %d".format(min))
+    } else if (max > 0 && (argc < min || argc > max)) {
+      throw new IllegalArgumentException(
+        "argc must be between %d and %d".format(min, max))
+    }
+  }
+}
