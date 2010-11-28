@@ -55,7 +55,7 @@ extends TadsCollection(id, vmState, isTransient) {
   // in the object's meta class hierarchy
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val idx = staticMetaClass.functionIndexForProperty(propertyId)
-    printf("vec prop idx = %d\n", idx)
+    printf("vector prop idx = %d\n", idx)
     if (idx >= 0) {
       new Property(propertyId,
                    staticMetaClass.callMethodWithIndex(this, idx, argc),

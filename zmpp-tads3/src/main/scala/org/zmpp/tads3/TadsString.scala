@@ -61,6 +61,17 @@ extends AbstractT3Object(id, vmState, isTransient) {
     objectSystem.registerObject(newStr)
     newStr
   }
+
+  // for strings, we search the static property list
+  override def getProperty(propertyId: Int, argc: Int): Property = {
+    val idx = staticMetaClass.functionIndexForProperty(propertyId)
+    printf("string prop idx = %d\n", idx)
+    if (idx >= 0) {
+      new Property(propertyId,
+                   staticMetaClass.callMethodWithIndex(this, idx, argc),
+                   id)
+    } else super.getProperty(propertyId, argc)
+  }
 }
 
 class TadsStringConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
@@ -69,6 +80,45 @@ extends TadsString(id, vmState, isTransient) {
 
 class StringMetaClass extends AbstractMetaClass {
   def name = "string"
+
+  val FunctionVector = Array(undef _,        len _,          substr _,
+                             upper _,        lower _,        find _,
+                             htmlify _,      startsWith _,   endsWith _,
+                             toByteArray _,  replace _)
+
+  def undef(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("undefined")
+  }
+  def len(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("len")
+  }
+  def substr(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("substr")
+  }
+  def upper(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("upper")
+  }
+  def lower(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("lower")
+  }
+  def find(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("find")
+  }
+  def htmlify(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("htmlify")
+  }
+  def startsWith(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("startsWith")
+  }
+  def endsWith(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("endsWith")
+  }
+  def toByteArray(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("toByteArray")
+  }
+  def replace(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("replace")
+  }
 
   def createStringConstant(id: T3ObjectId, offset: T3SString): TadsString = {
     val len = vmState.image.constantDataShortAt(offset.value)
@@ -82,5 +132,10 @@ class StringMetaClass extends AbstractMetaClass {
     val stringConst = new TadsStringConstant(id, vmState, false)
     stringConst.init(builder.toString)
     stringConst
+  }
+
+  override def callMethodWithIndex(obj: T3Object, index: Int,
+                                   argc: Int): T3Value = {
+    FunctionVector(index)(obj, argc)
   }
 }
