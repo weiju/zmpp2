@@ -30,6 +30,7 @@ package org.zmpp.tads3
 
 import scala.collection.mutable.HashMap
 import T3Assert._
+import TypeIds._
 
 // * These are the intrinsic function sets, as they are described in the TADS3
 // * System Manual, "The Intrinsics".
@@ -72,7 +73,6 @@ class T3VMFunctionSet extends IntrinsicFunctionSet {
 
   private def runGC(argc: Int) { println("t3vm.runGC() [not implemented]") }
   private def setSay(argc: Int) {
-    import TypeIds._
     println("t3vm.setSay()")
     if (argc != 1) throw new IllegalArgumentException("setSay() argc must be 1")
     vmState.sayFuncPtr = vmState.stack.pop
@@ -163,7 +163,6 @@ object TadsGenFunctionSet {
 class TadsGenFunctionSet extends IntrinsicFunctionSet {
   def name = "tads-gen"
   private def dataType(argc: Int) {
-    import TypeIds._
     if (argc == 1) {
       val value = vmState.stack.pop
       val resultType = if (value.valueType == VmObj) {
@@ -193,9 +192,9 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
       flags    = vmState.stack.pop.value
     } else if (argc == 1) {
       val arg = vmState.stack.pop
-      if (arg.valueType == TypeIds.VmInt) {
+      if (arg.valueType == VmInt) {
         flags = arg.value
-      } else if (arg.valueType == TypeIds.VmObj) {
+      } else if (arg.valueType == VmObj) {
         val matchClassId = arg.value
         matchClass = vmState.objectSystem.objectWithId(matchClassId)
       } else {
@@ -256,9 +255,13 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     val str = vmState.stack.pop
     val index = if (argc == 3) vmState.stack.pop else T3Integer.One
     val patObj = vmState.objectSystem.objectWithId(pat.value)
-    val searchStr =
+    val searchStr = if (str.valueType == VmSString) {
       vmState.objectSystem.stringConstantWithOffset(str.asInstanceOf[T3SString])
-
+    } else if (str.valueType == VmObj) {
+      vmState.objectSystem.objectWithId(str.asInstanceOf[T3ObjectId])
+    } else {
+      throw new IllegalArgumentException("unsupported data type for str")
+    }
     printf("rexSearch(), pat: %s (%s) str: %s (%s) index: %s\n", pat, patObj,
            str, searchStr, index)
     //patObj.asInstanceOf[RegexPattern].compile

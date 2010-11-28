@@ -31,6 +31,7 @@ package org.zmpp.tads3
 import org.zmpp.base.Types
 import org.zmpp.base.Memory
 import org.zmpp.base.DefaultMemory
+import TypeIds._
 
 object RunStates {
   val Running = 1
@@ -223,7 +224,7 @@ class Executor(vmState: TadsVMState) {
   
   def executeCallback(callback: T3Value, argc: Int) {
     printf("executeCallback(), %s, argc: %d\n", callback, argc)
-    if (callback.valueType == TypeIds.VmObj) {
+    if (callback.valueType == VmObj) {
       // make sure the specified object defines "ObjectCallProp" and
       // invoke it
       val objectId = callback.asInstanceOf[T3ObjectId]
@@ -232,7 +233,7 @@ class Executor(vmState: TadsVMState) {
       printf("handle object [%s], using objectCallProp: [%s]\n", obj, objectCallProp)
       val prop = obj.getProperty(objectCallProp.value, 0)
       printf("executeCallback() - PROP FOUND: %s\n", prop)
-      if (prop.valueType == TypeIds.VmFuncPtr) {
+      if (prop.valueType == VmFuncPtr) {
         // Call the function
         // and execute the callback until we return to the same point
         // we can return when after a return
@@ -248,7 +249,7 @@ class Executor(vmState: TadsVMState) {
       } else {
         throw new IllegalArgumentException("ObjectCallProp is not a function pointer")
       }
-    } else if (callback.valueType == TypeIds.VmFuncPtr) {
+    } else if (callback.valueType == VmFuncPtr) {
       throw new UnsupportedOperationException("funcptr callback TODO")
     } else {
       throw new IllegalArgumentException("unsupported callback type: " + callback)
@@ -444,7 +445,6 @@ class Executor(vmState: TadsVMState) {
   }
 
   private def say(poolOffset: Int) {
-    import TypeIds._
     vmState.stack.pushSString(poolOffset)
     if (vmState.sayFuncPtr.valueType == VmProp &&
         vmState.currentSelf != T3Nil) {
@@ -460,7 +460,6 @@ class Executor(vmState: TadsVMState) {
   }
 
   private def add(value1: T3Value, value2: T3Value): T3Value = {
-    import TypeIds._
     printf("ADD value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       new T3Integer(value1.value + value2.value)
@@ -476,7 +475,6 @@ class Executor(vmState: TadsVMState) {
   }
 
   private def sub(value1: T3Value, value2: T3Value): T3Value = {
-    import TypeIds._
     printf("SUB value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       new T3Integer(value1.value - value2.value)
@@ -497,7 +495,6 @@ class Executor(vmState: TadsVMState) {
   //   0 => value1 == value2
   // > 0 => value1 > value2
   private def compare(value1: T3Value, value2: T3Value): Int = {
-    import TypeIds._
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       value1.value - value2.value
     } else if ((value1.valueType == VmSString || value1.valueType == VmDString) &&
@@ -508,14 +505,19 @@ class Executor(vmState: TadsVMState) {
     } else throw new InvalidComparisonException
   }
   private def t3vmEquals(value1: T3Value, value2: T3Value): Boolean = {
-    value1.t3vmEquals(value2)
+    if (value1.valueType == VmObj) {
+      if (value1.equals(value2)) true
+      else {
+        objectSystem.objectWithId(value1.asInstanceOf[T3ObjectId]).t3vmEquals(value2)
+      }
+    } else value1.t3vmEquals(value2)
   }
 
   // instruction implementations
   private def index(targetValue: T3Value, indexVal: Int) {
-    if (targetValue.valueType == TypeIds.VmList) {
+    if (targetValue.valueType == VmList) {
       throw new UnsupportedOperationException("indexing lists not supported yet")
-    } else if (targetValue.valueType == TypeIds.VmObj) {
+    } else if (targetValue.valueType == VmObj) {
       val pushValue =
         vmState.objectSystem.objectWithId(targetValue).valueAtIndex(indexVal)
       vmState.stack.push(pushValue)
@@ -524,27 +526,27 @@ class Executor(vmState: TadsVMState) {
 
   private def ptrCall(argc: Int) {
     val stackVal = vmState.stack.pop
-    if (stackVal.valueType == TypeIds.VmProp) {
+    if (stackVal.valueType == VmProp) {
       throw new UnsupportedOperationException("PtrCall with PROP not supported yet")
-    } else if (stackVal.valueType == TypeIds.VmObj) {
+    } else if (stackVal.valueType == VmObj) {
       printf("OBJ PROP CALL, OBJ = %d\n", stackVal.value)
       val obj  = vmState.objectSystem.objectWithId(stackVal.value)
       val symb = vmState.image.symbolicNames("ObjectCallProp")
-      if (symb != null && symb.valueType == TypeIds.VmProp) {
+      if (symb != null && symb.valueType == VmProp) {
         printf("SYM: %s TYP: %d VAL: %d\n", symb.name, symb.valueType, symb.value)
         val prop = obj.getProperty(symb.value, argc)
         vmState.doCall(argc, prop.value, 0, obj.id, obj.id, obj.id)
       } else throw new FuncPtrValRequiredException
-    } else if (stackVal.valueType == TypeIds.VmFuncPtr) {
+    } else if (stackVal.valueType == VmFuncPtr) {
       throw new UnsupportedOperationException("PtrCall with FuncPtr not supported yet")
     } else throw new FuncPtrValRequiredException
   }
 
   private def setInd(containerVal: T3Value, index: Int, newVal: T3Value) = {
-    if (containerVal.valueType == TypeIds.VmObj) {
+    if (containerVal.valueType == VmObj) {
       val obj = vmState.objectSystem.objectWithId(containerVal.value)
       obj.setValueAtIndex(index, newVal)
-    } else if (containerVal.valueType == TypeIds.VmList) {
+    } else if (containerVal.valueType == VmList) {
       throw new UnsupportedOperationException("SETINDxxx not supported " +
                                               "for objects of list yet")
     } else throw new CannotIndexTypeException
@@ -557,7 +559,7 @@ class Executor(vmState: TadsVMState) {
 
   private def objSetProp(targetVal: T3Value, propId: Int,
                          newVal: T3Value) {
-    if (targetVal.valueType == TypeIds.VmObj) {
+    if (targetVal.valueType == VmObj) {
       val obj = vmState.objectSystem.objectWithId(targetVal)
       obj.setProperty(propId, newVal)
     } else throw new ObjectValRequiredException
@@ -573,7 +575,7 @@ class Executor(vmState: TadsVMState) {
   private def callProp(argc: Int, targetVal: T3Value, propId: Int) {
     printf("callProp(%s, %d, %d)\n", targetVal, argc, propId)
 
-    if (targetVal.valueType == TypeIds.VmObj) {
+    if (targetVal.valueType == VmObj) {
       val obj = vmState.objectSystem.objectWithId(targetVal)
       printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
       val prop = obj.getProperty(propId, argc)
@@ -585,7 +587,7 @@ class Executor(vmState: TadsVMState) {
         throw new UnsupportedOperationException("TODO: property not found, " +
                                                 "check for propNotDefined")
       }
-    } else if (targetVal.valueType == TypeIds.VmList) {
+    } else if (targetVal.valueType == VmList) {
       // use constant list property evaluator
       // the targetValue is an offset into the list pool, not into the static
       // object pool !!!!
@@ -596,22 +598,22 @@ class Executor(vmState: TadsVMState) {
       val listMeta = vmState.objectSystem.metaClassForName("list")
       val result = listMeta.evalClassProperty(list, propId)
       vmState.r0 = result
-    } else if (targetVal.valueType == TypeIds.VmSString ||
-               targetVal.valueType == TypeIds.VmDString) {
+    } else if (targetVal.valueType == VmSString ||
+               targetVal.valueType == VmDString) {
       throw new UnsupportedOperationException("Cannot handle string constants yet")
     } else throw new ObjectValRequiredException
   }
 
   private def evalProperty(self: T3ObjectId, property: Property, argc: Int) {
-    import TypeIds._
     printf("evalProperty(%s) [self = %s]\n", property, self)
     property.valueType match {
       case VmNil     => vmState.r0 = T3Nil
       case VmTrue    => vmState.r0 = T3True
-      case VmObj     => vmState.r0 = new T3ObjectId(property.value)
-      case VmProp    => vmState.r0 = new T3PropertyId(property.value)
-      case VmInt     => vmState.r0 = new T3Integer(property.value)
-      case VmList    => vmState.r0 = new T3ListConstant(property.value)
+      case VmObj     => vmState.r0 = property.tadsValue
+      case VmProp    => vmState.r0 = property.tadsValue
+      case VmInt     => vmState.r0 = property.tadsValue
+      case VmList    => vmState.r0 = property.tadsValue
+      case VmEnum    => vmState.r0 = property.tadsValue
       case VmCodeOfs =>
         vmState.doCall(argc, property.value, property.id, self,
                       property.definingObject, self)

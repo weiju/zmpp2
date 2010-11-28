@@ -62,6 +62,7 @@ trait T3Object {
   def valueAtIndex(index: Int): T3Value
   def setValueAtIndex(index: Int, newValue: T3Value): T3Value
   def inheritProperty(propertyId: Int, argc: Int): Property
+  def t3vmEquals(other: T3Value): Boolean
 }
 
 // All classes in the ZMPP TADS3 implementation inherit from
@@ -82,6 +83,10 @@ extends T3Object {
       false
     }
     false
+  }
+  def t3vmEquals(other: T3Value): Boolean = {
+    printf("t3vmEquals(), this is: %s other is: %s\n", this, other)
+    throw new UnsupportedOperationException("t3vmEquals() - TODO")
   }
   def getProperty(propertyId: Int, argc: Int): Property = {
     throw new UnsupportedOperationException("getProperty() not implemented: " +
