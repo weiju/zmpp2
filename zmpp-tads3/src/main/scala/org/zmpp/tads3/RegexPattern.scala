@@ -29,6 +29,7 @@
 package org.zmpp.tads3
 
 import java.util.ArrayList
+import java.util.regex._
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
@@ -38,11 +39,15 @@ extends AbstractT3Object(id, vmState, isTransient) {
   private var srcPattern: T3Value          = T3Nil
   private var srcPatternString: TadsString = null
   private var javaPattern: String          = null
+  private var noCase: Boolean = false
+  private var regexPattern: Pattern = null
 
   def metaClass = objectSystem.regexPatternMetaClass
   def init(value: T3Value) {
     srcPattern = value
   }
+  def ignoreCase = noCase
+
   def patternString: TadsString = {
     if (srcPatternString == null) {
       srcPatternString =
@@ -53,14 +58,20 @@ extends AbstractT3Object(id, vmState, isTransient) {
   }
   def javaPatternString: String = {
     if (javaPattern == null) {
+      noCase = patternString.string.indexOf("<nocase>") >= 0
       // TODO: convert to a java pattern string
-      javaPattern = patternString.string
+      // TODO: '%%' sequences !!
+      // TODO: angled expression replacements should be case insensitive !!
+      javaPattern = patternString.string.replaceAll("<nocase>", "")
+      javaPattern = javaPattern.replaceAll("<langle>", "<")
+      javaPattern = javaPattern.replaceAll("<rangle>", ">")
+      javaPattern = javaPattern.replaceAll("%", "\\\\")
     }
     javaPattern
   }
 
   def compile {
-    val str = objectSystem.stringConstantWithOffset(srcPattern.asInstanceOf[T3SString])
+    regexPattern = Pattern.compile(javaPatternString)
   }
 
   override def toString = {

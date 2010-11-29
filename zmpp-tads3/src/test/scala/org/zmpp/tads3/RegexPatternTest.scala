@@ -64,6 +64,17 @@ object RegexPatternSpec extends Specification {
     "be created" in {
       val pattern = makePattern(1, "apattern")
       pattern.javaPatternString must_== "apattern"
+      pattern.ignoreCase must_== false
+    }
+    "use the ignoreCase flag" in {
+      val pattern = makePattern(1, "<nocase>apattern")
+      pattern.javaPatternString must_== "apattern"
+      pattern.ignoreCase must_== true
+    }
+    "translate a pattern" in {
+      val pattern = makePattern(10, "<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>")
+      pattern.compile
+      pattern.javaPatternString must_== "<\\.(/?[a-z][a-z0-9]*)>"
     }
   }
 }
