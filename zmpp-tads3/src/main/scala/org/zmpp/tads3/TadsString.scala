@@ -35,6 +35,9 @@ import T3Assert._
 
 // Strings are implemented with Java strings, but their index is based on
 // 1 instead of 0
+object TadsString {
+  val ReplaceAll = 1
+}
 class TadsString(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
 
@@ -57,12 +60,15 @@ extends AbstractT3Object(id, vmState, isTransient) {
       throw new UnsupportedOperationException("unsupported T3value type")
     }
   }
-
-  override def +(other: T3Object): T3Object = {
+  private def createStringFrom(str: String): TadsString = {
     val newStr = new TadsString(objectSystem.newObjectId, vmState, false)
-    newStr.init(this.string + other.asInstanceOf[TadsString].string)
+    newStr.init(str)
     objectSystem.registerObject(newStr)
     newStr
+  }
+
+  override def +(other: T3Object): T3Object = {
+    createStringFrom(this.string + other.asInstanceOf[TadsString].string)
   }
 
   // for strings, we search the static property list
@@ -79,6 +85,25 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def find(str: TadsString, index: Int): Int = {
     string.indexOf(str.string, index - 1) + 1
   }
+
+  def findReplace(origStr: TadsString, newStr: TadsString, replaceAll: Boolean,
+                  index: Int): TadsString = {
+    printf("findReplace(%s, %s, %b, %d)\n", origStr, newStr, replaceAll, index)
+    val result = if (index > 1) {
+      if (replaceAll) {
+        string.substring(0, index - 1) +
+          string.substring(index - 1).replaceAll(origStr.string, newStr.string)
+      } else {
+        string.substring(0, index - 1) +
+          string.substring(index - 1).replaceFirst(origStr.string, newStr.string)
+      }
+    } else {
+      if (replaceAll) string.replaceAll(origStr.string, newStr.string)
+      else string.replaceFirst(origStr.string, newStr.string)
+    }
+    printf("findReplace(), result string is: %s\n", result)
+    createStringFrom(result)
+  }
 }
 
 class TadsStringConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
@@ -88,25 +113,25 @@ extends TadsString(id, vmState, isTransient) {
 class StringMetaClass extends AbstractMetaClass {
   def name = "string"
 
-  val FunctionVector = Array(undef _,        len _,          substr _,
-                             upper _,        lower _,        find _,
-                             toUni _,        htmlify _,      startsWith _,
-                             endsWith _,     toByteArray _,  replace _)
+  val FunctionVector = Array(undef _,        length _,          substr _,
+                             toUpper _,      toLower _,         find _,
+                             toUnicode _,    htmlify _,         startsWith _,
+                             endsWith _,     mapToByteArray _,  findReplace _)
 
   def undef(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined")
   }
-  def len(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("len")
+  def length(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("length")
   }
   def substr(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("substr")
   }
-  def upper(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("upper")
+  def toUpper(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("toUpper")
   }
-  def lower(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("lower")
+  def toLower(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("toLower")
   }
   def find(obj: T3Object, argc: Int): T3Value = {
     argCountMustBe(argc, 1, 2)
@@ -117,8 +142,8 @@ class StringMetaClass extends AbstractMetaClass {
     printf("find(%s, %d) = %d\n", str, index, foundAt)
     if (foundAt == 0) T3Nil else new T3Integer(foundAt)
   }
-  def toUni(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("toUni")
+  def toUnicode(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("toUnicode")
   }
   def htmlify(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("htmlify")
@@ -129,11 +154,19 @@ class StringMetaClass extends AbstractMetaClass {
   def endsWith(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("endsWith")
   }
-  def toByteArray(obj: T3Object, argc: Int): T3Value = {
+  def mapToByteArray(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("toByteArray")
   }
-  def replace(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("replace")
+  def findReplace(obj: T3Object, argc: Int): T3Value = {
+    import TadsString._
+    argCountMustBe(argc, 3, 4)
+    val origStr = objectSystem.toT3Object(vmState.stack.pop)
+    val newStr  = objectSystem.toT3Object(vmState.stack.pop)
+    val replaceAll = (vmState.stack.pop.value & ReplaceAll) == ReplaceAll
+    val index   = if (argc == 4) vmState.stack.pop.value else 1
+    obj.asInstanceOf[TadsString].findReplace(origStr.asInstanceOf[TadsString],
+                                             newStr.asInstanceOf[TadsString],
+                                             replaceAll, index).id
   }
 
   def createStringConstant(id: T3ObjectId, offset: T3SString): TadsString = {
