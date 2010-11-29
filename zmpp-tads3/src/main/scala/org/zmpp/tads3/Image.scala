@@ -273,7 +273,12 @@ class TadsImage(val memory: Memory) {
       val numPropertyIds = memory.shortAt(addr + 3 + numEntryNameBytes)
       objectSystem.addMetaClassDependency(i, namebuffer.toString)
       val propbase = addr + 3 + numEntryNameBytes + 2
-      for (j <- 0 until numPropertyIds) {
+
+      // this does not seem to be documented: there are not numPropertyIds
+      // mappings here, but (numPropertyIds + 1) !!!
+      // One possible explanation might be that function index 0 is
+      // always mapped to the undef function
+      for (j <- 0 to numPropertyIds) {
         objectSystem.addMetaClassPropertyId(i, j, memory.shortAt(propbase + j * 2))
       }
       addr += entrySize

@@ -31,7 +31,10 @@ package org.zmpp.tads3
 import org.zmpp.base._
 import scala.collection.JavaConversions._
 import TypeIds._
+import T3Assert._
 
+// Strings are implemented with Java strings, but their index is based on
+// 1 instead of 0
 class TadsString(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
 
@@ -72,6 +75,10 @@ extends AbstractT3Object(id, vmState, isTransient) {
                    id)
     } else super.getProperty(propertyId, argc)
   }
+
+  def find(str: TadsString, index: Int): Int = {
+    string.indexOf(str.string, index - 1) + 1
+  }
 }
 
 class TadsStringConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
@@ -83,8 +90,8 @@ class StringMetaClass extends AbstractMetaClass {
 
   val FunctionVector = Array(undef _,        len _,          substr _,
                              upper _,        lower _,        find _,
-                             htmlify _,      startsWith _,   endsWith _,
-                             toByteArray _,  replace _)
+                             toUni _,        htmlify _,      startsWith _,
+                             endsWith _,     toByteArray _,  replace _)
 
   def undef(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("undefined")
@@ -102,7 +109,16 @@ class StringMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("lower")
   }
   def find(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("find")
+    argCountMustBe(argc, 1, 2)
+    val str = objectSystem.toT3Object(vmState.stack.pop)
+    val index = if (argc > 1) vmState.stack.pop.value else 1
+    val foundAt = obj.asInstanceOf[TadsString].find(
+      str.asInstanceOf[TadsString], index)
+    printf("find(%s, %d) = %d\n", str, index, foundAt)
+    if (foundAt == 0) T3Nil else new T3Integer(foundAt)
+  }
+  def toUni(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("toUni")
   }
   def htmlify(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("htmlify")

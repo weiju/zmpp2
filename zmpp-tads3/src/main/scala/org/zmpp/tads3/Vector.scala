@@ -31,6 +31,7 @@ package org.zmpp.tads3
 import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.zmpp.base._
+import T3Assert._
 
 // This file implements the built-in library class/metaclass Vector in TADS3.
 // A TADS3 Vector is backed by an ArrayList, so constructor arguments which
@@ -147,18 +148,15 @@ class VectorMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("undefined")
   }
   def toList(obj: T3Object, argc: Int): T3Value = {
+    argCountMustBe(argc, 0, 2)
     val vector = obj.asInstanceOf[Vector]
     val start = if (argc > 0) vmState.stack.pop.value else 1
     val end   = if (argc > 1) vmState.stack.pop.value else vector.size
-    if (argc > 2) throw new UnsupportedOperationException("toList has max 2 params")
     vector.toList(start, end)
   }
   def getSize(obj: T3Object, argc: Int): T3Value = {
-    if (argc == 0) {
-      new T3Integer(obj.asInstanceOf[Vector].size)
-    } else {
-      throw new IllegalArgumentException("getSize(): argc must be 0")
-    }
+    argCountMustBe(argc, 0)
+    new T3Integer(obj.asInstanceOf[Vector].size)
   }
   def copyFrom(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("copyFrom")
@@ -173,10 +171,9 @@ class VectorMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("applyAll")
   }
   def indexWhich(obj: T3Object, argc: Int): T3Value = {
-    if (argc == 1) {
-      val index = obj.asInstanceOf[Vector].indexWhich(vmState.stack.pop)
-      if (index == 0) T3Nil else new T3Integer(index)
-    } else throw new IllegalArgumentException("wrong arg count: " + argc)
+    argCountMustBe(argc, 1)
+    val index = obj.asInstanceOf[Vector].indexWhich(vmState.stack.pop)
+    if (index == 0) T3Nil else new T3Integer(index)
   }
   def forEach(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("indexWhich")
@@ -188,12 +185,11 @@ class VectorMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("mapAll")
   }
   def indexOf(obj: T3Object, argc: Int): T3Value = {
-    if (argc == 1) {
-      val value = vmState.stack.pop
-      val index = obj.asInstanceOf[Vector].indexOf(value)
-      printf("vector.indexOf(), argc = %d val = %s index = %d\n", argc, value, index)
-      if (index == 0) T3Nil else new T3Integer(index)
-    } else throw new IllegalArgumentException("wrong arg count")
+    argCountMustBe(argc, 1)
+    val value = vmState.stack.pop
+    val index = obj.asInstanceOf[Vector].indexOf(value)
+    printf("vector.indexOf(), argc = %d val = %s index = %d\n", argc, value, index)
+    if (index == 0) T3Nil else new T3Integer(index)
   }
   def valWhich(obj: T3Object, argc: Int): T3Value = {
     obj.asInstanceOf[Vector].valWhich(vmState.stack.pop)
@@ -246,14 +242,11 @@ class VectorMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("removeRange")
   }
   def append(obj: T3Object, argc: Int): T3Value = {
-    if (argc == 1) {
-      val arg = vmState.stack.pop
-      printf("obj(%s).append: %s\n", obj, arg)
-      obj.asInstanceOf[Vector].append(arg)
-      obj.id
-    } else {
-      throw new IllegalArgumentException("wrong argument count: %d".format(argc))
-    }
+    argCountMustBe(argc, 1)
+    val arg = vmState.stack.pop
+    printf("obj(%s).append: %s\n", obj, arg)
+    obj.asInstanceOf[Vector].append(arg)
+    obj.id
   }
   def prepend(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("prepend")

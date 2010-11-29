@@ -40,6 +40,7 @@ package org.zmpp.tads3
 import scala.collection.JavaConversions._
 import java.util.TreeMap
 import org.zmpp.base._
+import TypeIds._
 
 // T3 object is the super interface of all objects in the TADS 3 system
 // Note:
@@ -465,6 +466,14 @@ class ObjectSystem {
       }
     }
     InvalidObject
+  }
+
+  def toT3Object(value: T3Value): T3Object = {
+    if (value.valueType == VmSString) {
+      stringConstantWithOffset(value.asInstanceOf[T3SString])
+    } else {
+      objectWithId(value.asInstanceOf[T3ObjectId])
+    }
   }
 }
 

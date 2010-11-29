@@ -440,7 +440,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 1100) {
+    if (iteration == 1150) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
@@ -471,8 +471,8 @@ class Executor(vmState: TadsVMState) {
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       new T3Integer(value1.value + value2.value)
     } else if (value1.valueType == VmSString || value1.valueType == VmObj) {
-      val str1 = toT3Object(value1)
-      val str2 = toT3Object(value2)
+      val str1 = objectSystem.toT3Object(value1)
+      val str2 = objectSystem.toT3Object(value2)
       (str1 + str2).id
     } else if (value1.valueType == VmList) {
       throw new UnsupportedOperationException("List.add not yet supported")
@@ -495,14 +495,6 @@ class Executor(vmState: TadsVMState) {
       throw new UnsupportedOperationException("Object.sub not yet supported")
     } else {
       throw new BadTypeSubException
-    }
-  }
-
-  private def toT3Object(value: T3Value): T3Object = {
-    if (value.valueType == VmSString) {
-      objectSystem.stringConstantWithOffset(value.asInstanceOf[T3SString])
-    } else {
-      objectSystem.objectWithId(value.asInstanceOf[T3ObjectId])
     }
   }
 
@@ -529,7 +521,7 @@ class Executor(vmState: TadsVMState) {
         objectSystem.objectWithId(value1.asInstanceOf[T3ObjectId]).t3vmEquals(value2)
       }
     } else if (value1.valueType == VmSString) {
-      toT3Object(value1).t3vmEquals(value2)
+      objectSystem.toT3Object(value1).t3vmEquals(value2)
     } else value1.t3vmEquals(value2)
   }
 
