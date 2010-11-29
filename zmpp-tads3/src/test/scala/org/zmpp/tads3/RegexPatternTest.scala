@@ -35,9 +35,25 @@ class RegexPatternTest extends JUnit4(RegexPatternSpec)
 object RegexPatternSpecRunner extends ConsoleRunner(RegexPatternSpec)
 
 object RegexPatternSpec extends Specification {
-  var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
+  var objectSystem : ObjectSystem = null
   var vmState : TadsVMState = null
+
+  // returns a pattern which is retrieving the specified string from a
+  // mocked ObjectSystem
+  def makePattern(id: Int, str: String) = {
+    val mockObjectSystem = new ObjectSystem {
+      override def stringConstantWithOffset(offset: T3SString): TadsString = {
+        val t3str = new TadsString(new T3ObjectId(1), vmState, false)
+        t3str.init(str)
+        t3str
+      }
+    }
+    val mockVmState = new TadsVMState(mockObjectSystem, functionSetMapper)
+    val result = new RegexPattern(new T3ObjectId(id), mockVmState, false)
+    result.init(new T3SString(4711)) // only a dummy
+    result
+  }
 
   "RegexPattern" should {
     doBefore {
@@ -46,8 +62,8 @@ object RegexPatternSpec extends Specification {
       vmState = new TadsVMState(objectSystem, functionSetMapper)
     }
     "be created" in {
-      val str = new RegexPattern(new T3ObjectId(1), vmState, false)
-      0 must_== 0
+      val pattern = makePattern(1, "apattern")
+      pattern.javaPatternString must_== "apattern"
     }
   }
 }

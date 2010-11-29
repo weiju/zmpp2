@@ -38,6 +38,12 @@ object TadsStringSpec extends Specification {
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
   var vmState : TadsVMState = null
+  
+  def makeString(id: Int, str: String) = {
+    val result = new TadsString(new T3ObjectId(id), vmState, false)
+    result.init(str)
+    result
+  }
 
   "TadsString" should {
     doBefore {
@@ -46,8 +52,35 @@ object TadsStringSpec extends Specification {
       vmState = new TadsVMState(objectSystem, functionSetMapper)
     }
     "be created" in {
-      val str = new TadsString(new T3ObjectId(1), vmState, false)
-      0 must_== 0
+      makeString(1, "astring").length must_== "astring".length
+    }
+    "be concatenated" in {
+      val str1 = makeString(1, "Hello, ")
+      val str2 = makeString(2, "World !")
+      (str1 + str2).asInstanceOf[TadsString].string must_== "Hello, World !"
+    }
+    "do a find" in {
+      val str1 = makeString(1, "Hello, World !")
+      val str2 = makeString(3, "ello")
+      val str3 = makeString(2, "salami")
+      // success
+      str1.find(str1, 1) must_== 1
+      str1.find(str2, 1) must_== 2
+      // failure
+      str1.find(str2, 3) must_== 0
+      str1.find(str3, 1) must_== 0
+    }
+    "do a findReplace" in {
+      val str1 = makeString(1, "blablabla")
+      str1.findReplace(makeString(2, "bla"),
+                       makeString(3, "rhabarber"), true, 1).string must_==
+        "rhabarberrhabarberrhabarber"
+      str1.findReplace(makeString(2, "bla"),
+                       makeString(3, "rhabarber"), false, 2).string must_==
+        "blarhabarberbla"
+      str1.findReplace(makeString(2, "bla"),
+                       makeString(3, "rhabarber"), true, 2).string must_==
+        "blarhabarberrhabarber"
     }
   }
 }

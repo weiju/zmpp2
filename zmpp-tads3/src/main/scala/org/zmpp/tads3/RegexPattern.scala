@@ -35,11 +35,28 @@ import org.zmpp.base._
 // regex patterns are stored in the image as pointers to string constants
 class RegexPattern(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
-  var srcPattern: T3Value = T3Nil
+  private var srcPattern: T3Value          = T3Nil
+  private var srcPatternString: TadsString = null
+  private var javaPattern: String          = null
 
   def metaClass = objectSystem.regexPatternMetaClass
   def init(value: T3Value) {
     srcPattern = value
+  }
+  def patternString: TadsString = {
+    if (srcPatternString == null) {
+      srcPatternString =
+        objectSystem.stringConstantWithOffset(
+          srcPattern.asInstanceOf[T3SString]).asInstanceOf[TadsString]
+    }
+    srcPatternString
+  }
+  def javaPatternString: String = {
+    if (javaPattern == null) {
+      // TODO: convert to a java pattern string
+      javaPattern = patternString.string
+    }
+    javaPattern
   }
 
   def compile {

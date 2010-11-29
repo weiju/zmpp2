@@ -45,11 +45,9 @@ extends AbstractT3Object(id, vmState, isTransient) {
 
   protected def staticMetaClass = objectSystem.stringMetaClass
   def metaClass = objectSystem.stringMetaClass
-  def init(str: String) {
-    printf("init string constant: %s\n", str)
-    this.string = str
-  }
-  override def toString = "'%s'".format(string)
+  def init(str: String) = this.string = str
+  def length = string.length
+  override def toString = string
   override def t3vmEquals(other: T3Value): Boolean = {
     if (other.valueType == VmSString) {
       val otherString =
