@@ -33,7 +33,12 @@ import java.util.regex._
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 
-// regex patterns are stored in the image as pointers to string constants
+// RegexPatterns are stored in the image as pointers to string constants
+// For efficiency, the underlying pattern strings are retrieved when a
+// pattern is actually used.
+// When that happens, the pattern string is translated to a Java regex
+// which is then compiled using the standard library, since it does not
+// make any sense to implement my own
 class RegexPattern(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
   private var srcPattern: T3Value          = T3Nil
@@ -41,6 +46,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
   private var javaPattern: String          = null
   private var noCase: Boolean = false
   private var regexPattern: Pattern = null
+  private var currentMatcher: Matcher = null
 
   def metaClass = objectSystem.regexPatternMetaClass
   def init(value: T3Value) {
@@ -70,8 +76,29 @@ extends AbstractT3Object(id, vmState, isTransient) {
     javaPattern
   }
 
-  def compile {
-    regexPattern = Pattern.compile(javaPatternString)
+  def compile = {
+    if (regexPattern == null ) regexPattern = Pattern.compile(javaPatternString)
+    regexPattern
+  }
+
+  def search(str: TadsString, index: Int): Int = {
+    currentMatcher = compile.matcher(str.string)
+    if (currentMatcher.find(index - 1)) currentMatcher.start + 1 else 0
+  }
+
+  def group(groupNum: Int): TadsList = {
+    if (groupNum <= currentMatcher.groupCount) {
+      val resultList = objectSystem.listMetaClass.createList(objectSystem.newObjectId)
+      objectSystem.registerObject(resultList)
+      val groupStr =
+        objectSystem.stringMetaClass.createString(objectSystem.newObjectId,
+                                                  currentMatcher.group(groupNum))
+      objectSystem.registerObject(groupStr)
+      val resultSeq = List(new T3Integer(currentMatcher.start(groupNum) + 1),
+                           new T3Integer(groupStr.length), groupStr.id)
+      resultList.initWith(resultSeq)
+      resultList
+    } else null
   }
 
   override def toString = {

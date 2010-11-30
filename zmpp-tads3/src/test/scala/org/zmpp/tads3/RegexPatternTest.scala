@@ -55,6 +55,12 @@ object RegexPatternSpec extends Specification {
     result
   }
 
+  def makeString(id: Int, str: String) = {
+    val result = new TadsString(new T3ObjectId(id), vmState, false)
+    result.init(str)
+    result
+  }
+
   "RegexPattern" should {
     doBefore {
       objectSystem = new ObjectSystem
@@ -75,6 +81,18 @@ object RegexPatternSpec extends Specification {
       val pattern = makePattern(10, "<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>")
       pattern.compile
       pattern.javaPatternString must_== "<\\.(/?[a-z][a-z0-9]*)>"
+      pattern.search(makeString(1, "<.p0><title>"), 1) must_== 1
+      pattern.search(makeString(2, "some<.p0><title>"), 1) must_== 5
+      pattern.search(makeString(2, "sometext"), 1) must_== 0
+    }
+    "return a group" in {
+      val pattern = makePattern(10, "<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>")
+      pattern.search(makeString(1, "<.p0><title>"), 1) must_== 1
+      val matchGroup = pattern.group(1)
+      matchGroup.size must_== 3
+      matchGroup.valueAtIndex(1) must_== new T3Integer(3)
+      matchGroup.valueAtIndex(2) must_== new T3Integer(2)
+      matchGroup.valueAtIndex(3).valueType must_== TypeIds.VmObj
     }
   }
 }

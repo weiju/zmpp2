@@ -253,7 +253,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     argCountMustBe(argc, 2, 3)
     val pat = vmState.stack.pop
     val str = vmState.stack.pop
-    val index = if (argc == 3) vmState.stack.pop else T3Integer.One
+    val index = if (argc == 3) vmState.stack.pop.value else 1
     val patObj = vmState.objectSystem.objectWithId(pat.value)
     val searchStr = if (str.valueType == VmSString) {
       vmState.objectSystem.stringConstantWithOffset(str.asInstanceOf[T3SString])
@@ -262,15 +262,19 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     } else {
       throw new IllegalArgumentException("unsupported data type for str")
     }
-    printf("rexSearch(), pat: %s (%s) str: %s (%s) index: %s\n", pat, patObj,
-           str, searchStr, index)
-    //patObj.asInstanceOf[RegexPattern].compile
-    //throw new UnsupportedOperationException("tads-gen.rexSearch() not implemented yet")
-    // for now, return nil, because the first search returns nil
-    vmState.r0 = T3Nil
+    val foundAt =
+      patObj.asInstanceOf[RegexPattern].search(searchStr.asInstanceOf[TadsString],
+                                               index)
+    printf("rexSearch(), pat: %s (%s) str: %s (%s) index: %d foundAt: %d\n", pat, patObj,
+           str, searchStr, index, foundAt)
+    vmState.lastPattern = patObj.asInstanceOf[RegexPattern]
+    vmState.r0 = if (foundAt == 0) T3Nil else new T3Integer(foundAt)
   }
   private def rexGroup(argc: Int) {
-    throw new UnsupportedOperationException("tads-gen.rexGroup() not implemented yet")
+    argCountMustBe(argc, 1)
+    val groupNum = vmState.stack.pop.value
+    printf("rexGroup(%d)\n", groupNum)
+    vmState.r0 = vmState.lastPattern.group(groupNum).id
   }
   private def rexReplace(argc: Int) {
     argCountMustBe(argc, 4, 5)

@@ -167,6 +167,13 @@ class StringMetaClass extends AbstractMetaClass {
                                              replaceAll, index).id
   }
 
+  def createString(id: T3ObjectId, str: String,
+                   isTransient: Boolean = false): TadsString = {
+    val string = new TadsString(id, vmState, false)
+    string.init(str)
+    string
+  }
+
   def createStringConstant(id: T3ObjectId, offset: T3SString): TadsString = {
     val len = vmState.image.constantDataShortAt(offset.value)
     val dataStart = offset.value + 2 

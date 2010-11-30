@@ -59,6 +59,7 @@ class TadsVMState(val objectSystem: ObjectSystem,
   objectSystem.vmState         = this
 
   var sayFuncPtr : T3Value     = T3Nil
+  var lastPattern: RegexPattern = null
   // if callbackSP is >= 0, we are executing in a callback
   var callbackSP               = -1
   var startTime : Long         = 0
@@ -440,7 +441,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 1155) {
+    if (iteration == 1170) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
