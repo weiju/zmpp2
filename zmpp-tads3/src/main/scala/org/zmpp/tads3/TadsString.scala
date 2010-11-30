@@ -108,7 +108,8 @@ class TadsStringConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Bool
 extends TadsString(id, vmState, isTransient) {
 }
 
-class StringMetaClass extends AbstractMetaClass {
+class StringMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "string"
 
   val FunctionVector = Array(undef _,        length _,          substr _,
@@ -167,14 +168,15 @@ class StringMetaClass extends AbstractMetaClass {
                                              replaceAll, index).id
   }
 
-  def createString(id: T3ObjectId, str: String,
+  def createString(str: String,
                    isTransient: Boolean = false): TadsString = {
-    val string = new TadsString(id, vmState, false)
+    val string = new TadsString(objectSystem.newObjectId, vmState, false)
     string.init(str)
+    objectSystem.registerObject(string)
     string
   }
 
-  def createStringConstant(id: T3ObjectId, offset: T3SString): TadsString = {
+  def createStringConstant(offset: T3SString): TadsString = {
     val len = vmState.image.constantDataShortAt(offset.value)
     val dataStart = offset.value + 2 
     val builder = new StringBuilder
@@ -183,8 +185,10 @@ class StringMetaClass extends AbstractMetaClass {
       if (c > 127) throw new UnsupportedOperationException("no unicode yet")
       builder.append(c)
     }
-    val stringConst = new TadsStringConstant(id, vmState, false)
+    val stringConst = new TadsStringConstant(objectSystem.newObjectId, vmState, false)
     stringConst.init(builder.toString)
+    objectSystem.registerObject(stringConst)
+    objectSystem.registerConstant(offset, stringConst)
     stringConst
   }
 

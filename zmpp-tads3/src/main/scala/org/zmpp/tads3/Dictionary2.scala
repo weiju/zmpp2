@@ -65,7 +65,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.dictionary2MetaClass
 }
 
-class Dictionary2MetaClass extends AbstractMetaClass {
+class Dictionary2MetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "dictionary2"
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,

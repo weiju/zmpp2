@@ -113,8 +113,7 @@ extends TadsCollection(id, vmState, isTransient) {
     builder.toString
   }
   def toList(start: Int, end: Int) = {
-    val list = objectSystem.listMetaClass.createList(objectSystem.newObjectId)
-    objectSystem.registerObject(list)
+    val list = objectSystem.listMetaClass.createList()
     // subList is end index-exclusive
     list.initWith(_container.subList(start - 1, end))
     printf("toList(), start = %d end = %d, list len = %d\n", start, end, list.size)
@@ -129,7 +128,8 @@ extends TadsCollection(id, vmState, isTransient) {
 // DATAHOLDER element[2]
 //
 // Object extension: TODO
-class VectorMetaClass extends AbstractMetaClass {
+class VectorMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "vector"
   override def superMeta = objectSystem.metaClassForName("collection")
 

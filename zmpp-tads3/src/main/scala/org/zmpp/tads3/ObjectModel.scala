@@ -172,7 +172,12 @@ trait MetaClass {
   def functionIndexForProperty(propertyId: Int): Int
 }
 
-abstract class AbstractMetaClass extends MetaClass {
+// Note that while we could access the objectSystem through vmState, it
+// is only available at image load time. For testing, it is better to
+// have it available, so the creation methods can create object ids and
+// register the objects. This also emphasizes the fact that meta classes
+// are an enhancement of the object system
+abstract class AbstractMetaClass(val objectSystem: ObjectSystem) extends MetaClass {
   private val propertyMap = new TreeMap[Int, Int]
   def reset = propertyMap.clear
   def superMeta: MetaClass = null
@@ -211,7 +216,6 @@ abstract class AbstractMetaClass extends MetaClass {
   var id: Int = 0
   var vmState: TadsVMState = null
   def imageMem = vmState.image.memory
-  def objectSystem = vmState.objectSystem
   def addFunctionMapping(propertyId: Int, functionIndex: Int) {
     //printf("%s.addFunctionMapping(%d, %d)\n", name, propertyId, functionIndex)
     propertyMap(propertyId) = functionIndex
@@ -223,7 +227,8 @@ abstract class AbstractMetaClass extends MetaClass {
 }
 
 // The top level meta class, the super meta of any other class
-class ObjectMetaClass extends AbstractMetaClass {
+class ObjectMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
 /*
   val FunctionVector = Array(undef _,          ofKind _,   superClassList _,
                              isPropDefined _,  propType _, propertyList _,
@@ -233,25 +238,31 @@ class ObjectMetaClass extends AbstractMetaClass {
   def name = "object"
 }
 
-class IntClassModMetaClass extends AbstractMetaClass {
+class IntClassModMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "int-class-mod"
 }
-class CharacterSetMetaClass extends AbstractMetaClass {
+class CharacterSetMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "character-set"
 }
-class ByteArrayMetaClass extends AbstractMetaClass {
+class ByteArrayMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "bytearray"
 }
-class WeakRefLookupTableMetaClass extends AbstractMetaClass {
+class WeakRefLookupTableMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "weakreflookuptable"
 }
-class FileMetaClass extends AbstractMetaClass {
+class FileMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "file"
 }
 
 // This is a special meta class that does not do much, its properties can be accessed
 // but there is only one root object in the system
-class RootObjectMetaClass extends AbstractMetaClass {
+class RootObjectMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "root-object"
 }
 
@@ -298,29 +309,29 @@ class ObjectSystem {
   // when initializing the game, this map can be used to map the image
   // identifiers for metaclass dependencies to the actual meta classes that
   // the ZMPP TADS3 VM supports
-  val anonFuncPtrMetaClass         = new AnonFuncPtrMetaClass
-  val bigNumberMetaClass           = new BigNumberMetaClass
-  val byteArrayMetaClass           = new ByteArrayMetaClass
-  val characterSetMetaClass        = new CharacterSetMetaClass
-  val collectionMetaClass          = new CollectionMetaClass
-  val dictionary2MetaClass         = new Dictionary2MetaClass
-  val fileMetaClass                = new FileMetaClass
-  val grammarProductionMetaClass   = new GrammarProductionMetaClass
-  val indexedIteratorMetaClass     = new IndexedIteratorMetaClass
-  val intrinsicClassMetaClass      = new IntrinsicClassMetaClass
-  val intClassModMetaClass         = new IntClassModMetaClass
-  val iteratorMetaClass            = new IteratorMetaClass
-  val listMetaClass                = new ListMetaClass
-  val lookupTableMetaClass         = new LookupTableMetaClass
-  val lookupTableIteratorMetaClass = new LookupTableIteratorMetaClass
-  val objectMetaClass              = new ObjectMetaClass
-  val regexPatternMetaClass        = new RegexPatternMetaClass
-  val rootObjectMetaClass          = new RootObjectMetaClass
-  val stringMetaClass              = new StringMetaClass
-  val stringComparatorMetaClass    = new StringComparatorMetaClass
-  val tadsObjectMetaClass          = new TadsObjectMetaClass
-  val vectorMetaClass              = new VectorMetaClass
-  val weakRefLookupTableMetaClass  = new WeakRefLookupTableMetaClass
+  val anonFuncPtrMetaClass         = new AnonFuncPtrMetaClass(this)
+  val bigNumberMetaClass           = new BigNumberMetaClass(this)
+  val byteArrayMetaClass           = new ByteArrayMetaClass(this)
+  val characterSetMetaClass        = new CharacterSetMetaClass(this)
+  val collectionMetaClass          = new CollectionMetaClass(this)
+  val dictionary2MetaClass         = new Dictionary2MetaClass(this)
+  val fileMetaClass                = new FileMetaClass(this)
+  val grammarProductionMetaClass   = new GrammarProductionMetaClass(this)
+  val indexedIteratorMetaClass     = new IndexedIteratorMetaClass(this)
+  val intrinsicClassMetaClass      = new IntrinsicClassMetaClass(this)
+  val intClassModMetaClass         = new IntClassModMetaClass(this)
+  val iteratorMetaClass            = new IteratorMetaClass(this)
+  val listMetaClass                = new ListMetaClass(this)
+  val lookupTableMetaClass         = new LookupTableMetaClass(this)
+  val lookupTableIteratorMetaClass = new LookupTableIteratorMetaClass(this)
+  val objectMetaClass              = new ObjectMetaClass(this)
+  val regexPatternMetaClass        = new RegexPatternMetaClass(this)
+  val rootObjectMetaClass          = new RootObjectMetaClass(this)
+  val stringMetaClass              = new StringMetaClass(this)
+  val stringComparatorMetaClass    = new StringComparatorMetaClass(this)
+  val tadsObjectMetaClass          = new TadsObjectMetaClass(this)
+  val vectorMetaClass              = new VectorMetaClass(this)
+  val weakRefLookupTableMetaClass  = new WeakRefLookupTableMetaClass(this)
 
   val MetaClasses: Map[String, MetaClass] = Map(
     "tads-object"          -> tadsObjectMetaClass,
@@ -396,6 +407,9 @@ class ObjectSystem {
   def registerObject(obj: T3Object) {
     _objectCache(obj.id.value) = obj
   }
+  def registerConstant(offset: T3Value, obj: T3Object) {
+    _constantCache(offset.value) = obj
+  }
   def createFromStack(argc: Int, metaClassId: Int, isTransient: Boolean) = {
     val id = new T3ObjectId(newId)
     val obj = _metaClassMap(metaClassId).createFromStack(id, argc, isTransient)
@@ -422,23 +436,11 @@ class ObjectSystem {
   def objectWithId(id: T3Value): T3Object = objectWithId(id.value)
   def listConstantWithOffset(offset: T3ListConstant) = {
     if (_constantCache.containsKey(offset.value)) _constantCache(offset.value)
-    else {
-      val id = new T3ObjectId(newId)
-      val list = listMetaClass.createListConstant(id, offset)
-      _objectCache(id.value) = list
-      _constantCache(offset.value) = list
-      list
-    }
+    else listMetaClass.createListConstant(offset)
   }
   def stringConstantWithOffset(offset: T3SString) = {
     if (_constantCache.containsKey(offset.value)) _constantCache(offset.value)
-    else {
-      val id = new T3ObjectId(newId)
-      val string = stringMetaClass.createStringConstant(id, offset)
-      _objectCache(id.value) = string
-      _constantCache(offset.value) = string
-      string
-    }
+    else stringMetaClass.createStringConstant(offset)
   }
 
   // Enumeration of objects

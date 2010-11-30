@@ -76,7 +76,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.grammarProductionMetaClass
 }
 
-class GrammarProductionMetaClass extends AbstractMetaClass {
+class GrammarProductionMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "grammar-production"
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,

@@ -132,7 +132,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
 object TadsObjectMetaClass {
   val FlagIsClass = 0x0001
 }
-class TadsObjectMetaClass extends AbstractMetaClass {
+class TadsObjectMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "tads-object"
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,

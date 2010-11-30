@@ -88,12 +88,9 @@ extends AbstractT3Object(id, vmState, isTransient) {
 
   def group(groupNum: Int): TadsList = {
     if (groupNum <= currentMatcher.groupCount) {
-      val resultList = objectSystem.listMetaClass.createList(objectSystem.newObjectId)
-      objectSystem.registerObject(resultList)
+      val resultList = objectSystem.listMetaClass.createList()
       val groupStr =
-        objectSystem.stringMetaClass.createString(objectSystem.newObjectId,
-                                                  currentMatcher.group(groupNum))
-      objectSystem.registerObject(groupStr)
+        objectSystem.stringMetaClass.createString(currentMatcher.group(groupNum))
       val resultSeq = List(new T3Integer(currentMatcher.start(groupNum) + 1),
                            new T3Integer(groupStr.length), groupStr.id)
       resultList.initWith(resultSeq)
@@ -107,7 +104,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
   }
 }
 
-class RegexPatternMetaClass extends AbstractMetaClass {
+class RegexPatternMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "regex-pattern"
 
   override def createFromImage(objectId: T3ObjectId,

@@ -74,14 +74,17 @@ extends Iterator(id, vmState, isTransient) {
   }
 }
 
-class LookupTableIteratorMetaClass extends AbstractMetaClass {
+class LookupTableIteratorMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "lookuptable-iterator"
 }
 
-class IteratorMetaClass extends AbstractMetaClass {
+class IteratorMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "iterator"
 }
-class IndexedIteratorMetaClass extends AbstractMetaClass {
+class IndexedIteratorMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "indexed-iterator"
   def createIterator(coll: TadsCollection): IndexedIterator = {
     val id = objectSystem.newObjectId

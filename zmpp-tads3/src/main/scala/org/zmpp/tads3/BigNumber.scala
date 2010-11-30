@@ -74,7 +74,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.bigNumberMetaClass
 }
 
-class BigNumberMetaClass extends AbstractMetaClass {
+class BigNumberMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "bignumber"
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,

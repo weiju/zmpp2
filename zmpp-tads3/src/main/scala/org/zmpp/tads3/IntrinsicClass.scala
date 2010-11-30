@@ -55,7 +55,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
 // UINT2 byte_count of the data block (currently 8)
 // UINT2 metaclass_dependency_table_index
 // UINT4 modifier_object_id
-class IntrinsicClassMetaClass extends AbstractMetaClass {
+class IntrinsicClassMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "intrinsic-class"
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,

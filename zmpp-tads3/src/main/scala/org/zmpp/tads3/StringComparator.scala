@@ -37,7 +37,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.stringComparatorMetaClass
 }
 
-class StringComparatorMetaClass extends AbstractMetaClass {
+class StringComparatorMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "string-comparator"
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,

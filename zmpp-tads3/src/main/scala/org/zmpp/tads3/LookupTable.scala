@@ -37,7 +37,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.lookupTableMetaClass
 }
 
-class LookupTableMetaClass extends AbstractMetaClass {
+class LookupTableMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "lookuptable"
   override def superMeta = objectSystem.metaClassForName("collection")
   override def createFromImage(objectId: T3ObjectId,

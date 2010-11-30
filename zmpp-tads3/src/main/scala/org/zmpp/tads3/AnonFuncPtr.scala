@@ -48,7 +48,8 @@ extends Vector(id, vmState, isTransient) {
   }
 }
 
-class AnonFuncPtrMetaClass extends AbstractMetaClass {
+class AnonFuncPtrMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "anon-func-ptr"
   override def superMeta = objectSystem.metaClassForName("vector")
 

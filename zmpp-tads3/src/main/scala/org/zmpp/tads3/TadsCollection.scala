@@ -61,7 +61,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
  * 1: createIterator()
  * 2: createLiveIterator()
  */
-class CollectionMetaClass extends AbstractMetaClass {
+class CollectionMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "collection"
 
   val FunctionVector = Array(undef _, createIterator _, createLiveIterator _)

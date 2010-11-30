@@ -85,7 +85,8 @@ extends TadsList(id, vmState, isTransient) {
   }
 }
 
-class ListMetaClass extends AbstractMetaClass {
+class ListMetaClass(objectSystem: ObjectSystem)
+extends AbstractMetaClass(objectSystem) {
   def name = "list"
   override def superMeta = objectSystem.metaClassForName("collection")
 
@@ -177,16 +178,20 @@ class ListMetaClass extends AbstractMetaClass {
     throw new UnsupportedOperationException("forEachAssoc")
   }
 
-  def createList(id: T3ObjectId, isTransient: Boolean = false) = {
-    new TadsList(id, vmState, isTransient)
+  def createList(isTransient: Boolean = false) = {
+    val list = new TadsList(objectSystem.newObjectId, vmState, isTransient)
+    objectSystem.registerObject(list)
+    list
   }
 
-  def createListConstant(id: T3ObjectId, offset: T3ListConstant) = {
+  def createListConstant(offset: T3ListConstant) = {
     import TadsConstants._
     val poolOffset = offset.value
     val len = vmState.image.constantDataShortAt(poolOffset)
     printf("List offset = %s, len: %d\n", offset, len)
-    val list = new TadsListConstant(id, vmState, false)
+    val list = new TadsListConstant(objectSystem.newObjectId, vmState, false)
+    objectSystem.registerObject(list)
+    objectSystem.registerConstant(offset, list)
     // TODO initWith()
     for (i <- 0 until len) {
       val valueAddr = poolOffset + 1 + DataHolder.Size * i
