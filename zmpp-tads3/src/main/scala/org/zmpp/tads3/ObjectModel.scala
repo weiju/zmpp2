@@ -75,7 +75,15 @@ extends T3Object {
   def isClassObject = false
   def metaClass: MetaClass
   def objectSystem = vmState.objectSystem
-  
+  override def hashCode = id.hashCode
+/*
+  override def equals(other: Any): Boolean = {
+    other match {
+      case other:T3Object => this.t3vmEquals(other.id)
+      case _              => false
+    }
+  }
+*/
   def isOfMetaClass(meta: MetaClass) = metaClass == meta
   def isInstanceOf(obj: T3Object): Boolean = {
     // the obj parameter needs to be an instance of the IntrinsicClass metaclass
@@ -99,7 +107,8 @@ extends T3Object {
                                             getClass.getName)
   }
   def valueAtIndex(index: Int): T3Value = {
-    throw new UnsupportedOperationException("valueAtIndex() not implemented")
+    throw new UnsupportedOperationException(
+      "%s.valueAtIndex() not implemented".format(metaClass.name))
   }
   def setValueAtIndex(index: Int, newValue: T3Value): T3Value = {
     throw new UnsupportedOperationException("setValueAtIndex() not implemented")
@@ -384,7 +393,7 @@ class ObjectSystem {
     val id = new T3ObjectId(objectId)
     val obj = _metaClassMap(metaClassIndex).createFromImage(id, objAddr,
                                                             numBytes, isTransient)
-    _objectCache(objectId) = obj
+    registerObject(obj)
     // set the maximum object id higher so that after we loaded all
     // static objects, we have a start object id
     if (objectId > _maxObjectId) _maxObjectId = objectId + 1

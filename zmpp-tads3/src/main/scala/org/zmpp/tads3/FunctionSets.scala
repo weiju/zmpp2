@@ -265,10 +265,10 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     val foundAt =
       patObj.asInstanceOf[RegexPattern].search(searchStr.asInstanceOf[TadsString],
                                                index)
-    printf("rexSearch(), pat: %s (%s) str: %s (%s) index: %d foundAt: %d\n", pat, patObj,
+    printf("rexSearch(), pat: %s (%s) str: %s (%s) index: %d foundAt: %s\n", pat, patObj,
            str, searchStr, index, foundAt)
     vmState.lastPattern = patObj.asInstanceOf[RegexPattern]
-    vmState.r0 = if (foundAt == 0) T3Nil else new T3Integer(foundAt)
+    vmState.r0 = if (foundAt == null) T3Nil else foundAt.id
   }
   private def rexGroup(argc: Int) {
     argCountMustBe(argc, 1)

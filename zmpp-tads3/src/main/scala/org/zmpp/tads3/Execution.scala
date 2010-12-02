@@ -441,12 +441,12 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 1170) {
+    if (iteration == 1190) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 /*
-    if (iteration >= 935) {
+    if (iteration >= 1100) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }*/
@@ -534,7 +534,10 @@ class Executor(vmState: TadsVMState) {
       val pushValue =
         vmState.objectSystem.objectWithId(targetValue).valueAtIndex(indexVal)
       vmState.stack.push(pushValue)
-    } else throw new CannotIndexTypeException
+    } else {
+      printf("can't index: %s\n", targetValue)
+      throw new CannotIndexTypeException
+    }
   }
 
   private def ptrCall(argc: Int) {

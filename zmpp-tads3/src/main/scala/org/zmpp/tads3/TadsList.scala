@@ -178,8 +178,9 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("forEachAssoc")
   }
 
-  def createList(isTransient: Boolean = false) = {
+  def createList(seq: Seq[T3Value], isTransient: Boolean = false) = {
     val list = new TadsList(objectSystem.newObjectId, vmState, isTransient)
+    list.initWith(seq)
     objectSystem.registerObject(list)
     list
   }

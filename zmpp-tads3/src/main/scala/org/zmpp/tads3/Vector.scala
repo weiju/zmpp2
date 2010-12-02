@@ -113,9 +113,8 @@ extends TadsCollection(id, vmState, isTransient) {
     builder.toString
   }
   def toList(start: Int, end: Int) = {
-    val list = objectSystem.listMetaClass.createList()
     // subList is end index-exclusive
-    list.initWith(_container.subList(start - 1, end))
+    val list = objectSystem.listMetaClass.createList(_container.subList(start - 1, end))
     printf("toList(), start = %d end = %d, list len = %d\n", start, end, list.size)
     list.id
   }

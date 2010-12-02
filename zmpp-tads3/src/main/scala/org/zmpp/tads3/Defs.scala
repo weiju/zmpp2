@@ -87,6 +87,7 @@ abstract class T3Value {
   def valueType: Int
   def value = 0
 
+  override def hashCode: Int = value
   override def equals(obj: Any): Boolean = {
     obj match {
       case other:T3Value =>

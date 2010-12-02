@@ -81,20 +81,26 @@ extends AbstractT3Object(id, vmState, isTransient) {
     regexPattern
   }
 
-  def search(str: TadsString, index: Int): Int = {
+  def search(str: TadsString, index: Int): TadsList = {
     currentMatcher = compile.matcher(str.string)
-    if (currentMatcher.find(index - 1)) currentMatcher.start + 1 else 0
+    val foundIndex =
+      if (currentMatcher.find(index - 1)) currentMatcher.start + 1 else 0
+    if (foundIndex > 0) {
+      val groupStr =
+        objectSystem.stringMetaClass.createString(currentMatcher.group)
+      val resultSeq = List(new T3Integer(foundIndex),
+                           new T3Integer(groupStr.length), groupStr.id)
+      objectSystem.listMetaClass.createList(resultSeq)
+    } else null
   }
 
   def group(groupNum: Int): TadsList = {
     if (groupNum <= currentMatcher.groupCount) {
-      val resultList = objectSystem.listMetaClass.createList()
       val groupStr =
         objectSystem.stringMetaClass.createString(currentMatcher.group(groupNum))
       val resultSeq = List(new T3Integer(currentMatcher.start(groupNum) + 1),
                            new T3Integer(groupStr.length), groupStr.id)
-      resultList.initWith(resultSeq)
-      resultList
+      objectSystem.listMetaClass.createList(resultSeq)
     } else null
   }
 

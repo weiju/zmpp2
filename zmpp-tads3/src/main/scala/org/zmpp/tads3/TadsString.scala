@@ -102,6 +102,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
     printf("findReplace(), result string is: %s\n", result)
     createStringFrom(result)
   }
+
+  def startsWith(str: TadsString) = string.startsWith(str.string)
 }
 
 class TadsStringConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
@@ -148,7 +150,9 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("htmlify")
   }
   def startsWith(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("startsWith")
+    argCountMustBe(argc, 1)
+    val str = objectSystem.toT3Object(vmState.stack.pop).asInstanceOf[TadsString]
+    if (obj.asInstanceOf[TadsString].startsWith(str)) T3True else T3Nil
   }
   def endsWith(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("endsWith")

@@ -83,6 +83,7 @@ class IteratorMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "iterator"
 }
+
 class IndexedIteratorMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "indexed-iterator"
