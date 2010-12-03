@@ -259,7 +259,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
                                                 index)
     printf("rexMatch(%s, %s, %d) patObj = %s, searchStr = %s matchResult = %d\n",
            pat, str, index, patObj, searchStr, matchResult)
-    if (matchResult == -1) T3Nil else new T3Integer(matchResult)
+    vmState.r0 = if (matchResult == -1) T3Nil else new T3Integer(matchResult)
   }
   private def rexSearch(argc: Int) {
     argCountMustBe(argc, 2, 3)

@@ -350,6 +350,10 @@ class Executor(vmState: TadsVMState) {
       case JNotNil      => branchIfTrue(vmState.stack.pop != T3Nil)
       case JR0T         => branchIfTrue(vmState.r0.isTrue)
       case JR0F         => branchIfTrue(!vmState.r0.isTrue)
+      case Jst          =>
+        val stackTop = vmState.stack.top
+        if (!stackTop.isTrue) vmState.stack.pop
+        branchIfTrue(stackTop.isTrue)
       case Ne           =>
         vmState.r0 = if (!t3vmEquals(vmState.stack.pop, vmState.stack.pop)) T3True
                     else T3Nil
@@ -444,12 +448,12 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 1230) {
+    if (iteration == 1350) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 /*
-    if (iteration >= 1100) {
+    if (iteration >= 1200) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }*/
@@ -476,6 +480,7 @@ class Executor(vmState: TadsVMState) {
       new T3Integer(value1.value + value2.value)
     } else if (value1.valueType == VmSString || value1.valueType == VmObj) {
       val str1 = objectSystem.toT3Object(value1)
+      printf("ADD, obj1 = %s\n", str1)
       val str2 = objectSystem.toT3Object(value2)
       (str1 + str2).id
     } else if (value1.valueType == VmList) {
