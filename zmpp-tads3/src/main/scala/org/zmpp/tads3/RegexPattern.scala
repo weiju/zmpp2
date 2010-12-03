@@ -71,6 +71,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
       javaPattern = patternString.string.replaceAll("<nocase>", "")
       javaPattern = javaPattern.replaceAll("<langle>", "<")
       javaPattern = javaPattern.replaceAll("<rangle>", ">")
+      javaPattern = javaPattern.replaceAll("<dot>", "\\\\.")
       javaPattern = javaPattern.replaceAll("%", "\\\\")
     }
     javaPattern
@@ -79,6 +80,14 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def compile = {
     if (regexPattern == null ) regexPattern = Pattern.compile(javaPatternString)
     regexPattern
+  }
+
+  // This is a version of search() that only returns the length of the match
+  // and does not create TADS objects, to implement tads-gen.rexMatch()
+  def matches(str: TadsString, index: Int): Int = {
+    currentMatcher = compile.matcher(str.string)
+    if (currentMatcher.find(index - 1)) currentMatcher.group.length
+    else -1
   }
 
   def search(str: TadsString, index: Int): TadsList = {

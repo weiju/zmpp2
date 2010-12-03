@@ -247,7 +247,19 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     }
   }
   private def rexMatch(argc: Int) {
-    throw new UnsupportedOperationException("tads-gen.rexMatch() not implemented yet")
+    argCountMustBe(argc, 2, 3)
+    val pat = vmState.stack.pop
+    val str = vmState.stack.pop
+    val patObj = vmState.objectSystem.objectWithId(pat.value)
+    val searchStr = vmState.objectSystem.objectWithId(str.value)
+    
+    val index = if (argc == 3) vmState.stack.pop.value else 1
+    val matchResult =
+      patObj.asInstanceOf[RegexPattern].matches(searchStr.asInstanceOf[TadsString],
+                                                index)
+    printf("rexMatch(%s, %s, %d) patObj = %s, searchStr = %s matchResult = %d\n",
+           pat, str, index, patObj, searchStr, matchResult)
+    if (matchResult == -1) T3Nil else new T3Integer(matchResult)
   }
   private def rexSearch(argc: Int) {
     argCountMustBe(argc, 2, 3)

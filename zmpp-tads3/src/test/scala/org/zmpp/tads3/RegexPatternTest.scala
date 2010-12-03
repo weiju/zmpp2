@@ -88,6 +88,10 @@ object RegexPatternSpec extends Specification {
       s2.valueAtIndex(1) must_== new T3Integer(5)
       s2.valueAtIndex(2) must_== new T3Integer(5)
       pattern.search(makeString(2, "sometext"), 1) must beNull
+
+      val pattern2 = makePattern(20, "(<langle><dot>[pP]0?<rangle>)+")
+      pattern2.compile
+      pattern2.javaPatternString must_== "(<\\.[pP]0?>)+"
     }
     "return a group" in {
       val pattern = makePattern(10, "<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>")
