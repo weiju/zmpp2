@@ -268,6 +268,9 @@ class Executor(vmState: TadsVMState) {
 
     import Opcodes._
     opcode match {
+      case Add          =>
+        val val2 = vmState.stack.pop
+        vmState.stack.push(add(vmState.stack.pop, val2))        
       case AddToLcl     =>
         val localNum = nextShortOperand
         vmState.setLocal(localNum, add(vmState.getLocal(localNum), vmState.stack.pop))

@@ -265,6 +265,9 @@ object Opcodes {
   val PushTrue        = 0x09
   val PushFnPtr       = 0x0b
   val PushEnum        = 0x0f
+  val Add             = 0x22
+  val Sub             = 0x23
+  val Mul             = 0x24
   val Inc             = 0x2e
   val Dec             = 0x2f
   val Eq              = 0x40
@@ -359,6 +362,7 @@ object Opcodes {
 object OpcodeNames {
   import Opcodes._
   val Names = Map(
+    Add             -> "ADD",
     AddILcl1        -> "ADDILCL1",
     AddILcl4        -> "ADDILCL4",
     AddToLcl        -> "AddToLcl",
@@ -408,6 +412,7 @@ object OpcodeNames {
     Jt              -> "JT",
     Le              -> "LE",
     Lt              -> "LT",
+    Mul             -> "MUL",
     Ne              -> "NE",
     New1            -> "NEW1",
     New2            -> "NEW2",
@@ -451,6 +456,7 @@ object OpcodeNames {
     SetProp         -> "SETPROP",
     SetPropSelf     -> "SETPROPSELF",
     SetSelf         -> "SETSELF",
+    Sub             -> "SUB",
     SubFromLcl      -> "SUBFROMLCL",
     Swap            -> "SWAP",
     Switch          -> "SWITCH",
