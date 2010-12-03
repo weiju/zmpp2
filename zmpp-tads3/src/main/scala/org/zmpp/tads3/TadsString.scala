@@ -104,6 +104,20 @@ extends AbstractT3Object(id, vmState, isTransient) {
   }
 
   def startsWith(str: TadsString) = string.startsWith(str.string)
+  def substr(start: Int, length: Int = -1) = {
+    val startIndex = if (start < 0) string.length + start else start - 1
+    if (length > 0) {
+      // compute end index
+      val endIndex = scala.math.min(string.length, startIndex + length)
+      printf("TadsString.substr(%d, %d) => startIndex = %d endIndex = %d\n",
+             start, length, startIndex, endIndex)
+      createStringFrom(string.substring(startIndex, endIndex))
+    } else {
+      printf("TadsString.substr(%d, %d) => startIndex = %d\n",
+             start, length, startIndex)
+      createStringFrom(string.substring(startIndex))
+    }
+  }
 }
 
 class TadsStringConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
@@ -126,7 +140,10 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("length")
   }
   def substr(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("substr")
+    argCountMustBe(argc, 1, 2)
+    val start = vmState.stack.pop.value
+    val length = if (argc == 2) vmState.stack.pop.value else -1
+    obj.asInstanceOf[TadsString].substr(start, length).id
   }
   def toUpper(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("toUpper")

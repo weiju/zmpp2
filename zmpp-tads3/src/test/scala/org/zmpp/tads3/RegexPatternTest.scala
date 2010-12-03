@@ -81,13 +81,17 @@ object RegexPatternSpec extends Specification {
       val pattern = makePattern(10, "<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>")
       pattern.compile
       pattern.javaPatternString must_== "<\\.(/?[a-z][a-z0-9]*)>"
-      pattern.search(makeString(1, "<.p0><title>"), 1) must_== 1
-      pattern.search(makeString(2, "some<.p0><title>"), 1) must_== 5
-      pattern.search(makeString(2, "sometext"), 1) must_== 0
+      val s1 = pattern.search(makeString(1, "<.p0><title>"), 1)
+      s1.valueAtIndex(1) must_== new T3Integer(1)
+      s1.valueAtIndex(2) must_== new T3Integer(5)
+      val s2 = pattern.search(makeString(2, "some<.p0><title>"), 1)
+      s2.valueAtIndex(1) must_== new T3Integer(5)
+      s2.valueAtIndex(2) must_== new T3Integer(5)
+      pattern.search(makeString(2, "sometext"), 1) must beNull
     }
     "return a group" in {
       val pattern = makePattern(10, "<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>")
-      pattern.search(makeString(1, "<.p0><title>"), 1) must_== 1
+      pattern.search(makeString(1, "<.p0><title>"), 1)
       val matchGroup = pattern.group(1)
       matchGroup.size must_== 3
       matchGroup.valueAtIndex(1) must_== new T3Integer(3)

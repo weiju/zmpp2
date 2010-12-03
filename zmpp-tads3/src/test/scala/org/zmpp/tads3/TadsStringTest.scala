@@ -82,5 +82,14 @@ object TadsStringSpec extends Specification {
                        makeString(3, "rhabarber"), true, 2).string must_==
         "blarhabarberrhabarber"
     }
+    "do a substr" in {
+      val str1 = makeString(1, "abcdef")
+      str1.substr(3).string must_== "cdef"
+      str1.substr(3, 2).string must_== "cd"
+      val str2 = makeString(2, "abcdefghi")
+      str2.substr(-3).string must_== "ghi"
+      str2.substr(-3, 2).string must_== "gh"
+      str2.substr(-3, 5).string must_== "ghi"
+    }
   }
 }
