@@ -402,6 +402,7 @@ class Executor(vmState: TadsVMState) {
         vmState.r0 = vmState.stack.pop
         vmState.doReturn
       case Say          => say(nextIntOperand)
+      case SayVal       => say(vmState.stack.pop.value)
       case SetArg1      => vmState.setArg(nextByteOperand, vmState.stack.pop)
       case SetArg2      => vmState.setArg(nextShortOperand, vmState.stack.pop)
       case SetInd       =>
@@ -457,7 +458,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 1400) {
+    if (iteration == 1500) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }

@@ -331,6 +331,7 @@ object Opcodes {
   val BuiltinD        = 0xb4
   val Builtin1        = 0xb5
   val Builtin2        = 0xb6
+  val SayVal          = 0xb9
   val Index           = 0xba
   val IdxLcl1Int8     = 0xbb
   val IdxInt8         = 0xbc
@@ -458,6 +459,7 @@ object OpcodeNames {
     RetTrue         -> "RETTRUE",
     RetVal          -> "RETVAL",
     Say             -> "SAY",
+    SayVal          -> "SAYVAL",
     SetArg1         -> "SETARG1",
     SetArg2         -> "SETARG2",
     SetInd          -> "SETIND",

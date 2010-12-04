@@ -403,7 +403,12 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
 class TadsIoFunctionSet extends IntrinsicFunctionSet {
   def name = "tads-io"
   private def tadsSay(argc: Int) {
-    throw new UnsupportedOperationException("tads-io.tadsSay() not implemented yet")
+    printf("tadsSay(), num args: %d\n", argc)
+    for (i <- 0 until argc) {
+      val value = vmState.stack.pop
+      val obj = vmState.objectSystem.toT3Object(value)
+      printf("TADSSAY(), OUTPUT VALUE: %s (%s)\n", value, obj)
+    }
   }
   private def setLogFile(argc: Int) {
     throw new UnsupportedOperationException("tads-io.setLogFile() not implemented yet")
