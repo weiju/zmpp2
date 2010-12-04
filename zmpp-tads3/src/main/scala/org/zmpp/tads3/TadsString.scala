@@ -137,7 +137,8 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("undefined")
   }
   def length(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("length")
+    argCountMustBe(argc, 0)
+    new T3Integer(obj.asInstanceOf[TadsString].length)
   }
   def substr(obj: T3Object, argc: Int): T3Value = {
     argCountMustBe(argc, 1, 2)

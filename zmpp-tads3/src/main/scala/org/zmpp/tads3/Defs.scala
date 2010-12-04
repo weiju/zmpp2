@@ -268,6 +268,7 @@ object Opcodes {
   val Add             = 0x22
   val Sub             = 0x23
   val Mul             = 0x24
+  val Boolize         = 0x2d
   val Inc             = 0x2e
   val Dec             = 0x2f
   val Eq              = 0x40
@@ -291,6 +292,7 @@ object Opcodes {
   val ObjGetProp      = 0x66
   val ObjCallProp     = 0x67
   val GetPropLcl1     = 0x6a
+  val CallPropLcl1    = 0x6b
   val GetPropR0       = 0x6c
   val CallPropR0      = 0x6d
   val PtrInherit      = 0x73
@@ -370,6 +372,7 @@ object OpcodeNames {
     AddILcl1        -> "ADDILCL1",
     AddILcl4        -> "ADDILCL4",
     AddToLcl        -> "AddToLcl",
+    Boolize         -> "Boolize",
     BP              -> "BP",
     Builtin1        -> "BUILTIN1",
     Builtin2        -> "BUILTIN2",
@@ -379,6 +382,7 @@ object OpcodeNames {
     BuiltinD        -> "BUILTIN_D",
     Call            -> "CALL",
     CallProp        -> "CALLPROP",
+    CallPropLcl1    -> "CALLPROPLCL1",
     CallPropR0      -> "CALLPROPR0",
     CallPropSelf    -> "CALLPROPSELF",
     Dec             -> "DEC",
@@ -489,6 +493,7 @@ class InvalidComparisonException extends Exception
 class BadTypeAddException extends Exception
 class BadTypeSubException extends Exception
 class SayIsNotDefinedException extends Exception
+class NoLogConvException extends Exception
 
 object T3Assert {
   def argCountMustBe(argc: Int, min: Int, max: Int = 0) {

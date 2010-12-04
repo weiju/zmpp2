@@ -274,6 +274,13 @@ class Executor(vmState: TadsVMState) {
       case AddToLcl     =>
         val localNum = nextShortOperand
         vmState.setLocal(localNum, add(vmState.getLocal(localNum), vmState.stack.pop))
+      case Boolize      =>
+        val topValue = vmState.stack.pop
+        vmState.r0 = if (topValue == T3Nil) T3Nil
+                     else if (topValue == T3True) T3True
+                     else if (topValue.valueType == VmInt) {
+                       if (topValue.isTrue) T3True else T3Nil
+                     } else throw new NoLogConvException
       case BP           =>
         throw new UnsupportedOperationException("Breakpoints not supported")
       case BuiltinA     =>
@@ -295,6 +302,8 @@ class Executor(vmState: TadsVMState) {
                       InvalidObjectId, InvalidObjectId, InvalidObjectId)
       case CallProp     => callProp(nextByteOperand, vmState.stack.pop,
                                     nextShortOperand)
+      case CallPropLcl1 =>
+        callProp(nextByteOperand, vmState.getLocal(nextByteOperand), nextShortOperand)
       case CallPropR0   => callProp(nextByteOperand, vmState.r0,
                                     nextShortOperand)
       case CallPropSelf => callProp(nextByteOperand, vmState.currentSelf,
