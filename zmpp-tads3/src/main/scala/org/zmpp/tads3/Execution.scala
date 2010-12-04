@@ -618,9 +618,15 @@ class Executor(vmState: TadsVMState) {
         //printf("callProp() - Property found: %s\n", prop)
         evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc)
       } else {
-        // TODO: check if propNotDefined is available
-        throw new UnsupportedOperationException("TODO: property not found, " +
-                                                "check for propNotDefined")
+        // check whether propNotDefined is available
+        val propNotDefined = vmState.image.symbolicNames("propNotDefined").t3Value
+        val pndProp = obj.getProperty(propNotDefined.value, argc)
+        if (pndProp == InvalidProperty) vmState.r0 = T3Nil
+        else {
+          printf("SEARCH %s.'propNotDefined': %s -> [%s]\n", obj, propNotDefined, pndProp)
+          throw new UnsupportedOperationException("TODO: property not found, " +
+                                                  "check for propNotDefined")
+        }
       }
     } else if (targetVal.valueType == VmList) {
       // use constant list property evaluator

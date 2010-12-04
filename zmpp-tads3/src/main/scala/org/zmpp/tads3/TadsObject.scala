@@ -89,9 +89,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
   }
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val prop = findPropertyInThis(propertyId)
-    if (prop != InvalidProperty) return prop
-    // not found in object -> try super class properties
-    findPropertyInSuperClasses(propertyId, argc)
+    if (prop != InvalidProperty) prop
+    else findPropertyInSuperClasses(propertyId, argc)
   }
   override def inheritProperty(propertyId: Int, argc: Int): Property = {
     findPropertyInSuperClasses(propertyId, argc)
@@ -99,7 +98,6 @@ extends AbstractT3Object(id, vmState, isTransient) {
 
   private def findPropertyInSuperClasses(propertyId: Int, argc: Int): Property = {
     for (superClassId <- superClassIds) {
-      printf("search prop %d in super class: %d\n", propertyId, superClassId)
       val superClass = objectSystem.objectWithId(superClassId)
       val prop = superClass.getProperty(propertyId, argc)
       if (prop != InvalidProperty) return prop
