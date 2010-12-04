@@ -296,11 +296,9 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     val flags = vmState.stack.pop
     val index = if (argc == 5) vmState.stack.pop else T3Integer.One
     val patObj = vmState.objectSystem.objectWithId(pat.value)
-    val searchStr =
-      vmState.objectSystem.stringConstantWithOffset(str.asInstanceOf[T3SString])
-    val replaceStr =
-      vmState.objectSystem.stringConstantWithOffset(repl.asInstanceOf[T3SString])
-    printf("rexReplace(), pat: %s (%s) str: %s repl: %s, flags: %s index: %s\n",
+    val searchStr = vmState.objectSystem.toT3Object(str)
+    val replaceStr = vmState.objectSystem.toT3Object(repl)
+    printf("rexReplace(), pat: %s ('%s') str: %s repl: %s, flags: %s index: %s\n",
            pat, patObj, searchStr, replaceStr, flags, index)
     // for now, we do not replace anything
     vmState.r0 = searchStr.id

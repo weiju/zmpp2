@@ -86,7 +86,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
 
   def findReplace(origStr: TadsString, newStr: TadsString, replaceAll: Boolean,
                   index: Int): TadsString = {
-    printf("findReplace(%s, %s, %b, %d)\n", origStr, newStr, replaceAll, index)
+    printf("findReplace('%s', '%s', %b, %d)\n", origStr, newStr, replaceAll, index)
     val result = if (index > 1) {
       if (replaceAll) {
         string.substring(0, index - 1) +
@@ -202,13 +202,12 @@ extends AbstractMetaClass(objectSystem) {
     val len = vmState.image.constantDataShortAt(offset.value)
     val dataStart = offset.value + 2 
     val builder = new StringBuilder
+    val byteArray = new Array[Byte](len)
     for (i <- 0 until len) {
-      val c = vmState.image.constantDataByteAt(dataStart + i).asInstanceOf[Char]
-      if (c > 127) throw new UnsupportedOperationException("no unicode yet")
-      builder.append(c)
+      byteArray(i) = vmState.image.constantDataByteAt(dataStart + i).asInstanceOf[Byte]
     }
     val stringConst = new TadsStringConstant(objectSystem.newObjectId, vmState, false)
-    stringConst.init(builder.toString)
+    stringConst.init(new String(byteArray, "UTF-8"))
     objectSystem.registerObject(stringConst)
     objectSystem.registerConstant(offset, stringConst)
     stringConst
