@@ -265,8 +265,8 @@ extends AbstractMetaClass(objectSystem) {
     // currently, we ignore numAllocated, we might need it for persistence
     val numAllocated = imageMem.shortAt(objDataAddr)
     val numUsed = imageMem.shortAt(objDataAddr + 2)
-    printf("Vector::createFromImage(), # alloc: %d, # used: %d\n",
-           numAllocated, numUsed)
+    //printf("Vector::createFromImage(), # alloc: %d, # used: %d\n",
+    //       numAllocated, numUsed)
     // here come numUsed DATAHOLDERs
     for (i <- 0 until numUsed) {
       val currAddr = objDataAddr + 4 + i * DataHolder.Size

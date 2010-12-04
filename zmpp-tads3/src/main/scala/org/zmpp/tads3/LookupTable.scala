@@ -69,11 +69,11 @@ extends AbstractMetaClass(objectSystem) {
     val bucketCount = imageMem.shortAt(objDataAddr)
     val valueCount = imageMem.shortAt(objDataAddr)
     val firstFreeIndex = imageMem.shortAt(objDataAddr)
-    printf("LookupTable::createFromImage(), bucketCount: %d, valueCount: %d, firstFreeIndex: %d\n", bucketCount, valueCount, firstFreeIndex)
+    //printf("LookupTable::createFromImage(), bucketCount: %d, valueCount: %d, firstFreeIndex: %d\n", bucketCount, valueCount, firstFreeIndex)
     val bucketStart = objDataAddr + 6
     for (i <- 0 until bucketCount) {
       val bucketIndex = imageMem.shortAt(bucketStart + 2 * i)
-      printf("bucket_index[%d] = %d\n", i, bucketIndex)
+      //printf("bucket_index[%d] = %d\n", i, bucketIndex)
     }
     var valueAddr = bucketStart + 2 * bucketCount
     val valueSize = 2 * DataHolder.Size + 2
@@ -81,7 +81,7 @@ extends AbstractMetaClass(objectSystem) {
       val key = T3Value.readDataHolder(imageMem, valueAddr)
       val value = T3Value.readDataHolder(imageMem, valueAddr + DataHolder.Size)
       val nextIndex = imageMem.shortAt(valueAddr + 2 * DataHolder.Size)
-      printf("value[%d] = {k: %s, v: %s, nextIdx: %d}\n", i, key, value, nextIndex)
+      //printf("value[%d] = {k: %s, v: %s, nextIdx: %d}\n", i, key, value, nextIndex)
       if (key != T3Empty) lookupTable(key) = value
       valueAddr += valueSize
     }

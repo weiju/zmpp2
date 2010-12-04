@@ -201,7 +201,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
         throw new IllegalArgumentException("Illegal argument: %s".format(arg))
       }
     }
-    printf("CLASS IS: %s, FLAGS IS: %d\n", matchClass.id, flags)
+    //printf("CLASS IS: %s, FLAGS IS: %d\n", matchClass.id, flags)
     val enumInstances = (flags & EnumInstances) == EnumInstances
     val enumClasses = (flags & EnumClasses) == EnumClasses
     new EnumObjectParams(matchClass, enumInstances, enumClasses)
@@ -567,7 +567,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
   )
 
   def callFunction(argc: Int, functionIndex: Int) {
-    printf("Function Set '%s' callFunction(%d, %d)\n", name, argc, functionIndex)
+    //printf("Function Set '%s' callFunction(%d, %d)\n", name, argc, functionIndex)
     FunctionVector(functionIndex)(this, argc)
   }
 }
@@ -593,7 +593,7 @@ class T3TestFunctionSet extends IntrinsicFunctionSet {
   )
 
   def callFunction(argc: Int, functionIndex: Int) {
-    printf("Function Set '%s' callFunction(%d, %d)\n", name, argc, functionIndex)
+    //printf("Function Set '%s' callFunction(%d, %d)\n", name, argc, functionIndex)
     FunctionVector(functionIndex)(this, argc)
   }
 }
@@ -618,8 +618,8 @@ class IntrinsicFunctionSetMapper {
   def reset(vmState: TadsVMState) {
     for (i <- 0 until vmState.image.functionSetDependencies.length) {
       val fsDep = vmState.image.functionSetDependencies(i)
-      printf("mapping function set '%s' to index: %d\n",
-             fsDep.name, i)
+      //printf("mapping function set '%s' to index: %d\n",
+      //       fsDep.name, i)
       _functionSets(i) = FunctionSets(fsDep.name)
       _functionSets(i).reset(vmState)
     }

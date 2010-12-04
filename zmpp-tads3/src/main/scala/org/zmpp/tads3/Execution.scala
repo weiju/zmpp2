@@ -231,9 +231,9 @@ class Executor(vmState: TadsVMState) {
       val objectId = callback.asInstanceOf[T3ObjectId]
       val objectCallProp = vmState.image.symbolicNames("ObjectCallProp")
       val obj = vmState.objectSystem.objectWithId(callback.value)
-      printf("handle object [%s], using objectCallProp: [%s]\n", obj, objectCallProp)
+      //printf("handle object [%s], using objectCallProp: [%s]\n", obj, objectCallProp)
       val prop = obj.getProperty(objectCallProp.value, 0)
-      printf("executeCallback() - PROP FOUND: %s\n", prop)
+      //printf("executeCallback() - PROP FOUND: %s\n", prop)
       if (prop.valueType == VmFuncPtr) {
         // Call the function
         // and execute the callback until we return to the same point
@@ -261,8 +261,9 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
-           OpcodeNames.opcodeName(opcode), opcode)
+    if (iteration >= 2100)
+      printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
+             OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
     // debug
 
@@ -458,7 +459,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 1500) {
+    if (iteration == 2500) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
@@ -485,12 +486,12 @@ class Executor(vmState: TadsVMState) {
   }
 
   private def add(value1: T3Value, value2: T3Value): T3Value = {
-    printf("ADD value1: %s value2: %s\n", value1, value2)
+    //printf("ADD value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       new T3Integer(value1.value + value2.value)
     } else if (value1.valueType == VmSString || value1.valueType == VmObj) {
       val str1 = objectSystem.toT3Object(value1)
-      printf("ADD, obj1 = %s\n", str1)
+      //printf("ADD, obj1 = %s\n", str1)
       val str2 = objectSystem.toT3Object(value2)
       (str1 + str2).id
     } else if (value1.valueType == VmList) {
@@ -501,7 +502,7 @@ class Executor(vmState: TadsVMState) {
   }
 
   private def sub(value1: T3Value, value2: T3Value): T3Value = {
-    printf("SUB value1: %s value2: %s\n", value1, value2)
+    //printf("SUB value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       new T3Integer(value1.value - value2.value)
     } else if (value1.valueType == VmSString) {
@@ -533,7 +534,7 @@ class Executor(vmState: TadsVMState) {
     } else throw new InvalidComparisonException
   }
   private def t3vmEquals(value1: T3Value, value2: T3Value): Boolean = {
-    printf("t3vmEquals(%s, %s)\n", value1, value2)
+    //printf("t3vmEquals(%s, %s)\n", value1, value2)
     if (value1.valueType == VmObj) {
       if (value1.equals(value2)) true // the object ids are identical
       else {
@@ -563,11 +564,11 @@ class Executor(vmState: TadsVMState) {
     if (stackVal.valueType == VmProp) {
       throw new UnsupportedOperationException("PtrCall with PROP not supported yet")
     } else if (stackVal.valueType == VmObj) {
-      printf("OBJ PROP CALL, OBJ = %d\n", stackVal.value)
+      //printf("OBJ PROP CALL, OBJ = %d\n", stackVal.value)
       val obj  = vmState.objectSystem.objectWithId(stackVal.value)
       val symb = vmState.image.symbolicNames("ObjectCallProp")
       if (symb != null && symb.valueType == VmProp) {
-        printf("SYM: %s TYP: %d VAL: %d\n", symb.name, symb.valueType, symb.value)
+        //printf("SYM: %s TYP: %d VAL: %d\n", symb.name, symb.valueType, symb.value)
         val prop = obj.getProperty(symb.value, argc)
         vmState.doCall(argc, prop.value, 0, obj.id, obj.id, obj.id)
       } else throw new FuncPtrValRequiredException
@@ -607,14 +608,14 @@ class Executor(vmState: TadsVMState) {
   // to see whether we find a factorization that fits better into the
   // Scala application context
   private def callProp(argc: Int, targetVal: T3Value, propId: Int) {
-    printf("callProp(%s, %d, %d)\n", targetVal, argc, propId)
+    //printf("callProp(%s, %d, %d)\n", targetVal, argc, propId)
 
     if (targetVal.valueType == VmObj) {
       val obj = vmState.objectSystem.objectWithId(targetVal)
-      printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
+      //printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
       val prop = obj.getProperty(propId, argc)
       if (prop != InvalidProperty) {
-        printf("callProp() - Property found: %s\n", prop)
+        //printf("callProp() - Property found: %s\n", prop)
         evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc)
       } else {
         // TODO: check if propNotDefined is available
@@ -639,7 +640,7 @@ class Executor(vmState: TadsVMState) {
   }
 
   private def evalProperty(self: T3ObjectId, property: Property, argc: Int) {
-    printf("evalProperty(%s) [self = %s]\n", property, self)
+    //printf("evalProperty(%s) [self = %s]\n", property, self)
     property.valueType match {
       case VmCodeOfs =>
         vmState.doCall(argc, property.value, property.id, self,
@@ -652,9 +653,9 @@ class Executor(vmState: TadsVMState) {
 
   private def inheritProperty(argc: Int, propId: T3Value) {
     val definingObject   = vmState.objectSystem.objectWithId(vmState.definingObject)
-    printf("inheritProperty(%d, %s), defobj = %s\n", argc, propId, definingObject)
+    //printf("inheritProperty(%d, %s), defobj = %s\n", argc, propId, definingObject)
     val prop = definingObject.inheritProperty(propId.value, argc)
-    printf("inheritProperty() - PROP FOUND: %s\n", prop)
+    //printf("inheritProperty() - PROP FOUND: %s\n", prop)
     if (prop != InvalidProperty) {
       evalProperty(vmState.currentSelf.asInstanceOf[T3ObjectId], prop, argc)
     } else {
@@ -665,7 +666,7 @@ class Executor(vmState: TadsVMState) {
   }
 
   private def pushCtxEle(elem: Int) {
-    printf("PUSHCTXELE, ELEM = %d HA\n", elem)
+    //printf("PUSHCTXELE, ELEM = %d HA\n", elem)
     elem match { // not reused, so I just use the constants directly
       case 1 => vmState.stack.push(vmState.targetProperty)
       case 2 => vmState.stack.push(vmState.originalTarget)
