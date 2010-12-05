@@ -65,10 +65,12 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def javaPatternString: String = {
     if (javaPattern == null) {
       noCase = patternString.string.indexOf("<nocase>") >= 0
+
       // TODO: convert to a java pattern string
       // TODO: '%%' sequences !!
       // TODO: angled expression replacements should be case insensitive !!
       javaPattern = patternString.string.replaceAll("<nocase>", "")
+      javaPattern = javaPattern.replaceAll("<case>", "")
       javaPattern = javaPattern.replaceAll("<langle>", "<")
       javaPattern = javaPattern.replaceAll("<rangle>", ">")
       javaPattern = javaPattern.replaceAll("<dot>", "\\\\.")
@@ -115,7 +117,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
 
   override def toString = {
     val str = objectSystem.stringConstantWithOffset(srcPattern.asInstanceOf[T3SString])
-    "regex-pattern [%s]".format(str)
+    "regex-pattern = '%s' (len = %d)".format(str, str.asInstanceOf[TadsString].length)
   }
 }
 

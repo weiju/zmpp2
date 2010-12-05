@@ -261,7 +261,7 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    if (iteration >= 2100)
+    if (iteration >= 1667)
       printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
              OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
@@ -277,11 +277,11 @@ class Executor(vmState: TadsVMState) {
         vmState.setLocal(localNum, add(vmState.getLocal(localNum), vmState.stack.pop))
       case Boolize      =>
         val topValue = vmState.stack.pop
-        vmState.r0 = if (topValue == T3Nil) T3Nil
-                     else if (topValue == T3True) T3True
-                     else if (topValue.valueType == VmInt) {
-                       if (topValue.isTrue) T3True else T3Nil
-                     } else throw new NoLogConvException
+        vmState.stack.push(if (topValue == T3Nil) T3Nil
+                           else if (topValue == T3True) T3True
+                           else if (topValue.valueType == VmInt) {
+                             if (topValue.isTrue) T3True else T3Nil
+                           } else throw new NoLogConvException)
       case BP           =>
         throw new UnsupportedOperationException("Breakpoints not supported")
       case BuiltinA     =>
@@ -316,7 +316,7 @@ class Executor(vmState: TadsVMState) {
       case Eq           =>
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
-        vmState.r0 = if (t3vmEquals(val1, val2)) T3True else T3Nil
+        vmState.stack.push(if (t3vmEquals(val1, val2)) T3True else T3Nil)
       case GetArg1      =>
         vmState.stack.push(vmState.getArg(nextByteOperand))
       case GetArg2      => vmState.stack.push(vmState.getArg(nextShortOperand))
@@ -365,8 +365,9 @@ class Executor(vmState: TadsVMState) {
         if (!stackTop.isTrue) vmState.stack.pop
         branchIfTrue(stackTop.isTrue)
       case Ne           =>
-        vmState.r0 = if (!t3vmEquals(vmState.stack.pop, vmState.stack.pop)) T3True
-                    else T3Nil
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        vmState.stack.push(if (!t3vmEquals(val1, val2)) T3True else T3Nil)
       case New1         =>
         vmState.r0 = vmState.objectSystem.createFromStack(nextByteOperand,
                                                           nextByteOperand, false)
@@ -378,6 +379,8 @@ class Executor(vmState: TadsVMState) {
                  nextShortOperand)
       case ObjGetProp   => callProp(0, new T3ObjectId(nextIntOperand),
                                     nextShortOperand)
+      case ObjSetProp    => objSetProp(new T3ObjectId(nextIntOperand),
+                                       nextShortOperand, vmState.stack.pop)
       case OneLcl1      => vmState.setLocal(nextByteOperand, T3Integer.One)
       case PtrCall      => ptrCall(nextByteOperand)
       case PtrInherit   => inheritProperty(nextByteOperand, vmState.stack.pop)
@@ -464,7 +467,7 @@ class Executor(vmState: TadsVMState) {
       printf("MAX DEBUG ITERATION REACHED")
     }
 /*
-    if (iteration >= 1200) {
+    if (iteration >= 1660) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }*/
@@ -608,14 +611,14 @@ class Executor(vmState: TadsVMState) {
   // to see whether we find a factorization that fits better into the
   // Scala application context
   private def callProp(argc: Int, targetVal: T3Value, propId: Int) {
-    //printf("callProp(%s, %d, %d)\n", targetVal, argc, propId)
+    printf("callProp(%s, %d, %d)\n", targetVal, argc, propId)
 
     if (targetVal.valueType == VmObj) {
       val obj = vmState.objectSystem.objectWithId(targetVal)
-      //printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
+      printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
       val prop = obj.getProperty(propId, argc)
       if (prop != InvalidProperty) {
-        //printf("callProp() - Property found: %s\n", prop)
+        printf("callProp() - Property found: %s\n", prop)
         evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc)
       } else {
         // check whether propNotDefined is available

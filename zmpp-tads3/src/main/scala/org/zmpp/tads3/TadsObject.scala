@@ -120,7 +120,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
       val newProp = new Property(propertyId, newValue, this.id)
       extProperties.add(newProp)
     } else {
-      printf("prop found updating existing one\n")
+      printf("prop %d found updating existing one to: %s (this: %s)\n",
+             propertyId, newValue, this)
       prop.tadsValue = newValue
     }
     // TODO: UNDO
