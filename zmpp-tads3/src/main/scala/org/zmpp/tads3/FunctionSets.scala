@@ -400,6 +400,27 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
 // * 31: logConsoleClose(handle)
 // * 32: logConsoleSay(handle, ...)
 // ***********************************************************************
+object TadsIoFunctionSet {
+  val SysInfoSysInfo       = 1
+  val SysInfoVersion       = 2
+  val SysInfoOsName        = 3
+  val SysInfoHtml          = 4
+  val SysInfoJpeg          = 5
+  val SysInfoPng           = 6
+  val SysInfoWav           = 7
+  val SysInfoMidi          = 8
+  val SysInfoWavMidiOvl    = 9
+  val SysInfoWavOvl        = 10
+  val SysInfoPrefImages    = 11
+  val SysInfoPrefSounds    = 12
+  val SysInfoPrefMusic     = 13
+  
+  val SysInfoInterpClass   = 34
+
+  val SysInfoIClassText    = 1
+  val SysInfoIClassTextGui = 2
+  val SysInfoIClassHtml    = 3
+}
 class TadsIoFunctionSet extends IntrinsicFunctionSet {
   def name = "tads-io"
   private def tadsSay(argc: Int) {
@@ -438,7 +459,15 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.timeDelay() not implemented yet")
   }
   private def systemInfo(argc: Int) {
-    throw new UnsupportedOperationException("tads-io.systemInfo() not implemented yet")
+    import TadsIoFunctionSet._
+    argCountMustBeAtLeast(argc, 1)
+    val infoType = vmState.stack.pop
+    if (infoType.value == SysInfoInterpClass) {
+      vmState.r0 = new T3Integer(SysInfoIClassHtml)
+    } else {
+      throw new UnsupportedOperationException(
+        "tads-io.systemInfo(), infoType = %s\n".format(infoType))
+    }
   }
   private def statusMode(argc: Int) {
     throw new UnsupportedOperationException("tads-io.statusMode() not implemented yet")

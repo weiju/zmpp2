@@ -99,7 +99,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
       if (replaceAll) string.replaceAll(origStr.string, newStr.string)
       else string.replaceFirst(origStr.string, newStr.string)
     }
-    printf("findReplace(), result string is: %s\n", result)
+    printf("findReplace(), result string is: '%s'\n", result)
     createStringFrom(result)
   }
 

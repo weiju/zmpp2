@@ -75,6 +75,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
       javaPattern = javaPattern.replaceAll("<rangle>", ">")
       javaPattern = javaPattern.replaceAll("<dot>", "\\\\.")
       javaPattern = javaPattern.replaceAll("%", "\\\\")
+      javaPattern = javaPattern.replaceAll("<\\^alphanum>", "\\\\W")
+      javaPattern = javaPattern.replaceAll("<alphanum>", "\\\\w")
     }
     javaPattern
   }

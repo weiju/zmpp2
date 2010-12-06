@@ -506,4 +506,9 @@ object T3Assert {
         "argc must be between %d and %d".format(min, max))
     }
   }
+  def argCountMustBeAtLeast(argc: Int, min: Int) {
+    if (argc < min) {
+      throw new IllegalArgumentException("argc must be at least %d".format(min))
+    }
+  }
 }

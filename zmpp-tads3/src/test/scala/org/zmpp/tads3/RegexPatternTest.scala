@@ -92,6 +92,10 @@ object RegexPatternSpec extends Specification {
       val pattern2 = makePattern(20, "(<langle><dot>[pP]0?<rangle>)+")
       pattern2.compile
       pattern2.javaPatternString must_== "(<\\.[pP]0?>)+"
+
+      val pattern3 = makePattern(30, "[.;:!?]<^alphanum>")
+      pattern3.compile
+      pattern3.javaPatternString must_== "[.;:!?]\\W"
     }
     "return a group" in {
       val pattern = makePattern(10, "<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>")
