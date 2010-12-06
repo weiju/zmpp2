@@ -172,6 +172,7 @@ class TadsVMState(val objectSystem: ObjectSystem,
   }
   
   // function argument acccess, indexing is 0-based
+  def getArgc = stack.valueAt(fp - 2)
   def getArg(index: Int) = stack.valueAt(fp + FpOffsetArg1 - index)
   def setArg(index: Int, value: T3Value) {
     stack.setValueAt(fp + FpOffsetArg1 - index, value)
@@ -320,6 +321,7 @@ class Executor(vmState: TadsVMState) {
       case GetArg1      =>
         vmState.stack.push(vmState.getArg(nextByteOperand))
       case GetArg2      => vmState.stack.push(vmState.getArg(nextShortOperand))
+      case GetArgc      => vmState.stack.push(vmState.getArgc)
       case GetLcl1      => vmState.stack.push(vmState.getLocal(nextByteOperand))
       case GetLcl2      => vmState.stack.push(vmState.getLocal(nextShortOperand))
       case GetProp      => callProp(0, vmState.stack.pop, nextShortOperand)
@@ -462,7 +464,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 4500) {
+    if (iteration == 4600) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }

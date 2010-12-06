@@ -301,6 +301,7 @@ object Opcodes {
   val GetArg1         = 0x82
   val GetArg2         = 0x83
   val PushSelf        = 0x84
+  val GetArgc         = 0x87
   val Dup             = 0x88
   val GetR0           = 0x8b
   val GetDbArgc       = 0x8c
@@ -393,6 +394,7 @@ object OpcodeNames {
     Ge              -> "GE",
     GetArg1         -> "GETARG1",
     GetArg2         -> "GETARG2",
+    GetArgc         -> "GETARGC",
     GetDbArgc       -> "GETDBARGC",
     GetLcl1         -> "GETLCL1",
     GetProp         -> "GETPROP",
