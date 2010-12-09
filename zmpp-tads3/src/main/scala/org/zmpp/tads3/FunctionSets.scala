@@ -45,6 +45,7 @@ import TypeIds._
 abstract class IntrinsicFunctionSet {
   def name: String
   protected var vmState: TadsVMState = null
+  def objectSystem = vmState.objectSystem
   
   def reset(vmState: TadsVMState) {
     this.vmState = vmState
@@ -166,7 +167,17 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     if (argc == 1) {
       val value = vmState.stack.pop
       val resultType = if (value.valueType == VmObj) {
-        throw new UnsupportedOperationException("dataType(obj) - TODO")
+        // check whether they are TadsString or TadsList
+        val obj = objectSystem.objectWithId(value.value)
+        if (obj.isOfMetaClass(objectSystem.stringMetaClass)) {
+          println("dataType(): STRING TYPE")
+          VmSString
+        } else if (obj.isOfMetaClass(objectSystem.listMetaClass)) {
+          println("dataType(): LIST TYPE")
+          VmList
+        } else {
+          throw new UnsupportedOperationException("dataType(obj) - TODO")
+        }
       } else value.valueType
       vmState.r0 = new T3Integer(resultType)
     } else {

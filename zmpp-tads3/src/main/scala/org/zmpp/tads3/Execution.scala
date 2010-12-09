@@ -466,13 +466,11 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    //if (iteration == 4565) {
-    if (iteration == 4414) {
+    if (iteration == 4643) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
-
-    if (iteration >= 4400 && iteration <= 4414) {
+    if (iteration >= 4630) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }
@@ -557,6 +555,9 @@ class Executor(vmState: TadsVMState) {
     if (targetValue.valueType == VmList) {
       throw new UnsupportedOperationException("indexing lists not supported yet")
     } else if (targetValue.valueType == VmObj) {
+      printf("INDEX, TARGET = %s (is a %s), INDEXVAL = %d\n",
+             targetValue, vmState.objectSystem.objectWithId(targetValue),
+             indexVal)
       val pushValue =
         vmState.objectSystem.objectWithId(targetValue).valueAtIndex(indexVal)
       vmState.stack.push(pushValue)
