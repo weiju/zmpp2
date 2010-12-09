@@ -262,7 +262,7 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    if (iteration >= 1667)
+    //if (iteration >= 1667)
       printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
              OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
@@ -407,8 +407,10 @@ class Executor(vmState: TadsVMState) {
       case RetVal       =>
         vmState.r0 = vmState.stack.pop
         vmState.doReturn
-      case Say          => say(nextIntOperand)
-      case SayVal       => say(vmState.stack.pop.value)
+      case Say          =>
+        vmState.stack.pushSString(nextIntOperand)
+        say
+      case SayVal       => say
       case SetArg1      => vmState.setArg(nextByteOperand, vmState.stack.pop)
       case SetArg2      => vmState.setArg(nextShortOperand, vmState.stack.pop)
       case SetInd       =>
@@ -464,19 +466,19 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 4600) {
+    //if (iteration == 4565) {
+    if (iteration == 4414) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
-/*
-    if (iteration >= 1660) {
+
+    if (iteration >= 4400 && iteration <= 4414) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
-    }*/
+    }
   }
 
-  private def say(poolOffset: Int) {
-    vmState.stack.pushSString(poolOffset)
+  private def say {
     if (vmState.sayFuncPtr.valueType == VmProp &&
         vmState.currentSelf != T3Nil) {
       throw new UnsupportedOperationException("SAY METHOD TODO")
@@ -496,8 +498,8 @@ class Executor(vmState: TadsVMState) {
       new T3Integer(value1.value + value2.value)
     } else if (value1.valueType == VmSString || value1.valueType == VmObj) {
       val str1 = objectSystem.toT3Object(value1)
-      //printf("ADD, obj1 = %s\n", str1)
       val str2 = objectSystem.toT3Object(value2)
+      printf("ADD, obj1 = '%s', obj2 = '%s'\n", str1.metaClass, str2.metaClass)
       (str1 + str2).id
     } else if (value1.valueType == VmList) {
       throw new UnsupportedOperationException("List.add not yet supported")
@@ -617,17 +619,22 @@ class Executor(vmState: TadsVMState) {
 
     if (targetVal.valueType == VmObj) {
       val obj = vmState.objectSystem.objectWithId(targetVal)
-      printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
+      //printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
       val prop = obj.getProperty(propId, argc)
       if (prop != InvalidProperty) {
         printf("callProp() - Property found: %s\n", prop)
         evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc)
       } else {
+        printf("prop not found in sef or super -> lookin' for propNotDefined()\n")
         // check whether propNotDefined is available
         val propNotDefined = vmState.image.symbolicNames("propNotDefined").t3Value
         val pndProp = obj.getProperty(propNotDefined.value, argc)
-        if (pndProp == InvalidProperty) vmState.r0 = T3Nil
-        else {
+        if (pndProp == InvalidProperty) {
+          // there is no property defined, yet we still have to
+          // clean up our parameters
+          vmState.r0 = T3Nil
+          for (i <- 0 until argc) vmState.stack.pop
+        } else {
           printf("SEARCH %s.'propNotDefined': %s -> [%s]\n", obj, propNotDefined, pndProp)
           throw new UnsupportedOperationException("TODO: property not found, " +
                                                   "check for propNotDefined")

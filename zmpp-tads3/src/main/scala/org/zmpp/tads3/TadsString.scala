@@ -52,7 +52,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
     if (other.valueType == VmSString) {
       val otherString =
         objectSystem.stringConstantWithOffset(other.asInstanceOf[T3SString])
-      printf("string.t3vmEquals() [%s], other = %s\n", this, otherString)
+      printf("string.t3vmEquals() '%s', other = '%s'\n", this, otherString)
       this.string.equals(otherString.asInstanceOf[TadsString].string)
     } else {
       throw new UnsupportedOperationException("unsupported T3value type")
@@ -86,7 +86,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
 
   def findReplace(origStr: TadsString, newStr: TadsString, replaceAll: Boolean,
                   index: Int): TadsString = {
-    printf("findReplace('%s', '%s', %b, %d)\n", origStr, newStr, replaceAll, index)
+    printf("'%s'.findReplace('%s', '%s', %b, %d)\n", string, origStr, newStr,
+           replaceAll, index)
     val result = if (index > 1) {
       if (replaceAll) {
         string.substring(0, index - 1) +
@@ -158,7 +159,7 @@ extends AbstractMetaClass(objectSystem) {
     val index = if (argc > 1) vmState.stack.pop.value else 1
     val foundAt = obj.asInstanceOf[TadsString].find(
       str.asInstanceOf[TadsString], index)
-    printf("find(%s, %d) = %d\n", str, index, foundAt)
+    printf("find('%s', %d) in '%s' = %d\n", str, index, obj, foundAt)
     if (foundAt == 0) T3Nil else new T3Integer(foundAt)
   }
   def toUnicode(obj: T3Object, argc: Int): T3Value = {
