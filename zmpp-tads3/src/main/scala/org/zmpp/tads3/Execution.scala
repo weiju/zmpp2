@@ -650,15 +650,17 @@ class Executor(vmState: TadsVMState) {
       // the targetValue is an offset into the list pool, not into the static
       // object pool !!!!
       if (argc > 0) throw new UnsupportedOperationException("callProp TODO list")
-
       val list = vmState.objectSystem.listConstantWithOffset(
         targetVal.asInstanceOf[T3ListConstant])
-      val listMeta = vmState.objectSystem.metaClassForName("list")
-      val result = listMeta.evalClassProperty(list, propId)
-      vmState.r0 = result
-    } else if (targetVal.valueType == VmSString ||
-               targetVal.valueType == VmDString) {
-      throw new UnsupportedOperationException("Cannot handle string constants yet")
+      vmState.r0 =
+        vmState.objectSystem.listMetaClass.evalClassProperty(list, propId)
+    } else if (targetVal.valueType == VmSString) {
+      val str = vmState.objectSystem.stringConstantWithOffset(
+        targetVal.asInstanceOf[T3SString])
+      vmState.r0 =
+        vmState.objectSystem.stringMetaClass.evalClassProperty(str, propId)
+    } else if (targetVal.valueType == VmDString) {
+      throw new UnsupportedOperationException("Cannot handle dstring constants yet")
     } else throw new ObjectValRequiredException
   }
 
