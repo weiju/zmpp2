@@ -315,6 +315,7 @@ class Executor(vmState: TadsVMState) {
       case DecLcl       =>
         val localNum = nextShortOperand
         vmState.setLocal(localNum, sub(vmState.getLocal(localNum), T3Integer.One))
+      case Disc         => vmState.stack.pop
       case Dup          => vmState.stack.dup
       case Eq           =>
         val val2 = vmState.stack.pop
@@ -420,7 +421,7 @@ class Executor(vmState: TadsVMState) {
         val indexVal     = vmState.stack.pop
         val containerVal = vmState.stack.pop
         val newVal       = vmState.stack.pop
-        throw new UnsupportedOperationException("SETIND not supported")
+        vmState.stack.push(setInd(containerVal, indexVal, newVal))
       case SetIndLcl1I8 =>
         val localNumber  = nextByteOperand
         val containerVal = vmState.getLocal(localNumber)
@@ -469,7 +470,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 4700) {
+    if (iteration == 5500) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }

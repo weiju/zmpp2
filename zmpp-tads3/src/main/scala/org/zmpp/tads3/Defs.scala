@@ -303,6 +303,7 @@ object Opcodes {
   val PushSelf        = 0x84
   val GetArgc         = 0x87
   val Dup             = 0x88
+  val Disc            = 0x89
   val GetR0           = 0x8b
   val GetDbArgc       = 0x8c
   val Swap            = 0x8d
@@ -389,6 +390,7 @@ object OpcodeNames {
     CallPropSelf    -> "CALLPROPSELF",
     Dec             -> "DEC",
     DecLcl          -> "DECLCL",
+    Disc            -> "DISC",
     Dup             -> "DUP",
     Eq              -> "EQ",
     Ge              -> "GE",
