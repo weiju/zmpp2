@@ -268,6 +268,8 @@ object Opcodes {
   val Add             = 0x22
   val Sub             = 0x23
   val Mul             = 0x24
+  val Mod             = 0x2b
+  val Not             = 0x2c
   val Boolize         = 0x2d
   val Inc             = 0x2e
   val Dec             = 0x2f
@@ -429,6 +431,7 @@ object OpcodeNames {
     LJsr            -> "LJSR",
     LRet            -> "LRET",
     Lt              -> "LT",
+    Mod             -> "MOD",
     Mul             -> "MUL",
     Ne              -> "NE",
     New1            -> "NEW1",
@@ -436,6 +439,7 @@ object OpcodeNames {
     NilLcl1         -> "NILLCL1",
     NilLcl2         -> "NILLCL2",
     Nop             -> "NOP",
+    Not             -> "NOT",
     ObjCallProp     -> "OBJCALLPROP",
     ObjGetProp      -> "OBJGETPROP",
     ObjSetProp      -> "OBJSETPROP",

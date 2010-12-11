@@ -380,6 +380,8 @@ class Executor(vmState: TadsVMState) {
       case NilLcl1      => vmState.setLocal(nextByteOperand, T3Nil)
       case NilLcl2      => vmState.setLocal(nextShortOperand, T3Nil)
       case Nop          => // do nothing
+      case Not          =>
+        vmState.stack.push(not(vmState.stack.pop))
       case ObjCallProp  =>
         callProp(nextByteOperand, new T3ObjectId(nextIntOperand),
                  nextShortOperand)
@@ -495,6 +497,13 @@ class Executor(vmState: TadsVMState) {
     }
   }
 
+  private def not(value: T3Value) = {
+    if (value.valueType == VmInt) {
+      if (value.isTrue) T3Nil else T3True
+    } else if (value == T3True) T3Nil
+    else if (value == T3Nil) T3True
+    else throw new UnsupportedOperationException("TODO: NOT unsupported value type")
+  }
   private def add(value1: T3Value, value2: T3Value): T3Value = {
     //printf("ADD value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
