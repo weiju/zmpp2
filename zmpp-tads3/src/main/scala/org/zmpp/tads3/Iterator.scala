@@ -68,7 +68,7 @@ extends Iterator(id, vmState, isTransient) {
     else T3Nil
   }
   def getNext(argc: Int): T3Value = {
-    val retval = collection.valueAtIndex(currentIndex)
+    val retval = collection.valueAtIndex(new T3Integer(currentIndex))
     currentIndex += 1
     retval
   }

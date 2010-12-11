@@ -329,15 +329,16 @@ class Executor(vmState: TadsVMState) {
       case GetPropR0    => callProp(0, vmState.r0, nextShortOperand)
       case GetPropSelf  => callProp(0, vmState.currentSelf, nextShortOperand)
       case GetR0        => vmState.stack.push(vmState.r0)
-      case IdxInt8      => index(vmState.stack.pop, nextByteOperand)
-      case IdxLcl1Int8  => index(vmState.getLocal(nextByteOperand), nextByteOperand)
+      case IdxInt8      => index(vmState.stack.pop, new T3Integer(nextByteOperand))
+      case IdxLcl1Int8  => index(vmState.getLocal(nextByteOperand),
+                                 new T3Integer(nextByteOperand))
       case Inc          => vmState.stack.push(add(vmState.stack.pop, T3Integer.One))
       case IncLcl       =>
         val localNum = nextShortOperand
         vmState.setLocal(localNum, add(vmState.getLocal(localNum), T3Integer.One))
       case Index        =>
         val indexVal = vmState.stack.pop
-        index(vmState.stack.pop, indexVal.value)
+        index(vmState.stack.pop, indexVal)
       case Je           =>
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
@@ -421,7 +422,7 @@ class Executor(vmState: TadsVMState) {
       case SetIndLcl1I8 =>
         val localNumber  = nextByteOperand
         val containerVal = vmState.getLocal(localNumber)
-        val index        = nextByteOperand
+        val index        = new T3Integer(nextByteOperand)
         val newVal       = vmState.stack.pop
         vmState.setLocal(localNumber, setInd(containerVal, index, newVal))
       case SetLcl1      => vmState.setLocal(nextByteOperand, vmState.stack.pop)
@@ -466,14 +467,15 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 4643) {
+    if (iteration == 4645) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
-    if (iteration >= 4630) {
+/*
+    if (iteration >= 4637) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
-    }
+    }*/
   }
 
   private def say {
@@ -551,11 +553,11 @@ class Executor(vmState: TadsVMState) {
   }
 
   // instruction implementations
-  private def index(targetValue: T3Value, indexVal: Int) {
+  private def index(targetValue: T3Value, indexVal: T3Value) {
     if (targetValue.valueType == VmList) {
       throw new UnsupportedOperationException("indexing lists not supported yet")
     } else if (targetValue.valueType == VmObj) {
-      printf("INDEX, TARGET = %s (is a %s), INDEXVAL = %d\n",
+      printf("INDEX, TARGET = %s (is a %s), INDEXVAL = %s\n",
              targetValue, vmState.objectSystem.objectWithId(targetValue),
              indexVal)
       val pushValue =
@@ -585,10 +587,10 @@ class Executor(vmState: TadsVMState) {
     } else throw new FuncPtrValRequiredException
   }
 
-  private def setInd(containerVal: T3Value, index: Int, newVal: T3Value) = {
+  private def setInd(containerVal: T3Value, indexVal: T3Value, newVal: T3Value) = {
     if (containerVal.valueType == VmObj) {
       val obj = vmState.objectSystem.objectWithId(containerVal.value)
-      obj.setValueAtIndex(index, newVal)
+      obj.setValueAtIndex(indexVal, newVal)
     } else if (containerVal.valueType == VmList) {
       throw new UnsupportedOperationException("SETINDxxx not supported " +
                                               "for objects of list yet")

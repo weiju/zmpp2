@@ -48,6 +48,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def init(str: String) = this.string = str
   def length = string.length
   override def toString = string
+  override def hashCode = string.hashCode
   override def t3vmEquals(other: T3Value): Boolean = {
     if (other.valueType == VmSString) {
       val otherString =

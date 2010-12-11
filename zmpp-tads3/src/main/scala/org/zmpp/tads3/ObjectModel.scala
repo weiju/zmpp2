@@ -60,8 +60,8 @@ trait T3Object {
   def isInstanceOf(obj: T3Object): Boolean
   def getProperty(propertyId: Int, argc: Int): Property
   def setProperty(propertyId: Int, newValue: T3Value)
-  def valueAtIndex(index: Int): T3Value
-  def setValueAtIndex(index: Int, newValue: T3Value): T3Value
+  def valueAtIndex(index: T3Value): T3Value
+  def setValueAtIndex(index: T3Value, newValue: T3Value): T3Value
   def inheritProperty(propertyId: Int, argc: Int): Property
   def t3vmEquals(other: T3Value): Boolean
   def +(other: T3Object): T3Object
@@ -106,11 +106,11 @@ extends T3Object {
     throw new UnsupportedOperationException("setProperty() not implemented: " +
                                             getClass.getName)
   }
-  def valueAtIndex(index: Int): T3Value = {
+  def valueAtIndex(index: T3Value): T3Value = {
     throw new UnsupportedOperationException(
       "%s.valueAtIndex() not implemented".format(metaClass.name))
   }
-  def setValueAtIndex(index: Int, newValue: T3Value): T3Value = {
+  def setValueAtIndex(index: T3Value, newValue: T3Value): T3Value = {
     throw new UnsupportedOperationException("setValueAtIndex() not implemented")
   }
 

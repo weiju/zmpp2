@@ -47,13 +47,22 @@ extends AbstractT3Object(id, vmState, isTransient) {
       objectSystem.stringConstantWithOffset(key.asInstanceOf[T3SString]).hashCode
     } else if (key.valueType == VmEnum) {
       key.value
+    } else if (key.valueType == VmObj) {
+      val obj  = objectSystem.objectWithId(key.value)
+      if (obj.isOfMetaClass(objectSystem.stringMetaClass)) {
+        obj.hashCode 
+      } else {
+        printf("KEY OBJ IS: %s\n", obj)
+        throw new UnsupportedOperationException("unsupported hash type")
+      }
     } else {
       throw new UnsupportedOperationException("unsupported hash type")
     }
   }
 
-  override def valueAtIndex(index: Int): T3Value = {
-    if (_container.contains(index)) _container(index) else T3Nil
+  override def valueAtIndex(index: T3Value): T3Value = {
+    val keyHash = makeHash(index)
+    if (_container.contains(keyHash)) _container(keyHash) else T3Nil
   }
 }
 
@@ -81,7 +90,7 @@ extends AbstractMetaClass(objectSystem) {
       val key = T3Value.readDataHolder(imageMem, valueAddr)
       val value = T3Value.readDataHolder(imageMem, valueAddr + DataHolder.Size)
       val nextIndex = imageMem.shortAt(valueAddr + 2 * DataHolder.Size)
-      //printf("value[%d] = {k: %s, v: %s, nextIdx: %d}\n", i, key, value, nextIndex)
+      //  printf("value[%d] = {k: %s, v: %s, nextIdx: %d}\n", i, key, value, nextIndex)
       if (key != T3Empty) lookupTable(key) = value
       valueAddr += valueSize
     }

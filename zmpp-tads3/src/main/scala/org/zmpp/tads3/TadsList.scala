@@ -62,10 +62,10 @@ extends TadsCollection(id, vmState, isTransient) {
   def addElement(value: T3Value) {
     _container.add(value)
   }
-  override def valueAtIndex(index: Int): T3Value = _container(index - 1)
-  override def setValueAtIndex(index: Int, newValue: T3Value): T3ObjectId = {
-    val oldValue = _container(index - 1)
-    _container(index - 1) = newValue
+  override def valueAtIndex(index: T3Value): T3Value = _container(index.value - 1)
+  override def setValueAtIndex(index: T3Value, newValue: T3Value): T3ObjectId = {
+    val oldValue = _container(index.value - 1)
+    _container(index.value - 1) = newValue
     id // return this object
   }
   def createIterator(argc: Int): T3Value = {
@@ -80,7 +80,7 @@ extends TadsList(id, vmState, isTransient) {
   override def addElement(value: T3Value) {
     throw new UnsupportedOperationException("can not add to list constant")
   }
-  override def setValueAtIndex(index: Int, newValue: T3Value): T3ObjectId = {
+  override def setValueAtIndex(index: T3Value, newValue: T3Value): T3ObjectId = {
     throw new UnsupportedOperationException("can not set value in list constant")
   }
 }

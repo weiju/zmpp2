@@ -42,7 +42,7 @@ extends Vector(id, vmState, isTransient) {
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val objectCallProp = metaClass.vmState.image.symbolicNames("ObjectCallProp")
     if (propertyId == objectCallProp.value) {
-      val propValue = valueAtIndex(1)
+      val propValue = valueAtIndex(T3Integer.One)
       new Property(propertyId, propValue, id)
     } else super.getProperty(propertyId, argc)
   }
