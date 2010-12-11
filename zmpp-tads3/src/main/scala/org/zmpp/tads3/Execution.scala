@@ -310,6 +310,8 @@ class Executor(vmState: TadsVMState) {
                                     nextShortOperand)
       case CallPropSelf => callProp(nextByteOperand, vmState.currentSelf,
                                     nextShortOperand)
+      case Dec          =>
+        vmState.stack.push(sub(vmState.stack.pop, T3Integer.One))
       case DecLcl       =>
         val localNum = nextShortOperand
         vmState.setLocal(localNum, sub(vmState.getLocal(localNum), T3Integer.One))
@@ -467,7 +469,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 4645) {
+    if (iteration == 4700) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
