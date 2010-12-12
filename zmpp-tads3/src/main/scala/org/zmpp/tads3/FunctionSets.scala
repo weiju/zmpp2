@@ -527,7 +527,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
   }
   private def inputLineCancel(argc: Int) {
     argCountMustBe(argc, 1)
-    val reset = vmState.stack.pop
+    val reset = nextArg
     printf("inputLineCancel(reset = %s) - TODO\n", reset)
   }
   private def bannerCreate(argc: Int) {
@@ -551,7 +551,9 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.bannerDelete() not implemented yet")
   }
   private def bannerClear(argc: Int) {
-    throw new UnsupportedOperationException("tads-io.bannerClear() not implemented yet")
+    argCountMustBe(argc, 1)
+    val handle = nextArg
+    tadsOutput.addString("bannerClear(%s)\n".format(handle))
   }
   private def bannerSay(argc: Int) {
     throw new UnsupportedOperationException("tads-io.bannerSay() not implemented yet")

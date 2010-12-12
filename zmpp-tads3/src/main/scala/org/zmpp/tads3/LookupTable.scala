@@ -32,6 +32,7 @@ import java.util.HashMap
 import scala.collection.JavaConversions._
 import org.zmpp.base._
 import TypeIds._
+import T3Assert._
 
 class LookupTable(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
@@ -95,5 +96,19 @@ extends AbstractMetaClass(objectSystem) {
       valueAddr += valueSize
     }
     lookupTable
+  }
+
+  override def createFromStack(id: T3ObjectId, argc: Int,
+                               isTransient: Boolean) = {
+    if (argc == 0) {
+      // bucketCount = 32
+      // initCapacity = 64
+    } else if (argc == 2) {
+      val bucketCount  = vmState.stack.pop
+      val initCapacity = vmState.stack.pop
+    } else {
+      throw new IllegalArgumentException("wrong # of arguments")
+    }
+    new LookupTable(id, vmState, isTransient)
   }
 }
