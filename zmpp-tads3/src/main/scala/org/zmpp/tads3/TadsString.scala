@@ -183,12 +183,11 @@ extends AbstractMetaClass(objectSystem) {
   def findReplace(obj: T3Object, argc: Int): T3Value = {
     import TadsString._
     argCountMustBe(argc, 3, 4)
-    val origStr = objectSystem.toT3Object(vmState.stack.pop)
-    val newStr  = objectSystem.toT3Object(vmState.stack.pop)
+    val origStr = objectSystem.toTadsString(vmState.stack.pop)
+    val newStr  = objectSystem.toTadsString(vmState.stack.pop)
     val replaceAll = (vmState.stack.pop.value & ReplaceAll) == ReplaceAll
     val index   = if (argc == 4) vmState.stack.pop.value else 1
-    obj.asInstanceOf[TadsString].findReplace(origStr.asInstanceOf[TadsString],
-                                             newStr.asInstanceOf[TadsString],
+    obj.asInstanceOf[TadsString].findReplace(origStr, newStr,
                                              replaceAll, index).id
   }
 

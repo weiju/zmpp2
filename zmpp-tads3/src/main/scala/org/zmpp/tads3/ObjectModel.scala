@@ -440,7 +440,10 @@ class ObjectSystem {
   def metaClassForName(name: String): MetaClass = MetaClasses(name)
   def objectWithId(id: Int): T3Object = {
     if (_objectCache.contains(id)) _objectCache(id)
-    else throw new ObjectNotFoundException
+    else {
+      printf("object not found in cache: %d\n", id)
+      throw new ObjectNotFoundException
+    }
   }
   def objectWithId(id: T3Value): T3Object = objectWithId(id.value)
   def listConstantWithOffset(offset: T3ListConstant) = {
@@ -482,9 +485,15 @@ class ObjectSystem {
   def toT3Object(value: T3Value): T3Object = {
     if (value.valueType == VmSString) {
       stringConstantWithOffset(value.asInstanceOf[T3SString])
-    } else {
+    } else if (value.valueType == VmObj) {
       objectWithId(value.asInstanceOf[T3ObjectId])
+    } else {
+      throw new IllegalArgumentException("unsupported data type for value")
     }
+  }
+
+  def toTadsString(value: T3Value): TadsString = {
+    toT3Object(value).asInstanceOf[TadsString]
   }
 }
 

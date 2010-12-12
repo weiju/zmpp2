@@ -257,12 +257,27 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
       throw new IllegalArgumentException("tads-gen.getTime(%d)".format(timeType))
     }
   }
+
+  private def asRegexPattern(t3Value: T3Value) = {
+    val obj = objectSystem.toT3Object(t3Value)
+    obj match {
+      case obj:RegexPattern => obj.asInstanceOf[RegexPattern]
+      case obj:TadsString   =>
+        objectSystem.regexPatternMetaClass.createFromTadsString(
+          obj.asInstanceOf[TadsString])
+      case _ =>
+        throw new IllegalArgumentException("unsupported object type for pattern")
+    }
+  }
+
   private def rexMatch(argc: Int) {
     argCountMustBe(argc, 2, 3)
     val pat = vmState.stack.pop
     val str = vmState.stack.pop
-    val patObj = vmState.objectSystem.objectWithId(pat.value)
-    val searchStr = vmState.objectSystem.objectWithId(str.value)
+    val patObj = asRegexPattern(pat)
+    val searchStr = objectSystem.toTadsString(str)
+    printf("rexMatch(), patObj = [%s], searchStr = [%s]\n",
+           patObj, searchStr)
     
     val index = if (argc == 3) vmState.stack.pop.value else 1
     val matchResult =
@@ -277,17 +292,10 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     val pat = vmState.stack.pop
     val str = vmState.stack.pop
     val index = if (argc == 3) vmState.stack.pop.value else 1
-    val patObj = vmState.objectSystem.objectWithId(pat.value)
-    val searchStr = if (str.valueType == VmSString) {
-      vmState.objectSystem.stringConstantWithOffset(str.asInstanceOf[T3SString])
-    } else if (str.valueType == VmObj) {
-      vmState.objectSystem.objectWithId(str.asInstanceOf[T3ObjectId])
-    } else {
-      throw new IllegalArgumentException("unsupported data type for str")
-    }
+    val patObj = vmState.objectSystem.toT3Object(pat)
+    val searchStr = objectSystem.toTadsString(str)
     val foundAt =
-      patObj.asInstanceOf[RegexPattern].search(searchStr.asInstanceOf[TadsString],
-                                               index)
+      patObj.asInstanceOf[RegexPattern].search(searchStr, index)
     printf("rexSearch(), pat: %s (%s) str: %s (%s) index: %d foundAt: %s\n", pat, patObj,
            str, searchStr, index, foundAt)
     vmState.lastPattern = patObj.asInstanceOf[RegexPattern]
@@ -510,7 +518,9 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     val str = objectSystem.stringMetaClass.createString("")
     val list = objectSystem.listMetaClass.createList(
       List(new T3Integer(TadsEvent.InEvtLine), str.id))
-    tadsOutput.addString("inputLineTimeout() [TODO] \n")
+    tadsOutput.addString("inputLineTimeout() [TODO], str.id = %s, list.id = %s\n".format(
+                       str.id, list.id))
+    printf("inputLineTimeout() [TODO], str.id = %s, list.id = %s\n", str.id, list.id)
     vmState.r0 = list.id
     //throw new UnsupportedOperationException("tads-io.inputLineTimeout() " +
     //                                        "not implemented yet")

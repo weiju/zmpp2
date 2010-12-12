@@ -56,9 +56,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
 
   def patternString: TadsString = {
     if (srcPatternString == null) {
-      srcPatternString =
-        objectSystem.stringConstantWithOffset(
-          srcPattern.asInstanceOf[T3SString]).asInstanceOf[TadsString]
+      srcPatternString = objectSystem.toTadsString(srcPattern)
     }
     srcPatternString
   }
@@ -77,6 +75,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
       javaPattern = javaPattern.replaceAll("%", "\\\\")
       javaPattern = javaPattern.replaceAll("<\\^alphanum>", "\\\\W")
       javaPattern = javaPattern.replaceAll("<alphanum>", "\\\\w")
+      javaPattern = javaPattern.replaceAll("<space>", "\\\\s")
     }
     javaPattern
   }
@@ -118,8 +117,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
   }
 
   override def toString = {
-    val str = objectSystem.stringConstantWithOffset(srcPattern.asInstanceOf[T3SString])
-    "regex-pattern = '%s' (len = %d)".format(str, str.asInstanceOf[TadsString].length)
+    "regex-pattern = '%s' (len = %d)".format(patternString, patternString.length)
   }
 }
 
@@ -139,5 +137,12 @@ extends AbstractMetaClass(objectSystem) {
     } else {
       throw new UnsupportedOperationException("unsupported regex data type")
     }
+  }
+
+  def createFromTadsString(str: TadsString): RegexPattern = {
+    val pattern = new RegexPattern(objectSystem.newObjectId, vmState, false)
+    pattern.init(str.id)
+    objectSystem.registerObject(pattern)
+    pattern
   }
 }
