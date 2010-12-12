@@ -457,7 +457,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.setLogFile() not implemented yet")
   }
   private def clearScreen(argc: Int) {
-    throw new UnsupportedOperationException("tads-io.clearScreen() not implemented yet")
+    tadsOutput.addString("clearScreen (TODO)\n")
   }
   private def morePrompt(argc: Int) {
     throw new UnsupportedOperationException("tads-io.morePrompt() not implemented yet")
