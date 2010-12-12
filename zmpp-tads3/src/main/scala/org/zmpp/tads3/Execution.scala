@@ -448,9 +448,15 @@ class Executor(vmState: TadsVMState) {
         var p          = vmState.ip
         var counter    = 0
         var terminateLoop = false
+        var valueFound = false
         while (!terminateLoop) {
           val currval = dataHolderValueAt(p)
-          if (controlVal.t3vmEquals(currval)) {
+          valueFound = if (controlVal.valueType == VmObj) {
+            objectSystem.objectWithId(controlVal).t3vmEquals(currval)
+          } else {
+            controlVal.t3vmEquals(currval)
+          }
+          if (valueFound) {
             val branchOffset = Types.signExtend16(
               vmState.image.codeShortAt(p + DataHolder.Size))
             // note: the branch offset is calculated from the
@@ -462,7 +468,7 @@ class Executor(vmState: TadsVMState) {
           p       += DataHolder.Size + 2 // + branch offset
           if (counter == caseCount) terminateLoop = true
         }
-        if (counter == caseCount) {
+        if (!valueFound) {
           //  we did not find a value, branch to default
           val branchOffset = Types.signExtend16(vmState.image.codeShortAt(p))
           vmState.ip = p + branchOffset
@@ -475,12 +481,12 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 9000) {
+    if (iteration == 8904) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 /*
-    if (iteration >= 8895) {
+    if (iteration >= 8903) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }*/
