@@ -679,12 +679,12 @@ class Executor(vmState: TadsVMState) {
       val list = vmState.objectSystem.listConstantWithOffset(
         targetVal.asInstanceOf[T3ListConstant])
       vmState.r0 =
-        vmState.objectSystem.listMetaClass.evalClassProperty(list, propId)
+        vmState.objectSystem.listMetaClass.evalClassProperty(list, propId, argc)
     } else if (targetVal.valueType == VmSString) {
       val str = vmState.objectSystem.stringConstantWithOffset(
         targetVal.asInstanceOf[T3SString])
       vmState.r0 =
-        vmState.objectSystem.stringMetaClass.evalClassProperty(str, propId)
+        vmState.objectSystem.stringMetaClass.evalClassProperty(str, propId, argc)
     } else if (targetVal.valueType == VmDString) {
       throw new UnsupportedOperationException("Cannot handle dstring constants yet")
     } else throw new ObjectValRequiredException

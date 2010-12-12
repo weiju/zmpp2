@@ -170,7 +170,7 @@ trait MetaClass {
   def supportsVersion(version: String): Boolean
   def callMethodWithIndex(obj: T3Object, index: Int,
                           argc: Int): T3Value
-  def evalClassProperty(obj: T3Object, propertyId: Int): T3Value
+  def evalClassProperty(obj: T3Object, propertyId: Int, argc: Int): T3Value
 
   // The static property map defines the mapping from a property id to
   // an index into the meta class's function table
@@ -210,16 +210,16 @@ abstract class AbstractMetaClass(val objectSystem: ObjectSystem) extends MetaCla
       "%s: callMethodWithIndex not supported".format(name))
   }
 
-  def evalClassProperty(obj: T3Object, propertyId: Int): T3Value = {
+  def evalClassProperty(obj: T3Object, propertyId: Int, argc: Int): T3Value = {
     var functionIndex = functionIndexForProperty(propertyId)
     if (functionIndex == -1) {
-      if (superMeta != null) superMeta.evalClassProperty(obj, propertyId)
+      if (superMeta != null) superMeta.evalClassProperty(obj, propertyId, argc)
       else T3Nil
     } else {
       // found, try to evaluate
       printf("FOUND PROPERTY %d in metaclass '%s', at index: %d\n",
            propertyId, name, functionIndex)
-      callMethodWithIndex(obj, functionIndex, 0)
+      callMethodWithIndex(obj, functionIndex, argc)
     }
   }
   var id: Int = 0
