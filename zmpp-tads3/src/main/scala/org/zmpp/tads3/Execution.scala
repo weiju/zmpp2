@@ -111,7 +111,6 @@ class TadsVMState(val objectSystem: ObjectSystem,
                    DataHolder.valueForType(valueType, image.codeIntAt(addr + 1)))
   }
 
-
   def doBranch {
     val branchOffset = Types.signExtend16(image.codeShortAt(ip))
     ip += branchOffset
@@ -370,6 +369,9 @@ class Executor(vmState: TadsVMState) {
         val stackTop = vmState.stack.top
         if (!stackTop.isTrue) vmState.stack.pop
         branchIfTrue(stackTop.isTrue)
+      case LJsr         =>
+        vmState.stack.pushInt((vmState.ip + 2) - vmState.ep)
+        vmState.ip += nextShortOperand
       case Ne           =>
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
@@ -481,7 +483,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 8904) {
+    if (iteration == 8950) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
