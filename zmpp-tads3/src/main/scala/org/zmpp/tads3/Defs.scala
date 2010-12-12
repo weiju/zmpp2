@@ -495,15 +495,16 @@ object OpcodeNames {
 
 
 // Exceptions
-class CannotIndexTypeException extends Exception
-class ObjectNotFoundException extends Exception
-class FuncPtrValRequiredException extends Exception
-class ObjectValRequiredException extends Exception
-class InvalidComparisonException extends Exception
 class BadTypeAddException extends Exception
 class BadTypeSubException extends Exception
-class SayIsNotDefinedException extends Exception
+class CannotIndexTypeException extends Exception
+class FuncPtrValRequiredException extends Exception
+class IntValRequiredException extends Exception
+class InvalidComparisonException extends Exception
 class NoLogConvException extends Exception
+class ObjectNotFoundException extends Exception
+class ObjectValRequiredException extends Exception
+class SayIsNotDefinedException extends Exception
 
 object T3Assert {
   def argCountMustBe(argc: Int, min: Int, max: Int = 0) {

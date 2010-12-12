@@ -372,6 +372,11 @@ class Executor(vmState: TadsVMState) {
       case LJsr         =>
         vmState.stack.pushInt((vmState.ip + 2) - vmState.ep)
         vmState.ip += nextShortOperand
+      case LRet         =>
+        val retOffset = vmState.getLocal(nextShortOperand)
+        if (retOffset.valueType == VmInt) {
+          vmState.ip = vmState.ep + retOffset.value
+        } else throw new IntValRequiredException
       case Ne           =>
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
