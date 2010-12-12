@@ -509,15 +509,17 @@ class SayIsNotDefinedException extends Exception
 object T3Assert {
   def argCountMustBe(argc: Int, min: Int, max: Int = 0) {
     if (max == 0 && argc != min) {
-      throw new IllegalArgumentException("argc must be %d".format(min))
+      throw new IllegalArgumentException(
+        "argc must be %d (was %d)".format(min, argc))
     } else if (max > 0 && (argc < min || argc > max)) {
       throw new IllegalArgumentException(
-        "argc must be between %d and %d".format(min, max))
+        "argc must be between %d and %d (was %d)".format(min, max, argc))
     }
   }
   def argCountMustBeAtLeast(argc: Int, min: Int) {
     if (argc < min) {
-      throw new IllegalArgumentException("argc must be at least %d".format(min))
+      throw new IllegalArgumentException(
+        "argc must be at least %d (was %d)".format(min, argc))
     }
   }
 }

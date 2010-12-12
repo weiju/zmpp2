@@ -40,9 +40,6 @@ object TadsString {
 }
 class TadsString(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
-  if (id.value == 25057) {
-    printf("MICROSOFT SUCKS CREATE STRING HERE: %s\n", id)
-  }
   var string: String = null
 
   protected def staticMetaClass = objectSystem.stringMetaClass
