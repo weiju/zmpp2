@@ -29,6 +29,7 @@
 package org.zmpp.tads3
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable.Queue
 import java.util.ArrayList
 import org.zmpp.base._
 
@@ -87,29 +88,46 @@ extends AbstractT3Object(id, vmState, isTransient) {
     }
     super.isInstanceOf(obj)
   }
-  override def getProperty(propertyId: Int, argc: Int): Property = {
-    val prop = findPropertyInThis(propertyId)
-    if (prop != InvalidProperty) prop
-    else findPropertyInSuperClasses(propertyId, argc)
-  }
-  override def inheritProperty(propertyId: Int, argc: Int): Property = {
-    findPropertyInSuperClasses(propertyId, argc)
-  }
 
-  private def findPropertyInSuperClasses(propertyId: Int, argc: Int): Property = {
-    for (superClassId <- superClassIds) {
-      val superClass = objectSystem.objectWithId(superClassId)
-      val prop = superClass.getProperty(propertyId, argc)
+  override def getProperty(propertyId: Int, argc: Int): Property = {
+    val q = new Queue[TadsObject]
+    q += this
+    getPropertyBFS(q, propertyId, argc: Int)
+  }
+  private def getPropertyBFS(q: Queue[TadsObject], propertyId: Int,
+                             argc: Int): Property = {
+    while (!q.isEmpty) {
+      val obj = q.dequeue
+      printf("BFS search for property: %d, obj is = %s\n", propertyId, obj)
+      val prop = obj.findPropertyInThis(propertyId)
       if (prop != InvalidProperty) return prop
+      for (superClassId <- obj.superClassIds) {
+        q += objectSystem.objectWithId(superClassId).asInstanceOf[TadsObject]
+      }
     }
     InvalidProperty
   }
 
+  // like getProperty(), but skip 'this'
+  override def inheritProperty(propertyId: Int, argc: Int): Property = {
+    val q = new Queue[TadsObject]
+    for (superClassId <- superClassIds) {
+      q += objectSystem.objectWithId(superClassId).asInstanceOf[TadsObject]
+    }
+    getPropertyBFS(q, propertyId, argc: Int)
+  }
+
   private def findPropertyInThis(propertyId: Int): Property = {
     val found = properties.find(p => p.id == propertyId)
-    if (found != None) return found.get
+    if (found != None) {
+      printf("(%s) FOUND PROP: %d in std props: %s\n", id, propertyId, found.get)
+      return found.get
+    }
     val foundExt = extProperties.find(p => p.id == propertyId)
-    if (foundExt != None) foundExt.get else InvalidProperty
+    if (foundExt != None) {
+      printf("(%s) FOUND PROP: %d in ext props: %s\n", id, propertyId, foundExt.get)
+      foundExt.get 
+    } else InvalidProperty
   }
 
   override def setProperty(propertyId: Int, newValue: T3Value) {
