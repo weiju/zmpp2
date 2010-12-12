@@ -434,12 +434,15 @@ object TadsIoFunctionSet {
 }
 class TadsIoFunctionSet extends IntrinsicFunctionSet {
   def name = "tads-io"
+  var tadsOutput: TadsOutput = null
+
   private def tadsSay(argc: Int) {
     printf("tadsSay(), num args: %d\n", argc)
     for (i <- 0 until argc) {
       val value = vmState.stack.pop
       val obj = vmState.objectSystem.toT3Object(value)
-      printf("TADSSAY(), OUTPUT VALUE: %s (%s)\n", value, obj)
+      tadsOutput.addString("%s".format(obj))
+      //printf("TADSSAY(), OUTPUT VALUE: %s (%s)\n", value, obj)
     }
   }
   private def setLogFile(argc: Int) {
@@ -500,6 +503,9 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.flushOutput() not implemented yet")
   }
   private def inputLineTimeout(argc: Int) {
+    argCountMustBe(argc, 0, 1)
+    val timeout = if (argc == 0) T3Nil else vmState.stack.pop
+    printf("inputLineTimeout(%s)\n", timeout)
     throw new UnsupportedOperationException("tads-io.inputLineTimeout() " +
                                             "not implemented yet")
   }
@@ -510,21 +516,20 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
   }
   private def bannerCreate(argc: Int) {
     printf("bannerCreate(%d)\n", argc)
-    if (argc == 8) {
-      val parent     = nextArg
-      val where      = nextArg
-      val other      = nextArg
-      val windowType = nextArg
-      val align      = nextArg
-      val size       = nextArg
-      val sizeUnits  = nextArg
-      val style      = nextArg
-      printf("bannerCreate(%s, %s, %s, %s, %s, %s, %s, %s)\n", parent,
-             where, other, windowType, align, size, sizeUnits, style)
-      vmState.r0 = new T3Integer(4711)
-    } else {
-      printf("bannerCreate(), invalid argument count: %d\n", argc)
-    }
+    argCountMustBe(argc, 8)
+    val parent     = nextArg
+    val where      = nextArg
+    val other      = nextArg
+    val windowType = nextArg
+    val align      = nextArg
+    val size       = nextArg
+    val sizeUnits  = nextArg
+    val style      = nextArg
+    //printf("bannerCreate(%s, %s, %s, %s, %s, %s, %s, %s)\n", parent,
+    //       where, other, windowType, align, size, sizeUnits, style)
+    tadsOutput.addString("bannerCreate(%s, %s, %s, %s, %s, %s, %s, %s)\n".format(
+      parent, where, other, windowType, align, size, sizeUnits, style))
+    vmState.r0 = new T3Integer(4711)
   }
   private def bannerDelete(argc: Int) {
     throw new UnsupportedOperationException("tads-io.bannerDelete() not implemented yet")
@@ -656,7 +661,8 @@ class IntrinsicFunctionSetMapper {
   )
   val _functionSets = new Array[IntrinsicFunctionSet](4)
 
-  def reset(vmState: TadsVMState) {
+  def reset(vmState: TadsVMState, tadsOutput: TadsOutput) {
+    tadsIO.tadsOutput = tadsOutput
     for (i <- 0 until vmState.image.functionSetDependencies.length) {
       val fsDep = vmState.image.functionSetDependencies(i)
       //printf("mapping function set '%s' to index: %d\n",

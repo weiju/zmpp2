@@ -74,12 +74,12 @@ class TadsVMState(val objectSystem: ObjectSystem,
   } 
   var fp = 0                // frame pointer
 
-  def reset(imageMem: Memory) {
+  def reset(imageMem: Memory, tadsOutput: TadsOutput) {
     startTime = System.currentTimeMillis
     image     = new TadsImage(imageMem)
     objectSystem.reset
     image.readData(this)
-    functionSetMapper.reset(this)
+    functionSetMapper.reset(this, tadsOutput)
 
     // call initial function
     // push empty list on stack - QTads puts command line arguments in that list
@@ -488,7 +488,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 9000) {
+    if (iteration == 9592) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }

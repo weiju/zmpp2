@@ -32,9 +32,17 @@ import java.util.logging._
 import java.io.File
 import java.io.FileInputStream
 
+import javax.swing._
+import java.awt._
+import java.awt.event._
+
 import org.zmpp.base.Types
 import org.zmpp.base.Memory
 import org.zmpp.base.DefaultMemory
+
+trait TadsOutput {
+  def addString(str: String)
+}
 
 class TadsVM {
   val objectSystem           = new ObjectSystem
@@ -42,13 +50,28 @@ class TadsVM {
   val vmState                = new TadsVMState(objectSystem, functionSetMapper)
   var currentExecutor: Executor = null
 
-  def init(imageMem: Memory) {
-    vmState.reset(imageMem)
+  def init(imageMem: Memory, tadsOutput: TadsOutput) {
+    vmState.reset(imageMem, tadsOutput)
     currentExecutor = new Executor(vmState)
     printf("VALID FILE: %b, Version: %d Timestamp: %s\n",
            vmState.image.isValid, vmState.image.version, vmState.image.timestamp)
   }
   def doTurn = currentExecutor.doTurn
+}
+
+
+class TadsFrame extends JFrame("ZMPP 2 (TADS 3)") with TadsOutput {
+  setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+  val textPane = new JTextPane
+  val scrollPane = new JScrollPane(textPane)
+  scrollPane.setPreferredSize(new Dimension(800, 600))
+  getContentPane.add(scrollPane, BorderLayout.CENTER)
+  pack
+  setVisible(true)
+
+  def addString(str: String) {
+    textPane.getDocument.insertString(textPane.getDocument.getLength, str, null)
+  }
 }
 
 object Tads3Main {
@@ -66,17 +89,20 @@ object Tads3Main {
     filebytes
   }
 
-  def readTads3File(file : File) = {
+  def readTads3File(file: File, tadsOutput: TadsOutput) = {
     // Little Endian format - Hello Intel-Lovers
     val imageMem     = new DefaultMemory(readFileData(file)).littleEndian
     _vm = new TadsVM
-    _vm.init(imageMem)
+    _vm.init(imageMem, tadsOutput)
     _vm
   }
 
   def main(args: Array[String]) {
     println("ZMPP TADS3 (Prototype version)")
-    val vm = readTads3File(new File(args(0)))
+    val frame = new TadsFrame
+    frame.addString("ZMPP 2 rocks !\n")
+
+    val vm = readTads3File(new File(args(0)), frame)
     println("\nProgram:\n---------")
     vm.doTurn
   }
