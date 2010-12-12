@@ -523,3 +523,11 @@ object T3Assert {
     }
   }
 }
+
+object TadsEvent {
+  val InEvtEof     = 5
+  val InEvtLine    = 6
+  val InEvtTimeOut = 2
+  val InEvtNoTimeOut = 4
+  // val InEvtEndQuietScript = ?? TODO 
+}

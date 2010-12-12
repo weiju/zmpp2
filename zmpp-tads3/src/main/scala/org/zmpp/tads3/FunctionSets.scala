@@ -506,8 +506,14 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     argCountMustBe(argc, 0, 1)
     val timeout = if (argc == 0) T3Nil else vmState.stack.pop
     printf("inputLineTimeout(%s)\n", timeout)
-    throw new UnsupportedOperationException("tads-io.inputLineTimeout() " +
-                                            "not implemented yet")
+    // setup a simple list with (InEvtLine, "") for now
+    val str = objectSystem.stringMetaClass.createString("")
+    val list = objectSystem.listMetaClass.createList(
+      List(new T3Integer(TadsEvent.InEvtLine), str.id))
+    tadsOutput.addString("inputLineTimeout() [TODO] \n")
+    vmState.r0 = list.id
+    //throw new UnsupportedOperationException("tads-io.inputLineTimeout() " +
+    //                                        "not implemented yet")
   }
   private def inputLineCancel(argc: Int) {
     argCountMustBe(argc, 1)
