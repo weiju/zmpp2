@@ -90,6 +90,7 @@ object TadsStringSpec extends Specification {
       str2.substr(-3).string must_== "ghi"
       str2.substr(-3, 2).string must_== "gh"
       str2.substr(-3, 5).string must_== "ghi"
+      str2.substr(1, 0).string must_== ""
     }
   }
 }

@@ -439,6 +439,9 @@ class Executor(vmState: TadsVMState) {
         objSetProp(vmState.currentSelf, nextShortOperand,
                    vmState.stack.pop)
       case SetSelf      => vmState.currentSelf = vmState.stack.pop
+      case Sub          =>
+        val val2 = vmState.stack.pop
+        vmState.stack.push(sub(vmState.stack.pop, val2))
       case Switch       =>
         val controlVal = vmState.stack.pop
         val caseCount  = nextShortOperand
@@ -472,12 +475,12 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 5500) {
+    if (iteration == 9000) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 /*
-    if (iteration >= 4637) {
+    if (iteration >= 8895) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }*/

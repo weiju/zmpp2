@@ -40,7 +40,9 @@ object TadsString {
 }
 class TadsString(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
-
+  if (id.value == 25057) {
+    printf("MICROSOFT SUCKS CREATE STRING HERE: %s\n", id)
+  }
   var string: String = null
 
   protected def staticMetaClass = objectSystem.stringMetaClass
@@ -53,7 +55,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
     if (other.valueType == VmSString) {
       val otherString =
         objectSystem.stringConstantWithOffset(other.asInstanceOf[T3SString])
-      printf("string.t3vmEquals() '%s', other = '%s'\n", this, otherString)
+      printf("string.t3vmEquals() (%d) '%s', other(%d) = '%s'\n",
+             id.value, this, otherString.id.value, otherString)
       this.string.equals(otherString.asInstanceOf[TadsString].string)
     } else {
       throw new UnsupportedOperationException("unsupported T3value type")
@@ -108,7 +111,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def startsWith(str: TadsString) = string.startsWith(str.string)
   def substr(start: Int, length: Int = -1) = {
     val startIndex = if (start < 0) string.length + start else start - 1
-    if (length > 0) {
+    if (length >= 0) {
       // compute end index
       val endIndex = scala.math.min(string.length, startIndex + length)
       printf("TadsString.substr(%d, %d) => startIndex = %d endIndex = %d\n",
