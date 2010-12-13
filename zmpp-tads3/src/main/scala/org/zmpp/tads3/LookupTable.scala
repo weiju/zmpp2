@@ -59,6 +59,10 @@ extends AbstractT3Object(id, vmState, isTransient) {
     val keyHash = makeHash(index)
     if (_container.contains(keyHash)) _container(keyHash) else T3Nil
   }
+  override def setValueAtIndex(index: T3Value, newValue: T3Value): T3ObjectId = {
+    _container(makeHash(index)) = newValue
+    id // return this object
+  }
 }
 
 class LookupTableMetaClass(objectSystem: ObjectSystem)

@@ -406,6 +406,7 @@ class Executor(vmState: TadsVMState) {
       case PushFnPtr    => vmState.stack.pushFunctionPointer(nextIntOperand)
       case PushEnum     => vmState.stack.pushEnum(nextIntOperand)
       case PushInt8     => vmState.stack.pushInt(nextSignedByteOperand)
+      case PushLst      => vmState.stack.pushList(nextIntOperand)
       case PushNil      => vmState.stack.pushNil
       case PushObj      => vmState.stack.pushObjectId(nextIntOperand)
       case PushSelf     => vmState.stack.push(vmState.currentSelf)
@@ -623,6 +624,7 @@ class Executor(vmState: TadsVMState) {
   private def setInd(containerVal: T3Value, indexVal: T3Value, newVal: T3Value) = {
     if (containerVal.valueType == VmObj) {
       val obj = vmState.objectSystem.objectWithId(containerVal.value)
+      printf("setValueAtIndex() for: %s\n", obj)
       obj.setValueAtIndex(indexVal, newVal)
     } else if (containerVal.valueType == VmList) {
       throw new UnsupportedOperationException("SETINDxxx not supported " +
