@@ -580,11 +580,22 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.bannerGetInfo() not implemented yet")
   }
   private def bannerSetSize(argc: Int) {
-    throw new UnsupportedOperationException("tads-io.bannerSetSize() not implemented yet")
+    argCountMustBe(argc, 4)
+    val handle     = nextArg
+    val size       = nextArg
+    val sizeUnits  = nextArg
+    val isAdvisory = nextArg
+    tadsOutput.addString("bannerSetSize(%s, %s, %s, %s) [TODO]\n".format(
+                         handle, size, sizeUnits, isAdvisory))
   }
   private def logConsoleCreate(argc: Int) {
-    throw new UnsupportedOperationException("tads-io.logConsoleCreate() " +
-                                            "not implemented yet")
+    argCountMustBe(argc, 3)
+    val filename = nextArg
+    val charset  = nextArg
+    val width    = nextArg
+    tadsOutput.addString("logConsoleCreate(%s, %s, %s) [TODO]\n".format(
+                         filename, charset, width))
+    vmState.r0 = new T3Integer(4712)
   }
   private def logConsoleClose(argc: Int) {
     throw new UnsupportedOperationException("tads-io.logConsoleClose() not " +
@@ -623,6 +634,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     (_: TadsIoFunctionSet).bannerSizeToContents(_: Int),
     (_: TadsIoFunctionSet).bannerGoTo(_: Int),
     (_: TadsIoFunctionSet).bannerSetTextColor(_: Int),
+    (_: TadsIoFunctionSet).bannerSetScreenColor(_: Int),
     (_: TadsIoFunctionSet).bannerGetInfo(_: Int),
     (_: TadsIoFunctionSet).bannerSetSize(_: Int),
     (_: TadsIoFunctionSet).logConsoleCreate(_: Int),
