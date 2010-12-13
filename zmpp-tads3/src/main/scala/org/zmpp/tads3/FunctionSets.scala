@@ -447,7 +447,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
   private def tadsSay(argc: Int) {
     printf("tadsSay(), num args: %d\n", argc)
     for (i <- 0 until argc) {
-      val value = vmState.stack.pop
+      val value = nextArg
       val obj = vmState.objectSystem.toT3Object(value)
       tadsOutput.addString("%s".format(obj))
       //printf("TADSSAY(), OUTPUT VALUE: %s (%s)\n", value, obj)
@@ -556,7 +556,13 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     tadsOutput.addString("bannerClear(%s)\n".format(handle))
   }
   private def bannerSay(argc: Int) {
-    throw new UnsupportedOperationException("tads-io.bannerSay() not implemented yet")
+    argCountMustBeAtLeast(argc, 1)
+    val handle = nextArg
+    for (i <- 1 until argc) {
+      val value = nextArg
+      val obj = vmState.objectSystem.toT3Object(value)
+      tadsOutput.addString("bannerSay(), handle = %s: %s".format(handle, obj))
+    }
   }
   private def bannerFlush(argc: Int) {
     throw new UnsupportedOperationException("tads-io.bannerFlush() not implemented yet")
