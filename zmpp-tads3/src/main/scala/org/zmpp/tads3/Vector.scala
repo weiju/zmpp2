@@ -118,6 +118,9 @@ extends TadsCollection(id, vmState, isTransient) {
     printf("toList(), start = %d end = %d, list len = %d\n", start, end, list.size)
     list.id
   }
+  override def hashCode: Int = {
+    throw new UnsupportedOperationException("TODO")
+  }
 }
 
 // Image format for vector instances:

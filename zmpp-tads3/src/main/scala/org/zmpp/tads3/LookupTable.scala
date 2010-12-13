@@ -49,13 +49,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
     } else if (key.valueType == VmEnum) {
       key.value
     } else if (key.valueType == VmObj) {
-      val obj  = objectSystem.objectWithId(key.value)
-      if (obj.isOfMetaClass(objectSystem.stringMetaClass)) {
-        obj.hashCode 
-      } else {
-        printf("KEY OBJ IS: %s\n", obj)
-        throw new UnsupportedOperationException("unsupported hash type")
-      }
+      objectSystem.objectWithId(key.value).hashCode
     } else {
       throw new UnsupportedOperationException("unsupported hash type")
     }

@@ -397,6 +397,7 @@ class Executor(vmState: TadsVMState) {
       case ObjSetProp    => objSetProp(new T3ObjectId(nextIntOperand),
                                        nextShortOperand, vmState.stack.pop)
       case OneLcl1      => vmState.setLocal(nextByteOperand, T3Integer.One)
+      case OneLcl2      => vmState.setLocal(nextShortOperand, T3Integer.One)
       case PtrCall      => ptrCall(nextByteOperand)
       case PtrInherit   => inheritProperty(nextByteOperand, vmState.stack.pop)
       case Push0        => vmState.stack.push0
@@ -483,12 +484,16 @@ class Executor(vmState: TadsVMState) {
       case TrNew1       =>
         vmState.r0 = vmState.objectSystem.createFromStack(nextByteOperand,
                                                         nextByteOperand, true)
+      case ZeroLcl1     =>
+        vmState.setLocal(nextByteOperand, T3Integer.Zero)
+      case ZeroLcl2     =>
+        vmState.setLocal(nextShortOperand, T3Integer.Zero)
       case _            =>
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 11000) {
+    if (iteration == 12000) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }

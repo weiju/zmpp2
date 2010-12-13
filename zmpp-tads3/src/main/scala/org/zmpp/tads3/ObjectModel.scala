@@ -254,10 +254,16 @@ extends AbstractMetaClass(objectSystem) {
 class CharacterSetMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "character-set"
+  override def hashCode: Int = {
+    throw new UnsupportedOperationException("TODO")
+  }
 }
 class ByteArrayMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "bytearray"
+  override def hashCode: Int = {
+    throw new UnsupportedOperationException("TODO")
+  }
 }
 class WeakRefLookupTableMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {

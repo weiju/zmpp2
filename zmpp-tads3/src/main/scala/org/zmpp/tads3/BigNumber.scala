@@ -72,6 +72,9 @@ import org.zmpp.base._
 class BigNumber(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.bigNumberMetaClass
+  override def hashCode: Int = {
+    throw new UnsupportedOperationException("TODO")
+  }
 }
 
 class BigNumberMetaClass(objectSystem: ObjectSystem)

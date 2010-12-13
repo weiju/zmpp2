@@ -73,6 +73,9 @@ extends TadsCollection(id, vmState, isTransient) {
     val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
     iter.id
   }
+  override def hashCode: Int = {
+    throw new UnsupportedOperationException("TODO")
+  }
 }
 
 class TadsListConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)

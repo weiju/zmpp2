@@ -354,6 +354,7 @@ object Opcodes {
   val NilLcl1         = 0xd8
   val NilLcl2         = 0xd9
   val OneLcl1         = 0xda
+  val OneLcl2         = 0xdb
   val SetLcl1         = 0xe0
   val SetLcl2         = 0xe1
   val SetArg1         = 0xe2
@@ -444,6 +445,7 @@ object OpcodeNames {
     ObjGetProp      -> "OBJGETPROP",
     ObjSetProp      -> "OBJSETPROP",
     OneLcl1         -> "ONELCL1",
+    OneLcl2         -> "ONELCL2",
     PtrCall         -> "PTRCALL",
     PtrCallProp     -> "PTRCALLPROP",
     Push0           -> "PUSH_0",
