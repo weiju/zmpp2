@@ -91,7 +91,7 @@ extends TadsList(id, vmState, isTransient) {
 class ListMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "list"
-  override def superMeta = objectSystem.metaClassForName("collection")
+  override def superMeta = objectSystem.collectionMetaClass
 
   val FunctionVector = Array(undef _, subset _, map _, len _,
                              sublist _, intersect _, indexOf _,

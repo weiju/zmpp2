@@ -38,6 +38,8 @@ class LookupTable(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
   val _container = new HashMap[Int, T3Value]
   def metaClass = objectSystem.lookupTableMetaClass
+  private def staticMetaClass = objectSystem.lookupTableMetaClass
+
   // implements "array-like" access semantics
   def apply(key: T3Value): T3Value = _container(makeHash(key))
   def update(key: T3Value, value: T3Value) {
@@ -63,12 +65,59 @@ extends AbstractT3Object(id, vmState, isTransient) {
     _container(makeHash(index)) = newValue
     id // return this object
   }
+
+  override def getProperty(propertyId: Int, argc: Int): Property = {
+    val idx = staticMetaClass.functionIndexForProperty(propertyId)
+    printf("lookup-table prop idx = %d\n", idx)
+    if (idx >= 0) {
+      new Property(propertyId,
+                   staticMetaClass.callMethodWithIndex(this, idx, argc),
+                   id)
+    } else super.getProperty(propertyId, argc)
+  }
 }
 
 class LookupTableMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "lookuptable"
-  override def superMeta = objectSystem.metaClassForName("collection")
+  override def superMeta = objectSystem.collectionMetaClass
+
+  val FunctionVector = Array(undef _, isKeyPresent _, removeElement _,
+                             applyAll _, forEach _, getBucketCount _,
+                             getEntryCount _, forEachAssoc _,
+                             keysToList _, valsToList _)
+
+  def undef(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("undefined")
+  }
+  def isKeyPresent(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("isKeyPresent")
+  }
+  def removeElement(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("removeElement")
+  }
+  def applyAll(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("applyAll")
+  }
+  def forEach(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("forEach")
+  }
+  def getBucketCount(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("getBucketCount")
+  }
+  def getEntryCount(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("getEntryCount")
+  }
+  def forEachAssoc(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("forEachAssoc")
+  }
+  def keysToList(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("keysToList")
+  }
+  def valsToList(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("valsToList")
+  }
+
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
@@ -108,5 +157,10 @@ extends AbstractMetaClass(objectSystem) {
       throw new IllegalArgumentException("wrong # of arguments")
     }
     new LookupTable(id, vmState, isTransient)
+  }
+
+  override def callMethodWithIndex(obj: T3Object, index: Int,
+                                   argc: Int): T3Value = {
+    FunctionVector(index)(obj, argc)
   }
 }
