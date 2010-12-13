@@ -196,15 +196,24 @@ extends AbstractMetaClass(objectSystem) {
     val list = new TadsListConstant(objectSystem.newObjectId, vmState, false)
     objectSystem.registerObject(list)
     objectSystem.registerConstant(offset, list)
-    // TODO initWith()
+    val initList = new ArrayList[T3Value]
+
     for (i <- 0 until len) {
-      val valueAddr = poolOffset + 1 + DataHolder.Size * i
+      val valueAddr = poolOffset + 2 + DataHolder.Size * i
       val valueType = vmState.image.constantDataByteAt(valueAddr)
-      val value = DataHolder.valueForType(valueType,
-                                          vmState.image.constantDataIntAt(
-                                            valueAddr + 1))
-      list.addElement(T3Value.create(valueType, value))
+      // in the image, empty entries can be represented with a valueType of 0
+      // which is an invalid value type. We follow the reference implementation
+      // and create Nil entries for that case
+      val value = if (valueType == 0) T3Nil
+                  else {
+                    T3Value.create(valueType,
+                                   DataHolder.valueForType(valueType,
+                                                           vmState.image.constantDataIntAt(
+                                                             valueAddr + 1)))
+                  }
+      initList.add(value)
     }
+    list.initWith(initList)
     list
   }
 

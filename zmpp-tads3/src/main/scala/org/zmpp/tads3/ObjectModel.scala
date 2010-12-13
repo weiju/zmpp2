@@ -491,6 +491,8 @@ class ObjectSystem {
   def toT3Object(value: T3Value): T3Object = {
     if (value.valueType == VmSString) {
       stringConstantWithOffset(value.asInstanceOf[T3SString])
+    } else if (value.valueType == VmList) {
+      listConstantWithOffset(value.asInstanceOf[T3ListConstant])
     } else if (value.valueType == VmObj) {
       objectWithId(value.asInstanceOf[T3ObjectId])
     } else {

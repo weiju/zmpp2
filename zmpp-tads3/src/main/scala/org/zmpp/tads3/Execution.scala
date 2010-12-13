@@ -589,13 +589,17 @@ class Executor(vmState: TadsVMState) {
   // instruction implementations
   private def index(targetValue: T3Value, indexVal: T3Value) {
     if (targetValue.valueType == VmList) {
-      throw new UnsupportedOperationException("indexing lists not supported yet")
+      val pushValue =
+        objectSystem.toT3Object(targetValue).valueAtIndex(indexVal)
+      printf("INDEX on list, targetValue == %s, index = %s, pushValue = %s\n",
+             targetValue, indexVal, pushValue)
+      vmState.stack.push(pushValue)
     } else if (targetValue.valueType == VmObj) {
       printf("INDEX, TARGET = %s (is a %s), INDEXVAL = %s\n",
              targetValue, vmState.objectSystem.objectWithId(targetValue),
              indexVal)
       val pushValue =
-        vmState.objectSystem.objectWithId(targetValue).valueAtIndex(indexVal)
+        objectSystem.objectWithId(targetValue).valueAtIndex(indexVal)
       vmState.stack.push(pushValue)
     } else {
       printf("can't index: %s\n", targetValue)
