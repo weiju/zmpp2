@@ -28,27 +28,43 @@
  */
 package org.zmpp.tads3
 
-import java.util.HashMap
-import scala.collection.JavaConversions._
+import scala.collection.mutable.HashSet
+import scala.collection.mutable.HashMap
 import org.zmpp.base._
 import TypeIds._
 import T3Assert._
 
-class LookupTable(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
+class LookupTable(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean,
+                  bucketCount: Int, initialValueSize: Int)
 extends AbstractT3Object(id, vmState, isTransient) {
+  // we store hash keys and the values in separate collections,
+  // since we can not simply call hashCode() on every T3Value
+  val _keys = new HashSet[T3Value]
   val _container = new HashMap[Int, T3Value]
+
   def metaClass = objectSystem.lookupTableMetaClass
   private def staticMetaClass = objectSystem.lookupTableMetaClass
 
+  def entryCount = _keys.size
+  def isKeyPresent(key: T3Value) = _keys.contains(key)
+
   // implements "array-like" access semantics
-  def apply(key: T3Value): T3Value = _container(makeHash(key))
+  def apply(key: T3Value): T3Value = {
+    _container(makeHash(key))
+  }
   def update(key: T3Value, value: T3Value) {
+    _keys += key
     _container(makeHash(key)) = value
   }
+  def removeElement(key: T3Value) {
+    _keys -= key
+    _container -= makeHash(key)
+  }
+
   private def makeHash(key: T3Value) = {
     if (key.valueType == VmSString) {
       objectSystem.stringConstantWithOffset(key.asInstanceOf[T3SString]).hashCode
-    } else if (key.valueType == VmEnum) {
+    } else if (key.valueType == VmEnum || key.valueType == VmInt) {
       key.value
     } else if (key.valueType == VmObj) {
       objectSystem.objectWithId(key.value).hashCode
@@ -58,11 +74,10 @@ extends AbstractT3Object(id, vmState, isTransient) {
   }
 
   override def valueAtIndex(index: T3Value): T3Value = {
-    val keyHash = makeHash(index)
-    if (_container.contains(keyHash)) _container(keyHash) else T3Nil
+    if (isKeyPresent(index)) this(index) else T3Nil
   }
   override def setValueAtIndex(index: T3Value, newValue: T3Value): T3ObjectId = {
-    _container(makeHash(index)) = newValue
+    this(index) = newValue
     id // return this object
   }
 
@@ -122,9 +137,10 @@ extends AbstractMetaClass(objectSystem) {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
-    val lookupTable = new LookupTable(objectId, vmState, isTransient)
     val bucketCount = imageMem.shortAt(objDataAddr)
     val valueCount = imageMem.shortAt(objDataAddr)
+    val lookupTable = new LookupTable(objectId, vmState, isTransient,
+                                      bucketCount, valueCount)
     val firstFreeIndex = imageMem.shortAt(objDataAddr)
     //printf("LookupTable::createFromImage(), bucketCount: %d, valueCount: %d, firstFreeIndex: %d\n", bucketCount, valueCount, firstFreeIndex)
     val bucketStart = objDataAddr + 6
@@ -147,16 +163,15 @@ extends AbstractMetaClass(objectSystem) {
 
   override def createFromStack(id: T3ObjectId, argc: Int,
                                isTransient: Boolean) = {
-    if (argc == 0) {
-      // bucketCount = 32
-      // initCapacity = 64
-    } else if (argc == 2) {
-      val bucketCount  = vmState.stack.pop
-      val initCapacity = vmState.stack.pop
-    } else {
+    var bucketCount  = 32
+    var initCapacity = 64
+    if (argc == 2) {
+      bucketCount  = vmState.stack.pop.value
+      initCapacity = vmState.stack.pop.value
+    } else if (argc != 0) {
       throw new IllegalArgumentException("wrong # of arguments")
     }
-    new LookupTable(id, vmState, isTransient)
+    new LookupTable(id, vmState, isTransient, bucketCount, initCapacity)
   }
 
   override def callMethodWithIndex(obj: T3Object, index: Int,
