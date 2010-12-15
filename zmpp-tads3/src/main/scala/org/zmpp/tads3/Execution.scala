@@ -261,7 +261,7 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    if (iteration >= 10000)
+    //if (iteration >= 10000)
       printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
              OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
@@ -689,13 +689,19 @@ class Executor(vmState: TadsVMState) {
       if (argc > 0) throw new UnsupportedOperationException("callProp TODO list")
       val list = vmState.objectSystem.listConstantWithOffset(
         targetVal.asInstanceOf[T3ListConstant])
-      vmState.r0 =
+      // note: result == null means there is no return value
+      // we do not want to pollute R0
+      val result =
         vmState.objectSystem.listMetaClass.evalClassProperty(list, propId, argc)
+      if (result != null) vmState.r0 = result
     } else if (targetVal.valueType == VmSString) {
       val str = vmState.objectSystem.stringConstantWithOffset(
         targetVal.asInstanceOf[T3SString])
-      vmState.r0 =
+      // note: result == null means there is no return value
+      // we do not want to pollute R0
+      val result =
         vmState.objectSystem.stringMetaClass.evalClassProperty(str, propId, argc)
+      if (result != null) vmState.r0 = result
     } else if (targetVal.valueType == VmDString) {
       throw new UnsupportedOperationException("Cannot handle dstring constants yet")
     } else throw new ObjectValRequiredException

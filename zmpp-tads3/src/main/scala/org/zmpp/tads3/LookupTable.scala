@@ -39,6 +39,11 @@ class LookupTable(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean,
 extends AbstractT3Object(id, vmState, isTransient) {
   // we store hash keys and the values in separate collections,
   // since we can not simply call hashCode() on every T3Value
+  // The current implementation is actually not 100% water-proof,
+  // it should work well with non-string keys. Problematic are
+  // string-valued keys that return the same hash code, but are
+  // not equal. In that case, they will be regarded as the same.
+  // For now, we assume String.hashCode() distributes well enough.
   val _keys = new HashSet[T3Value]
   val _container = new HashMap[Int, T3Value]
 
@@ -46,19 +51,27 @@ extends AbstractT3Object(id, vmState, isTransient) {
   private def staticMetaClass = objectSystem.lookupTableMetaClass
 
   def entryCount = _keys.size
-  def isKeyPresent(key: T3Value) = _keys.contains(key)
+  def isKeyPresent(key: T3Value) = _container.contains(makeHash(key))
 
   // implements "array-like" access semantics
   def apply(key: T3Value): T3Value = {
     _container(makeHash(key))
   }
   def update(key: T3Value, value: T3Value) {
-    _keys += key
+    if (!isKeyPresent(key)) _keys += key
     _container(makeHash(key)) = value
   }
   def removeElement(key: T3Value) {
     _keys -= key
     _container -= makeHash(key)
+  }
+  def forEachAssoc(func: T3Value) {
+    printf("forEachAssoc(), func = %s\n", func)
+    _keys.foreach(key => {
+      vmState.stack.push(key)
+      vmState.stack.push(this(key))
+      new Executor(vmState).executeCallback(func, 2)
+    })
   }
 
   private def makeHash(key: T3Value) = {
@@ -124,7 +137,9 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("getEntryCount")
   }
   def forEachAssoc(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("forEachAssoc")
+    argCountMustBe(argc, 1)
+    obj.asInstanceOf[LookupTable].forEachAssoc(vmState.stack.pop)
+    null
   }
   def keysToList(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("keysToList")
