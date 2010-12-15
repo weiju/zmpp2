@@ -31,7 +31,8 @@ define 'zmpp' do
     compile.with project('zmpp-common')
     test.with 'org.scala-tools.testing:specs_2.8.0:jar:1.6.5'
     test.using :specs
-    package :jar
+    run.using :main => ["org.zmpp.tads3.Tads3Main",
+                        "/Users/weiju/Games/tads3/ditch3.t3"]
   end
 
   define 'zmpp-zcode' do
