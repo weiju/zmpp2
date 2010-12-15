@@ -12,4 +12,32 @@ define 'zmpp' do
     test.using :specs
     package :jar
   end
+
+  define 'zmpp-glk' do
+    compile.with project('zmpp-common')
+    test.with 'org.scala-tools.testing:specs_2.8.0:jar:1.6.5'
+    test.using :specs
+    package :jar
+  end
+
+  define 'zmpp-glulx' do
+    compile.with projects('zmpp-common', 'zmpp-glk')
+    test.with 'org.scala-tools.testing:specs_2.8.0:jar:1.6.5'
+    test.using :specs
+    package :jar
+  end
+
+  define 'zmpp-tads3' do
+    compile.with project('zmpp-common')
+    test.with 'org.scala-tools.testing:specs_2.8.0:jar:1.6.5'
+    test.using :specs
+    package :jar
+  end
+
+  define 'zmpp-zcode' do
+    compile.with project('zmpp-common')
+    test.with 'org.scala-tools.testing:specs_2.8.0:jar:1.6.5'
+    test.using :specs
+    package :jar
+  end
 end
