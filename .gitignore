@@ -2,3 +2,4 @@ target
 *.jar
 log.txt
 *.bak
+reports
