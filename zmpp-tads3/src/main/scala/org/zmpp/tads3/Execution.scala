@@ -352,10 +352,14 @@ class Executor(vmState: TadsVMState) {
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
         branchIfTrue(compare(val1, val2) > 0)
+      case Jle          =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        branchIfTrue(compare(val1, val2) <= 0)
       case Jlt          =>
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
-        branchIfTrue(compare(val1, val2) < 0)        
+        branchIfTrue(compare(val1, val2) < 0)
       case Jmp          => vmState.doBranch
       case Jne          =>
         val val2 = vmState.stack.pop
@@ -507,7 +511,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 14151) {
+    if (iteration == 14201) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
