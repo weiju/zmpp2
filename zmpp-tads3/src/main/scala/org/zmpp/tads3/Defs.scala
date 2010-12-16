@@ -213,16 +213,16 @@ class Stack {
   var sp = 0
 
   def size = _stack.length
-  def pushNil = push(T3Nil)
-  def pushPropertyId(id: Int) = push(new T3PropertyId(id))
-  def pushObjectId(id: Int) = push(new T3ObjectId(id))
   def pushCodeOffset(offset: Int) = push(new T3CodeOffset(offset))
   def pushEnum(value: Int) = push(new T3Enum(value))
   def pushFunctionPointer(offset: Int) = push(new T3FunctionPointer(offset))
   def pushInt(value: Int) = push(new T3Integer(value)) 
-  def pushList(offset: Int) = push(new T3ListConstant(offset)) 
-  def pushStackRef(value: Int) = push(new T3StackRef(value))
+  def pushList(offset: Int) = push(new T3ListConstant(offset))
+  def pushNil = push(T3Nil)
+  def pushObjectId(id: Int) = push(new T3ObjectId(id))
+  def pushPropertyId(id: Int) = push(new T3PropertyId(id))
   def pushSString(value: Int) = push(new T3SString(value))
+  def pushStackRef(value: Int) = push(new T3StackRef(value))
   def push0 = push(T3Integer.Zero)
   def push1 = push(T3Integer.One)
 
@@ -264,6 +264,7 @@ object Opcodes {
   val PushObj         = 0x07
   val PushNil         = 0x08
   val PushTrue        = 0x09
+  val PushPropId      = 0x0a
   val PushFnPtr       = 0x0b
   val PushEnum        = 0x0f
   val Add             = 0x22
@@ -458,6 +459,7 @@ object OpcodeNames {
     PushInt8        -> "PUSHINT8",
     PushLst         -> "PUSHLST",
     PushNil         -> "PUSHNIL",
+    PushPropId      -> "PUSHPROPID",
     PushObj         -> "PUSHOBJ",
     PushSelf        -> "PUSHSELF",
     PushStr         -> "PUSHSTR",

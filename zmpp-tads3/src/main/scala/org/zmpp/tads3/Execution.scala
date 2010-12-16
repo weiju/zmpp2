@@ -261,7 +261,7 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    //if (iteration >= 10000)
+    if (iteration >= 17000)
       printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
              OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
@@ -425,6 +425,7 @@ class Executor(vmState: TadsVMState) {
       case PushInt8     => vmState.stack.pushInt(nextSignedByteOperand)
       case PushLst      => vmState.stack.pushList(nextIntOperand)
       case PushNil      => vmState.stack.pushNil
+      case PushPropId   => vmState.stack.pushPropertyId(nextShortOperand)
       case PushObj      => vmState.stack.pushObjectId(nextIntOperand)
       case PushSelf     => vmState.stack.push(vmState.currentSelf)
       case PushStr      => vmState.stack.pushSString(nextIntOperand)
@@ -511,7 +512,8 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 14201) {
+    //if (iteration == 15001) {
+    if (iteration == 17615) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
@@ -701,14 +703,12 @@ class Executor(vmState: TadsVMState) {
       }
     } else if (targetVal.valueType == VmList) {
       // use constant list property evaluator
-      // the targetValue is an offset into the list pool, not into the static
-      // object pool !!!!
-      if (argc > 0) throw new UnsupportedOperationException("callProp TODO list")
       val list = vmState.objectSystem.listConstantWithOffset(
         targetVal.asInstanceOf[T3ListConstant])
       vmState.r0 =
         vmState.objectSystem.listMetaClass.evalClassProperty(list, propId, argc)
     } else if (targetVal.valueType == VmSString) {
+      // use constant string property evaluator
       val str = vmState.objectSystem.stringConstantWithOffset(
         targetVal.asInstanceOf[T3SString])
       vmState.r0 =
