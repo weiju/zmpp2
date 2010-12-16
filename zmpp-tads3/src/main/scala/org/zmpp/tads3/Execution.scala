@@ -239,7 +239,7 @@ class Executor(vmState: TadsVMState) {
         // and execute the callback until we return to the same point
         // we can return when after a return
         // sp[aftercall] = sp[beforecall] - argc
-        printf("SP BEFORE CALLBACK = %d\n", vmState.stack.sp)
+        //printf("SP BEFORE CALLBACK = %d\n", vmState.stack.sp)
         vmState.callbackSP = vmState.stack.sp - argc
         vmState.doCall(argc, prop.value, 0, objectId,
                        prop.definingObject, objectId)
@@ -399,6 +399,13 @@ class Executor(vmState: TadsVMState) {
       case OneLcl1      => vmState.setLocal(nextByteOperand, T3Integer.One)
       case OneLcl2      => vmState.setLocal(nextShortOperand, T3Integer.One)
       case PtrCall      => ptrCall(nextByteOperand)
+      case PtrCallProp  =>
+        val prop = vmState.stack.pop
+        val targetValue = vmState.stack.pop
+        if (prop.valueType != VmProp) {
+          throw new IllegalArgumentException("%s is not a property".format(prop))
+        }
+        callProp(nextByteOperand, targetValue, prop.value)
       case PtrInherit   => inheritProperty(nextByteOperand, vmState.stack.pop)
       case Push0        => vmState.stack.push0
       case Push1        => vmState.stack.push1
@@ -494,12 +501,12 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 20000) {
+    if (iteration == 14119) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 /*
-    if (iteration >= 10470) {
+    if (iteration >= 14110) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }*/
@@ -689,19 +696,13 @@ class Executor(vmState: TadsVMState) {
       if (argc > 0) throw new UnsupportedOperationException("callProp TODO list")
       val list = vmState.objectSystem.listConstantWithOffset(
         targetVal.asInstanceOf[T3ListConstant])
-      // note: result == null means there is no return value
-      // we do not want to pollute R0
-      val result =
+      vmState.r0 =
         vmState.objectSystem.listMetaClass.evalClassProperty(list, propId, argc)
-      if (result != null) vmState.r0 = result
     } else if (targetVal.valueType == VmSString) {
       val str = vmState.objectSystem.stringConstantWithOffset(
         targetVal.asInstanceOf[T3SString])
-      // note: result == null means there is no return value
-      // we do not want to pollute R0
-      val result =
+      vmState.r0 =
         vmState.objectSystem.stringMetaClass.evalClassProperty(str, propId, argc)
-      if (result != null) vmState.r0 = result
     } else if (targetVal.valueType == VmDString) {
       throw new UnsupportedOperationException("Cannot handle dstring constants yet")
     } else throw new ObjectValRequiredException

@@ -46,6 +46,15 @@ extends Vector(id, vmState, isTransient) {
       new Property(propertyId, propValue, id)
     } else super.getProperty(propertyId, argc)
   }
+  override def toString = {
+    val builder = new StringBuilder("anon-funcptr(%d elems) [".format(size))
+    for (i <- 1 to size) {
+      builder.append(valueAtIndex(new T3Integer(i)))
+      builder.append(" ")
+    }
+    builder.append("]")
+    builder.toString
+  }
 }
 
 class AnonFuncPtrMetaClass(objectSystem: ObjectSystem)
