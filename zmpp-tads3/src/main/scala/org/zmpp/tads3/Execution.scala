@@ -406,6 +406,12 @@ class Executor(vmState: TadsVMState) {
           throw new IllegalArgumentException("%s is not a property".format(prop))
         }
         callProp(nextByteOperand, targetValue, prop.value)
+      case PtrCallPropSelf =>
+        val prop = vmState.stack.pop
+        if (prop.valueType != VmProp) {
+          throw new IllegalArgumentException("%s is not a property".format(prop))
+        }
+        callProp(nextByteOperand, vmState.currentSelf, prop.value)
       case PtrInherit   => inheritProperty(nextByteOperand, vmState.stack.pop)
       case Push0        => vmState.stack.push0
       case Push1        => vmState.stack.push1
@@ -501,7 +507,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 14119) {
+    if (iteration == 14151) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
