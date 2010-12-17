@@ -261,7 +261,7 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    if (iteration >= 17000)
+    if (iteration < 100 || iteration >= 17000)
       printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
              OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
@@ -512,13 +512,12 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    //if (iteration == 15001) {
-    if (iteration == 17615) {
+    if (iteration == 17619) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 /*
-    if (iteration >= 14110) {
+    if (iteration >= 17610) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }*/

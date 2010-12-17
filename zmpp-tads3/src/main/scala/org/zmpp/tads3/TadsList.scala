@@ -31,6 +31,7 @@ package org.zmpp.tads3
 import org.zmpp.base._
 import scala.collection.JavaConversions._
 import java.util.ArrayList
+import T3Assert._
 
 /*
  * Lists are stored in the image as
@@ -75,6 +76,17 @@ extends TadsCollection(id, vmState, isTransient) {
   }
   override def hashCode: Int = {
     throw new UnsupportedOperationException("TODO")
+  }
+
+  def valWhich(cond: T3Value): T3Value = {
+    printf("TadsList::valWhich(cond = %s)[%s]\n", cond, this)
+    for (i <- 0 until size) {
+      printf("TadsList::valWhich(), 0-index = %d, value = %s\n", i, _container(i))
+      vmState.stack.push(_container(i))
+      new Executor(vmState).executeCallback(cond, 1)
+      if (vmState.r0.isTrue) return _container(i)
+    }
+    T3Nil
   }
 }
 
@@ -136,7 +148,10 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("forEach")
   }
   def valWhich(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("valWhich")
+    argCountMustBe(argc, 1)
+    val result = obj.asInstanceOf[TadsList].valWhich(vmState.stack.pop)
+    printf("TadsList::valWhich() RESULT = %s\n", result)
+    result
   }
   def lastIndexOf(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("lastIndexOf")

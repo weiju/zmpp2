@@ -64,6 +64,7 @@ class TadsObject(id: T3ObjectId, vmState: TadsVMState,
                  isTransient: Boolean)
 extends AbstractT3Object(id, vmState, isTransient) {
   def metaClass = objectSystem.tadsObjectMetaClass
+  private def staticMetaClass = objectSystem.tadsObjectMetaClass
 
   // These should only be accessed from the MetaClass, we should find a better
   // way to access these later
@@ -92,7 +93,17 @@ extends AbstractT3Object(id, vmState, isTransient) {
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val q = new Queue[TadsObject]
     q += this
-    getPropertyBFS(q, propertyId, argc: Int)
+    val prop = getPropertyBFS(q, propertyId, argc: Int)
+    if (prop == InvalidProperty) {
+      // not found in this or base classes -> search in the intrinsic class methods
+      // (meaning we'll search the metaclass)
+      val res = staticMetaClass.evalClassProperty(this, propertyId, argc)
+      printf("RESULT FROM INTRINSIC: %s\n", res)
+      if (res == InvalidPropertyId) InvalidProperty
+      else {
+        throw new UnsupportedOperationException("BLAAAAA")
+      }
+    } else prop
   }
   private def getPropertyBFS(q: Queue[TadsObject], propertyId: Int,
                              argc: Int): Property = {
@@ -152,6 +163,7 @@ object TadsObjectMetaClass {
 class TadsObjectMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "tads-object"
+  override def superMeta = objectSystem.rootObjectMetaClass
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,

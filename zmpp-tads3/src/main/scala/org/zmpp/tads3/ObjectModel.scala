@@ -67,62 +67,6 @@ trait T3Object {
   def +(other: T3Object): T3Object
 }
 
-// All classes in the ZMPP TADS3 implementation inherit from
-// this abstract base class
-abstract class AbstractT3Object(val id: T3ObjectId, val vmState: TadsVMState,
-                                val isTransient: Boolean)
-extends T3Object {
-  def isClassObject = false
-  def metaClass: MetaClass
-  def objectSystem = vmState.objectSystem
-  override def hashCode = id.hashCode
-/*
-  override def equals(other: Any): Boolean = {
-    other match {
-      case other:T3Object => this.t3vmEquals(other.id)
-      case _              => false
-    }
-  }
-*/
-  def isOfMetaClass(meta: MetaClass) = metaClass == meta
-  def isInstanceOf(obj: T3Object): Boolean = {
-    // the obj parameter needs to be an instance of the IntrinsicClass metaclass
-    if (obj.isOfMetaClass(objectSystem.metaClassForName("intrinsic-class"))) {
-      // TODO: GET this object's meta class and compare, either if
-      // equal or instance
-      false
-    }
-    false
-  }
-  def t3vmEquals(other: T3Value): Boolean = {
-    printf("t3vmEquals(), this is: %s other is: %s\n", this, other)
-    throw new UnsupportedOperationException("t3vmEquals() - TODO")
-  }
-  def getProperty(propertyId: Int, argc: Int): Property = {
-    throw new UnsupportedOperationException("getProperty() not implemented: " +
-                                          getClass.getName)
-  }
-  def setProperty(propertyId: Int, newValue: T3Value) {
-    throw new UnsupportedOperationException("setProperty() not implemented: " +
-                                            getClass.getName)
-  }
-  def valueAtIndex(index: T3Value): T3Value = {
-    throw new UnsupportedOperationException(
-      "%s.valueAtIndex() not implemented".format(metaClass.name))
-  }
-  def setValueAtIndex(index: T3Value, newValue: T3Value): T3Value = {
-    throw new UnsupportedOperationException("setValueAtIndex() not implemented")
-  }
-
-  def inheritProperty(propertyId: Int, argc: Int): Property = {
-    throw new UnsupportedOperationException("inheritProperty() not implemented")
-  }
-
-  def +(other: T3Object): T3Object = {
-    throw new UnsupportedOperationException("+() not implemented")
-  }
-}
-
 // A null object for quick comparison
 object InvalidObject extends AbstractT3Object(InvalidObjectId, null, false) {
   def metaClass = null
@@ -214,7 +158,7 @@ abstract class AbstractMetaClass(val objectSystem: ObjectSystem) extends MetaCla
     var functionIndex = functionIndexForProperty(propertyId)
     if (functionIndex == -1) {
       if (superMeta != null) superMeta.evalClassProperty(obj, propertyId, argc)
-      else T3Nil
+      else InvalidPropertyId
     } else {
       // found, try to evaluate
       printf("FOUND PROPERTY %d in metaclass '%s', at index: %d\n",
@@ -226,25 +170,13 @@ abstract class AbstractMetaClass(val objectSystem: ObjectSystem) extends MetaCla
   var vmState: TadsVMState = null
   def imageMem = vmState.image.memory
   def addFunctionMapping(propertyId: Int, functionIndex: Int) {
-    //printf("%s.addFunctionMapping(%d, %d)\n", name, propertyId, functionIndex)
+    printf("%s.addFunctionMapping(%d, %d)\n", name, propertyId, functionIndex)
     propertyMap(propertyId) = functionIndex
   }
   def functionIndexForProperty(propertyId: Int) = {
     if (propertyMap.containsKey(propertyId)) propertyMap(propertyId)
     else -1
   }
-}
-
-// The top level meta class, the super meta of any other class
-class ObjectMetaClass(objectSystem: ObjectSystem)
-extends AbstractMetaClass(objectSystem) {
-/*
-  val FunctionVector = Array(undef _,          ofKind _,   superClassList _,
-                             isPropDefined _,  propType _, propertyList _,
-                             propertyParams _, isClass _,  properInherited _,
-                             isTransient    _)
-*/
-  def name = "object"
 }
 
 class IntClassModMetaClass(objectSystem: ObjectSystem)
@@ -272,13 +204,6 @@ extends AbstractMetaClass(objectSystem) {
 class FileMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "file"
-}
-
-// This is a special meta class that does not do much, its properties can be accessed
-// but there is only one root object in the system
-class RootObjectMetaClass(objectSystem: ObjectSystem)
-extends AbstractMetaClass(objectSystem) {
-  def name = "root-object"
 }
 
 // Predefined symbols that the image defines. Can be accessed by the VM through
@@ -339,7 +264,6 @@ class ObjectSystem {
   val listMetaClass                = new ListMetaClass(this)
   val lookupTableMetaClass         = new LookupTableMetaClass(this)
   val lookupTableIteratorMetaClass = new LookupTableIteratorMetaClass(this)
-  val objectMetaClass              = new ObjectMetaClass(this)
   val regexPatternMetaClass        = new RegexPatternMetaClass(this)
   val rootObjectMetaClass          = new RootObjectMetaClass(this)
   val stringMetaClass              = new StringMetaClass(this)
