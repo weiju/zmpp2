@@ -93,20 +93,18 @@ extends AbstractT3Object(id, vmState, isTransient) {
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val q = new Queue[TadsObject]
     q += this
-    val prop = getPropertyBFS(q, propertyId, argc: Int)
+    val prop = getPropertyBFS(q, propertyId)
     if (prop == InvalidProperty) {
       // not found in this or base classes -> search in the intrinsic class methods
       // (meaning we'll search the metaclass)
       val res = staticMetaClass.evalClassProperty(this, propertyId, argc)
       printf("RESULT FROM INTRINSIC: %s\n", res)
       if (res == InvalidPropertyId) InvalidProperty
-      else {
-        throw new UnsupportedOperationException("BLAAAAA")
-      }
+      else new Property(propertyId, res, id)
     } else prop
   }
-  private def getPropertyBFS(q: Queue[TadsObject], propertyId: Int,
-                             argc: Int): Property = {
+
+  private def getPropertyBFS(q: Queue[TadsObject], propertyId: Int): Property = {
     while (!q.isEmpty) {
       val obj = q.dequeue
       printf("BFS search for property: %d, obj is = %s\n", propertyId, obj)
@@ -125,7 +123,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
     for (superClassId <- superClassIds) {
       q += objectSystem.objectWithId(superClassId).asInstanceOf[TadsObject]
     }
-    getPropertyBFS(q, propertyId, argc: Int)
+    getPropertyBFS(q, propertyId)
   }
 
   private def findPropertyInThis(propertyId: Int): Property = {
@@ -155,6 +153,42 @@ extends AbstractT3Object(id, vmState, isTransient) {
     }
     // TODO: UNDO
   }
+
+  override def ofKind(cls: T3ObjectId): T3Value = {
+    val q = new Queue[TadsObject]
+    for (superClassId <- superClassIds) {
+      q += objectSystem.objectWithId(superClassId).asInstanceOf[TadsObject]
+    }
+    val foundInSuper = bfsSuperClasses(q, obj => {
+      if (obj.id == cls) (true, T3True) else (false, T3Nil)
+    }, T3Nil)
+    if (foundInSuper.isTrue) foundInSuper
+    else super.ofKind(cls)
+  }
+
+  // Generic search function to query the super class hierarchy of
+  // TadsObject with a breadth-first search
+  // Initialized with a queue containing the initial set of nodes
+  // ('this' for regular searches, super class references for inherited
+  // searches), the function 'pred' checks obj for a condition and
+  // returns a pair of (found, result). If found is true, the BFS
+  // search is terminated, if the search ends without a match, return
+  // the default result
+  private def bfsSuperClasses[T](q: Queue[TadsObject],
+                                 pred: TadsObject => (Boolean, T),
+                                 defaultResult: T): T = {
+    while (!q.isEmpty) {
+      val obj = q.dequeue
+      val (found, currentResult) = pred(obj)
+      if (found) return currentResult
+
+      for (superClassId <- obj.superClassIds) {
+        q += objectSystem.objectWithId(superClassId).asInstanceOf[TadsObject]
+      }
+    }
+    defaultResult
+  }
+
 }
 
 object TadsObjectMetaClass {
