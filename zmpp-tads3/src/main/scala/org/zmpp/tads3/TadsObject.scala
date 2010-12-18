@@ -93,7 +93,11 @@ extends AbstractT3Object(id, vmState, isTransient) {
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val q = new Queue[TadsObject]
     q += this
-    val prop = getPropertyBFS(q, propertyId)
+    val prop = bfsSuperClasses(q, obj => {
+      val prop = obj.findPropertyInThis(propertyId)
+      if (prop != InvalidProperty) (true, prop) else (false, InvalidProperty)
+    }, InvalidProperty)
+
     if (prop == InvalidProperty) {
       // not found in this or base classes -> search in the intrinsic class methods
       // (meaning we'll search the metaclass)
@@ -104,26 +108,16 @@ extends AbstractT3Object(id, vmState, isTransient) {
     } else prop
   }
 
-  private def getPropertyBFS(q: Queue[TadsObject], propertyId: Int): Property = {
-    while (!q.isEmpty) {
-      val obj = q.dequeue
-      printf("BFS search for property: %d, obj is = %s\n", propertyId, obj)
-      val prop = obj.findPropertyInThis(propertyId)
-      if (prop != InvalidProperty) return prop
-      for (superClassId <- obj.superClassIds) {
-        q += objectSystem.objectWithId(superClassId).asInstanceOf[TadsObject]
-      }
-    }
-    InvalidProperty
-  }
-
   // like getProperty(), but skip 'this'
   override def inheritProperty(propertyId: Int, argc: Int): Property = {
     val q = new Queue[TadsObject]
     for (superClassId <- superClassIds) {
       q += objectSystem.objectWithId(superClassId).asInstanceOf[TadsObject]
     }
-    getPropertyBFS(q, propertyId)
+    bfsSuperClasses(q, obj => {
+      val prop = obj.findPropertyInThis(propertyId)
+      if (prop != InvalidProperty) (true, prop) else (false, InvalidProperty)
+    }, InvalidProperty)
   }
 
   private def findPropertyInThis(propertyId: Int): Property = {
