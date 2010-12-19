@@ -203,6 +203,16 @@ extends AbstractMetaClass(objectSystem) {
     list
   }
 
+  override def createFromStack(id: T3ObjectId, argc: Int,
+                      isTransient: Boolean): T3Object = {
+    printf("TadsList::createFromStack(), argc = %d\n", argc)
+    val list = new TadsList(id, vmState, isTransient)
+    for (i <- 0 until argc) {
+      list.addElement(vmState.stack.pop)
+    }
+    list
+  }
+
   def createListConstant(offset: T3ListConstant) = {
     import TadsConstants._
     val poolOffset = offset.value

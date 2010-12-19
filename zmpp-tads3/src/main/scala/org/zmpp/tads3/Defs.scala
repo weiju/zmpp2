@@ -209,7 +209,7 @@ object T3Value {
 
 class Stack {
 
-  var _stack = new Array[T3Value](300)
+  var _stack = new Array[T3Value](500)
   var sp = 0
 
   def size = _stack.length
