@@ -512,12 +512,12 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 17619) {
+    if (iteration == 17671) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 /*
-    if (iteration >= 17610) {
+    if (iteration >= 17618) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }*/
@@ -592,13 +592,10 @@ class Executor(vmState: TadsVMState) {
       throw new UnsupportedOperationException("TODO object compare")
     } else throw new InvalidComparisonException
   }
+
   private def t3vmEquals(value1: T3Value, value2: T3Value): Boolean = {
-    //printf("t3vmEquals(%s, %s)\n", value1, value2)
     if (value1.valueType == VmObj) {
-      if (value1.equals(value2)) true // the object ids are identical
-      else {
-        objectSystem.objectWithId(value1.asInstanceOf[T3ObjectId]).t3vmEquals(value2)
-      }
+      objectSystem.objectWithId(value1.asInstanceOf[T3ObjectId]).t3vmEquals(value2)
     } else if (value1.valueType == VmSString) {
       objectSystem.toT3Object(value1).t3vmEquals(value2)
     } else value1.t3vmEquals(value2)

@@ -58,10 +58,11 @@ extends T3Object {
     }
     false
   }
-  def t3vmEquals(other: T3Value): Boolean = {
-    printf("t3vmEquals(), this is: %s other is: %s\n", this, other)
-    throw new UnsupportedOperationException("t3vmEquals() - TODO")
-  }
+
+  // The default implementation of object comparison. Only returns true if the
+  // object ids are equal
+  def t3vmEquals(other: T3Value): Boolean = this.id == other
+
   def getProperty(propertyId: Int, argc: Int): Property = {
     throw new UnsupportedOperationException("getProperty() not implemented: " +
                                           getClass.getName)
