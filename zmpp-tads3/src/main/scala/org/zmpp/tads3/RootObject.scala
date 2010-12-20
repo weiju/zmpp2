@@ -36,6 +36,8 @@ import T3Assert._
 abstract class AbstractT3Object(val id: T3ObjectId, val vmState: TadsVMState,
                                 val isTransient: Boolean)
 extends T3Object {
+  import RootObjectMetaClass._
+
   def isClassObject = false
   def metaClass: MetaClass
   def objectSystem = vmState.objectSystem
@@ -90,7 +92,6 @@ extends T3Object {
   // from meta class
   def propInherited(prop: T3PropertyId, origTargetObj: T3ObjectId,
                     definingObj: T3ObjectId, flags: Int): T3Value = {
-    import RootObjectMetaClass._
     // I need to understand the role of origTargetObj and definingObj better
     // For now, we always return T3Nil
 /*
@@ -101,6 +102,19 @@ extends T3Object {
     */
     printf("TODOTODOTODOTODO, RootObject::propInherited()\n")
     T3Nil
+  }
+
+  def propDefined(prop: T3PropertyId, flags: Int): T3Value = {
+    printf("root-object.propDefined(prop = %s, flags = %d)\n", prop, flags)
+    val foundProp = getProperty(prop.value, 0)
+    printf("FOUND = %s\n", foundProp)
+    if (foundProp != InvalidProperty) {
+      flags match {
+        case PropDefAny => T3True
+        case _ =>
+          throw new UnsupportedOperationException("unsupported flags: %d\n".format(flags))
+      }
+    } else T3Nil
   }
   
   // Since every object in the TADS3 system is a descendant of
@@ -128,6 +142,8 @@ object RootObjectMetaClass {
 }
 class RootObjectMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
+  import RootObjectMetaClass._
+
   val FunctionVector = Array(undef _,          ofKind _,   getSuperClassList _,
                              propDefined _,    propType _, getPropList _,
                              getPropParams _,  isClass _,  propInherited _,
@@ -148,7 +164,10 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("getSuperClassList")
   }
   def propDefined(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("propDefined")
+    argCountMustBe(argc, 1, 2)
+    val prop = vmState.stack.pop.asInstanceOf[T3PropertyId]
+    val flags = if (argc == 2) vmState.stack.pop.value else PropDefAny
+    obj.propDefined(prop, flags)
   }
   def propType(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("propType")
@@ -167,8 +186,7 @@ extends AbstractMetaClass(objectSystem) {
     val prop          = vmState.stack.pop
     val origTargetObj = vmState.stack.pop
     val definingObj   = vmState.stack.pop
-    val flags = if (argc == 4) vmState.stack.pop.value
-                else RootObjectMetaClass.PropDefAny
+    val flags = if (argc == 4) vmState.stack.pop.value else PropDefAny
     printf("propInherited(%d), prop = %s origTrgObj = %s defObj = %s, flags = %s\n",
            argc, prop, origTargetObj, definingObj, flags)
     obj.propInherited(prop.asInstanceOf[T3PropertyId],

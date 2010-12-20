@@ -69,6 +69,8 @@ trait T3Object {
   // RootObject methods
   def propInherited(prop: T3PropertyId, origTargetObj: T3ObjectId,
                     definingObj: T3ObjectId, flags: Int): T3Value
+  def propDefined(prop: T3PropertyId, flags: Int): T3Value
+
   def ofKind(cls: T3ObjectId): T3Value
 }
 
