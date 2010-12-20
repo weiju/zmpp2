@@ -74,8 +74,13 @@ extends TadsCollection(id, vmState, isTransient) {
     val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
     iter.id
   }
+
   override def hashCode: Int = {
-    throw new UnsupportedOperationException("TODO")
+    var result = 0
+    for (elem <- _container) {
+      result += elem.hashCode
+    }
+    result
   }
 
   def valWhich(cond: T3Value): T3Value = {
