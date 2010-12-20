@@ -103,12 +103,12 @@ abstract class T3Value {
 object T3Nil extends T3Value {
   override def isTrue = false
   def valueType = TypeIds.VmNil
-  override def toString = "NIL"
+  override def toString = "nil"
 }
 object T3True extends T3Value {
   def valueType = TypeIds.VmTrue
   override def value = 1
-  override def toString = "TRUE"
+  override def toString = "true"
 }
 object T3Empty extends T3Value {
   def valueType = TypeIds.VmEmpty

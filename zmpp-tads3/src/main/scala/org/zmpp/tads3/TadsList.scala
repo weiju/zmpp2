@@ -69,6 +69,10 @@ extends TadsCollection(id, vmState, isTransient) {
     _container(index.value - 1) = newValue
     id // return this object
   }
+  def indexOf(value: T3Value): T3Value = {
+    val index = _container.indexOf(value)
+    if (index < 0) T3Nil else new T3Integer(index + 1)
+  }
   def createIterator(argc: Int): T3Value = {
     println("createIterator()")
     val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
@@ -138,7 +142,8 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("intersect")
   }
   def indexOf(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("indexOf")
+    argCountMustBe(argc, 1)
+    obj.asInstanceOf[TadsList].indexOf(vmState.stack.pop)
   }
   def car(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("car")

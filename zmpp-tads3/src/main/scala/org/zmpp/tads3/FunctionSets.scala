@@ -228,7 +228,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     val previousObject = vmState.stack.pop.asInstanceOf[T3ObjectId]
     val enumParams = enumObjParams(argc - 1)
     printf("nextObj(), prevObj: %s, params: %s\n", previousObject, enumParams)
-    val result = vmState.objectSystem.nextObject(previousObject, enumParams)
+    val result = objectSystem.nextObject(previousObject, enumParams)
     printf("FOUND OBJECT: %s\n", result.id)
     vmState.r0 = if (result == InvalidObject) T3Nil else result.id
   }
@@ -239,7 +239,22 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-gen.rand() not implemented yet")
   }
   private def toString(argc: Int) {
-    throw new UnsupportedOperationException("tads-gen.toString() not implemented yet")
+    argCountMustBe(argc, 1, 2)
+    val value = nextArg
+    val radix = if (argc == 2) nextArg else T3Nil
+    val str = value.valueType match {
+      case VmInt => if (radix.valueType == VmInt)
+                      Integer.toString(value.value, radix.value)
+                    else
+                      Integer.toString(value.value)
+      case VmSString =>
+        objectSystem.toTadsString(value).toString
+      case VmTrue => "true"
+      case VmNil  => "nil"
+      case _ => throw new UnsupportedOperationException("invalid conversion")
+    }
+    printf("tads-gen.toString(value = %s, radix = %s) = '%s'\n", value, radix, str)
+    vmState.r0 = objectSystem.stringMetaClass.createString(str).id
   }
   private def toInteger(argc: Int) {
     throw new UnsupportedOperationException("tads-gen.toInteger() not implemented yet")
