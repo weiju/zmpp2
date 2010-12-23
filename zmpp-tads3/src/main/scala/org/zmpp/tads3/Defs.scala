@@ -266,6 +266,9 @@ object Opcodes {
   val PushTrue        = 0x09
   val PushPropId      = 0x0a
   val PushFnPtr       = 0x0b
+  val PushStrI        = 0x0c
+  val PushParLst      = 0x0d
+  val MakeLstPar      = 0x0e
   val PushEnum        = 0x0f
   val Add             = 0x22
   val Sub             = 0x23
@@ -434,6 +437,7 @@ object OpcodeNames {
     LJsr            -> "LJSR",
     LRet            -> "LRET",
     Lt              -> "LT",
+    MakeLstPar      -> "MAKELSTPAR",
     Mod             -> "MOD",
     Mul             -> "MUL",
     Ne              -> "NE",
@@ -459,10 +463,12 @@ object OpcodeNames {
     PushInt8        -> "PUSHINT8",
     PushLst         -> "PUSHLST",
     PushNil         -> "PUSHNIL",
+    PushParLst      -> "PUSHPARLST",
     PushPropId      -> "PUSHPROPID",
     PushObj         -> "PUSHOBJ",
     PushSelf        -> "PUSHSELF",
     PushStr         -> "PUSHSTR",
+    PushStrI        -> "PUSHSTRI",
     PushTrue        -> "PUSHTRUE",
     PtrCallPropSelf -> "PTRCALLPROPSELF",
     PtrInherit      -> "PTRINHERIT",

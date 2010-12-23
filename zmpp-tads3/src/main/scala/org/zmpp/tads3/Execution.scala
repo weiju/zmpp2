@@ -373,6 +373,7 @@ class Executor(vmState: TadsVMState) {
         val stackTop = vmState.stack.top
         if (!stackTop.isTrue) vmState.stack.pop
         branchIfTrue(stackTop.isTrue)
+      case Jt           => branchIfTrue(vmState.stack.pop.isTrue)
       case LJsr         =>
         vmState.stack.pushInt((vmState.ip + 2) - vmState.ep)
         vmState.ip += nextShortOperand
@@ -425,8 +426,11 @@ class Executor(vmState: TadsVMState) {
       case PushInt8     => vmState.stack.pushInt(nextSignedByteOperand)
       case PushLst      => vmState.stack.pushList(nextIntOperand)
       case PushNil      => vmState.stack.pushNil
-      case PushPropId   => vmState.stack.pushPropertyId(nextShortOperand)
       case PushObj      => vmState.stack.pushObjectId(nextIntOperand)
+      case PushPropId   => vmState.stack.pushPropertyId(nextShortOperand)
+      case PushParLst   =>
+        vmState.stack.push(
+          objectSystem.listMetaClass.createFromParams(nextByteOperand, true).id)
       case PushSelf     => vmState.stack.push(vmState.currentSelf)
       case PushStr      => vmState.stack.pushSString(nextIntOperand)
       case PushTrue     => vmState.stack.push(T3True)
@@ -693,8 +697,12 @@ class Executor(vmState: TadsVMState) {
           for (i <- 0 until argc) vmState.stack.pop
         } else {
           printf("SEARCH %s.'propNotDefined': %s -> [%s]\n", obj, propNotDefined, pndProp)
-          throw new UnsupportedOperationException("TODO: property not found, " +
-                                                  "check for propNotDefined")
+          if (pndProp.valueType == VmCodeOfs) {
+            vmState.stack.pushPropertyId(propId)
+            evalProperty(targetVal.asInstanceOf[T3ObjectId], pndProp, argc + 1)
+          } else {
+            throw new UnsupportedOperationException("propNotDefined is not a method")
+          }
         }
       }
     } else if (targetVal.valueType == VmList) {

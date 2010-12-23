@@ -223,6 +223,17 @@ extends AbstractMetaClass(objectSystem) {
     list
   }
 
+  def createFromParams(fixedArgCount: Int, isTransient: Boolean): T3Object = {
+    val numToPush = vmState.getArgc.value - fixedArgCount
+    printf("TadsList::createFromParams(%d), argc = %d, to push: %d\n",
+           fixedArgCount, vmState.getArgc.value, numToPush)
+    val list = new TadsList(objectSystem.newObjectId, vmState, isTransient)
+    for (i <- 0 until numToPush) {
+      list.addElement(vmState.getArg(fixedArgCount + i))
+    }
+    list
+  }
+
   def createListConstant(offset: T3ListConstant) = {
     import TadsConstants._
     val poolOffset = offset.value
