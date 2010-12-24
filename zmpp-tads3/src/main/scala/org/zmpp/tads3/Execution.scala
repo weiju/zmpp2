@@ -382,6 +382,20 @@ class Executor(vmState: TadsVMState) {
         if (retOffset.valueType == VmInt) {
           vmState.ip = vmState.ep + retOffset.value
         } else throw new IntValRequiredException
+      case MakeLstPar   =>
+        val value = vmState.stack.pop
+        val argc  = vmState.stack.pop
+        argc.mustBeInt
+        if (objectSystem.isList(value)) {
+          val parList = objectSystem.toTadsList(value)
+          for (elem <- parList.reverseSeq) {
+            vmState.stack.push(elem)
+          }
+          vmState.stack.pushInt(parList.size)
+        } else {
+          vmState.stack.push(value)
+          vmState.stack.pushInt(argc.value + 1)
+        }
       case Ne           =>
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
@@ -473,6 +487,11 @@ class Executor(vmState: TadsVMState) {
       case Sub          =>
         val val2 = vmState.stack.pop
         vmState.stack.push(sub(vmState.stack.pop, val2))
+      case Swap         =>
+        val val1 = vmState.stack.pop
+        val val2 = vmState.stack.pop
+        vmState.stack.push(val1)
+        vmState.stack.push(val2)
       case Switch       =>
         val controlVal = vmState.stack.pop
         val caseCount  = nextShortOperand

@@ -392,6 +392,12 @@ class ObjectSystem {
     else stringMetaClass.createStringConstant(offset)
   }
 
+  def isList(value: T3Value): Boolean = value.valueType match {
+      case VmList => true
+      case VmObj  => objectWithId(value).isOfMetaClass(listMetaClass)
+      case _      => false
+  }
+
   // Enumeration of objects
   def firstObject(enumParams: EnumObjectParams): T3Object = {
     nextObject(InvalidObjectId, enumParams)
@@ -433,6 +439,9 @@ class ObjectSystem {
 
   def toTadsString(value: T3Value): TadsString = {
     toT3Object(value).asInstanceOf[TadsString]
+  }
+  def toTadsList(value: T3Value): TadsList = {
+    toT3Object(value).asInstanceOf[TadsList]
   }
 }
 

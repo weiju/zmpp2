@@ -46,6 +46,7 @@ extends TadsCollection(id, vmState, isTransient) {
   override def metaClass: MetaClass = objectSystem.listMetaClass
   override def toString = "List object"
   def size = _container.size
+  def reverseSeq: Seq[T3Value] = _container.reverse 
   def initWith(seq: Seq[T3Value]) {
     seq.foreach(value => _container.add(value))
   }
@@ -228,6 +229,7 @@ extends AbstractMetaClass(objectSystem) {
     printf("TadsList::createFromParams(%d), argc = %d, to push: %d\n",
            fixedArgCount, vmState.getArgc.value, numToPush)
     val list = new TadsList(objectSystem.newObjectId, vmState, isTransient)
+    objectSystem.registerObject(list)
     for (i <- 0 until numToPush) {
       list.addElement(vmState.getArg(fixedArgCount + i))
     }

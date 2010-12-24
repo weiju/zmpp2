@@ -98,6 +98,10 @@ abstract class T3Value {
   // equals method under VM rules. These are according to the
   // EQ instruction. The default is identical to the regular equals()
   def t3vmEquals(other: T3Value): Boolean = equals(other)
+
+  def mustBeInt: Unit = {
+    throw new IntValRequiredException
+  }
 }
 
 object T3Nil extends T3Value {
@@ -143,6 +147,7 @@ class T3Integer(override val value: Int) extends T3Value {
   override def isTrue = value != 0
   def valueType = TypeIds.VmInt
   override def toString = "integer (value = %d)".format(value)
+  override def mustBeInt { }
 }
 class T3FunctionPointer(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmFuncPtr
