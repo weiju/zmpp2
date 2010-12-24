@@ -307,7 +307,13 @@ object Opcodes {
   val CallPropLcl1    = 0x6b
   val GetPropR0       = 0x6c
   val CallPropR0      = 0x6d
+  val Inherit         = 0x72
   val PtrInherit      = 0x73
+  val ExpInherit      = 0x74
+  val PtrExpInherit   = 0x75
+  val VarArgc         = 0x76
+  val Delegate        = 0x77
+  val PtrDelegate     = 0x78
   val GetLcl1         = 0x80
   val GetLcl2         = 0x81
   val GetArg1         = 0x82
@@ -403,6 +409,7 @@ object OpcodeNames {
     CallPropSelf    -> "CALLPROPSELF",
     Dec             -> "DEC",
     DecLcl          -> "DECLCL",
+    Delegate        -> "DELEGATE",
     Disc            -> "DISC",
     Dup             -> "DUP",
     Eq              -> "EQ",
@@ -459,6 +466,7 @@ object OpcodeNames {
     OneLcl2         -> "ONELCL2",
     PtrCall         -> "PTRCALL",
     PtrCallProp     -> "PTRCALLPROP",
+    PtrExpInherit   -> "PTREXPINHERIT",
     Push0           -> "PUSH_0",
     Push1           -> "PUSH_1",
     PushCtxEle      -> "PUSHCTXELE",
@@ -500,6 +508,7 @@ object OpcodeNames {
     Switch          -> "SWITCH",
     TrNew1          -> "TRNEW1",
     TrNew2          -> "TRNEW2",
+    VarArgc         -> "VARARGC",
     ZeroLcl1        -> "ZEROLCL1",
     ZeroLcl2        -> "ZEROLCL2"
   )

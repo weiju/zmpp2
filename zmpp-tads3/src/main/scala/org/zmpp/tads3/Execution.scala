@@ -206,9 +206,27 @@ class TadsVMState(val objectSystem: ObjectSystem,
 // I believe that this is one of the cleaner solutions to realize the nested
 // execution in TADS3
 class Executor(vmState: TadsVMState) {
-  val objectSystem           = vmState.objectSystem
-  val functionSetMapper      = vmState.functionSetMapper
-  var iteration              = 1
+  val objectSystem       = vmState.objectSystem
+  val functionSetMapper  = vmState.functionSetMapper
+  var iteration          = 1
+
+  // Here is where ZMPP disagrees with the description in the reference implementation
+  // when it comes to handling the varargc instruction. Instead of the goto's and
+  // code duplication, we'll mark the following instruction with the argcOverride
+  // flag and let the specific instructions retrieve their first argument through
+  // the specialArgc function
+  // varargc is the byte sized argc retrieval, varargc2 retrieves shorts
+  var argcOverride       = false
+  def varargcOverrideValue(origArgc: Int): Int = {
+    if (argcOverride) {
+      argcOverride = false      
+      val overrideArgc = vmState.stack.pop
+      overrideArgc.mustBeInt
+      overrideArgc.value
+    } else origArgc
+  }
+  def varargc = varargcOverrideValue(nextByteOperand)
+  def varargc2 = varargcOverrideValue(nextShortOperand)
 
   def nextByteOperand   = vmState.nextCodeByte
   def nextShortOperand  = vmState.nextCodeShort
@@ -285,41 +303,50 @@ class Executor(vmState: TadsVMState) {
       case BP           =>
         throw new UnsupportedOperationException("Breakpoints not supported")
       case BuiltinA     =>
-        functionSetMapper.callBuiltin(nextByteOperand, nextByteOperand, 0)
+        functionSetMapper.callBuiltin(varargc, nextByteOperand, 0)
       case BuiltinB     =>
-        functionSetMapper.callBuiltin(nextByteOperand, nextByteOperand, 1)
+        functionSetMapper.callBuiltin(varargc, nextByteOperand, 1)
       case BuiltinC     =>
-        functionSetMapper.callBuiltin(nextByteOperand, nextByteOperand, 2)
+        functionSetMapper.callBuiltin(varargc, nextByteOperand, 2)
       case BuiltinD     =>
-        functionSetMapper.callBuiltin(nextByteOperand, nextByteOperand, 3)
+        functionSetMapper.callBuiltin(varargc, nextByteOperand, 3)
       case Builtin1     =>
-        functionSetMapper.callBuiltin(nextByteOperand, nextByteOperand,
+        functionSetMapper.callBuiltin(varargc, nextByteOperand,
                                        nextByteOperand)
       case Builtin2     =>
-        functionSetMapper.callBuiltin(nextByteOperand, nextShortOperand,
+        functionSetMapper.callBuiltin(varargc, nextShortOperand,
                                        nextByteOperand)
       case Call         =>
-        vmState.doCall(nextByteOperand, nextIntOperand, 0,
+        vmState.doCall(varargc, nextIntOperand, 0,
                       InvalidObjectId, InvalidObjectId, InvalidObjectId)
-      case CallProp     => callProp(nextByteOperand, vmState.stack.pop,
+      case CallProp     => callProp(varargc, vmState.stack.pop,
                                     nextShortOperand)
       case CallPropLcl1 =>
         callProp(nextByteOperand, vmState.getLocal(nextByteOperand), nextShortOperand)
       case CallPropR0   => callProp(nextByteOperand, vmState.r0,
                                     nextShortOperand)
-      case CallPropSelf => callProp(nextByteOperand, vmState.currentSelf,
+      case CallPropSelf => callProp(varargc, vmState.currentSelf,
                                     nextShortOperand)
       case Dec          =>
         vmState.stack.push(sub(vmState.stack.pop, T3Integer.One))
       case DecLcl       =>
         val localNum = nextShortOperand
         vmState.setLocal(localNum, sub(vmState.getLocal(localNum), T3Integer.One))
+      case Delegate     =>
+        val argc = varargc
+        val propId = nextShortOperand
+        throw new UnsupportedOperationException("TODO")
       case Disc         => vmState.stack.pop
       case Dup          => vmState.stack.dup
       case Eq           =>
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
         vmState.stack.push(if (t3vmEquals(val1, val2)) T3True else T3Nil)
+      case ExpInherit   =>
+        val argc   = varargc
+        val propId = nextShortOperand
+        val objId  = nextIntOperand
+        throw new UnsupportedOperationException("TODO")
       case GetArg1      =>
         vmState.stack.push(vmState.getArg(nextByteOperand))
       case GetArg2      => vmState.stack.push(vmState.getArg(nextShortOperand))
@@ -341,6 +368,10 @@ class Executor(vmState: TadsVMState) {
       case Index        =>
         val indexVal = vmState.stack.pop
         index(vmState.stack.pop, indexVal)
+      case Inherit      =>
+        val argc   = varargc
+        val propId = nextShortOperand
+        throw new UnsupportedOperationException("TODO")
       case Je           =>
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
@@ -401,15 +432,18 @@ class Executor(vmState: TadsVMState) {
         val val1 = vmState.stack.pop
         vmState.stack.push(if (!t3vmEquals(val1, val2)) T3True else T3Nil)
       case New1         =>
-        vmState.r0 = vmState.objectSystem.createFromStack(nextByteOperand,
+        vmState.r0 = vmState.objectSystem.createFromStack(varargc,
                                                           nextByteOperand, false)
+      case New2         =>
+        vmState.r0 = vmState.objectSystem.createFromStack(varargc2,
+                                                          nextShortOperand, false)
       case NilLcl1      => vmState.setLocal(nextByteOperand, T3Nil)
       case NilLcl2      => vmState.setLocal(nextShortOperand, T3Nil)
       case Nop          => // do nothing
       case Not          =>
         vmState.stack.push(not(vmState.stack.pop))
       case ObjCallProp  =>
-        callProp(nextByteOperand, new T3ObjectId(nextIntOperand),
+        callProp(varargc, new T3ObjectId(nextIntOperand),
                  nextShortOperand)
       case ObjGetProp   => callProp(0, new T3ObjectId(nextIntOperand),
                                     nextShortOperand)
@@ -417,21 +451,30 @@ class Executor(vmState: TadsVMState) {
                                        nextShortOperand, vmState.stack.pop)
       case OneLcl1      => vmState.setLocal(nextByteOperand, T3Integer.One)
       case OneLcl2      => vmState.setLocal(nextShortOperand, T3Integer.One)
-      case PtrCall      => ptrCall(nextByteOperand)
+      case PtrCall      => ptrCall(varargc)
       case PtrCallProp  =>
+        val argc = varargc
         val prop = vmState.stack.pop
         val targetValue = vmState.stack.pop
         if (prop.valueType != VmProp) {
           throw new IllegalArgumentException("%s is not a property".format(prop))
         }
-        callProp(nextByteOperand, targetValue, prop.value)
+        callProp(argc, targetValue, prop.value)
       case PtrCallPropSelf =>
+        val argc = varargc
         val prop = vmState.stack.pop
         if (prop.valueType != VmProp) {
           throw new IllegalArgumentException("%s is not a property".format(prop))
         }
-        callProp(nextByteOperand, vmState.currentSelf, prop.value)
-      case PtrInherit   => inheritProperty(nextByteOperand, vmState.stack.pop)
+        callProp(argc, vmState.currentSelf, prop.value)
+      case PtrDelegate  =>
+        val argc = varargc
+        throw new UnsupportedOperationException("TODO")
+      case PtrExpInherit =>
+        val argc  = varargc
+        val objId = nextIntOperand
+        throw new UnsupportedOperationException("TODO")
+      case PtrInherit   => inheritProperty(varargc, vmState.stack.pop)
       case Push0        => vmState.stack.push0
       case Push1        => vmState.stack.push1
       case PushCtxEle   => pushCtxEle(nextByteOperand)
@@ -524,8 +567,12 @@ class Executor(vmState: TadsVMState) {
           vmState.ip = p + branchOffset
         }
       case TrNew1       =>
-        vmState.r0 = vmState.objectSystem.createFromStack(nextByteOperand,
-                                                        nextByteOperand, true)
+        vmState.r0 = vmState.objectSystem.createFromStack(varargc,
+                                                          nextByteOperand, true)
+      case TrNew2       =>
+        vmState.r0 = vmState.objectSystem.createFromStack(varargc2,
+                                                          nextShortOperand, true)
+      case VarArgc      => argcOverride = true
       case ZeroLcl1     =>
         vmState.setLocal(nextByteOperand, T3Integer.Zero)
       case ZeroLcl2     =>
