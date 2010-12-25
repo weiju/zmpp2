@@ -32,6 +32,7 @@ import org.zmpp.base._
 import scala.collection.JavaConversions._
 import java.util.ArrayList
 import T3Assert._
+import TypeIds._
 
 /*
  * Lists are stored in the image as
@@ -98,6 +99,17 @@ extends TadsCollection(id, vmState, isTransient) {
     }
     T3Nil
   }
+  def subset(func: T3Value): T3Value = {
+    printf("subset(f = %s)\n", func)
+    var result: List[T3Value] = Nil 
+    for (i <- 0 until size) {
+      printf("TadsList::subset(), 0-index = %d, value = %s\n", i, _container(i))
+      vmState.stack.push(_container(i))
+      new Executor(vmState).executeCallback(func, 1)
+      if (vmState.r0.isTrue) result = _container(i) :: result
+    }
+    staticMetaClass.createList(result.reverse, true).id
+  }
 }
 
 class TadsListConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
@@ -128,7 +140,8 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("undefined")
   }
   def subset(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("subset")
+    argCountMustBe(argc, 1)
+    obj.asInstanceOf[TadsList].subset(vmState.stack.pop)
   }
   def map(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("map")
