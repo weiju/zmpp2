@@ -278,6 +278,11 @@ object Opcodes {
   val Add             = 0x22
   val Sub             = 0x23
   val Mul             = 0x24
+  val Band            = 0x25
+  val Bor             = 0x26
+  val Shl             = 0x27
+  val Shr             = 0x28
+  val Xor             = 0x29
   val Mod             = 0x2b
   val Not             = 0x2c
   val Boolize         = 0x2d
@@ -394,7 +399,9 @@ object OpcodeNames {
     AddILcl1        -> "ADDILCL1",
     AddILcl4        -> "ADDILCL4",
     AddToLcl        -> "ADDTOLCL",
+    Band            -> "BAND",
     Boolize         -> "BOOLIZE",
+    Bor             -> "Bor",
     BP              -> "BP",
     Builtin1        -> "BUILTIN1",
     Builtin2        -> "BUILTIN2",
@@ -502,6 +509,8 @@ object OpcodeNames {
     SetProp         -> "SETPROP",
     SetPropSelf     -> "SETPROPSELF",
     SetSelf         -> "SETSELF",
+    Shl             -> "SHL",
+    Shr             -> "SHR",
     Sub             -> "SUB",
     SubFromLcl      -> "SUBFROMLCL",
     Swap            -> "SWAP",
@@ -509,6 +518,7 @@ object OpcodeNames {
     TrNew1          -> "TRNEW1",
     TrNew2          -> "TRNEW2",
     VarArgc         -> "VARARGC",
+    Xor             -> "XOR",
     ZeroLcl1        -> "ZEROLCL1",
     ZeroLcl2        -> "ZEROLCL2"
   )

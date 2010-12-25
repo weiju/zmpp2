@@ -583,8 +583,9 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.bannerFlush() not implemented yet")
   }
   private def bannerSizeToContents(argc: Int) {
-    throw new UnsupportedOperationException("tads-io.bannerSizeToContents() " +
-                                            "not implemented yet")
+    argCountMustBe(argc, 1)
+    val handle = nextArg
+    tadsOutput.addString("tads-io.bannerSizeToContents(%s) -> TODO\n".format(handle))
   }
   private def bannerGoTo(argc: Int) {
     throw new UnsupportedOperationException("tads-io.bannerGoTo() not implemented yet")

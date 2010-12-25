@@ -300,6 +300,18 @@ class Executor(vmState: TadsVMState) {
                            else if (topValue.valueType == VmInt) {
                              if (topValue.isTrue) T3True else T3Nil
                            } else throw new NoLogConvException)
+      case Band         =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        val1.mustBeInt
+        val2.mustBeInt
+        vmState.stack.pushInt(val1.value & val2.value)
+      case Bor          =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        val1.mustBeInt
+        val2.mustBeInt
+        vmState.stack.pushInt(val1.value | val2.value)
       case BP           =>
         throw new UnsupportedOperationException("Breakpoints not supported")
       case BuiltinA     =>
@@ -582,7 +594,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 30001) {
+    if (iteration == 30875) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
