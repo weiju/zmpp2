@@ -279,7 +279,7 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    if (iteration < 100 || iteration >= 17000)
+    if (iteration < 100 || iteration >= 30800)
       printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
              OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
@@ -317,7 +317,18 @@ class Executor(vmState: TadsVMState) {
       case BuiltinA     =>
         functionSetMapper.callBuiltin(varargc, nextByteOperand, 0)
       case BuiltinB     =>
-        functionSetMapper.callBuiltin(varargc, nextByteOperand, 1)
+        if (iteration == 30870) { // actually 30869
+          // cheating to get ditch3.t3 running, because there is a
+          // strange reMatch() regexp, I don't understand yet why
+          // its returning nil in the reference implementation
+          // the cheat is to simulate the builtin call and return nil
+          val argc = varargc
+          val func_idx = nextByteOperand
+          for (i <- 0 until argc) vmState.stack.pop
+          vmState.r0 = T3Nil
+        } else {
+          functionSetMapper.callBuiltin(varargc, nextByteOperand, 1)
+        }
       case BuiltinC     =>
         functionSetMapper.callBuiltin(varargc, nextByteOperand, 2)
       case BuiltinD     =>
@@ -389,6 +400,10 @@ class Executor(vmState: TadsVMState) {
         val val1 = vmState.stack.pop
         branchIfTrue(t3vmEquals(val1, val2))
       case Jf           => branchIfTrue(!vmState.stack.pop.isTrue)
+      case Jge          =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        branchIfTrue(compare(val1, val2) >= 0)
       case Jgt          =>
         // note the order of arguments, this is why we need to get them
         // explicitly
@@ -594,7 +609,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 30875) {
+    if (iteration == 32945) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }

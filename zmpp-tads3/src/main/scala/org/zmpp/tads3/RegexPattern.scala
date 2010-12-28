@@ -117,7 +117,14 @@ extends AbstractT3Object(id, vmState, isTransient) {
   }
 
   override def toString = {
-    "regex-pattern = '%s' (len = %d)".format(patternString, patternString.length)
+    val builder = new StringBuilder
+    for (i <- 0 until patternString.length) {
+      val c = patternString.string.charAt(i)
+      builder.append("[0x%02x]".format(c.asInstanceOf[Int]))
+    }
+    "regex-pattern = '%s' (len = %d, chars = [ %s ])".format(patternString,
+                                                             patternString.length,
+                                                             builder.toString)
   }
 }
 
