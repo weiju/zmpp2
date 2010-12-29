@@ -191,6 +191,38 @@ object TadsObjectMetaClass {
 class TadsObjectMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "tads-object"
+
+  val FunctionVector = Array(undef _,            createInstance _,
+                             createClone _,      createTransientInstance _,
+                             createInstanceOf _, createTransientInstanceOf _,
+                             setSuperClassList _)
+
+  def undef(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("undefined")
+  }
+  def createInstance(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("createInstance")
+  }
+  def createClone(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("createClone")
+  }
+  def createTransientInstance(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("createTransientInstance")
+  }
+  def createInstanceOf(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("createInstanceOf")
+  }
+  def createTransientInstanceOf(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("createTransientInstanceOf")
+  }
+  def setSuperClassList(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("setSuperClassList")
+  }
+  override def callMethodWithIndex(obj: T3Object, index: Int,
+                                   argc: Int): T3Value = {
+    FunctionVector(index)(obj, argc)
+  }
+
   override def superMeta = objectSystem.rootObjectMetaClass
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
