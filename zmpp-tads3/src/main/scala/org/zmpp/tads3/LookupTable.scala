@@ -144,11 +144,11 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("getBucketCount")
   }
   def getEntryCount(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 0)
+    argc must_== 0
     new T3Integer(obj.asInstanceOf[LookupTable].entryCount)
   }
   def forEachAssoc(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     obj.asInstanceOf[LookupTable].forEachAssoc(vmState.stack.pop)
     T3Nil
   }

@@ -541,22 +541,30 @@ class ObjectNotFoundException extends Exception
 class ObjectValRequiredException extends Exception
 class SayIsNotDefinedException extends Exception
 
+// Make an assertion mini DSL which resembles Scala specs assertions.
+class AssertInt(val value: Int) {
+  def must_==(other: Int) {
+    if (value != other) {
+      throw new IllegalArgumentException(
+        "value must be %d (was %d)".format(other, value))
+    }
+  }
+  def mustBeInRange(min: Int, max: Int = 0) {
+    if (value < min || value > max) {
+      throw new IllegalArgumentException(
+        "value must be between %d and %d (was %d)".format(min, max, value))
+    }
+  }
+  def mustBeAtLeast(min: Int) {
+    if (value < min) {
+      throw new IllegalArgumentException(
+        "value must be at least %d (was %d)".format(min, value))
+    }
+  }
+}
+
 object T3Assert {
-  def argCountMustBe(argc: Int, min: Int, max: Int = 0) {
-    if (max == 0 && argc != min) {
-      throw new IllegalArgumentException(
-        "argc must be %d (was %d)".format(min, argc))
-    } else if (max > 0 && (argc < min || argc > max)) {
-      throw new IllegalArgumentException(
-        "argc must be between %d and %d (was %d)".format(min, max, argc))
-    }
-  }
-  def argCountMustBeAtLeast(argc: Int, min: Int) {
-    if (argc < min) {
-      throw new IllegalArgumentException(
-        "argc must be at least %d (was %d)".format(min, argc))
-    }
-  }
+  implicit def makeAssertInt(intValue: Int) = new AssertInt(intValue)
 }
 
 object TadsEvent {

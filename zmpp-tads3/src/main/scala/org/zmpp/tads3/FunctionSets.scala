@@ -239,7 +239,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-gen.rand() not implemented yet")
   }
   private def toString(argc: Int) {
-    argCountMustBe(argc, 1, 2)
+    argc mustBeInRange(1, 2)
     val value = nextArg
     val radix = if (argc == 2) nextArg else T3Nil
     val str = value.valueType match {
@@ -286,7 +286,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
   }
 
   private def rexMatch(argc: Int) {
-    argCountMustBe(argc, 2, 3)
+    argc mustBeInRange(2, 3)
     val pat = vmState.stack.pop
     val str = vmState.stack.pop
     val patObj = asRegexPattern(pat)
@@ -300,7 +300,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     vmState.r0 = if (matchResult == -1) T3Nil else new T3Integer(matchResult)
   }
   private def rexSearch(argc: Int) {
-    argCountMustBe(argc, 2, 3)
+    argc mustBeInRange(2, 3)
     val pat = vmState.stack.pop
     val str = vmState.stack.pop
     val index = if (argc == 3) vmState.stack.pop.value else 1
@@ -314,13 +314,13 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     vmState.r0 = if (foundAt == null) T3Nil else foundAt.id
   }
   private def rexGroup(argc: Int) {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     val groupNum = vmState.stack.pop.value
     printf("rexGroup(%d)\n", groupNum)
     vmState.r0 = vmState.lastPattern.group(groupNum).id
   }
   private def rexReplace(argc: Int) {
-    argCountMustBe(argc, 4, 5)
+    argc mustBeInRange(4, 5)
     val pat = vmState.stack.pop
     val str = vmState.stack.pop
     val repl = vmState.stack.pop
@@ -494,7 +494,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
   }
   private def systemInfo(argc: Int) {
     import TadsIoFunctionSet._
-    argCountMustBeAtLeast(argc, 1)
+    argc mustBeAtLeast 1
     val infoType = vmState.stack.pop
     if (infoType.value == SysInfoInterpClass) {
       vmState.r0 = new T3Integer(SysInfoIClassHtml)
@@ -523,7 +523,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.flushOutput() not implemented yet")
   }
   private def inputLineTimeout(argc: Int) {
-    argCountMustBe(argc, 0, 1)
+    argc mustBeInRange(0, 1)
     val timeout = if (argc == 0) T3Nil else vmState.stack.pop
     printf("inputLineTimeout(%s)\n", timeout)
     // setup a simple list with (InEvtLine, "") for now
@@ -538,13 +538,13 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     //                                        "not implemented yet")
   }
   private def inputLineCancel(argc: Int) {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     val reset = nextArg
     printf("inputLineCancel(reset = %s) - TODO\n", reset)
   }
   private def bannerCreate(argc: Int) {
     printf("bannerCreate(%d)\n", argc)
-    argCountMustBe(argc, 8)
+    argc must_== 8
     val parent     = nextArg
     val where      = nextArg
     val other      = nextArg
@@ -563,12 +563,12 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.bannerDelete() not implemented yet")
   }
   private def bannerClear(argc: Int) {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     val handle = nextArg
     tadsOutput.addString("bannerClear(%s)\n".format(handle))
   }
   private def bannerSay(argc: Int) {
-    argCountMustBeAtLeast(argc, 1)
+    argc mustBeAtLeast 1
     val handle = nextArg
     for (i <- 1 until argc) {
       val value = nextArg
@@ -580,7 +580,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.bannerFlush() not implemented yet")
   }
   private def bannerSizeToContents(argc: Int) {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     val handle = nextArg
     tadsOutput.addString("tads-io.bannerSizeToContents(%s) -> TODO\n".format(handle))
   }
@@ -599,7 +599,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.bannerGetInfo() not implemented yet")
   }
   private def bannerSetSize(argc: Int) {
-    argCountMustBe(argc, 4)
+    argc must_== 4
     val handle     = nextArg
     val size       = nextArg
     val sizeUnits  = nextArg
@@ -608,7 +608,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
                          handle, size, sizeUnits, isAdvisory))
   }
   private def logConsoleCreate(argc: Int) {
-    argCountMustBe(argc, 3)
+    argc must_== 3
     val filename = nextArg
     val charset  = nextArg
     val width    = nextArg

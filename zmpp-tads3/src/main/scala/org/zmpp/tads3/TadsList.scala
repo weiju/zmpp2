@@ -140,7 +140,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("undefined")
   }
   def subset(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     obj.asInstanceOf[TadsList].subset(vmState.stack.pop)
   }
   def map(obj: T3Object, argc: Int): T3Value = {
@@ -156,7 +156,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("intersect")
   }
   def indexOf(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     obj.asInstanceOf[TadsList].indexOf(vmState.stack.pop)
   }
   def car(obj: T3Object, argc: Int): T3Value = {
@@ -172,7 +172,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("forEach")
   }
   def valWhich(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     val result = obj.asInstanceOf[TadsList].valWhich(vmState.stack.pop)
     printf("TadsList::valWhich() RESULT = %s\n", result)
     result

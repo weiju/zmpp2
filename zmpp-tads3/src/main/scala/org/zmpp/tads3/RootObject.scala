@@ -155,7 +155,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("undefined")
   }
   def ofKind(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     val isInstance = obj.ofKind(vmState.stack.pop.asInstanceOf[T3ObjectId])
     printf("%s.ofKind() = %s\n", obj, isInstance)
     isInstance
@@ -164,7 +164,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("getSuperClassList")
   }
   def propDefined(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1, 2)
+    argc mustBeInRange(1, 2)
     val prop = vmState.stack.pop.asInstanceOf[T3PropertyId]
     val flags = if (argc == 2) vmState.stack.pop.value else PropDefAny
     obj.propDefined(prop, flags)
@@ -182,7 +182,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("isClass")
   }
   def propInherited(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 3, 4)
+    argc mustBeInRange(3, 4)
     val prop          = vmState.stack.pop
     val origTargetObj = vmState.stack.pop
     val definingObj   = vmState.stack.pop

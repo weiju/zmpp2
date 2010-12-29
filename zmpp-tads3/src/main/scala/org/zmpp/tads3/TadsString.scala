@@ -139,11 +139,11 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("undefined")
   }
   def length(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 0)
+    argc must_== 0
     new T3Integer(obj.asInstanceOf[TadsString].length)
   }
   def substr(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1, 2)
+    argc mustBeInRange(1, 2)
     val start = vmState.stack.pop.value
     val length = if (argc == 2) vmState.stack.pop.value else -1
     obj.asInstanceOf[TadsString].substr(start, length).id
@@ -155,7 +155,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("toLower")
   }
   def find(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1, 2)
+    argc mustBeInRange(1, 2)
     val str = objectSystem.toT3Object(vmState.stack.pop)
     val index = if (argc > 1) vmState.stack.pop.value else 1
     val foundAt = obj.asInstanceOf[TadsString].find(
@@ -170,7 +170,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("htmlify")
   }
   def startsWith(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     val str = objectSystem.toT3Object(vmState.stack.pop).asInstanceOf[TadsString]
     if (obj.asInstanceOf[TadsString].startsWith(str)) T3True else T3Nil
   }
@@ -182,7 +182,7 @@ extends AbstractMetaClass(objectSystem) {
   }
   def findReplace(obj: T3Object, argc: Int): T3Value = {
     import TadsString._
-    argCountMustBe(argc, 3, 4)
+    argc mustBeInRange(3, 4)
     val origStr = objectSystem.toTadsString(vmState.stack.pop)
     val newStr  = objectSystem.toTadsString(vmState.stack.pop)
     val replaceAll = (vmState.stack.pop.value & ReplaceAll) == ReplaceAll

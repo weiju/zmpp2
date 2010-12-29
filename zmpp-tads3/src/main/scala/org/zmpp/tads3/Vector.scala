@@ -150,14 +150,14 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("undefined")
   }
   def toList(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 0, 2)
+    argc mustBeInRange(0, 2)
     val vector = obj.asInstanceOf[Vector]
     val start = if (argc > 0) vmState.stack.pop.value else 1
     val end   = if (argc > 1) vmState.stack.pop.value else vector.size
     vector.toList(start, end)
   }
   def getSize(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 0)
+    argc must_== 0
     new T3Integer(obj.asInstanceOf[Vector].size)
   }
   def copyFrom(obj: T3Object, argc: Int): T3Value = {
@@ -173,7 +173,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("applyAll")
   }
   def indexWhich(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     val index = obj.asInstanceOf[Vector].indexWhich(vmState.stack.pop)
     if (index == 0) T3Nil else new T3Integer(index)
   }
@@ -187,7 +187,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("mapAll")
   }
   def indexOf(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     val value = vmState.stack.pop
     val index = obj.asInstanceOf[Vector].indexOf(value)
     printf("vector.indexOf(), argc = %d val = %s index = %d\n", argc, value, index)
@@ -224,18 +224,15 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("setLength")
   }
   def insertAt(obj: T3Object, argc: Int): T3Value = {
-    if (argc >= 2) {
-      val startIndex = vmState.stack.pop.value
-      printf("Vector.insertAt(%d), argc = %d\n", startIndex, argc)
-      for (i <- 0 until argc - 1) {
-        val value = vmState.stack.pop
-        printf("insert at index: %s value: %s\n", startIndex + i, value)
-        obj.asInstanceOf[Vector].insertAt(startIndex + i, value)
-      }
-      obj.id
-    } else {
-      throw new IllegalArgumentException("at least 2 parameters for insertAt()")
+    argc mustBeAtLeast 2
+    val startIndex = vmState.stack.pop.value
+    printf("Vector.insertAt(%d), argc = %d\n", startIndex, argc)
+    for (i <- 0 until argc - 1) {
+      val value = vmState.stack.pop
+      printf("insert at index: %s value: %s\n", startIndex + i, value)
+      obj.asInstanceOf[Vector].insertAt(startIndex + i, value)
     }
+    obj.id
   }
   def removeElementAt(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("removeElementAt")
@@ -244,7 +241,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("removeRange")
   }
   def append(obj: T3Object, argc: Int): T3Value = {
-    argCountMustBe(argc, 1)
+    argc must_== 1
     val arg = vmState.stack.pop
     printf("obj(%s).append: %s\n", obj, arg)
     obj.asInstanceOf[Vector].append(arg)
@@ -288,10 +285,7 @@ extends AbstractMetaClass(objectSystem) {
   // 
   override def createFromStack(id: T3ObjectId, argc: Int,
                                isTransient: Boolean) = {
-    if (argc < 1 || argc > 2) {
-      throw new IllegalArgumentException("vector::constructor(), argc " +
-                                         "must be 1 or 2")
-    }
+    argc mustBeInRange(1, 2)
     val numAllocated = vmState.stack.pop
     val result = if (numAllocated.valueType == TypeIds.VmInt) {
       // we ignore this parameter, we do not allocate vectors with an initial size
