@@ -47,11 +47,9 @@ extends AbstractT3Object(id, vmState, isTransient) {
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val idx = staticMetaClass.functionIndexForProperty(propertyId)
     printf("collection prop idx = %d\n", idx)
-    if (idx >= 0) {
-      new Property(propertyId,
-                   staticMetaClass.callMethodWithIndex(this, idx, argc),
-                   id)
-    } else super.getProperty(propertyId, argc)
+    val prop = staticMetaClass.callMethodWithIndex(this, idx, argc)
+    if (prop != InvalidPropertyId) new Property(propertyId, prop, id)
+    else super.getProperty(propertyId, argc)
   }
 }
 
@@ -66,9 +64,7 @@ extends AbstractMetaClass(objectSystem) {
   def name = "collection"
 
   val FunctionVector = Array(undef _, createIterator _, createLiveIterator _)
-  def undef(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("undefined")
-  }
+  def undef(obj: T3Object, argc: Int): T3Value = InvalidPropertyId
   def createIterator(obj: T3Object, argc: Int): T3Value = {
     obj.asInstanceOf[TadsCollection].createIterator(argc)
   }

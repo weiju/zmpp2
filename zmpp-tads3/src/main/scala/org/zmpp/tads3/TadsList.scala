@@ -55,11 +55,9 @@ extends TadsCollection(id, vmState, isTransient) {
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val idx = staticMetaClass.functionIndexForProperty(propertyId)
     printf("list prop idx = %d\n", idx)
-    if (idx >= 0) {
-      new Property(propertyId,
-                   staticMetaClass.callMethodWithIndex(this, idx, argc),
-                   id)
-    } else super.getProperty(propertyId, argc)
+    val prop = staticMetaClass.callMethodWithIndex(this, idx, argc)
+    if (prop != InvalidPropertyId) new Property(propertyId, prop, id)
+    else super.getProperty(propertyId, argc)
   }
 
   def addElement(value: T3Value) {
@@ -136,9 +134,7 @@ extends AbstractMetaClass(objectSystem) {
                              sort _, prepend _, insertAt _, removeElementAt _,
                              removeRange _, forEachAssoc _)
 
-  def undef(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("undefined")
-  }
+  def undef(obj: T3Object, argc: Int): T3Value = InvalidPropertyId
   def subset(obj: T3Object, argc: Int): T3Value = {
     argc must_== 1
     obj.asInstanceOf[TadsList].subset(vmState.stack.pop)

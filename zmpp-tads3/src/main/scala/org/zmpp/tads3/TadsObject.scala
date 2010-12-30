@@ -197,10 +197,12 @@ extends AbstractMetaClass(objectSystem) {
                              createInstanceOf _, createTransientInstanceOf _,
                              setSuperClassList _)
 
-  def undef(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("undefined")
-  }
+  def undef(obj: T3Object, argc: Int): T3Value = InvalidPropertyId
   def createInstance(obj: T3Object, argc: Int): T3Value = {
+    val ctor = vmState.image.symbolicNames("Constructor")
+    val ctorProp = obj.getProperty(ctor.value, 0)
+    printf("createInstance(), argc = %d obj = [%s], ctorProp: [%s]\n",
+           argc, obj, ctorProp)
     throw new UnsupportedOperationException("createInstance")
   }
   def createClone(obj: T3Object, argc: Int): T3Value = {

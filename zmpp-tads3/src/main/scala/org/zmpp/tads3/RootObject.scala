@@ -152,7 +152,11 @@ extends AbstractMetaClass(objectSystem) {
   def name = "root-object"
 
   def undef(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("undefined")
+    // we did not find a native bytecode implementation for the static property
+    // We do the same as the reference implementation and look for a modifier
+    // property with defining object InvalidObjectId and target object 'self'
+    // For now, we always return InvalidPropertyId until we hit a problem
+    InvalidPropertyId
   }
   def ofKind(obj: T3Object, argc: Int): T3Value = {
     argc must_== 1

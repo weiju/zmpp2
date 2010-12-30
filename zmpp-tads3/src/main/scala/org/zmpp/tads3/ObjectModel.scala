@@ -163,15 +163,10 @@ abstract class AbstractMetaClass(val objectSystem: ObjectSystem) extends MetaCla
 
   def evalClassProperty(obj: T3Object, propertyId: Int, argc: Int): T3Value = {
     var functionIndex = functionIndexForProperty(propertyId)
-    if (functionIndex == -1) {
-      if (superMeta != null) superMeta.evalClassProperty(obj, propertyId, argc)
-      else InvalidPropertyId
-    } else {
-      // found, try to evaluate
-      printf("FOUND PROPERTY %d in metaclass '%s', at index: %d\n",
-           propertyId, name, functionIndex)
-      callMethodWithIndex(obj, functionIndex, argc)
-    }
+    val prop = callMethodWithIndex(obj, functionIndex, argc)
+    if (prop == InvalidPropertyId && superMeta != null) {
+      superMeta.evalClassProperty(obj, propertyId, argc)
+    } else prop
   }
   var id: Int = 0
   var vmState: TadsVMState = null
@@ -182,7 +177,7 @@ abstract class AbstractMetaClass(val objectSystem: ObjectSystem) extends MetaCla
   }
   def functionIndexForProperty(propertyId: Int) = {
     if (propertyMap.containsKey(propertyId)) propertyMap(propertyId)
-    else -1
+    else 0
   }
 }
 
