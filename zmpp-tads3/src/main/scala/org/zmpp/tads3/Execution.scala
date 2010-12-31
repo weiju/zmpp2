@@ -522,6 +522,11 @@ class Executor(vmState: TadsVMState) {
         val objId = nextIntOperand
         throw new UnsupportedOperationException("TODO")
       case PtrInherit   => inheritProperty(varargc, vmState.stack.pop)
+      case PtrSetProp   =>
+        val propId   = vmState.stack.pop
+        val obj      = vmState.stack.pop
+        val newValue = vmState.stack.pop 
+        objSetProp(obj, propId.value, newValue)
       case Push0        => vmState.stack.push0
       case Push1        => vmState.stack.push1
       case PushCtxEle   => pushCtxEle(nextByteOperand)
@@ -629,7 +634,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 42011) {
+    if (iteration == 42081) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
