@@ -91,10 +91,20 @@ object LookupTableSpec extends Specification {
     "remove a value" in {
       val lookupTable = new LookupTable(new T3ObjectId(1), vmState, false, 32, 64)
       lookupTable(new T3Integer(3)) = new T3Integer(42)
-      lookupTable.removeElement(new T3Integer(3))
 
+      val result = lookupTable.removeElement(new T3Integer(3))
+      result must_== new T3Integer(42)
       lookupTable.entryCount must_== 0
       lookupTable.isKeyPresent(new T3Integer(3)) must beFalse
+    }
+    "remove a non-existing value" in {
+      val lookupTable = new LookupTable(new T3ObjectId(1), vmState, false, 32, 64)
+      lookupTable(new T3Integer(3)) = new T3Integer(42)
+      
+      val result = lookupTable.removeElement(new T3Integer(5))
+      result must_== T3Nil
+      lookupTable.entryCount must_== 1
+      lookupTable.isKeyPresent(new T3Integer(3)) must beTrue
     }
   }
 }

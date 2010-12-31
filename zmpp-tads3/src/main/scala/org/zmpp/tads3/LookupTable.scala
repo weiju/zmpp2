@@ -70,9 +70,13 @@ extends AbstractT3Object(id, vmState, isTransient) {
     if (!isKeyPresent(key)) _keys += key
     _container(makeHash(key)) = value
   }
-  def removeElement(key: T3Value) {
-    _keys -= key
-    _container -= makeHash(key)
+  def removeElement(key: T3Value): T3Value = {
+    if (isKeyPresent(key)) {
+      val result = this(key)
+      _keys -= key
+      _container -= makeHash(key)
+      result
+    } else T3Nil
   }
   def forEachAssoc(func: T3Value) {
     printf("forEachAssoc(), func = %s\n", func)
@@ -130,7 +134,8 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("isKeyPresent")
   }
   def removeElement(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("removeElement")
+    argc must_== 1
+    obj.asInstanceOf[LookupTable].removeElement(vmState.stack.pop)
   }
   def applyAll(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("applyAll")
