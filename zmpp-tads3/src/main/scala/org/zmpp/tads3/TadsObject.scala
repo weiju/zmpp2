@@ -183,6 +183,23 @@ extends AbstractT3Object(id, vmState, isTransient) {
     defaultResult
   }
 
+  def createInstance(argc: Int): T3Value = {
+    // self is the superclass
+    vmState.stack.push(id)
+    val obj = staticMetaClass.createFromStack(objectSystem.newObjectId,
+                                              argc + 1, false)
+    objectSystem.registerObject(obj)
+    obj.id
+  }
+
+  def createTransientInstance(argc: Int): T3Value = {
+    // self is the superclass
+    vmState.stack.push(id)
+    val obj = staticMetaClass.createFromStack(objectSystem.newObjectId,
+                                              argc + 1, true, true)
+    objectSystem.registerObject(obj)
+    obj.id
+  }
 }
 
 object TadsObjectMetaClass {
@@ -199,17 +216,13 @@ extends AbstractMetaClass(objectSystem) {
 
   def undef(obj: T3Object, argc: Int): T3Value = InvalidPropertyId
   def createInstance(obj: T3Object, argc: Int): T3Value = {
-    val ctor = vmState.image.symbolicNames("Constructor")
-    val ctorProp = obj.getProperty(ctor.value, 0)
-    printf("createInstance(), argc = %d obj = [%s], ctorProp: [%s]\n",
-           argc, obj, ctorProp)
-    throw new UnsupportedOperationException("createInstance")
+    obj.asInstanceOf[TadsObject].createInstance(argc)
   }
   def createClone(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("createClone")
   }
   def createTransientInstance(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("createTransientInstance")
+    obj.asInstanceOf[TadsObject].createTransientInstance(argc)
   }
   def createInstanceOf(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("createInstanceOf")
@@ -261,18 +274,40 @@ extends AbstractMetaClass(objectSystem) {
 
   override def createFromStack(id: T3ObjectId, argc: Int,
                                isTransient: Boolean): T3Object = {
+    createFromStack(id, argc, isTransient, false)
+  }
+
+  def createFromStack(id: T3ObjectId, argc: Int,
+                      isTransient: Boolean,
+                      fromCreateInstance: Boolean): T3Object = {
     printf("TadsObject.createFromStack(%d, %b)\n", argc, isTransient)
-    val superClass = if (argc > 0) vmState.stack.pop else T3Nil
+    var ctorArgc = argc
+    val superClass = if (argc > 0) { ctorArgc -= 1 ; vmState.stack.pop } else T3Nil
     val superClassCount = if (superClass == T3Nil) 0 else 1
     val tadsObject = new TadsObject(id, vmState, false, superClassCount, 0,
                                     isTransient)
     val ctorProp = vmState.image.symbolicNames("Constructor").t3Value    
     if (superClassCount == 1) tadsObject.superClassIds(0) = superClass.value
+
     // if constructor defined, invoke it
     val ctor = tadsObject.getProperty(ctorProp.value, 0)
+    printf("constructor is: %s\n", ctor)
     if (ctor.valueType == TypeIds.VmCodeOfs) {
-      vmState.doCall(argc - 1, ctor.value, ctor.id, tadsObject.id,
-                     ctor.definingObject, tadsObject.id)
+      // invoke the constructor, either nested or non-nested. Since ZMPP
+      // has the VM state accessible from every object and meta class,
+      // we actually do not need to have a nested call, we just do it to
+      // synchronize with the iteration numbers in the reference implementation
+      if (fromCreateInstance) {
+        // if we were called from createInstance(), we need to register the
+        // object, because we are calling a nested invokation
+        objectSystem.registerObject(tadsObject)
+        val executor = new Executor(vmState)
+        executor.doNestedCall(ctorArgc, ctor.value, ctor.id, tadsObject.id,
+                            ctor.definingObject, tadsObject.id)
+      } else {
+        vmState.doCall(ctorArgc, ctor.value, ctor.id, tadsObject.id,
+                       ctor.definingObject, tadsObject.id)
+      }
     } else if (ctor != InvalidProperty) {
       throw new UnsupportedOperationException("unknown constructor type: " + ctor)
     }

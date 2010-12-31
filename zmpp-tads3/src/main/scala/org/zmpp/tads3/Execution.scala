@@ -240,7 +240,24 @@ class Executor(vmState: TadsVMState) {
       executeInstruction
     }
   }
-  
+
+  // Call the function
+  // and execute the callback until we return to the same point
+  // we can return when after a return
+  // sp[aftercall] = sp[beforecall] - argc
+  def doNestedCall(argc: Int, targetOffs: Int,
+                   targetProp: Int, origTargetObj: T3ObjectId,
+                   definingObj: T3ObjectId, self: T3ObjectId) {
+    printf("SP BEFORE NESTED = %d\n", vmState.stack.sp)
+    vmState.callbackSP = vmState.stack.sp - argc
+    vmState.doCall(argc, targetOffs, targetProp, origTargetObj,
+                   definingObj, self)
+    while (vmState.callbackSP >= 0) {
+      executeInstruction
+    }
+    printf("SP AFTER NESTED = %d\n", vmState.stack.sp)
+  }
+
   def executeCallback(callback: T3Value, argc: Int) {
     printf("executeCallback(), %s, argc: %d\n", callback, argc)
     if (callback.valueType == VmObj) {
@@ -253,6 +270,7 @@ class Executor(vmState: TadsVMState) {
       val prop = obj.getProperty(objectCallProp.value, 0)
       //printf("executeCallback() - PROP FOUND: %s\n", prop)
       if (prop.valueType == VmFuncPtr) {
+/*
         // Call the function
         // and execute the callback until we return to the same point
         // we can return when after a return
@@ -265,6 +283,8 @@ class Executor(vmState: TadsVMState) {
           executeInstruction
         }
         printf("SP AFTER CALLBACK = %d\n", vmState.stack.sp)
+*/
+        doNestedCall(argc, prop.value, 0, objectId, prop.definingObject, objectId)
       } else {
         throw new IllegalArgumentException("ObjectCallProp is not a function pointer")
       }
@@ -609,7 +629,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 32945) {
+    if (iteration == 41981) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
