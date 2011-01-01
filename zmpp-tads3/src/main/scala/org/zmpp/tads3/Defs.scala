@@ -102,6 +102,9 @@ abstract class T3Value {
   def mustBeInt: Unit = {
     throw new IntValRequiredException
   }
+  def mustBePropertyId: Unit = {
+    throw new IllegalArgumentException("%s is not a property".format(this))
+  }
 }
 
 object T3Nil extends T3Value {
@@ -129,6 +132,7 @@ class T3ListConstant(override val value: Int) extends T3Value {
 class T3PropertyId(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmProp
   override def toString = "property (value = %d)".format(value)
+  override def mustBePropertyId { } 
 }
 class T3ObjectId(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmObj

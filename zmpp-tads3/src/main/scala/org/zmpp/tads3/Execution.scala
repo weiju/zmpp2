@@ -503,24 +503,22 @@ class Executor(vmState: TadsVMState) {
         val argc = varargc
         val prop = vmState.stack.pop
         val targetValue = vmState.stack.pop
-        if (prop.valueType != VmProp) {
-          throw new IllegalArgumentException("%s is not a property".format(prop))
-        }
+        prop.mustBePropertyId
         callProp(argc, targetValue, prop.value)
       case PtrCallPropSelf =>
         val argc = varargc
         val prop = vmState.stack.pop
-        if (prop.valueType != VmProp) {
-          throw new IllegalArgumentException("%s is not a property".format(prop))
-        }
+        prop.mustBePropertyId
         callProp(argc, vmState.currentSelf, prop.value)
       case PtrDelegate  =>
         val argc = varargc
         throw new UnsupportedOperationException("TODO")
       case PtrExpInherit =>
-        val argc  = varargc
-        val objId = nextIntOperand
-        throw new UnsupportedOperationException("TODO")
+        val argc   = varargc
+        val objId  = new T3ObjectId(nextIntOperand)
+        val prop = vmState.stack.pop
+        prop.mustBePropertyId
+        callProp(argc, objId, prop.value)
       case PtrInherit   => inheritProperty(varargc, vmState.stack.pop)
       case PtrSetProp   =>
         val propId   = vmState.stack.pop
@@ -634,7 +632,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 42081) {
+    if (iteration == 42185) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
