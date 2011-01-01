@@ -90,15 +90,17 @@ extends AbstractT3Object(id, vmState, isTransient) {
     printf("'%s'.findReplace('%s', '%s', %b, %d)\n", string, origStr, newStr,
            replaceAll, index)
     val result = if (index > 1) {
+      // TODO: this currently has one flaw: String.replaceFirst works on regexes, not on
+      // strings.
       if (replaceAll) {
         string.substring(0, index - 1) +
-          string.substring(index - 1).replaceAll(origStr.string, newStr.string)
+          string.substring(index - 1).replace(origStr.string, newStr.string)
       } else {
         string.substring(0, index - 1) +
           string.substring(index - 1).replaceFirst(origStr.string, newStr.string)
       }
     } else {
-      if (replaceAll) string.replaceAll(origStr.string, newStr.string)
+      if (replaceAll) string.replace(origStr.string, newStr.string)
       else string.replaceFirst(origStr.string, newStr.string)
     }
     printf("findReplace(), result string is: '%s'\n", result)
