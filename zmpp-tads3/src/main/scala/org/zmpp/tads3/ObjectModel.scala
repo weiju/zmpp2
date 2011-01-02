@@ -384,8 +384,10 @@ class ObjectSystem {
     else listMetaClass.createListConstant(offset)
   }
   def stringConstantWithOffset(offset: T3SString) = {
-    if (_constantCache.containsKey(offset.value)) _constantCache(offset.value)
-    else stringMetaClass.createStringConstant(offset)
+    if (_constantCache.containsKey(offset.value))
+      _constantCache(offset.value).asInstanceOf[TadsStringConstant]
+    else
+      stringMetaClass.createStringConstant(offset)
   }
 
   def isList(value: T3Value): Boolean = value.valueType match {

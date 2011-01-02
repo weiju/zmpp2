@@ -54,7 +54,10 @@ extends AbstractT3Object(id, vmState, isTransient) {
         objectSystem.stringConstantWithOffset(other.asInstanceOf[T3SString])
       printf("string.t3vmEquals() (%d) '%s', other(%d) = '%s'\n",
              id.value, this, otherString.id.value, otherString)
-      this.string.equals(otherString.asInstanceOf[TadsString].string)
+      // we not only have to compare the underlying strings, but in addition
+      // also their lengths. TADS3 seems to make use of funny non-printable
+      // characters and Java does not include them in the comparison
+      this.length == otherString.length && this.string.equals(otherString.string)
     } else {
       throw new UnsupportedOperationException("unsupported T3value type")
     }
