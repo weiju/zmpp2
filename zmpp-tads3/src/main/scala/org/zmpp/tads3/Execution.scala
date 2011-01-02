@@ -270,20 +270,6 @@ class Executor(vmState: TadsVMState) {
       val prop = obj.getProperty(objectCallProp.value, 0)
       //printf("executeCallback() - PROP FOUND: %s\n", prop)
       if (prop.valueType == VmFuncPtr) {
-/*
-        // Call the function
-        // and execute the callback until we return to the same point
-        // we can return when after a return
-        // sp[aftercall] = sp[beforecall] - argc
-        //printf("SP BEFORE CALLBACK = %d\n", vmState.stack.sp)
-        vmState.callbackSP = vmState.stack.sp - argc
-        vmState.doCall(argc, prop.value, 0, objectId,
-                       prop.definingObject, objectId)
-        while (vmState.callbackSP >= 0) {
-          executeInstruction
-        }
-        printf("SP AFTER CALLBACK = %d\n", vmState.stack.sp)
-*/
         doNestedCall(argc, prop.value, 0, objectId, prop.definingObject, objectId)
       } else {
         throw new IllegalArgumentException("ObjectCallProp is not a function pointer")
@@ -514,11 +500,13 @@ class Executor(vmState: TadsVMState) {
         val argc = varargc
         throw new UnsupportedOperationException("TODO")
       case PtrExpInherit =>
+        // expinherit works in a funny way: search for a property starding from
+        // the target, but preserve the current self reference
         val argc   = varargc
         val objId  = new T3ObjectId(nextIntOperand)
         val prop = vmState.stack.pop
         prop.mustBePropertyId
-        callProp(argc, objId, prop.value)
+        callProp(argc, objId, prop.value, true)
       case PtrInherit   => inheritProperty(varargc, vmState.stack.pop)
       case PtrSetProp   =>
         val propId   = vmState.stack.pop
@@ -632,15 +620,15 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 42284) {
+    if (iteration == 42719) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
-/*
-    if (iteration >= 17618) {
+
+    if (iteration >= 42075 && iteration < 42079) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
-    }*/
+    }
   }
 
   private def say {
@@ -791,7 +779,8 @@ class Executor(vmState: TadsVMState) {
   // a no-eval and an eval step, which is combined here for the moment
   // to see whether we find a factorization that fits better into the
   // Scala application context
-  private def callProp(argc: Int, targetVal: T3Value, propId: Int) {
+  private def callProp(argc: Int, targetVal: T3Value, propId: Int,
+                       useCurrentSelf: Boolean = false) {
     printf("callProp(%s, %d, %d)\n", targetVal, argc, propId)
 
     if (targetVal.valueType == VmObj) {
@@ -800,7 +789,7 @@ class Executor(vmState: TadsVMState) {
       val prop = obj.getProperty(propId, argc)
       if (prop != InvalidProperty) {
         printf("callProp() - Property found: %s\n", prop)
-        evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc)
+        evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc, useCurrentSelf)
       } else {
         printf("prop not found in sef or super -> lookin' for propNotDefined()\n")
         // check whether propNotDefined is available
@@ -815,7 +804,8 @@ class Executor(vmState: TadsVMState) {
           printf("SEARCH %s.'propNotDefined': %s -> [%s]\n", obj, propNotDefined, pndProp)
           if (pndProp.valueType == VmCodeOfs) {
             vmState.stack.pushPropertyId(propId)
-            evalProperty(targetVal.asInstanceOf[T3ObjectId], pndProp, argc + 1)
+            evalProperty(targetVal.asInstanceOf[T3ObjectId], pndProp, argc + 1,
+                         useCurrentSelf)
           } else {
             throw new UnsupportedOperationException("propNotDefined is not a method")
           }
@@ -838,12 +828,20 @@ class Executor(vmState: TadsVMState) {
     } else throw new ObjectValRequiredException
   }
 
-  private def evalProperty(self: T3ObjectId, property: Property, argc: Int) {
-    //printf("evalProperty(%s) [self = %s]\n", property, self)
+  private def evalProperty(targetObj: T3ObjectId, property: Property, argc: Int,
+                           useCurrentSelf: Boolean) {
+    printf("evalProperty(%s) [target = %s, self = %s]\n", property, targetObj,
+           vmState.currentSelf)
     property.valueType match {
       case VmCodeOfs =>
-        vmState.doCall(argc, property.value, property.id, self,
-                      property.definingObject, self)
+        if (useCurrentSelf) {
+          vmState.doCall(argc, property.value, property.id, targetObj,
+                         property.definingObject,
+                         vmState.currentSelf.asInstanceOf[T3ObjectId])
+        } else {
+          vmState.doCall(argc, property.value, property.id, targetObj,
+                         property.definingObject, targetObj)
+        }
       case VmDString =>
         throw new UnsupportedOperationException("TODO: DOUBLE QUOTED STRING")
       case _         => vmState.r0 = property.tadsValue
@@ -856,7 +854,7 @@ class Executor(vmState: TadsVMState) {
     val prop = definingObject.inheritProperty(propId.value, argc)
     //printf("inheritProperty() - PROP FOUND: %s\n", prop)
     if (prop != InvalidProperty) {
-      evalProperty(vmState.currentSelf.asInstanceOf[T3ObjectId], prop, argc)
+      evalProperty(vmState.currentSelf.asInstanceOf[T3ObjectId], prop, argc, false)
     } else {
       // TODO: check if propNotDefined is available
       throw new UnsupportedOperationException("TODO: property not found, " +
