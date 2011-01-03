@@ -206,6 +206,7 @@ class TadsVMState(val objectSystem: ObjectSystem,
 // I believe that this is one of the cleaner solutions to realize the nested
 // execution in TADS3
 class Executor(vmState: TadsVMState) {
+  import T3Assert._
   val objectSystem       = vmState.objectSystem
   val functionSetMapper  = vmState.functionSetMapper
   var iteration          = 1
@@ -620,12 +621,12 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 43191) {
+    if (iteration == 43611) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 /*
-    if (iteration >= 42713 && iteration <= 42716) {
+    if (iteration == 43196) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }*/
@@ -843,7 +844,10 @@ class Executor(vmState: TadsVMState) {
                          property.definingObject, targetObj)
         }
       case T3DString(poolOffset) =>
-        throw new UnsupportedOperationException("TODO: DOUBLE QUOTED STRING")
+        // self-printing string, convert to sstring and invoke say method
+        argc must_== 0
+        vmState.stack.pushSString(poolOffset)
+        say
       case _         => vmState.r0 = property.tadsValue
     }
   }
