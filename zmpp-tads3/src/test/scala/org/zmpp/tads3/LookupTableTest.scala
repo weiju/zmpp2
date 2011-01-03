@@ -106,5 +106,14 @@ object LookupTableSpec extends Specification {
       lookupTable.entryCount must_== 1
       lookupTable.isKeyPresent(T3Integer(3)) must beTrue
     }
+    "invoke keysToList" in {
+      val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
+      lookupTable(T3Integer(3)) = T3Integer(42)
+      lookupTable(T3Integer(5)) = T3Integer(43)
+
+      val listId = lookupTable.keysToList
+      val keys = objectSystem.objectWithId(listId).asInstanceOf[TadsList]
+      keys.size must_== 2
+    }
   }
 }

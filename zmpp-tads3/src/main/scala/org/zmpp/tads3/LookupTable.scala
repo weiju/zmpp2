@@ -85,6 +85,10 @@ extends AbstractT3Object(id, vmState, isTransient) {
     })
   }
 
+  def keysToList: T3ObjectId = {
+    objectSystem.listMetaClass.createList(_keys.toSeq).id
+  }
+
   private def makeHash(key: T3Value) = {
     if (key.valueType == VmSString) {
       objectSystem.stringConstantWithOffset(key.asInstanceOf[T3SString]).hashCode
@@ -153,7 +157,8 @@ extends AbstractMetaClass(objectSystem) {
     T3Nil
   }
   def keysToList(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("keysToList")
+    argc must_== 0
+    obj.asInstanceOf[LookupTable].keysToList
   }
   def valsToList(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("valsToList")
