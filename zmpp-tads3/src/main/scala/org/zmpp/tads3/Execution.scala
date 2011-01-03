@@ -434,6 +434,10 @@ class Executor(vmState: TadsVMState) {
       case JNotNil      => branchIfTrue(vmState.stack.pop != T3Nil)
       case JR0T         => branchIfTrue(vmState.r0.isTrue)
       case JR0F         => branchIfTrue(!vmState.r0.isTrue)
+      case Jsf          =>
+        val stackTop = vmState.stack.top
+        if (stackTop.isTrue) vmState.stack.pop
+        branchIfTrue(!stackTop.isTrue)
       case Jst          =>
         val stackTop = vmState.stack.top
         if (!stackTop.isTrue) vmState.stack.pop
@@ -621,12 +625,12 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 43616) {
+    if (iteration == 43622) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 /*
-    if (iteration == 43196) {
+    if (iteration == 24) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }*/

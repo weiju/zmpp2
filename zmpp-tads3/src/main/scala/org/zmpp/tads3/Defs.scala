@@ -455,7 +455,7 @@ object OpcodeNames {
     JNotNil         -> "JNOTNIL",
     JR0T            -> "JR0T",
     JR0F            -> "JR0F",
-    Jsf             -> "JSB",
+    Jsf             -> "JSF",
     Jst             -> "JST",
     Jt              -> "JT",
     Le              -> "LE",

@@ -130,6 +130,19 @@ extends T3Object {
       throw new UnsupportedOperationException("ofKind TODO")
     }
   }
+
+  def propType(propId: T3PropertyId): T3Value = {
+    val prop = getProperty(propId.value, 0)
+    printf("RootObject.propType(%s): prop is: %s\n", propId, prop)
+    if (prop == InvalidProperty) return T3Nil
+    prop.tadsValue match {
+      case _:T3ObjectId =>
+        // string objects should be returned as VmSString according to ref
+        // list objects as VmList according to ref
+        throw new UnsupportedOperationException("TODO propType on objects")
+      case _ => T3Integer(prop.valueType)
+    }
+  }
 }
 
 // The top level meta class, the super meta of any other class
@@ -174,7 +187,8 @@ extends AbstractMetaClass(objectSystem) {
     obj.propDefined(prop, flags)
   }
   def propType(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("propType")
+    argc must_== 1
+    obj.propType(vmState.stack.pop.asInstanceOf[T3PropertyId])
   }
   def getPropList(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("getPropList")
