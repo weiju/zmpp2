@@ -179,7 +179,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
           throw new UnsupportedOperationException("dataType(obj) - TODO")
         }
       } else value.valueType
-      vmState.r0 = new T3Integer(resultType)
+      vmState.r0 = T3Integer(resultType)
     } else {
       throw new IllegalArgumentException("tads-gen.dataType(), " +
                                          "only 1 parameter allowed")
@@ -267,7 +267,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
       throw new UnsupportedOperationException("tads-gen.getTime(1) not implemented yet")
     } else if (timeType == TadsGenFunctionSet.GetTimeTicks) {
       val currentTicks = System.currentTimeMillis - vmState.startTime
-      vmState.r0 = new T3Integer(currentTicks.asInstanceOf[Int])
+      vmState.r0 = T3Integer(currentTicks.asInstanceOf[Int])
     } else {
       throw new IllegalArgumentException("tads-gen.getTime(%d)".format(timeType))
     }
@@ -297,7 +297,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
                                                 index)
     printf("rexMatch(%s, %s, %d) patObj = %s, searchStr = '%s' matchResult = %d\n",
            pat, str, index, patObj, searchStr, matchResult)
-    vmState.r0 = if (matchResult == -1) T3Nil else new T3Integer(matchResult)
+    vmState.r0 = if (matchResult == -1) T3Nil else T3Integer(matchResult)
   }
   private def rexSearch(argc: Int) {
     argc mustBeInRange(2, 3)
@@ -325,7 +325,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     val str = vmState.stack.pop
     val repl = vmState.stack.pop
     val flags = vmState.stack.pop
-    val index = if (argc == 5) vmState.stack.pop else T3Integer.One
+    val index = if (argc == 5) vmState.stack.pop else One
     val patObj = vmState.objectSystem.objectWithId(pat.value)
     val searchStr = vmState.objectSystem.toT3Object(str)
     val replaceStr = vmState.objectSystem.toT3Object(repl)
@@ -497,7 +497,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     argc mustBeAtLeast 1
     val infoType = vmState.stack.pop
     if (infoType.value == SysInfoInterpClass) {
-      vmState.r0 = new T3Integer(SysInfoIClassHtml)
+      vmState.r0 = T3Integer(SysInfoIClassHtml)
     } else {
       throw new UnsupportedOperationException(
         "tads-io.systemInfo(), infoType = %s\n".format(infoType))
@@ -529,7 +529,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     // setup a simple list with (InEvtLine, "") for now
     val str = objectSystem.stringMetaClass.createString("")
     val list = objectSystem.listMetaClass.createList(
-      List(new T3Integer(TadsEvent.InEvtLine), str.id))
+      List(T3Integer(TadsEvent.InEvtLine), str.id))
     tadsOutput.addString("inputLineTimeout() [TODO], str.id = %s, list.id = %s\n".format(
                        str.id, list.id))
     printf("inputLineTimeout() [TODO], str.id = %s, list.id = %s\n", str.id, list.id)
@@ -557,7 +557,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     //       where, other, windowType, align, size, sizeUnits, style)
     tadsOutput.addString("bannerCreate(%s, %s, %s, %s, %s, %s, %s, %s)\n".format(
       parent, where, other, windowType, align, size, sizeUnits, style))
-    vmState.r0 = new T3Integer(4711)
+    vmState.r0 = T3Integer(4711)
   }
   private def bannerDelete(argc: Int) {
     throw new UnsupportedOperationException("tads-io.bannerDelete() not implemented yet")
@@ -614,7 +614,7 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     val width    = nextArg
     tadsOutput.addString("logConsoleCreate(%s, %s, %s) [TODO]\n".format(
                          filename, charset, width))
-    vmState.r0 = new T3Integer(4712)
+    vmState.r0 = T3Integer(4712)
   }
   private def logConsoleClose(argc: Int) {
     throw new UnsupportedOperationException("tads-io.logConsoleClose() not " +

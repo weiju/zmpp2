@@ -322,7 +322,7 @@ class ObjectSystem {
   }
   def addStaticObject(objectId: Int, metaClassIndex: Int,
                       objAddr: Int, numBytes: Int, isTransient: Boolean) {
-    val id = new T3ObjectId(objectId)
+    val id = T3ObjectId(objectId)
     val obj = _metaClassMap(metaClassIndex).createFromImage(id, objAddr,
                                                             numBytes, isTransient)
     registerObject(obj)
@@ -344,7 +344,7 @@ class ObjectSystem {
     _maxObjectId += 1
     _maxObjectId
   }
-  def newObjectId = new T3ObjectId(newId)
+  def newObjectId = T3ObjectId(newId)
   def registerObject(obj: T3Object) {
     if (obj.id.value == 25564) printf("CREATING ODD REGEX\n")
     _objectCache(obj.id.value) = obj
@@ -353,7 +353,7 @@ class ObjectSystem {
     _constantCache(offset.value) = obj
   }
   def createFromStack(argc: Int, metaClassId: Int, isTransient: Boolean) = {
-    val id = new T3ObjectId(newId)
+    val id = T3ObjectId(newId)
     val obj = _metaClassMap(metaClassId).createFromStack(id, argc, isTransient)
     _objectCache(id.value) = obj
     id

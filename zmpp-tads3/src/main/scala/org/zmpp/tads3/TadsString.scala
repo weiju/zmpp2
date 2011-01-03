@@ -147,7 +147,7 @@ extends AbstractMetaClass(objectSystem) {
   }
   def length(obj: T3Object, argc: Int): T3Value = {
     argc must_== 0
-    new T3Integer(obj.asInstanceOf[TadsString].length)
+    T3Integer(obj.asInstanceOf[TadsString].length)
   }
   def substr(obj: T3Object, argc: Int): T3Value = {
     argc mustBeInRange(1, 2)
@@ -168,7 +168,7 @@ extends AbstractMetaClass(objectSystem) {
     val foundAt = obj.asInstanceOf[TadsString].find(
       str.asInstanceOf[TadsString], index)
     printf("find('%s', %d) in '%s' = %d\n", str, index, obj, foundAt)
-    if (foundAt == 0) T3Nil else new T3Integer(foundAt)
+    if (foundAt == 0) T3Nil else T3Integer(foundAt)
   }
   def toUnicode(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("toUnicode")

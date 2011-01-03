@@ -100,8 +100,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
     if (foundIndex > 0) {
       val groupStr =
         objectSystem.stringMetaClass.createString(currentMatcher.group)
-      val resultSeq = List(new T3Integer(foundIndex),
-                           new T3Integer(groupStr.length), groupStr.id)
+      val resultSeq = List(T3Integer(foundIndex),
+                           T3Integer(groupStr.length), groupStr.id)
       objectSystem.listMetaClass.createList(resultSeq)
     } else null
   }
@@ -110,8 +110,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
     if (groupNum <= currentMatcher.groupCount) {
       val groupStr =
         objectSystem.stringMetaClass.createString(currentMatcher.group(groupNum))
-      val resultSeq = List(new T3Integer(currentMatcher.start(groupNum) + 1),
-                           new T3Integer(groupStr.length), groupStr.id)
+      val resultSeq = List(T3Integer(currentMatcher.start(groupNum) + 1),
+                           T3Integer(groupStr.length), groupStr.id)
       objectSystem.listMetaClass.createList(resultSeq)
     } else null
   }

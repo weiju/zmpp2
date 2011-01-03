@@ -46,14 +46,14 @@ object TadsListSpec extends Specification {
       vmState = new TadsVMState(objectSystem, functionSetMapper)
     }
     "be created" in {
-      val list = new TadsList(new T3ObjectId(1), vmState, false)
+      val list = new TadsList(T3ObjectId(1), vmState, false)
       list.size must_== 0
     }
     "be initialized" in {
-      val list = new TadsList(new T3ObjectId(1), vmState, false)
-      val one = new T3Integer(1)
-      val two = new T3Integer(2)
-      val three = new T3Integer(3)
+      val list = new TadsList(T3ObjectId(1), vmState, false)
+      val one = T3Integer(1)
+      val two = T3Integer(2)
+      val three = T3Integer(3)
       list.initWith(List(one, two, three))
       list.size must_== 3
     }

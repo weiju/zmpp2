@@ -154,7 +154,7 @@ extends AbstractMetaClass(objectSystem) {
   }
   def getSize(obj: T3Object, argc: Int): T3Value = {
     argc must_== 0
-    new T3Integer(obj.asInstanceOf[Vector].size)
+    T3Integer(obj.asInstanceOf[Vector].size)
   }
   def copyFrom(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("copyFrom")
@@ -171,7 +171,7 @@ extends AbstractMetaClass(objectSystem) {
   def indexWhich(obj: T3Object, argc: Int): T3Value = {
     argc must_== 1
     val index = obj.asInstanceOf[Vector].indexWhich(vmState.stack.pop)
-    if (index == 0) T3Nil else new T3Integer(index)
+    if (index == 0) T3Nil else T3Integer(index)
   }
   def forEach(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("indexWhich")
@@ -187,7 +187,7 @@ extends AbstractMetaClass(objectSystem) {
     val value = vmState.stack.pop
     val index = obj.asInstanceOf[Vector].indexOf(value)
     printf("vector.indexOf(), argc = %d val = %s index = %d\n", argc, value, index)
-    if (index == 0) T3Nil else new T3Integer(index)
+    if (index == 0) T3Nil else T3Integer(index)
   }
   def valWhich(obj: T3Object, argc: Int): T3Value = {
     obj.asInstanceOf[Vector].valWhich(vmState.stack.pop)

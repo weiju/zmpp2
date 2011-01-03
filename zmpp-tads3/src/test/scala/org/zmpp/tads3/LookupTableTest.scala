@@ -46,65 +46,65 @@ object LookupTableSpec extends Specification {
       vmState = new TadsVMState(objectSystem, functionSetMapper)
     }
     "be created" in {
-      val lookupTable = new LookupTable(new T3ObjectId(1), vmState, false, 32, 64)
+      val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
       lookupTable.entryCount must_== 0
     }
     "add a value" in {
-      val lookupTable = new LookupTable(new T3ObjectId(1), vmState, false, 32, 64)
-      lookupTable(new T3Integer(3)) = new T3Integer(42)
+      val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
+      lookupTable(T3Integer(3)) = T3Integer(42)
 
       lookupTable.entryCount must_== 1
-      lookupTable.isKeyPresent(new T3Integer(3)) must beTrue
-      lookupTable(new T3Integer(3)) must_== new T3Integer(42)
-      lookupTable.valueAtIndex(new T3Integer(3)) must_== new T3Integer(42)
+      lookupTable.isKeyPresent(T3Integer(3)) must beTrue
+      lookupTable(T3Integer(3)) must_== T3Integer(42)
+      lookupTable.valueAtIndex(T3Integer(3)) must_== T3Integer(42)
     }
     "add a value through setValueAtIndex" in {
-      val lookupTable = new LookupTable(new T3ObjectId(1), vmState, false, 32, 64)
-      val id = lookupTable.setValueAtIndex(new T3Integer(3), new T3Integer(42))
+      val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
+      val id = lookupTable.setValueAtIndex(T3Integer(3), T3Integer(42))
 
       lookupTable.entryCount must_== 1
-      lookupTable.isKeyPresent(new T3Integer(3)) must beTrue
-      lookupTable.valueAtIndex(new T3Integer(3)) must_== new T3Integer(42)
-      lookupTable(new T3Integer(3)) must_== new T3Integer(42)
-      id must_== new T3ObjectId(1)
+      lookupTable.isKeyPresent(T3Integer(3)) must beTrue
+      lookupTable.valueAtIndex(T3Integer(3)) must_== T3Integer(42)
+      lookupTable(T3Integer(3)) must_== T3Integer(42)
+      id must_== T3ObjectId(1)
     }
     "update a value" in {
-      val lookupTable = new LookupTable(new T3ObjectId(1), vmState, false, 32, 64)
-      lookupTable(new T3Integer(3)) = new T3Integer(42)
-      lookupTable(new T3Integer(3)) = new T3Integer(43)
+      val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
+      lookupTable(T3Integer(3)) = T3Integer(42)
+      lookupTable(T3Integer(3)) = T3Integer(43)
 
       lookupTable.entryCount must_== 1
-      lookupTable.isKeyPresent(new T3Integer(3)) must beTrue
-      lookupTable(new T3Integer(3)) must_== new T3Integer(43)
+      lookupTable.isKeyPresent(T3Integer(3)) must beTrue
+      lookupTable(T3Integer(3)) must_== T3Integer(43)
     }
     "add two values" in {
-      val lookupTable = new LookupTable(new T3ObjectId(1), vmState, false, 32, 64)
-      lookupTable(new T3Integer(3)) = new T3Integer(42)
-      lookupTable(new T3Integer(4)) = new T3Integer(43)
+      val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
+      lookupTable(T3Integer(3)) = T3Integer(42)
+      lookupTable(T3Integer(4)) = T3Integer(43)
 
       lookupTable.entryCount must_== 2
-      lookupTable.isKeyPresent(new T3Integer(3)) must beTrue
-      lookupTable.isKeyPresent(new T3Integer(4)) must beTrue
-      lookupTable(new T3Integer(3)) must_== new T3Integer(42)
-      lookupTable(new T3Integer(4)) must_== new T3Integer(43)
+      lookupTable.isKeyPresent(T3Integer(3)) must beTrue
+      lookupTable.isKeyPresent(T3Integer(4)) must beTrue
+      lookupTable(T3Integer(3)) must_== T3Integer(42)
+      lookupTable(T3Integer(4)) must_== T3Integer(43)
     }
     "remove a value" in {
-      val lookupTable = new LookupTable(new T3ObjectId(1), vmState, false, 32, 64)
-      lookupTable(new T3Integer(3)) = new T3Integer(42)
+      val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
+      lookupTable(T3Integer(3)) = T3Integer(42)
 
-      val result = lookupTable.removeElement(new T3Integer(3))
-      result must_== new T3Integer(42)
+      val result = lookupTable.removeElement(T3Integer(3))
+      result must_== T3Integer(42)
       lookupTable.entryCount must_== 0
-      lookupTable.isKeyPresent(new T3Integer(3)) must beFalse
+      lookupTable.isKeyPresent(T3Integer(3)) must beFalse
     }
     "remove a non-existing value" in {
-      val lookupTable = new LookupTable(new T3ObjectId(1), vmState, false, 32, 64)
-      lookupTable(new T3Integer(3)) = new T3Integer(42)
+      val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
+      lookupTable(T3Integer(3)) = T3Integer(42)
       
-      val result = lookupTable.removeElement(new T3Integer(5))
+      val result = lookupTable.removeElement(T3Integer(5))
       result must_== T3Nil
       lookupTable.entryCount must_== 1
-      lookupTable.isKeyPresent(new T3Integer(3)) must beTrue
+      lookupTable.isKeyPresent(T3Integer(3)) must beTrue
     }
   }
 }

@@ -71,7 +71,7 @@ extends TadsCollection(id, vmState, isTransient) {
   }
   def indexOf(value: T3Value): T3Value = {
     val index = _container.indexOf(value)
-    if (index < 0) T3Nil else new T3Integer(index + 1)
+    if (index < 0) T3Nil else T3Integer(index + 1)
   }
   def createIterator(argc: Int): T3Value = {
     println("createIterator()")
@@ -143,7 +143,7 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("map")
   }
   def len(obj: T3Object, argc: Int): T3Value = {
-    new T3Integer(obj.asInstanceOf[TadsList].size)
+    T3Integer(obj.asInstanceOf[TadsList].size)
   }
   def sublist(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("sublist")

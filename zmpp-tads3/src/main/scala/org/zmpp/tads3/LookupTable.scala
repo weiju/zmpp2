@@ -145,7 +145,7 @@ extends AbstractMetaClass(objectSystem) {
   }
   def getEntryCount(obj: T3Object, argc: Int): T3Value = {
     argc must_== 0
-    new T3Integer(obj.asInstanceOf[LookupTable].entryCount)
+    T3Integer(obj.asInstanceOf[LookupTable].entryCount)
   }
   def forEachAssoc(obj: T3Object, argc: Int): T3Value = {
     argc must_== 1

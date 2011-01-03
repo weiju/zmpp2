@@ -44,19 +44,19 @@ object RegexPatternSpec extends Specification {
   def makePattern(id: Int, str: String) = {
     val mockObjectSystem = new ObjectSystem {
       override def stringConstantWithOffset(offset: T3SString): TadsString = {
-        val t3str = new TadsString(new T3ObjectId(1), vmState, false)
+        val t3str = new TadsString(T3ObjectId(1), vmState, false)
         t3str.init(str)
         t3str
       }
     }
     val mockVmState = new TadsVMState(mockObjectSystem, functionSetMapper)
-    val result = new RegexPattern(new T3ObjectId(id), mockVmState, false)
-    result.init(new T3SString(4711)) // only a dummy
+    val result = new RegexPattern(T3ObjectId(id), mockVmState, false)
+    result.init(T3SString(4711)) // only a dummy
     result
   }
 
   def makeString(id: Int, str: String) = {
-    val result = new TadsString(new T3ObjectId(id), vmState, false)
+    val result = new TadsString(T3ObjectId(id), vmState, false)
     result.init(str)
     result
   }
@@ -82,11 +82,11 @@ object RegexPatternSpec extends Specification {
       pattern.compile
       pattern.javaPatternString must_== "<\\.(/?[a-z][a-z0-9]*)>"
       val s1 = pattern.search(makeString(1, "<.p0><title>"), 1)
-      s1.valueAtIndex(new T3Integer(1)) must_== new T3Integer(1)
-      s1.valueAtIndex(new T3Integer(2)) must_== new T3Integer(5)
+      s1.valueAtIndex(T3Integer(1)) must_== T3Integer(1)
+      s1.valueAtIndex(T3Integer(2)) must_== T3Integer(5)
       val s2 = pattern.search(makeString(2, "some<.p0><title>"), 1)
-      s2.valueAtIndex(new T3Integer(1)) must_== new T3Integer(5)
-      s2.valueAtIndex(new T3Integer(2)) must_== new T3Integer(5)
+      s2.valueAtIndex(T3Integer(1)) must_== T3Integer(5)
+      s2.valueAtIndex(T3Integer(2)) must_== T3Integer(5)
       pattern.search(makeString(2, "sometext"), 1) must beNull
 
       val pattern2 = makePattern(20, "(<langle><dot>[pP]0?<rangle>)+")
@@ -102,9 +102,9 @@ object RegexPatternSpec extends Specification {
       pattern.search(makeString(1, "<.p0><title>"), 1)
       val matchGroup = pattern.group(1)
       matchGroup.size must_== 3
-      matchGroup.valueAtIndex(new T3Integer(1)) must_== new T3Integer(3)
-      matchGroup.valueAtIndex(new T3Integer(2)) must_== new T3Integer(2)
-      matchGroup.valueAtIndex(new T3Integer(3)).valueType must_== TypeIds.VmObj
+      matchGroup.valueAtIndex(T3Integer(1)) must_== T3Integer(3)
+      matchGroup.valueAtIndex(T3Integer(2)) must_== T3Integer(2)
+      matchGroup.valueAtIndex(T3Integer(3)).valueType must_== TypeIds.VmObj
     }
   }
 }

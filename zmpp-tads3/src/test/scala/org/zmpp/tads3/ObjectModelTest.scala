@@ -41,9 +41,9 @@ object ObjectModelSpec extends Specification {
 
   "T3ObjectId" should {
     "be equal" in {
-      val objId42      = new T3ObjectId(42)
-      val objId43      = new T3ObjectId(43)
-      val objId42too   = new T3ObjectId(42)
+      val objId42      = T3ObjectId(42)
+      val objId43      = T3ObjectId(43)
+      val objId42too   = T3ObjectId(42)
       val objId42three = T3Value.create(TypeIds.VmObj, 42)
       val int42        = T3Value.create(TypeIds.VmInt, 42)
 
@@ -75,25 +75,25 @@ object ObjectModelSpec extends Specification {
       vmState = new TadsVMState(objectSystem, functionSetMapper)
     }
     "be created" in {
-      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 0, 0, false)
+      val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
       obj.metaClass.name must_== "tads-object"
     }
     "get non-existing" in {
-      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 0, 0, false)
+      val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
       obj.getProperty(2831, 0) must_== InvalidProperty
       obj.numProperties must_== 0
     }
     "set non-existing" in {
-      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 0, 0, false)
-      val testVal = new T3Integer(4711)
+      val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
+      val testVal = T3Integer(4711)
       obj.setProperty(2831, testVal)
       obj.numProperties must_== 1
       obj.getProperty(2831, 0).tadsValue must_== testVal
     }
     "overwrite existing" in {
-      val obj = new TadsObject(new T3ObjectId(1), vmState, false, 0, 0, false)
-      val testVal1 = new T3Integer(4711)
-      val testVal2 = new T3Integer(4712)
+      val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
+      val testVal1 = T3Integer(4711)
+      val testVal2 = T3Integer(4712)
       obj.setProperty(2831, testVal1)
       obj.setProperty(2831, testVal2)
       obj.numProperties must_== 1

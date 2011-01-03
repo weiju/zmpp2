@@ -46,46 +46,46 @@ object VectorSpec extends Specification {
       vmState = new TadsVMState(objectSystem, functionSetMapper)
     }
     "be created" in {
-      val vector = new Vector(new T3ObjectId(1), vmState, false)
+      val vector = new Vector(T3ObjectId(1), vmState, false)
       vector.metaClass.name must_== "vector"
       vector.size must_== 0
     }
     "append an element" in {
-      val vector = new Vector(new T3ObjectId(1), vmState, false)
-      val value = new T3Integer(4711)
+      val vector = new Vector(T3ObjectId(1), vmState, false)
+      val value = T3Integer(4711)
       vector.append(value)
       vector.size must_== 1
-      vector.valueAtIndex(new T3Integer(1)) must_== value
+      vector.valueAtIndex(T3Integer(1)) must_== value
     }
     "insert an element at position 1" in {
-      val vector = new Vector(new T3ObjectId(1), vmState, false)
-      val value0 = new T3Integer(0)
-      val value1 = new T3Integer(1)
+      val vector = new Vector(T3ObjectId(1), vmState, false)
+      val value0 = T3Integer(0)
+      val value1 = T3Integer(1)
       vector.append(value0)
       vector.insertAt(1, value1)
       vector.size must_== 2
-      vector.valueAtIndex(new T3Integer(1)) must_== value1
-      vector.valueAtIndex(new T3Integer(2)) must_== value0
+      vector.valueAtIndex(T3Integer(1)) must_== value1
+      vector.valueAtIndex(T3Integer(2)) must_== value0
     }
     "insert an element at the end" in {
-      val vector = new Vector(new T3ObjectId(1), vmState, false)
-      val value0 = new T3Integer(0)
-      val value1 = new T3Integer(1)
+      val vector = new Vector(T3ObjectId(1), vmState, false)
+      val value0 = T3Integer(0)
+      val value1 = T3Integer(1)
       vector.append(value0)
       vector.insertAt(2, value1)
       vector.size must_== 2
-      vector.valueAtIndex(new T3Integer(1)) must_== value0
-      vector.valueAtIndex(new T3Integer(2)) must_== value1
+      vector.valueAtIndex(T3Integer(1)) must_== value0
+      vector.valueAtIndex(T3Integer(2)) must_== value1
     }
     "determine indexOf()" in {
-      val vector = new Vector(new T3ObjectId(1), vmState, false)
-      val value0 = new T3Integer(0)
-      val value1 = new T3Integer(1)
-      val value2 = new T3Integer(2)
-      val value3 = new T3Integer(3)
-      val value4 = new T3Integer(4)
-      val value5 = new T3Integer(5)
-      val value6 = new T3Integer(6)
+      val vector = new Vector(T3ObjectId(1), vmState, false)
+      val value0 = T3Integer(0)
+      val value1 = T3Integer(1)
+      val value2 = T3Integer(2)
+      val value3 = T3Integer(3)
+      val value4 = T3Integer(4)
+      val value5 = T3Integer(5)
+      val value6 = T3Integer(6)
       vector.append(value0)
       vector.append(value1)
       vector.append(value2)

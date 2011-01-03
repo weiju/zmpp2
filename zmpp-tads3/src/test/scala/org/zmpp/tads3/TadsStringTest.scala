@@ -40,7 +40,7 @@ object TadsStringSpec extends Specification {
   var vmState : TadsVMState = null
   
   def makeString(id: Int, str: String) = {
-    val result = new TadsString(new T3ObjectId(id), vmState, false)
+    val result = new TadsString(T3ObjectId(id), vmState, false)
     result.init(str)
     result
   }

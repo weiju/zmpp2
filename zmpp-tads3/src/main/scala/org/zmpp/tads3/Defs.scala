@@ -82,7 +82,7 @@ object TadsConstants {
  * an integer value as well, which however is an offset into a constant
  * pool.
  */
-abstract class T3Value {
+sealed abstract class T3Value {
   def isTrue = true
   def valueType: Int
   def value = 0
@@ -107,34 +107,36 @@ abstract class T3Value {
   }
 }
 
-object T3Nil extends T3Value {
+case object T3Nil extends T3Value {
   override def isTrue = false
   def valueType = TypeIds.VmNil
   override def toString = "nil"
 }
-object T3True extends T3Value {
+
+case object T3True extends T3Value {
   def valueType = TypeIds.VmTrue
   override def value = 1
   override def toString = "true"
 }
-object T3Empty extends T3Value {
+
+case object T3Empty extends T3Value {
   def valueType = TypeIds.VmEmpty
   override def toString = "EMPTY"
   override def t3vmEquals(other: T3Value): Boolean = false
 }
-class T3ListConstant(override val value: Int) extends T3Value {
+case class T3ListConstant(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmList
   override def toString = "list (offset = %d)".format(value)
   override def t3vmEquals(other: T3Value): Boolean = {
     throw new UnsupportedOperationException("not implemented yet")
   }
 }
-class T3PropertyId(override val value: Int) extends T3Value {
+case class T3PropertyId(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmProp
   override def toString = "property (value = %d)".format(value)
   override def mustBePropertyId { } 
 }
-class T3ObjectId(override val value: Int) extends T3Value {
+case class T3ObjectId(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmObj
   override def toString = "objectid (value = %d)".format(value)
   override def t3vmEquals(other: T3Value): Boolean = {
@@ -143,25 +145,25 @@ class T3ObjectId(override val value: Int) extends T3Value {
     else throw new UnsupportedOperationException("not implemented yet")
   }
 }
-class T3CodeOffset(override val value: Int) extends T3Value {
+case class T3CodeOffset(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmCodeOfs
   override def toString = "code-offset (value = %d)".format(value)
 }
-class T3Integer(override val value: Int) extends T3Value {
+case class T3Integer(override val value: Int) extends T3Value {
   override def isTrue = value != 0
   def valueType = TypeIds.VmInt
   override def toString = "integer (value = %d)".format(value)
   override def mustBeInt { }
 }
-class T3FunctionPointer(override val value: Int) extends T3Value {
+case class T3FunctionPointer(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmFuncPtr
   override def toString = "function-ptr (value = %d)".format(value)
 }
-class T3StackRef(override val value: Int) extends T3Value {
+case class T3StackRef(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmStack
   override def toString = "stack (value = %d)".format(value)
 }
-class T3SString(override val value: Int) extends T3Value {
+case class T3SString(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmSString
   override def toString = "sstring (value = %d)".format(value)
   override def t3vmEquals(other: T3Value): Boolean = {
@@ -169,24 +171,24 @@ class T3SString(override val value: Int) extends T3Value {
       "comparison needs to be on the underlying string object")
   }
 }
-class T3DString(override val value: Int) extends T3Value {
+case class T3DString(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmDString
   override def toString = "dstring (value = %d)".format(value)
   override def t3vmEquals(other: T3Value): Boolean = {
     throw new UnsupportedOperationException("not implemented yet")
   }
 }
-class T3Enum(override val value: Int) extends T3Value {
+case class T3Enum(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmEnum
   override def toString = "enum (value = %d)".format(value)
 }
 
-object T3Integer {
-  val Zero = new T3Integer(0)
-  val One  = new T3Integer(1)
-}
+object Zero extends T3Integer(0)
+object One  extends T3Integer(1)
+
 object InvalidObjectId extends T3ObjectId(0)
 object InvalidPropertyId extends T3PropertyId(0)
+
 object T3Value {
   def readDataHolder(memory: Memory, address: Int) = {
     val valueType = memory.byteAt(address)
@@ -199,17 +201,17 @@ object T3Value {
     valueType match {
       case VmNil     => T3Nil
       case VmTrue    => T3True
-      case VmStack   => new T3StackRef(value)
-      case VmObj     => new T3ObjectId(value)
-      case VmProp    => new T3PropertyId(value)
-      case VmInt     => new T3Integer(value)
-      case VmSString => new T3SString(value)
-      case VmDString => new T3DString(value)
-      case VmList    => new T3ListConstant(value)
-      case VmCodeOfs => new T3CodeOffset(value)
-      case VmFuncPtr => new T3FunctionPointer(value)
+      case VmStack   => T3StackRef(value)
+      case VmObj     => T3ObjectId(value)
+      case VmProp    => T3PropertyId(value)
+      case VmInt     => T3Integer(value)
+      case VmSString => T3SString(value)
+      case VmDString => T3DString(value)
+      case VmList    => T3ListConstant(value)
+      case VmCodeOfs => T3CodeOffset(value)
+      case VmFuncPtr => T3FunctionPointer(value)
       case VmEmpty   => T3Empty
-      case VmEnum    => new T3Enum(value)
+      case VmEnum    => T3Enum(value)
       case _         => throw new IllegalArgumentException("illegal value type: "
                                                            + valueType)
     }
@@ -222,18 +224,18 @@ class Stack {
   var sp = 0
 
   def size = _stack.length
-  def pushCodeOffset(offset: Int) = push(new T3CodeOffset(offset))
-  def pushEnum(value: Int) = push(new T3Enum(value))
-  def pushFunctionPointer(offset: Int) = push(new T3FunctionPointer(offset))
-  def pushInt(value: Int) = push(new T3Integer(value)) 
-  def pushList(offset: Int) = push(new T3ListConstant(offset))
+  def pushCodeOffset(offset: Int) = push(T3CodeOffset(offset))
+  def pushEnum(value: Int) = push(T3Enum(value))
+  def pushFunctionPointer(offset: Int) = push(T3FunctionPointer(offset))
+  def pushInt(value: Int) = push(T3Integer(value)) 
+  def pushList(offset: Int) = push(T3ListConstant(offset))
   def pushNil = push(T3Nil)
-  def pushObjectId(id: Int) = push(new T3ObjectId(id))
-  def pushPropertyId(id: Int) = push(new T3PropertyId(id))
-  def pushSString(value: Int) = push(new T3SString(value))
-  def pushStackRef(value: Int) = push(new T3StackRef(value))
-  def push0 = push(T3Integer.Zero)
-  def push1 = push(T3Integer.One)
+  def pushObjectId(id: Int) = push(T3ObjectId(id))
+  def pushPropertyId(id: Int) = push(T3PropertyId(id))
+  def pushSString(value: Int) = push(T3SString(value))
+  def pushStackRef(value: Int) = push(T3StackRef(value))
+  def push0 = push(Zero)
+  def push1 = push(One)
 
   def push(value: T3Value) = {
     _stack(sp) = value

@@ -83,7 +83,7 @@ class TadsVMState(val objectSystem: ObjectSystem,
 
     // call initial function
     // push empty list on stack - QTads puts command line arguments in that list
-    val argList = new T3ListConstant(0)
+    val argList = T3ListConstant(0)
     stack.push(argList)
     doCall(1, image.startEntryPoint, 0,
            InvalidObjectId, InvalidObjectId, InvalidObjectId)
@@ -357,10 +357,10 @@ class Executor(vmState: TadsVMState) {
       case CallPropSelf => callProp(varargc, vmState.currentSelf,
                                     nextShortOperand)
       case Dec          =>
-        vmState.stack.push(sub(vmState.stack.pop, T3Integer.One))
+        vmState.stack.push(sub(vmState.stack.pop, One))
       case DecLcl       =>
         val localNum = nextShortOperand
-        vmState.setLocal(localNum, sub(vmState.getLocal(localNum), T3Integer.One))
+        vmState.setLocal(localNum, sub(vmState.getLocal(localNum), One))
       case Delegate     =>
         val argc = varargc
         val propId = nextShortOperand
@@ -387,13 +387,13 @@ class Executor(vmState: TadsVMState) {
       case GetPropR0    => callProp(0, vmState.r0, nextShortOperand)
       case GetPropSelf  => callProp(0, vmState.currentSelf, nextShortOperand)
       case GetR0        => vmState.stack.push(vmState.r0)
-      case IdxInt8      => index(vmState.stack.pop, new T3Integer(nextByteOperand))
+      case IdxInt8      => index(vmState.stack.pop, T3Integer(nextByteOperand))
       case IdxLcl1Int8  => index(vmState.getLocal(nextByteOperand),
-                                 new T3Integer(nextByteOperand))
-      case Inc          => vmState.stack.push(add(vmState.stack.pop, T3Integer.One))
+                                 T3Integer(nextByteOperand))
+      case Inc          => vmState.stack.push(add(vmState.stack.pop, One))
       case IncLcl       =>
         val localNum = nextShortOperand
-        vmState.setLocal(localNum, add(vmState.getLocal(localNum), T3Integer.One))
+        vmState.setLocal(localNum, add(vmState.getLocal(localNum), One))
       case Index        =>
         val indexVal = vmState.stack.pop
         index(vmState.stack.pop, indexVal)
@@ -476,14 +476,14 @@ class Executor(vmState: TadsVMState) {
       case Not          =>
         vmState.stack.push(not(vmState.stack.pop))
       case ObjCallProp  =>
-        callProp(varargc, new T3ObjectId(nextIntOperand),
+        callProp(varargc, T3ObjectId(nextIntOperand),
                  nextShortOperand)
-      case ObjGetProp   => callProp(0, new T3ObjectId(nextIntOperand),
+      case ObjGetProp   => callProp(0, T3ObjectId(nextIntOperand),
                                     nextShortOperand)
-      case ObjSetProp    => objSetProp(new T3ObjectId(nextIntOperand),
+      case ObjSetProp    => objSetProp(T3ObjectId(nextIntOperand),
                                        nextShortOperand, vmState.stack.pop)
-      case OneLcl1      => vmState.setLocal(nextByteOperand, T3Integer.One)
-      case OneLcl2      => vmState.setLocal(nextShortOperand, T3Integer.One)
+      case OneLcl1      => vmState.setLocal(nextByteOperand, One)
+      case OneLcl2      => vmState.setLocal(nextShortOperand, One)
       case PtrCall      => ptrCall(varargc)
       case PtrCallProp  =>
         val argc = varargc
@@ -503,7 +503,7 @@ class Executor(vmState: TadsVMState) {
         // expinherit works in a funny way: search for a property starding from
         // the target, but preserve the current self reference
         val argc   = varargc
-        val objId  = new T3ObjectId(nextIntOperand)
+        val objId  = T3ObjectId(nextIntOperand)
         val prop = vmState.stack.pop
         prop.mustBePropertyId
         callProp(argc, objId, prop.value, true)
@@ -553,7 +553,7 @@ class Executor(vmState: TadsVMState) {
       case SetIndLcl1I8 =>
         val localNumber  = nextByteOperand
         val containerVal = vmState.getLocal(localNumber)
-        val index        = new T3Integer(nextByteOperand)
+        val index        = T3Integer(nextByteOperand)
         val newVal       = vmState.stack.pop
         vmState.setLocal(localNumber, setInd(containerVal, index, newVal))
       case SetLcl1      => vmState.setLocal(nextByteOperand, vmState.stack.pop)
@@ -612,9 +612,9 @@ class Executor(vmState: TadsVMState) {
                                                           nextShortOperand, true)
       case VarArgc      => argcOverride = true
       case ZeroLcl1     =>
-        vmState.setLocal(nextByteOperand, T3Integer.Zero)
+        vmState.setLocal(nextByteOperand, Zero)
       case ZeroLcl2     =>
-        vmState.setLocal(nextShortOperand, T3Integer.Zero)
+        vmState.setLocal(nextShortOperand, Zero)
       case _            =>
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"
                                                 .format(opcode))
@@ -655,7 +655,7 @@ class Executor(vmState: TadsVMState) {
   private def add(value1: T3Value, value2: T3Value): T3Value = {
     //printf("ADD value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
-      new T3Integer(value1.value + value2.value)
+      T3Integer(value1.value + value2.value)
     } else if (value1.valueType == VmSString || value1.valueType == VmObj) {
       val obj1 = objectSystem.toT3Object(value1)
       val obj2 = objectSystem.toT3Object(value2)
@@ -671,7 +671,7 @@ class Executor(vmState: TadsVMState) {
   private def sub(value1: T3Value, value2: T3Value): T3Value = {
     //printf("SUB value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
-      new T3Integer(value1.value - value2.value)
+      T3Integer(value1.value - value2.value)
     } else if (value1.valueType == VmSString) {
       throw new UnsupportedOperationException("SString.sub not (yet) supported")
     } else if (value1.valueType == VmDString) {
