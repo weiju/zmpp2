@@ -620,15 +620,15 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 42719) {
+    if (iteration == 43191) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
-
-    if (iteration >= 42075 && iteration < 42079) {
+/*
+    if (iteration >= 42713 && iteration <= 42716) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
-    }
+    }*/
   }
 
   private def say {

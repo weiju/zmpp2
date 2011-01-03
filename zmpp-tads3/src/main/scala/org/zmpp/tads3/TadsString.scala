@@ -48,16 +48,18 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def length = string.length
   override def toString = string
   override def hashCode = string.hashCode
+  override def equals(o: Any): Boolean = o match {
+    case other: TadsString => string.equals(other.string)
+    case _ => false
+  }
+
   override def t3vmEquals(other: T3Value): Boolean = {
     if (other.valueType == VmSString) {
       val otherString =
         objectSystem.stringConstantWithOffset(other.asInstanceOf[T3SString])
       printf("string.t3vmEquals() (%d) '%s', other(%d) = '%s'\n",
              id.value, this, otherString.id.value, otherString)
-      // we not only have to compare the underlying strings, but in addition
-      // also their lengths. TADS3 seems to make use of funny non-printable
-      // characters and Java does not include them in the comparison
-      this.length == otherString.length && this.string.equals(otherString.string)
+      this.equals(otherString)
     } else {
       throw new UnsupportedOperationException("unsupported T3value type")
     }

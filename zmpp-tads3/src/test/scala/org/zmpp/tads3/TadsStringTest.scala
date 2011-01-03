@@ -92,5 +92,12 @@ object TadsStringSpec extends Specification {
       str2.substr(-3, 5).string must_== "ghi"
       str2.substr(1, 0).string must_== ""
     }
+    "when containing invisible char not equal to empty string" in {
+      // this is a strange case that happened while
+      // developing, we keep it to catch it in the future
+      val str1 = makeString(1, "\u000f")
+      val str2 = makeString(2, "")
+      str1 must_!= str2
+    }
   }
 }

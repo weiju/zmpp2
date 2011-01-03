@@ -49,17 +49,14 @@ extends AbstractT3Object(id, vmState, isTransient) {
 
   def entryCount = _keys.size
 
-  private def isString(key: T3Value) = {
-    if (key.valueType == VmSString) true
-    else if (key.valueType == VmObj) {
-      objectSystem.toT3Object(key).isOfMetaClass(objectSystem.stringMetaClass)
-    } else false
+  private def isStringOrObject(key: T3Value) = {
+    key.valueType == VmSString || key.valueType == VmObj
   }
 
   def isKeyPresent(key: T3Value) = {
     // we need to check whether the key is a string constant or a reference
     // to a string object
-    if (isString(key)) _container.contains(makeHash(key))
+    if (isStringOrObject(key)) _container.contains(makeHash(key))
     else _keys.contains(key)
   }
   // implements "array-like" access semantics
