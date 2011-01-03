@@ -766,10 +766,12 @@ class Executor(vmState: TadsVMState) {
 
   private def objSetProp(targetVal: T3Value, propId: Int,
                          newVal: T3Value) {
-    if (targetVal.valueType == VmObj) {
-      val obj = vmState.objectSystem.objectWithId(targetVal)
-      obj.setProperty(propId, newVal)
-    } else throw new ObjectValRequiredException
+    targetVal match {
+      case objectId:T3ObjectId =>
+        val obj = vmState.objectSystem.objectWithId(objectId)
+        obj.setProperty(propId, newVal)
+      case _ => throw new ObjectValRequiredException
+    }
   }
 
   // one of the central functions of the VM: evaluating properties
@@ -782,67 +784,65 @@ class Executor(vmState: TadsVMState) {
   private def callProp(argc: Int, targetVal: T3Value, propId: Int,
                        useCurrentSelf: Boolean = false) {
     printf("callProp(%s, %d, %d)\n", targetVal, argc, propId)
-
-    if (targetVal.valueType == VmObj) {
-      val obj = vmState.objectSystem.objectWithId(targetVal)
-      //printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
-      val prop = obj.getProperty(propId, argc)
-      if (prop != InvalidProperty) {
-        printf("callProp() - Property found: %s\n", prop)
-        evalProperty(targetVal.asInstanceOf[T3ObjectId], prop, argc, useCurrentSelf)
-      } else {
-        printf("prop not found in sef or super -> lookin' for propNotDefined()\n")
-        // check whether propNotDefined is available
-        val propNotDefined = vmState.image.symbolicNames("propNotDefined").t3Value
-        val pndProp = obj.getProperty(propNotDefined.value, argc)
-        if (pndProp == InvalidProperty) {
-          // there is no property defined, yet we still have to
-          // clean up our parameters
-          vmState.r0 = T3Nil
-          for (i <- 0 until argc) vmState.stack.pop
+    targetVal match {
+      case objectId:T3ObjectId =>
+        val obj = vmState.objectSystem.objectWithId(targetVal)
+        //printf("callProp(%s, %d, %d), obj: %s\n", targetVal, propId, argc, obj)
+        val prop = obj.getProperty(propId, argc)
+        if (prop != InvalidProperty) {
+          printf("callProp() - Property found: %s\n", prop)
+          evalProperty(objectId, prop, argc, useCurrentSelf)
         } else {
-          printf("SEARCH %s.'propNotDefined': %s -> [%s]\n", obj, propNotDefined, pndProp)
-          if (pndProp.valueType == VmCodeOfs) {
-            vmState.stack.pushPropertyId(propId)
-            evalProperty(targetVal.asInstanceOf[T3ObjectId], pndProp, argc + 1,
-                         useCurrentSelf)
+          printf("prop not found in sef or super -> lookin' for propNotDefined()\n")
+          // check whether propNotDefined is available
+          val propNotDefined = vmState.image.symbolicNames("propNotDefined").t3Value
+          val pndProp = obj.getProperty(propNotDefined.value, argc)
+          if (pndProp == InvalidProperty) {
+            // there is no property defined, yet we still have to
+            // clean up our parameters
+            vmState.r0 = T3Nil
+            for (i <- 0 until argc) vmState.stack.pop
           } else {
-            throw new UnsupportedOperationException("propNotDefined is not a method")
+            printf("SEARCH %s.'propNotDefined': %s -> [%s]\n", obj, propNotDefined, pndProp)
+            if (pndProp.valueType == VmCodeOfs) {
+              vmState.stack.pushPropertyId(propId)
+              evalProperty(objectId, pndProp, argc + 1, useCurrentSelf)
+            } else {
+              throw new UnsupportedOperationException("propNotDefined is not a method")
+            }
           }
         }
-      }
-    } else if (targetVal.valueType == VmList) {
-      // use constant list property evaluator
-      val list = vmState.objectSystem.listConstantWithOffset(
-        targetVal.asInstanceOf[T3ListConstant])
-      vmState.r0 =
-        vmState.objectSystem.listMetaClass.evalClassProperty(list, propId, argc)
-    } else if (targetVal.valueType == VmSString) {
-      // use constant string property evaluator
-      val str = vmState.objectSystem.stringConstantWithOffset(
-        targetVal.asInstanceOf[T3SString])
-      vmState.r0 =
-        vmState.objectSystem.stringMetaClass.evalClassProperty(str, propId, argc)
-    } else if (targetVal.valueType == VmDString) {
-      throw new UnsupportedOperationException("Cannot handle dstring constants yet")
-    } else throw new ObjectValRequiredException
+      case listConst:T3ListConstant =>
+        // use constant list property evaluator
+        val list = vmState.objectSystem.listConstantWithOffset(listConst)
+        vmState.r0 =
+          vmState.objectSystem.listMetaClass.evalClassProperty(list, propId, argc)
+      case sstring:T3SString =>
+        // use constant string property evaluator
+        val str = vmState.objectSystem.stringConstantWithOffset(sstring)
+        vmState.r0 =
+          vmState.objectSystem.stringMetaClass.evalClassProperty(str, propId, argc)
+      case dstring:T3DString =>
+        throw new UnsupportedOperationException("Cannot handle dstring constants yet")
+      case _ => throw new ObjectValRequiredException
+    }
   }
 
   private def evalProperty(targetObj: T3ObjectId, property: Property, argc: Int,
                            useCurrentSelf: Boolean) {
     printf("evalProperty(%s) [target = %s, self = %s]\n", property, targetObj,
            vmState.currentSelf)
-    property.valueType match {
-      case VmCodeOfs =>
+    property.tadsValue match {
+      case T3CodeOffset(codeOffset) =>
         if (useCurrentSelf) {
-          vmState.doCall(argc, property.value, property.id, targetObj,
+          vmState.doCall(argc, codeOffset, property.id, targetObj,
                          property.definingObject,
                          vmState.currentSelf.asInstanceOf[T3ObjectId])
         } else {
-          vmState.doCall(argc, property.value, property.id, targetObj,
+          vmState.doCall(argc, codeOffset, property.id, targetObj,
                          property.definingObject, targetObj)
         }
-      case VmDString =>
+      case T3DString(poolOffset) =>
         throw new UnsupportedOperationException("TODO: DOUBLE QUOTED STRING")
       case _         => vmState.r0 = property.tadsValue
     }
