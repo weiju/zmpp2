@@ -286,7 +286,7 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    if (iteration < 100 || iteration >= 42000)
+    if (iteration < 200 || iteration >= 42000)
       printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
              OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
@@ -625,7 +625,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 43622) {
+    if (iteration == 43858) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
@@ -658,7 +658,6 @@ class Executor(vmState: TadsVMState) {
     else throw new UnsupportedOperationException("TODO: NOT unsupported value type")
   }
   private def add(value1: T3Value, value2: T3Value): T3Value = {
-    //printf("ADD value1: %s value2: %s\n", value1, value2)
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       T3Integer(value1.value + value2.value)
     } else if (value1.valueType == VmSString || value1.valueType == VmObj) {
@@ -667,6 +666,7 @@ class Executor(vmState: TadsVMState) {
       printf("ADD, obj1 = '%s', obj2 = '%s'\n", obj1.metaClass, obj2.metaClass)
       (obj1 + obj2).id
     } else if (value1.valueType == VmList) {
+      printf("ADD value1: %s value2: %s\n", value1, value2)
       throw new UnsupportedOperationException("List.add not yet supported")
     } else {
       throw new BadTypeAddException

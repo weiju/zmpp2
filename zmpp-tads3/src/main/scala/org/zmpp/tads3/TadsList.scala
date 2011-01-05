@@ -108,6 +108,29 @@ extends TadsCollection(id, vmState, isTransient) {
     }
     staticMetaClass.createList(result.reverse, true).id
   }
+
+  private def compareWithFun(fun: T3Value,
+                     val1: T3Value, val2: T3Value, desc: Boolean): Boolean = {
+    vmState.stack.push(val1)
+    vmState.stack.push(val2)
+    new Executor(vmState).executeCallback(fun, 2)
+    val compValue = vmState.r0.value
+    if (!desc && compValue < 0) true
+    else if (desc && compValue > 0) true
+    else false
+  }
+
+  def sort(desc: Boolean, compFunc: T3Value): T3Value = {
+    printf("TadsList.sort(desc = %b, fun = %s)\n", desc, compFunc)
+    val seq = _container.toSeq
+    if (compFunc != T3Nil) {
+      val sorted =
+        seq.sortWith((val1, val2) => compareWithFun(compFunc, val1, val2, desc))
+      staticMetaClass.createList(sorted, false).id
+    } else {
+      throw new UnsupportedOperationException("TODO handle nil sort function")
+    }
+  }
 }
 
 class TadsListConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
@@ -198,7 +221,10 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("append")
   }
   def sort(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("sort")
+    argc mustBeInRange(0, 2)
+    val desc = if (argc > 0) vmState.stack.pop else T3Nil
+    val compFunc = if (argc > 1) vmState.stack.pop else T3Nil
+    obj.asInstanceOf[TadsList].sort(desc.isTrue, compFunc)
   }
   def prepend(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("prepend")
