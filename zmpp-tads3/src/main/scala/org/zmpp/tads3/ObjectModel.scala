@@ -65,6 +65,7 @@ trait T3Object {
   def inheritProperty(propertyId: Int, argc: Int): Property
   def t3vmEquals(other: T3Value): Boolean
   def +(other: T3Value): T3Value
+  def -(other: T3Value): T3Value
 
   // RootObject methods
   def propInherited(prop: T3PropertyId, origTargetObj: T3ObjectId,

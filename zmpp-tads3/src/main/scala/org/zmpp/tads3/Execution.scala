@@ -580,6 +580,9 @@ class Executor(vmState: TadsVMState) {
       case Sub          =>
         val val2 = vmState.stack.pop
         vmState.stack.push(sub(vmState.stack.pop, val2))
+      case SubFromLcl   =>
+        val val2 = vmState.stack.pop
+        vmState.stack.push(sub(vmState.getLocal(nextShortOperand), val2))
       case Swap         =>
         val val1 = vmState.stack.pop
         val val2 = vmState.stack.pop
@@ -632,7 +635,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 43868) {
+    if (iteration == 44738) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
@@ -669,8 +672,7 @@ class Executor(vmState: TadsVMState) {
       T3Integer(value1.value + value2.value)
     } else if (value1.valueType == VmSString || value1.valueType == VmObj ||
                value1.valueType == VmList) {
-      val obj1 = objectSystem.toT3Object(value1)
-      obj1 + value2
+      objectSystem.toT3Object(value1) + value2
     } else {
       throw new BadTypeAddException
     }
@@ -684,10 +686,8 @@ class Executor(vmState: TadsVMState) {
       throw new UnsupportedOperationException("SString.sub not (yet) supported")
     } else if (value1.valueType == VmDString) {
       throw new UnsupportedOperationException("DString.sub not (yet) supported")
-    } else if (value1.valueType == VmList) {
-      throw new UnsupportedOperationException("List.sub not yet supported")
-    } else if (value1.valueType == VmObj) {
-      throw new UnsupportedOperationException("Object.sub not yet supported")
+    } else if (value1.valueType == VmList || value1.valueType == VmObj) {
+      objectSystem.toT3Object(value1) - value2
     } else {
       throw new BadTypeSubException
     }
