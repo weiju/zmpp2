@@ -302,8 +302,8 @@ extends AbstractMetaClass(objectSystem) {
         // object, because we are calling a nested invokation
         objectSystem.registerObject(tadsObject)
         val executor = new Executor(vmState)
-        executor.doNestedCall(ctorArgc, ctor.value, ctor.id, tadsObject.id,
-                            ctor.definingObject, tadsObject.id)
+        vmState.doNestedCall(executor, ctorArgc, ctor.value, ctor.id, tadsObject.id,
+                             ctor.definingObject, tadsObject.id)
       } else {
         vmState.doCall(ctorArgc, ctor.value, ctor.id, tadsObject.id,
                        ctor.definingObject, tadsObject.id)
