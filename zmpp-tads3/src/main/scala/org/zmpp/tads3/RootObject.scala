@@ -85,8 +85,9 @@ extends T3Object {
     throw new UnsupportedOperationException("inheritProperty() not implemented")
   }
 
-  def +(other: T3Object): T3Object = {
-    throw new UnsupportedOperationException("+() not implemented")
+  def +(other: T3Value): T3Value = {
+    throw new UnsupportedOperationException("+() not implemented: " +
+                                            getClass.getName)
   }
 
   // from meta class

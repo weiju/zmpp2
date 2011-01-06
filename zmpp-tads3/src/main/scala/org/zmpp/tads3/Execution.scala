@@ -632,15 +632,15 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 43858) {
+    if (iteration == 43868) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
-
+/*
     if (iteration == 128) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
-    }
+    }*/
   }
 
   private def say {
@@ -667,16 +667,10 @@ class Executor(vmState: TadsVMState) {
   private def add(value1: T3Value, value2: T3Value): T3Value = {
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
       T3Integer(value1.value + value2.value)
-    } else if (value1.valueType == VmSString || value1.valueType == VmObj) {
+    } else if (value1.valueType == VmSString || value1.valueType == VmObj ||
+               value1.valueType == VmList) {
       val obj1 = objectSystem.toT3Object(value1)
-      val obj2 = objectSystem.toT3Object(value2)
-      printf("ADD, obj1 = '%s', obj2 = '%s'\n", obj1.metaClass, obj2.metaClass)
-      (obj1 + obj2).id
-    } else if (value1.valueType == VmList) {
-      printf("ADD value1: %s value2: %s\n", value1, value2)
-      val list =
-        objectSystem.listConstantWithOffset(value1.asInstanceOf[T3ListConstant])
-      list.add(value2)
+      obj1 + value2
     } else {
       throw new BadTypeAddException
     }

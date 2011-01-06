@@ -64,7 +64,7 @@ trait T3Object {
   def setValueAtIndex(index: T3Value, newValue: T3Value): T3Value
   def inheritProperty(propertyId: Int, argc: Int): Property
   def t3vmEquals(other: T3Value): Boolean
-  def +(other: T3Object): T3Object
+  def +(other: T3Value): T3Value
 
   // RootObject methods
   def propInherited(prop: T3PropertyId, origTargetObj: T3ObjectId,

@@ -132,9 +132,10 @@ extends TadsCollection(id, vmState, isTransient) {
     }
   }
 
-  def add(value: T3Value): T3Value = {
-    printf("List.add(), value = %s\n", value)
-    if (objectSystem.toT3Object(value).isOfMetaClass(objectSystem.listMetaClass)) {
+  override def +(value: T3Value): T3Value = {
+    val obj = objectSystem.toT3Object(value)
+    printf("List.add(), value = %s, obj = %s\n", value, obj)
+    if (obj.isOfMetaClass(objectSystem.listMetaClass)) {
       throw new UnsupportedOperationException("List.add(aList) not yet supported")
     } else {
       val newSeq = _container.toSeq :+ value

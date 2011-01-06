@@ -71,8 +71,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
     newStr
   }
 
-  override def +(other: T3Object): T3Object = {
-    createStringFrom(this.string + other.asInstanceOf[TadsString].string)
+  override def +(other: T3Value): T3Value = {
+    createStringFrom(this.string + objectSystem.toTadsString(other).string).id
   }
 
   // for strings, we search the static property list
