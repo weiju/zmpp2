@@ -131,6 +131,16 @@ extends TadsCollection(id, vmState, isTransient) {
       throw new UnsupportedOperationException("TODO handle nil sort function")
     }
   }
+
+  def add(value: T3Value): T3Value = {
+    printf("List.add(), value = %s\n", value)
+    if (objectSystem.toT3Object(value).isOfMetaClass(objectSystem.listMetaClass)) {
+      throw new UnsupportedOperationException("List.add(aList) not yet supported")
+    } else {
+      val newSeq = _container.toSeq :+ value
+      staticMetaClass.createList(newSeq, false).id
+    }
+  }
 }
 
 class TadsListConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)

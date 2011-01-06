@@ -667,7 +667,9 @@ class Executor(vmState: TadsVMState) {
       (obj1 + obj2).id
     } else if (value1.valueType == VmList) {
       printf("ADD value1: %s value2: %s\n", value1, value2)
-      throw new UnsupportedOperationException("List.add not yet supported")
+      val list =
+        objectSystem.listConstantWithOffset(value1.asInstanceOf[T3ListConstant])
+      list.add(value2)
     } else {
       throw new BadTypeAddException
     }

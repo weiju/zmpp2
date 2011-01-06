@@ -380,7 +380,8 @@ class ObjectSystem {
   }
   def objectWithId(id: T3Value): T3Object = objectWithId(id.value)
   def listConstantWithOffset(offset: T3ListConstant) = {
-    if (_constantCache.containsKey(offset.value)) _constantCache(offset.value)
+    if (_constantCache.containsKey(offset.value))
+      _constantCache(offset.value).asInstanceOf[TadsListConstant]
     else listMetaClass.createListConstant(offset)
   }
   def stringConstantWithOffset(offset: T3SString) = {
