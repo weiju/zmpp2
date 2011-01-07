@@ -42,6 +42,7 @@ object TadsStringSpec extends Specification {
   def makeString(id: Int, str: String) = {
     val result = new TadsString(T3ObjectId(id), vmState, false)
     result.init(str)
+    objectSystem.registerObject(result)
     result
   }
 
@@ -57,7 +58,8 @@ object TadsStringSpec extends Specification {
     "be concatenated" in {
       val str1 = makeString(1, "Hello, ")
       val str2 = makeString(2, "World !")
-      (str1 + str2).asInstanceOf[TadsString].string must_== "Hello, World !"
+      val str3Id = str1 + str2.id
+      objectSystem.toTadsString(str3Id).string must_== "Hello, World !"
     }
     "do a find" in {
       val str1 = makeString(1, "Hello, World !")
