@@ -62,20 +62,9 @@ extends AbstractT3Object(id, vmState, isTransient) {
   }
   def javaPatternString: String = {
     if (javaPattern == null) {
-      noCase = patternString.string.indexOf("<nocase>") >= 0
-
-      // TODO: convert to a java pattern string
-      // TODO: '%%' sequences !!
-      // TODO: angled expression replacements should be case insensitive !!
-      javaPattern = patternString.string.replaceAll("<nocase>", "")
-      javaPattern = javaPattern.replaceAll("<case>", "")
-      javaPattern = javaPattern.replaceAll("<langle>", "<")
-      javaPattern = javaPattern.replaceAll("<rangle>", ">")
-      javaPattern = javaPattern.replaceAll("<dot>", "\\\\.")
-      javaPattern = javaPattern.replaceAll("%", "\\\\")
-      javaPattern = javaPattern.replaceAll("<\\^alphanum>", "\\\\W")
-      javaPattern = javaPattern.replaceAll("<alphanum>", "\\\\w")
-      javaPattern = javaPattern.replaceAll("<space>", "\\\\s")
+      val res = new RegexTranslator(patternString.string).translate
+      noCase = !res._1
+      javaPattern = res._2
     }
     javaPattern
   }
