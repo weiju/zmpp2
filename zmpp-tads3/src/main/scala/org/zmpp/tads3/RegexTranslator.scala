@@ -127,7 +127,10 @@ class RegexTranslator(str: String) {
     if (identifiers.length > 0) {
       builder.append("[")
       if (negate) builder.append("^")
-      identifiers.foreach(str => builder.append(SymbolMappings(str)))
+      identifiers.foreach(str => {
+        if (SymbolMappings.contains(str)) builder.append(SymbolMappings(str))
+        else builder.append(str)
+      })
       builder.append("]")
     }
   }
@@ -142,6 +145,7 @@ class RegexTranslator(str: String) {
   }
 
   def translate = {
+    printf("RegexTranslator.translate('%s')\n", str)
     while (i < str.length) {
       val c = str.charAt(i)
       if (isPunctuation(c)) handlePunctuation

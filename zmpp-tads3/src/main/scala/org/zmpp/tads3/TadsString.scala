@@ -127,6 +127,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
       createStringFrom(string.substring(startIndex))
     }
   }
+  def toUpper = createStringFrom(string.toUpperCase)
+  def toLower = createStringFrom(string.toLowerCase)
 }
 
 class TadsStringConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
@@ -156,10 +158,12 @@ extends AbstractMetaClass(objectSystem) {
     obj.asInstanceOf[TadsString].substr(start, length).id
   }
   def toUpper(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("toUpper")
+    argc must_== 0
+    obj.asInstanceOf[TadsString].toUpper.id
   }
   def toLower(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("toLower")
+    argc must_== 0
+    obj.asInstanceOf[TadsString].toLower.id
   }
   def find(obj: T3Object, argc: Int): T3Value = {
     argc mustBeInRange(1, 2)

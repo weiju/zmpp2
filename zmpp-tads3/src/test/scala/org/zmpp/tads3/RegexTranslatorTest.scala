@@ -191,5 +191,11 @@ object RegexTranslatorSpec extends Specification {
       ( new RegexTranslator("[.;:!?]<^alphanum>").translate
        must_== (true, "[.;:!?][^\\p{Alnum}]") )
     }
+
+    "translate with literal character (regression 1)" in {
+      val pat = new RegexTranslator(
+        "(<^space|/>+)<space>+(<^space|/>+)(/<^space|/>+)").translate
+      pat must_== (true, "([^\\p{Space}/]+)[\\p{Space}]+([^\\p{Space}/]+)(/[^\\p{Space}/]+)")
+    }
   }
 }
