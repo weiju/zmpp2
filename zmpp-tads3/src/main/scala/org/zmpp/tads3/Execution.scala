@@ -293,7 +293,7 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    if (iteration < 200 || iteration >= 42000)
+    if (iteration < 200 || iteration >= 43000)
       printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
              OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
@@ -472,6 +472,9 @@ class Executor(vmState: TadsVMState) {
           vmState.stack.push(value)
           vmState.stack.pushInt(argc.value + 1)
         }
+      case Mul          =>
+        val val2 = vmState.stack.pop
+        vmState.stack.push(mul(vmState.stack.pop, val2))
       case Ne           =>
         val val2 = vmState.stack.pop
         val val1 = vmState.stack.pop
@@ -582,7 +585,8 @@ class Executor(vmState: TadsVMState) {
         vmState.stack.push(sub(vmState.stack.pop, val2))
       case SubFromLcl   =>
         val val2 = vmState.stack.pop
-        vmState.stack.push(sub(vmState.getLocal(nextShortOperand), val2))
+        val localNum = nextShortOperand
+        vmState.setLocal(localNum, sub(vmState.getLocal(localNum), val2))
       case Swap         =>
         val val1 = vmState.stack.pop
         val val2 = vmState.stack.pop
@@ -600,7 +604,7 @@ class Executor(vmState: TadsVMState) {
           valueFound = if (controlVal.valueType == VmObj) {
             objectSystem.objectWithId(controlVal).t3vmEquals(currval)
           } else {
-            controlVal.t3vmEquals(currval)
+            t3vmEquals(controlVal, currval)
           }
           if (valueFound) {
             val branchOffset = Types.signExtend16(
@@ -635,15 +639,15 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 44920) {
+    if (iteration == 45178) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
-/*
-    if (iteration == 128) {
+
+    if (iteration >= 45175) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
-    }*/
+    }
   }
 
   private def say {
@@ -690,6 +694,16 @@ class Executor(vmState: TadsVMState) {
       objectSystem.toT3Object(value1) - value2
     } else {
       throw new BadTypeSubException
+    }
+  }
+
+  private def mul(value1: T3Value, value2: T3Value): T3Value = {
+    if (value1.valueType == VmInt && value2.valueType == VmInt) {
+      T3Integer(value1.value + value2.value)
+    } else if (value1.valueType == VmObj) {
+      throw new UnsupportedOperationException("TODO")
+    } else {
+      throw new BadTypeMulException
     }
   }
 

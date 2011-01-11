@@ -537,6 +537,7 @@ object OpcodeNames {
 
 // Exceptions
 class BadTypeAddException extends Exception
+class BadTypeMulException extends Exception
 class BadTypeSubException extends Exception
 class CannotIndexTypeException extends Exception
 class FuncPtrValRequiredException extends Exception
