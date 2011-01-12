@@ -168,25 +168,33 @@ extends AbstractMetaClass(objectSystem) {
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
-    val bucketCount = imageMem.shortAt(objDataAddr)
-    val valueCount = imageMem.shortAt(objDataAddr)
+    val bucketCount    = imageMem.shortAt(objDataAddr)
+    val valueCount     = imageMem.shortAt(objDataAddr + 2)
+    val firstFreeIndex = imageMem.shortAt(objDataAddr + 4)
+    val bucketStart    = objDataAddr + 6
+
     val lookupTable = new LookupTable(objectId, vmState, isTransient,
                                       bucketCount, valueCount)
-    val firstFreeIndex = imageMem.shortAt(objDataAddr)
-    //printf("LookupTable::createFromImage(), bucketCount: %d, valueCount: %d, firstFreeIndex: %d\n", bucketCount, valueCount, firstFreeIndex)
-    val bucketStart = objDataAddr + 6
+    //  printf("LookupTable::createFromImage(%s), bucketCount: %d, valueCount: %d, firstFreeIndex: %d\n", objectId, bucketCount, valueCount, firstFreeIndex)
     for (i <- 0 until bucketCount) {
       val bucketIndex = imageMem.shortAt(bucketStart + 2 * i)
-      //printf("bucket_index[%d] = %d\n", i, bucketIndex)
     }
     var valueAddr = bucketStart + 2 * bucketCount
     val valueSize = 2 * DataHolder.Size + 2
+    var nextFree  = firstFreeIndex
+
     for (i <- 0 until valueCount) {
-      val key = T3Value.readDataHolder(imageMem, valueAddr)
-      val value = T3Value.readDataHolder(imageMem, valueAddr + DataHolder.Size)
-      val nextIndex = imageMem.shortAt(valueAddr + 2 * DataHolder.Size)
-      //  printf("value[%d] = {k: %s, v: %s, nextIdx: %d}\n", i, key, value, nextIndex)
-      if (key != T3Empty) lookupTable(key) = value
+      if (i + 1 == nextFree) {
+        nextFree = imageMem.shortAt(valueAddr + 2 * DataHolder.Size)
+      } else {
+        val key = T3Value.readDataHolder(imageMem, valueAddr)
+        val value = T3Value.readDataHolder(imageMem, valueAddr + DataHolder.Size)
+        val nextIndex = imageMem.shortAt(valueAddr + 2 * DataHolder.Size)
+        if (key != T3Empty) lookupTable(key) = value
+        //printf("value[%d] = {k: %s, v: %s, nextIdx: %d}\n", i,
+        //         objectSystem.toT3Object(key), value, nextIndex)
+      }
+
       valueAddr += valueSize
     }
     lookupTable
