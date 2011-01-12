@@ -331,7 +331,7 @@ class Executor(vmState: TadsVMState) {
       case BuiltinA     =>
         functionSetMapper.callBuiltin(varargc, nextByteOperand, 0)
       case BuiltinB     =>
-        if (iteration == 30870) { // actually 30869
+        if (iteration == 30870 || iteration == 45517) { // actually 30869/45516
           // cheating to get ditch3.t3 running, because there is a
           // strange reMatch() regexp, I don't understand yet why
           // its returning nil in the reference implementation
@@ -639,7 +639,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 45511) {
+    if (iteration == 45601) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }

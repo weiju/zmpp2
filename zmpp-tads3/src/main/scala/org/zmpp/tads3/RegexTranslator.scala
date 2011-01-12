@@ -146,10 +146,13 @@ class RegexTranslator(str: String) {
 
   def translate = {
     printf("RegexTranslator.translate('%s')\n", str)
+    var inRangeExpression = false
     while (i < str.length) {
       val c = str.charAt(i)
-      if (isPunctuation(c)) handlePunctuation
+      if (!inRangeExpression && isPunctuation(c)) handlePunctuation
       else {
+        if (inRangeExpression && c == ']') inRangeExpression = false
+        else if (c == '[') inRangeExpression = true
         builder.append(c)
         i += 1
       }

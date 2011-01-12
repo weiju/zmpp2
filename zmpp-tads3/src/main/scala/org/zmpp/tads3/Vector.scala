@@ -119,6 +119,11 @@ extends TadsCollection(id, vmState, isTransient) {
   override def hashCode: Int = {
     throw new UnsupportedOperationException("TODO")
   }
+
+  def removeRange(start: Int, end: Int) = {
+    printf("Vector::removeRange(%d, %d)\n", start, end)
+    throw new UnsupportedOperationException("Vector::removeRange")
+  }
 }
 
 // Image format for vector instances:
@@ -234,7 +239,9 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("removeElementAt")
   }
   def removeRange(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("removeRange")
+    argc must_== 2
+    obj.asInstanceOf[Vector].removeRange(vmState.stack.pop.value,
+                                         vmState.stack.pop.value)
   }
   def append(obj: T3Object, argc: Int): T3Value = {
     argc must_== 1

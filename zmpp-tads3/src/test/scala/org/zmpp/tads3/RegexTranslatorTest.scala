@@ -192,10 +192,16 @@ object RegexTranslatorSpec extends Specification {
        must_== (true, "[.;:!?][^\\p{Alnum}]") )
     }
 
+    // regressions
     "translate with literal character (regression 1)" in {
       val pat = new RegexTranslator(
         "(<^space|/>+)<space>+(<^space|/>+)(/<^space|/>+)").translate
       pat must_== (true, "([^\\p{Space}/]+)[\\p{Space}]+([^\\p{Space}/]+)(/[^\\p{Space}/]+)")
+    }
+
+    "translate with angle bracket in range (regression 2)" in {
+      new RegexTranslator("[<\"']").translate must_== (true, "[<\"']")
+      new RegexTranslator("[><%]").translate must_== (true, "[><%]")
     }
   }
 }
