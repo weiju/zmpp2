@@ -87,6 +87,15 @@ extends TadsCollection(id, vmState, isTransient) {
     result
   }
 
+  override def equals(other: Any): Boolean = other match {
+    case otherList:TadsList => _container.equals(otherList._container)
+    case _ => false
+  }
+
+  override def t3vmEquals(other: T3Value): Boolean = {
+    this.equals(objectSystem.toT3Object(other))
+  }
+
   def valWhich(cond: T3Value): T3Value = {
     printf("TadsList::valWhich(cond = %s)[%s]\n", cond, this)
     for (i <- 0 until size) {

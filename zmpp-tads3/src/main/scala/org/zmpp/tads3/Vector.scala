@@ -120,9 +120,10 @@ extends TadsCollection(id, vmState, isTransient) {
     throw new UnsupportedOperationException("TODO")
   }
 
-  def removeRange(start: Int, end: Int) = {
+  def removeRange(start: Int, end: Int): T3ObjectId = {
     printf("Vector::removeRange(%d, %d)\n", start, end)
-    throw new UnsupportedOperationException("Vector::removeRange")
+    for (index <- end to start by -1) _container.remove(index - 1)
+    id
   }
 }
 

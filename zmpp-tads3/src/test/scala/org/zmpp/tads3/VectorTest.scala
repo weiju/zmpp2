@@ -98,5 +98,39 @@ object VectorSpec extends Specification {
       // not found
       vector.indexOf(value6) must_== 0
     }
+    "create a list from a vector" in {
+      val vector = new Vector(T3ObjectId(1), vmState, false)
+      val value0 = T3Integer(0)
+      val value1 = T3Integer(1)
+      val value2 = T3Integer(2)
+      vector.append(value0)
+      vector.append(value1)
+      vector.append(value2)
+      val list =
+        objectSystem.objectWithId(vector.toList(2, 3)).asInstanceOf[TadsList]
+      list.size must_== 2
+      list.valueAtIndex(T3Integer(1)) must_== value1
+      list.valueAtIndex(T3Integer(2)) must_== value2
+    }
+    "remove a range from a vector" in {
+      val vector = new Vector(T3ObjectId(1), vmState, false)
+      val value0 = T3Integer(0)
+      val value1 = T3Integer(1)
+      val value2 = T3Integer(2)
+      val value3 = T3Integer(3)
+      val value4 = T3Integer(4)
+      vector.append(value0)
+      vector.append(value1)
+      vector.append(value2)
+      vector.append(value3)
+      vector.append(value4)
+
+      val id = vector.removeRange(2, 3)
+      id must_== vector.id
+      vector.size must_== 3
+      vector.valueAtIndex(T3Integer(1)) must_== value0
+      vector.valueAtIndex(T3Integer(2)) must_== value3
+      vector.valueAtIndex(T3Integer(3)) must_== value4
+    }
   }
 }
