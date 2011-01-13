@@ -71,16 +71,16 @@ extends TadsCollection(id, vmState, isTransient) {
     }
     return 0
   }
-  def indexWhich(cond: T3Value): Int = {
+  def indexWhich(cond: T3Value): T3Value = {
     printf("indexWhich(), cond: %s, len = %d\n", cond, size)
     for (i <- 0 until size) {
       vmState.stack.push(_container(i))
       val executor = new Executor(vmState)
       executor.executeCallback(cond, 1)
       // don't forget vector indices are 1-based !!
-      if (vmState.r0.isTrue) return (i + 1)
+      if (vmState.r0.isTrue) return T3Integer(i + 1)
     }
-    throw new UnsupportedOperationException("indexWhich() TODO")
+    T3Nil
   }
 
   override def valueAtIndex(index: T3Value): T3Value = _container(index.value - 1)
@@ -97,8 +97,13 @@ extends TadsCollection(id, vmState, isTransient) {
 
   def valWhich(cond: T3Value): T3Value = {
     printf("valWhich(), cond = %s\n", cond)
-    if (size == 0) T3Nil
-    else throw new UnsupportedOperationException("TODO non-empty vector")
+    for (i <- 0 until size) {
+      vmState.stack.push(_container(i))
+      val executor = new Executor(vmState)
+      executor.executeCallback(cond, 1)
+      if (vmState.r0.isTrue) return _container(i)
+    }
+    T3Nil
   }
 
   override def toString = {
@@ -176,8 +181,7 @@ extends AbstractMetaClass(objectSystem) {
   }
   def indexWhich(obj: T3Object, argc: Int): T3Value = {
     argc must_== 1
-    val index = obj.asInstanceOf[Vector].indexWhich(vmState.stack.pop)
-    if (index == 0) T3Nil else T3Integer(index)
+    obj.asInstanceOf[Vector].indexWhich(vmState.stack.pop)
   }
   def forEach(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("indexWhich")
