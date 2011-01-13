@@ -94,6 +94,9 @@ object TadsStringSpec extends Specification {
       str2.substr(-3, 5).string must_== "ghi"
       str2.substr(1, 0).string must_== ""
     }
+    "do substr with start = 0 (undocumented)" in {
+      makeString(1, "abcdef").substr(0, 1).string must_== "a"
+    }
     "when containing invisible char not equal to empty string" in {
       // this is a strange case that happened while
       // developing, we keep it to catch it in the future

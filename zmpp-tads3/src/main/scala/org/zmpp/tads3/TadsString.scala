@@ -114,7 +114,11 @@ extends AbstractT3Object(id, vmState, isTransient) {
 
   def startsWith(str: TadsString) = string.startsWith(str.string)
   def substr(start: Int, length: Int = -1) = {
-    val startIndex = if (start < 0) string.length + start else start - 1
+    // undocumented "feature": indexes are 1-based, but if start is 0,
+    // treat it as "1"
+    val startIndex = if (start < 0) string.length + start
+                     else if (start > 0) start - 1
+                     else start
     if (length >= 0) {
       // compute end index
       val endIndex = scala.math.min(string.length, startIndex + length)
