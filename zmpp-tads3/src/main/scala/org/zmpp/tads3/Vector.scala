@@ -67,7 +67,7 @@ extends TadsCollection(id, vmState, isTransient) {
   def insertAt(index: Int, value: T3Value) = _container.add(index - 1, value)
   def indexOf(value: T3Value): Int = {
     for (i <- 0 until _container.size) {
-      if (_container(i).t3vmEquals(value)) return i + 1
+      if (vmState.t3vmEquals(_container(i), value)) return i + 1
     }
     return 0
   }

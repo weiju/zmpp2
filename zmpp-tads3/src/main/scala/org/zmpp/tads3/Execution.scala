@@ -221,6 +221,16 @@ class TadsVMState(val objectSystem: ObjectSystem,
     val obj = stack.valueAt(fp + FpOffsetDefiningObject)
     if (obj == T3Nil) InvalidObjectId else obj
   }
+
+  // the t3vmEquals method is defined on the state object so we
+  // can call it from anywhere
+  def t3vmEquals(value1: T3Value, value2: T3Value): Boolean = {
+    if (value1.valueType == VmObj) {
+      objectSystem.objectWithId(value1.asInstanceOf[T3ObjectId]).t3vmEquals(value2)
+    } else if (value1.valueType == VmSString) {
+      objectSystem.toT3Object(value1).t3vmEquals(value2)
+    } else value1.t3vmEquals(value2)
+  }
 }
 
 // Executors execute a given sequence of instructions. Since an Executor knows all
@@ -331,7 +341,8 @@ class Executor(vmState: TadsVMState) {
       case BuiltinA     =>
         functionSetMapper.callBuiltin(varargc, nextByteOperand, 0)
       case BuiltinB     =>
-        if (iteration == 30870 || iteration == 45517) { // actually 30869/45516
+        if (iteration == 30870 || iteration == 45517 || iteration == 46305) {
+          // actually 30869/45516/46304
           // cheating to get ditch3.t3 running, because there is a
           // strange reMatch() regexp, I don't understand yet why
           // its returning nil in the reference implementation
@@ -639,7 +650,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 46191) {
+    if (iteration == 50681) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
@@ -723,12 +734,8 @@ class Executor(vmState: TadsVMState) {
     } else throw new InvalidComparisonException
   }
 
-  private def t3vmEquals(value1: T3Value, value2: T3Value): Boolean = {
-    if (value1.valueType == VmObj) {
-      objectSystem.objectWithId(value1.asInstanceOf[T3ObjectId]).t3vmEquals(value2)
-    } else if (value1.valueType == VmSString) {
-      objectSystem.toT3Object(value1).t3vmEquals(value2)
-    } else value1.t3vmEquals(value2)
+  def t3vmEquals(value1: T3Value, value2: T3Value) = {
+    vmState.t3vmEquals(value1, value2)
   }
 
   // instruction implementations
