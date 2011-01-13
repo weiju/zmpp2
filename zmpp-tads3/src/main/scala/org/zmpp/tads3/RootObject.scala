@@ -131,9 +131,9 @@ extends T3Object {
     if (clsObj.metaClass == objectSystem.intrinsicClassMetaClass &&
         clsObj.asInstanceOf[IntrinsicClass].representedMetaClass == 
           objectSystem.rootObjectMetaClass) T3True
-    else {
-      throw new UnsupportedOperationException("ofKind TODO")
-    }
+    else if (cls == this.id) T3True // identity
+    else if (isInstanceOf(objectSystem.toT3Object(cls))) T3True
+    else T3Nil
   }
 
   def propType(propId: T3PropertyId): T3Value = {
