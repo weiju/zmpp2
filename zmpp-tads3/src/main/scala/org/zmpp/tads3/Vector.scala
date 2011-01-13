@@ -158,6 +158,19 @@ extends TadsCollection(id, vmState, isTransient) {
     _container.remove(index.value - 1)
     id
   }
+
+  def forEach(func: T3Value): T3Value = {
+    for (i <- 0 until size) {
+      vmState.stack.push(_container(i))
+      new Executor(vmState).executeCallback(func, 1)
+    }
+    T3Nil
+  }
+
+  def sort(desc: Boolean, compFunc: T3Value): T3Value = {
+    printf("TadsList.sort(desc = %b, fun = %s)\n", desc, compFunc)
+    throw new UnsupportedOperationException("Vector.sort TODO")
+  }
 }
 
 // Image format for vector instances:
@@ -213,10 +226,11 @@ extends AbstractMetaClass(objectSystem) {
     obj.asInstanceOf[Vector].indexWhich(vmState.stack.pop)
   }
   def forEach(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("indexWhich")
+    argc must_== 1
+    obj.asInstanceOf[Vector].forEach(vmState.stack.pop)
   }
   def forEachAssoc(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("forEach")
+    throw new UnsupportedOperationException("forEachAssoc")
   }
   def mapAll(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("mapAll")
@@ -253,8 +267,12 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("appendUnique")
   }
   def sort(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("sort")
+    argc mustBeInRange(0, 2)
+    val desc = if (argc > 0) vmState.stack.pop else T3Nil
+    val compFunc = if (argc > 1) vmState.stack.pop else T3Nil
+    obj.asInstanceOf[Vector].sort(desc.isTrue, compFunc)
   }
+
   def setLength(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("setLength")
   }

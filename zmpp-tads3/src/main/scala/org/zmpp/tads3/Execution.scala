@@ -544,6 +544,7 @@ class Executor(vmState: TadsVMState) {
       case PushCtxEle   => pushCtxEle(nextByteOperand)
       case PushFnPtr    => vmState.stack.pushFunctionPointer(nextIntOperand)
       case PushEnum     => vmState.stack.pushEnum(nextIntOperand)
+      case PushInt      => vmState.stack.pushInt(nextIntOperand)
       case PushInt8     => vmState.stack.pushInt(nextSignedByteOperand)
       case PushLst      => vmState.stack.pushList(nextIntOperand)
       case PushNil      => vmState.stack.pushNil
@@ -650,7 +651,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 75001) {
+    if (iteration == 74281) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
