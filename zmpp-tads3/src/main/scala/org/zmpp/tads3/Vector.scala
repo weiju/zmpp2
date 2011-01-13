@@ -152,6 +152,12 @@ extends TadsCollection(id, vmState, isTransient) {
     }
     id
   }
+
+  def removeElementAt(index: T3Value): T3Value = {
+    // don't forget T3 vectors are 1-based
+    _container.remove(index.value - 1)
+    id
+  }
 }
 
 // Image format for vector instances:
@@ -264,7 +270,8 @@ extends AbstractMetaClass(objectSystem) {
     obj.id
   }
   def removeElementAt(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("removeElementAt")
+    argc must_== 1
+    obj.asInstanceOf[Vector].removeElementAt(vmState.stack.pop)
   }
   def removeRange(obj: T3Object, argc: Int): T3Value = {
     argc must_== 2
