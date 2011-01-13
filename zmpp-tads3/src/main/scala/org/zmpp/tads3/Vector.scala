@@ -142,6 +142,16 @@ extends TadsCollection(id, vmState, isTransient) {
     result.id
   }
 
+  def removeElement(value: T3Value): T3Value = {
+    val iter = _container.iterator
+    while (iter.hasNext) {
+      val current = iter.next
+      if (vmState.t3vmEquals(value, current)) {
+        iter.remove
+      }
+    }
+    id
+  }
 }
 
 // Image format for vector instances:
@@ -275,7 +285,8 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("appendAll")
   }
   def removeElement(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("removeElement")
+    argc must_== 1
+    obj.asInstanceOf[Vector].removeElement(vmState.stack.pop)
   }
 
   override def createFromImage(objectId: T3ObjectId,
