@@ -45,7 +45,7 @@ extends TadsCollection(id, vmState, isTransient) {
   // because of polymorphism, metaClass can't be relied on to make a
   // static search, so we state the metaClass explicitly
   // this meta class is not inherited, so we can use it in static searches
-  private def staticMetaClass: MetaClass = objectSystem.vectorMetaClass
+  private def staticMetaClass: VectorMetaClass = objectSystem.vectorMetaClass
   override def metaClass: MetaClass = objectSystem.vectorMetaClass
   def init(numElements: Int) {
     printf("initialize %d elements\n", numElements)
@@ -130,6 +130,18 @@ extends TadsCollection(id, vmState, isTransient) {
     for (index <- end to start by -1) _container.remove(index - 1)
     id
   }
+
+  def subset(func: T3Value): T3Value = {
+    printf("Vector.subset(f = %s)\n", func)
+    val result = staticMetaClass.createVector()
+    for (i <- 0 until size) {
+      vmState.stack.push(_container(i))
+      new Executor(vmState).executeCallback(func, 1)
+      if (vmState.r0.isTrue) result.append(_container(i))
+    }
+    result.id
+  }
+
 }
 
 // Image format for vector instances:
@@ -174,7 +186,8 @@ extends AbstractMetaClass(objectSystem) {
     throw new UnsupportedOperationException("fillVal")
   }
   def subset(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("subset")
+    argc must_== 1
+    obj.asInstanceOf[Vector].subset(vmState.stack.pop)
   }
   def applyAll(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("applyAll")
@@ -313,6 +326,12 @@ extends AbstractMetaClass(objectSystem) {
                                                 "not yet supported")
       }
     }
+    result
+  }
+
+  def createVector(isTransient: Boolean = false) = {
+    val result = new Vector(objectSystem.newObjectId, vmState, isTransient)
+    objectSystem.registerObject(result)
     result
   }
 

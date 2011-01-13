@@ -650,7 +650,7 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 50961) {
+    if (iteration == 52601) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
