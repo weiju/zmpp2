@@ -119,13 +119,14 @@ extends TadsCollection(id, vmState, isTransient) {
   }
 
   private def compareWithFun(fun: T3Value,
-                     val1: T3Value, val2: T3Value, desc: Boolean): Boolean = {
+                             val1: T3Value, val2: T3Value,
+                             desc: Boolean): Boolean = {
     vmState.stack.push(val1)
     vmState.stack.push(val2)
     new Executor(vmState).executeCallback(fun, 2)
     val compValue = vmState.r0.value
-    if (!desc && compValue < 0) true
-    else if (desc && compValue > 0) true
+    if (desc && compValue < 0) true
+    else if (!desc && compValue > 0) true
     else false
   }
 

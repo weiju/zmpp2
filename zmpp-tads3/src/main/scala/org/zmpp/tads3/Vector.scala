@@ -167,9 +167,32 @@ extends TadsCollection(id, vmState, isTransient) {
     T3Nil
   }
 
+  // TODO: sort, compareWithFun subset between Vector and List are almost equal, we
+  // should create either a trait or an abstract super class to capture these
+  private def compareWithFun(fun: T3Value,
+                             val1: T3Value, val2: T3Value,
+                             desc: Boolean): Boolean = {
+    vmState.stack.push(val1)
+    vmState.stack.push(val2)
+    new Executor(vmState).executeCallback(fun, 2)
+    val compValue = vmState.r0.value
+    if (desc && compValue < 0) true
+    else if (!desc && compValue > 0) true
+    else false
+  }
+
   def sort(desc: Boolean, compFunc: T3Value): T3Value = {
-    printf("TadsList.sort(desc = %b, fun = %s)\n", desc, compFunc)
-    throw new UnsupportedOperationException("Vector.sort TODO")
+    printf("Vector.sort(desc = %b, fun = %s)\n", desc, compFunc)
+    val seq = _container.toSeq
+    if (compFunc != T3Nil) {
+      val sorted =
+        seq.sortWith((val1, val2) => compareWithFun(compFunc, val1, val2, desc))
+      val result = staticMetaClass.createVector(false)
+      sorted.foreach(result.append(_))
+      result.id
+    } else {
+      throw new UnsupportedOperationException("TODO handle nil sort function")
+    }
   }
 }
 
