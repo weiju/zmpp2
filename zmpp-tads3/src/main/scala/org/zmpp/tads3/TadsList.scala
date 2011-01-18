@@ -41,16 +41,10 @@ import TypeIds._
  * Very similar to Vector
  */
 class TadsList(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
-extends TadsCollection(id, vmState, isTransient) {
-  private val _container = new ArrayList[T3Value]
+extends IndexedCollection(id, vmState, isTransient) {
   private def staticMetaClass = objectSystem.listMetaClass
   override def metaClass: MetaClass = objectSystem.listMetaClass
   override def toString = "List object"
-  def size = _container.size
-  def reverseSeq: Seq[T3Value] = _container.reverse 
-  def initWith(seq: Seq[T3Value]) {
-    seq.foreach(value => _container.add(value))
-  }
 
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val idx = staticMetaClass.functionIndexForProperty(propertyId)
@@ -60,19 +54,6 @@ extends TadsCollection(id, vmState, isTransient) {
     else super.getProperty(propertyId, argc)
   }
 
-  def addElement(value: T3Value) {
-    _container.add(value)
-  }
-  override def valueAtIndex(index: T3Value): T3Value = _container(index.value - 1)
-  override def setValueAtIndex(index: T3Value, newValue: T3Value): T3ObjectId = {
-    val oldValue = _container(index.value - 1)
-    _container(index.value - 1) = newValue
-    id // return this object
-  }
-  def indexOf(value: T3Value): T3Value = {
-    val index = _container.indexOf(value)
-    if (index < 0) T3Nil else T3Integer(index + 1)
-  }
   def createIterator(argc: Int): T3Value = {
     println("createIterator()")
     val iter = objectSystem.indexedIteratorMetaClass.createIterator(this)
@@ -118,28 +99,8 @@ extends TadsCollection(id, vmState, isTransient) {
     staticMetaClass.createList(result.reverse, true).id
   }
 
-  private def compareWithFun(fun: T3Value,
-                             val1: T3Value, val2: T3Value,
-                             desc: Boolean): Boolean = {
-    vmState.stack.push(val1)
-    vmState.stack.push(val2)
-    new Executor(vmState).executeCallback(fun, 2)
-    val compValue = vmState.r0.value
-    if (desc && compValue < 0) true
-    else if (!desc && compValue > 0) true
-    else false
-  }
-
-  def sort(desc: Boolean, compFunc: T3Value): T3Value = {
-    printf("TadsList.sort(desc = %b, fun = %s)\n", desc, compFunc)
-    val seq = _container.toSeq
-    if (compFunc != T3Nil) {
-      val sorted =
-        seq.sortWith((val1, val2) => compareWithFun(compFunc, val1, val2, desc))
-      staticMetaClass.createList(sorted, false).id
-    } else {
-      throw new UnsupportedOperationException("TODO handle nil sort function")
-    }
+  def createNewFromSeq(seq: Seq[T3Value], isTransient: Boolean) = {
+    staticMetaClass.createList(seq, false).id
   }
 
   override def +(value: T3Value): T3Value = {
@@ -167,7 +128,7 @@ extends TadsCollection(id, vmState, isTransient) {
 
 class TadsListConstant(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
 extends TadsList(id, vmState, isTransient) {
-  override def addElement(value: T3Value) {
+  override def append(value: T3Value) {
     throw new UnsupportedOperationException("can not add to list constant")
   }
   override def setValueAtIndex(index: T3Value, newValue: T3Value): T3ObjectId = {
@@ -286,7 +247,7 @@ extends AbstractMetaClass(objectSystem) {
     printf("TadsList::createFromStack(), argc = %d\n", argc)
     val list = new TadsList(id, vmState, isTransient)
     for (i <- 0 until argc) {
-      list.addElement(vmState.stack.pop)
+      list.append(vmState.stack.pop)
     }
     list
   }
@@ -298,7 +259,7 @@ extends AbstractMetaClass(objectSystem) {
     val list = new TadsList(objectSystem.newObjectId, vmState, isTransient)
     objectSystem.registerObject(list)
     for (i <- 0 until numToPush) {
-      list.addElement(vmState.getArg(fixedArgCount + i))
+      list.append(vmState.getArg(fixedArgCount + i))
     }
     list
   }

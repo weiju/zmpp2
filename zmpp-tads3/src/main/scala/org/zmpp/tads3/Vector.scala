@@ -39,8 +39,7 @@ import T3Assert._
 // Note: Vector indexes in TADS are, as all sequential types in TADS, in the
 // range [1..n], and *not* [0..n-1]
 class Vector(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
-extends TadsCollection(id, vmState, isTransient) {
-  private val _container = new ArrayList[T3Value]
+extends IndexedCollection(id, vmState, isTransient) {
 
   // because of polymorphism, metaClass can't be relied on to make a
   // static search, so we state the metaClass explicitly
@@ -62,15 +61,7 @@ extends TadsCollection(id, vmState, isTransient) {
     else super.getProperty(propertyId, argc)
   }
 
-  def size = _container.size
-  def append(value: T3Value) = _container.add(value)
   def insertAt(index: Int, value: T3Value) = _container.add(index - 1, value)
-  def indexOf(value: T3Value): Int = {
-    for (i <- 0 until _container.size) {
-      if (vmState.t3vmEquals(_container(i), value)) return i + 1
-    }
-    return 0
-  }
   def indexWhich(cond: T3Value): T3Value = {
     printf("indexWhich(), cond: %s, len = %d\n", cond, size)
     for (i <- 0 until size) {
@@ -146,7 +137,7 @@ extends TadsCollection(id, vmState, isTransient) {
     val iter = _container.iterator
     while (iter.hasNext) {
       val current = iter.next
-      if (vmState.t3vmEquals(value, current)) {
+      if (objectSystem.t3vmEquals(value, current)) {
         iter.remove
       }
     }
@@ -167,35 +158,12 @@ extends TadsCollection(id, vmState, isTransient) {
     T3Nil
   }
 
-  // TODO: sort, compareWithFun subset between Vector and List are almost equal, we
-  // should create either a trait or an abstract super class to capture these
-  private def compareWithFun(fun: T3Value,
-                             val1: T3Value, val2: T3Value,
-                             desc: Boolean): Boolean = {
-    vmState.stack.push(val1)
-    vmState.stack.push(val2)
-    new Executor(vmState).executeCallback(fun, 2)
-    val compValue = vmState.r0.value
-    if (desc && compValue < 0) true
-    else if (!desc && compValue > 0) true
-    else false
-  }
-
-  def sort(desc: Boolean, compFunc: T3Value): T3Value = {
-    printf("Vector.sort(desc = %b, fun = %s)\n", desc, compFunc)
-    val seq = _container.toSeq
-    if (compFunc != T3Nil) {
-      val sorted =
-        seq.sortWith((val1, val2) => compareWithFun(compFunc, val1, val2, desc))
-      val result = staticMetaClass.createVector(false)
-      sorted.foreach(result.append(_))
-      result.id
-    } else {
-      throw new UnsupportedOperationException("TODO handle nil sort function")
-    }
+  def createNewFromSeq(seq: Seq[T3Value], isTransient: Boolean) = {
+    val result = staticMetaClass.createVector(isTransient)
+    seq.foreach(result.append(_))
+    result.id
   }
 }
-
 // Image format for vector instances:
 // UINT2 elements_allocated 
 // UINT2 number_of_elements_used
@@ -260,10 +228,7 @@ extends AbstractMetaClass(objectSystem) {
   }
   def indexOf(obj: T3Object, argc: Int): T3Value = {
     argc must_== 1
-    val value = vmState.stack.pop
-    val index = obj.asInstanceOf[Vector].indexOf(value)
-    printf("vector.indexOf(), argc = %d val = %s index = %d\n", argc, value, index)
-    if (index == 0) T3Nil else T3Integer(index)
+    obj.asInstanceOf[Vector].indexOf(vmState.stack.pop)
   }
   def valWhich(obj: T3Object, argc: Int): T3Value = {
     obj.asInstanceOf[Vector].valWhich(vmState.stack.pop)

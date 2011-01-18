@@ -221,16 +221,6 @@ class TadsVMState(val objectSystem: ObjectSystem,
     val obj = stack.valueAt(fp + FpOffsetDefiningObject)
     if (obj == T3Nil) InvalidObjectId else obj
   }
-
-  // the t3vmEquals method is defined on the state object so we
-  // can call it from anywhere
-  def t3vmEquals(value1: T3Value, value2: T3Value): Boolean = {
-    if (value1.valueType == VmObj) {
-      objectSystem.objectWithId(value1.asInstanceOf[T3ObjectId]).t3vmEquals(value2)
-    } else if (value1.valueType == VmSString) {
-      objectSystem.toT3Object(value1).t3vmEquals(value2)
-    } else value1.t3vmEquals(value2)
-  }
 }
 
 // Executors execute a given sequence of instructions. Since an Executor knows all
@@ -303,7 +293,7 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    if (iteration < 200 || iteration >= 74900)
+    if (iteration < 200 || iteration >= 74750)
       printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
              OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
@@ -651,12 +641,13 @@ class Executor(vmState: TadsVMState) {
                                                 .format(opcode))
     }
     // DEBUGGING
-    if (iteration == 74949) {
+   if (iteration == 74948) {
+     //if (iteration == 74808) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 
-    if (iteration >= 74946) {
+    if (iteration >= 74750) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }
@@ -719,24 +710,12 @@ class Executor(vmState: TadsVMState) {
     }
   }
 
-  // generic comparison function on TadsValues
-  // used by conditional branches and comparison instructions
-  // < 0 => value1 < value2
-  //   0 => value1 == value2
-  // > 0 => value1 > value2
   private def compare(value1: T3Value, value2: T3Value): Int = {
-    if (value1.valueType == VmInt && value2.valueType == VmInt) {
-      value1.value - value2.value
-    } else if ((value1.valueType == VmSString || value1.valueType == VmDString) &&
-               (value2.valueType == VmSString || value2.valueType == VmDString)) {
-      throw new UnsupportedOperationException("TODO string compare")
-    } else if (value1.valueType == VmObj) {
-      throw new UnsupportedOperationException("TODO object compare")
-    } else throw new InvalidComparisonException
+    objectSystem.compare(value1, value2)
   }
 
   def t3vmEquals(value1: T3Value, value2: T3Value) = {
-    vmState.t3vmEquals(value1, value2)
+    objectSystem.t3vmEquals(value1, value2)
   }
 
   // instruction implementations

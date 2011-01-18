@@ -92,11 +92,11 @@ object VectorSpec extends Specification {
       vector.append(value3)
       vector.append(value4)
       vector.append(value5)
-      vector.indexOf(value0) must_== 1
-      vector.indexOf(value5) must_== 6
-      vector.indexOf(value2) must_== 3
+      vector.indexOf(value0) must_== T3Integer(1)
+      vector.indexOf(value5) must_== T3Integer(6)
+      vector.indexOf(value2) must_== T3Integer(3)
       // not found
-      vector.indexOf(value6) must_== 0
+      vector.indexOf(value6) must_== T3Nil
     }
     "create a list from a vector" in {
       val vector = new Vector(T3ObjectId(1), vmState, false)

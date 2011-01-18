@@ -56,6 +56,33 @@ object TadsListSpec extends Specification {
       val three = T3Integer(3)
       list.initWith(List(one, two, three))
       list.size must_== 3
+      list.valueAtIndex(T3Integer(1)) must_== T3Integer(1)
+      list.valueAtIndex(T3Integer(2)) must_== T3Integer(2)
+      list.valueAtIndex(T3Integer(3)) must_== T3Integer(3)
+    }
+    "be sorted ascending using standard comparison" in {
+      val list = new TadsList(T3ObjectId(1), vmState, false)
+      val one = T3Integer(1)
+      val two = T3Integer(2)
+      val three = T3Integer(3)
+      list.initWith(List(two, three, one))
+      val newList = objectSystem.toTadsList(list.sort(desc = false, compFunc = T3Nil))
+      newList.size must_== 3
+      newList.valueAtIndex(T3Integer(1)) must_== T3Integer(1)
+      newList.valueAtIndex(T3Integer(2)) must_== T3Integer(2)
+      newList.valueAtIndex(T3Integer(3)) must_== T3Integer(3)
+    }
+    "be sorted descending using standard comparison" in {
+      val list = new TadsList(T3ObjectId(1), vmState, false)
+      val one = T3Integer(1)
+      val two = T3Integer(2)
+      val three = T3Integer(3)
+      list.initWith(List(two, three, one))
+      val newList = objectSystem.toTadsList(list.sort(desc = true, compFunc = T3Nil))
+      newList.size must_== 3
+      newList.valueAtIndex(T3Integer(1)) must_== T3Integer(3)
+      newList.valueAtIndex(T3Integer(2)) must_== T3Integer(2)
+      newList.valueAtIndex(T3Integer(3)) must_== T3Integer(1)
     }
   }
 }

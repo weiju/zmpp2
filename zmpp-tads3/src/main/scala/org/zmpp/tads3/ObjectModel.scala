@@ -443,6 +443,31 @@ class ObjectSystem {
   def toTadsList(value: T3Value): TadsList = {
     toT3Object(value).asInstanceOf[TadsList]
   }
+
+  // the t3vmEquals method is defined here so we can call it from anywhere
+  def t3vmEquals(value1: T3Value, value2: T3Value): Boolean = {
+    if (value1.valueType == VmObj) {
+      objectWithId(value1.asInstanceOf[T3ObjectId]).t3vmEquals(value2)
+    } else if (value1.valueType == VmSString) {
+      toT3Object(value1).t3vmEquals(value2)
+    } else value1.t3vmEquals(value2)
+  }
+
+  // generic comparison function on TadsValues
+  // used by conditional branches and comparison instructions
+  // < 0 => value1 < value2
+  //   0 => value1 == value2
+  // > 0 => value1 > value2
+  def compare(value1: T3Value, value2: T3Value): Int = {
+    if (value1.valueType == VmInt && value2.valueType == VmInt) {
+      value1.value - value2.value
+    } else if ((value1.valueType == VmSString || value1.valueType == VmDString) &&
+               (value2.valueType == VmSString || value2.valueType == VmDString)) {
+      throw new UnsupportedOperationException("TODO string compare")
+    } else if (value1.valueType == VmObj) {
+      throw new UnsupportedOperationException("TODO object compare")
+    } else throw new InvalidComparisonException
+  }
 }
 
 class EnumObjectParams(val matchClass: T3Object, val enumInstances: Boolean,
