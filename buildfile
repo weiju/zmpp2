@@ -32,7 +32,7 @@ define 'zmpp' do
     test.with 'org.scala-tools.testing:specs_2.8.0:jar:1.6.5'
     test.using :specs
     run.using :main => ["org.zmpp.tads3.Tads3Main",
-                        "/Users/weiju/Games/tads3/ditch3.t3"]
+                        "/Users/weiju/Games/tads3/IMustPlay.t3"]
   end
 
   define 'zmpp-zcode' do

@@ -212,7 +212,7 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
         throw new IllegalArgumentException("Illegal argument: %s".format(arg))
       }
     }
-    //printf("CLASS IS: %s, FLAGS IS: %d\n", matchClass.id, flags)
+    printf("CLASS IS: %s, FLAGS IS: %d\n", matchClass.id, flags)
     val enumInstances = (flags & EnumInstances) == EnumInstances
     val enumClasses = (flags & EnumClasses) == EnumClasses
     new EnumObjectParams(matchClass, enumInstances, enumClasses)
