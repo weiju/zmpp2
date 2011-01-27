@@ -82,10 +82,9 @@ extends AbstractT3Object(id, vmState, isTransient) {
     //printf("TadsObject.isInstanceOf() obj = %s\n", id)
     
     for (superClassId <- superClassIds) {
-      //printf("TadsObject.isInstanceOf() super = %d\n", superClassId)
-      if (objectSystem.objectWithId(superClassId) == obj) return true
-      // TODO: we might have to check whether the super class inherits
-      // from obj
+      printf("TadsObject.isInstanceOf() super = %d\n", superClassId)
+      val superClassObj = objectSystem.objectWithId(superClassId)
+      if (superClassObj == obj || superClassObj.isInstanceOf(obj)) return true
     }
     super.isInstanceOf(obj)
   }
@@ -174,6 +173,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
     while (!q.isEmpty) {
       val obj = q.dequeue
       val (found, currentResult) = pred(obj)
+      printf("bfsSuperClasses(), obj = %s, found = %b, currentResult: %s\n", obj.id, found,
+             currentResult)
       if (found) return currentResult
 
       for (superClassId <- obj.superClassIds) {

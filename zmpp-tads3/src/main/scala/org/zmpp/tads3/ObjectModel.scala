@@ -347,7 +347,6 @@ class ObjectSystem {
   }
   def newObjectId = T3ObjectId(newId)
   def registerObject(obj: T3Object) {
-    if (obj.id.value == 25564) printf("CREATING ODD REGEX\n")
     _objectCache(obj.id.value) = obj
   }
   def registerConstant(offset: T3Value, obj: T3Object) {
@@ -418,6 +417,7 @@ class ObjectSystem {
       }
       // TODO: ignore list and string objects
       if (shouldBeChecked) {
+        printf("ObjectSystem.nextObject(enumInstances = %b, enumClasses = %b), currentObj: %s\n", enumParams.enumInstances, enumParams.enumClasses, currentObj.id)
         if (enumParams.matchClass == InvalidObject) return currentObj
         if (currentObj.isInstanceOf(enumParams.matchClass)) return currentObj
       }
