@@ -113,6 +113,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
   }
 
   def startsWith(str: TadsString) = string.startsWith(str.string)
+  def endsWith(str: TadsString) = string.endsWith(str.string)
   def substr(start: Int, length: Int = -1) = {
     // undocumented "feature": indexes are 1-based, but if start is 0,
     // treat it as "1"
@@ -186,11 +187,13 @@ extends AbstractMetaClass(objectSystem) {
   }
   def startsWith(obj: T3Object, argc: Int): T3Value = {
     argc must_== 1
-    val str = objectSystem.toT3Object(vmState.stack.pop).asInstanceOf[TadsString]
+    val str = objectSystem.toTadsString(vmState.stack.pop)
     if (obj.asInstanceOf[TadsString].startsWith(str)) T3True else T3Nil
   }
   def endsWith(obj: T3Object, argc: Int): T3Value = {
-    throw new UnsupportedOperationException("endsWith")
+    argc must_== 1
+    val str = objectSystem.toTadsString(vmState.stack.pop)
+    if (obj.asInstanceOf[TadsString].endsWith(str)) T3True else T3Nil
   }
   def mapToByteArray(obj: T3Object, argc: Int): T3Value = {
     throw new UnsupportedOperationException("toByteArray")

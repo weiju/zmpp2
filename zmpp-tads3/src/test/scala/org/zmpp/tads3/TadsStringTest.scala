@@ -104,5 +104,21 @@ object TadsStringSpec extends Specification {
       val str2 = makeString(2, "")
       str1 must_!= str2
     }
+    "perform endsWith()" in {
+      val str1 = makeString(1, "HelloWorld")
+      val str2 = makeString(2, "World")
+      val str3 = makeString(3, "Welt")
+      
+      str1.endsWith(str2) must beTrue
+      str1.endsWith(str3) must beFalse
+    }
+    "perform startsWith()" in {
+      val str1 = makeString(1, "HelloWorld")
+      val str2 = makeString(2, "Hello")
+      val str3 = makeString(3, "Hallo")
+      
+      str1.startsWith(str2) must beTrue
+      str1.startsWith(str3) must beFalse
+    }
   }
 }
