@@ -28,9 +28,9 @@
  */
 package org.zmpp.tads3
 
-import java.util.ArrayList
-import scala.collection.JavaConversions._
+import scala.collection.mutable.HashMap
 import org.zmpp.base._
+import T3Assert._
 
 // The image file data block is arranged as follows:
   
@@ -60,18 +60,112 @@ import org.zmpp.base._
 // obfuscation in the image file to prevent casual browsing of the image
 // contents.
 
-class Dictionary2(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean)
+case class DictionarySubEntry(val associatedObjectId: Int, val definingPropertyId: Int)
+
+class Dictionary2(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean,
+                  val comparatorObjectId: T3ObjectId)
 extends AbstractT3Object(id, vmState, isTransient) {
+  val entries = new HashMap[String, List[DictionarySubEntry]]()
+  private def staticMetaClass: MetaClass = objectSystem.dictionary2MetaClass
   def metaClass = objectSystem.dictionary2MetaClass
+  def addEntry(key: String, subEntries: List[DictionarySubEntry]) {
+    entries(key) = subEntries
+  }
+
+  def addEntry(key: String, subEntry: DictionarySubEntry) {
+    if (!entries.contains(key)) entries(key) = Nil
+    if (!entries(key).exists(e => e == subEntry)) {
+      entries(key) = subEntry :: entries(key)
+    }
+  }
+
+  // for dictionaries, we search the static property list, which is
+  // in the object's meta class hierarchy
+  override def getProperty(propertyId: Int, argc: Int): Property = {
+    val idx = staticMetaClass.functionIndexForProperty(propertyId)
+    printf("collection prop idx = %d\n", idx)
+    val prop = staticMetaClass.callMethodWithIndex(this, idx, argc)
+    if (prop != InvalidPropertyId) new Property(propertyId, prop, id)
+    else super.getProperty(propertyId, argc)
+  }
+
+  def addWord(obj: T3Value, str: T3Value, vocabProp: T3Value): T3Value = {
+    val key = objectSystem.toTadsString(str).string
+    printf("addWord(%s, %s, %s)\n", obj, key, vocabProp)
+    addEntry(key, DictionarySubEntry(obj.value, vocabProp.value))
+    T3Nil
+  }
 }
 
 class Dictionary2MetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "dictionary2"
+  val FunctionVector = Array(undef _,   setComparator _, findWord _,
+                             addWord _, removeWord _,    isWordDefined _,
+                             forEachWord _)
+
+  def undef(obj: T3Object, argc: Int): T3Value = InvalidPropertyId
+
+  def setComparator(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("setComparator")
+  }
+  def findWord(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("findWord")
+  }
+  def addWord(obj: T3Object, argc: Int): T3Value = {
+    argc must_== 3
+    obj.asInstanceOf[Dictionary2].addWord(vmState.stack.pop,
+                                          vmState.stack.pop,
+                                          vmState.stack.pop)
+  }
+  def removeWord(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("removeWord")
+  }
+  def isWordDefined(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("isWordDefined")
+  }
+  def forEachWord(obj: T3Object, argc: Int): T3Value = {
+    throw new UnsupportedOperationException("forEachWord")
+  }
+
   override def createFromImage(objectId: T3ObjectId,
                                objDataAddr: Int,
                                numBytes: Int,
                                isTransient: Boolean): T3Object = {
-    new Dictionary2(objectId, vmState, isTransient)
+    val comparatorObjId     = imageMem.intAt(objDataAddr)
+    val loadImageEntryCount = imageMem.shortAt(objDataAddr + 4)
+    printf("Dictionary::createFromImage() id = %s, comparator = %d, # entries: %d\n",
+           objectId, comparatorObjId, loadImageEntryCount)
+    val dict = new Dictionary2(objectId, vmState, isTransient,
+                               T3ObjectId(comparatorObjId))
+    var ptr = objDataAddr + 6
+
+    for (i <- 0 until loadImageEntryCount) {
+      val numKeyBytes = imageMem.byteAt(ptr)
+      val keyBytes = new Array[Byte](numKeyBytes)
+      ptr += 1
+      for (b <- 0 until numKeyBytes) {
+        keyBytes(b) = (imageMem.byteAt(ptr + b) ^ 0xbd).asInstanceOf[Byte]
+      }
+      val key = new String(keyBytes, "UTF-8")
+      ptr += numKeyBytes
+      val numSubEntries = imageMem.shortAt(ptr)
+      //printf("DICT-KEY = '%s' #subentries: %d\n", key, numSubEntries)
+      ptr += 2
+      var subEntries : List[DictionarySubEntry] = Nil
+      for (e <- 0 until numSubEntries) {
+        subEntries = DictionarySubEntry(
+          associatedObjectId = imageMem.intAt(ptr),
+          definingPropertyId  = imageMem.shortAt(ptr + 4)) :: subEntries
+        ptr += 6
+      }
+      dict.addEntry(key, subEntries.reverse)
+    }
+    dict
+  }
+
+  override def callMethodWithIndex(obj: T3Object, index: Int,
+                                   argc: Int): T3Value = {
+    FunctionVector(index)(obj, argc)
   }
 }
