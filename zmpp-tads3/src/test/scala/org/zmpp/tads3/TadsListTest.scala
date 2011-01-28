@@ -38,6 +38,7 @@ object TadsListSpec extends Specification {
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
   var vmState : TadsVMState = null
+  def toTadsList(value: T3Value) = objectSystem.toTadsList(value)
 
   "TadsList" should {
     doBefore {
@@ -78,11 +79,57 @@ object TadsListSpec extends Specification {
       val two = T3Integer(2)
       val three = T3Integer(3)
       list.initWith(List(two, three, one))
-      val newList = objectSystem.toTadsList(list.sort(desc = true, compFunc = T3Nil))
+      val newList = toTadsList(list.sort(desc = true, compFunc = T3Nil))
       newList.size must_== 3
       newList.valueAtIndex(T3Integer(1)) must_== T3Integer(3)
       newList.valueAtIndex(T3Integer(2)) must_== T3Integer(2)
       newList.valueAtIndex(T3Integer(3)) must_== T3Integer(1)
+    }
+    "use the + operation with a simple value" in {
+      val list = new TadsList(T3ObjectId(1), vmState, false)
+      val one = T3Integer(1)
+      val two = T3Integer(2)
+      val three = T3Integer(3)
+      list.initWith(List(one, two))
+      val newList = toTadsList(list + three)
+      newList.size must_== 3
+      newList must_!= list
+      newList.valueAtIndex(T3Integer(1)) must_== T3Integer(1)
+      newList.valueAtIndex(T3Integer(2)) must_== T3Integer(2)
+      newList.valueAtIndex(T3Integer(3)) must_== T3Integer(3)
+    }
+    "use the + operation with a non-list object value" in {
+      val list = new TadsList(T3ObjectId(1), vmState, false)
+      val one = T3Integer(1)
+      val two = T3Integer(2)
+      val str = new TadsString(T3ObjectId(3), vmState, false)
+      objectSystem.registerObject(str)
+      list.initWith(List(one, two))
+      val newList = toTadsList(list + str.id)
+      newList.size must_== 3
+      newList must_!= list
+      newList.valueAtIndex(T3Integer(1)) must_== T3Integer(1)
+      newList.valueAtIndex(T3Integer(2)) must_== T3Integer(2)
+      newList.valueAtIndex(T3Integer(3)) must_== T3ObjectId(3)
+    }
+    "use the + operation with a list value" in {
+      val list1 = new TadsList(T3ObjectId(1), vmState, false)
+      val one   = T3Integer(1)
+      val two   = T3Integer(2)
+      val three = T3Integer(3)
+      val four  = T3Integer(4)
+      val list2 = new TadsList(T3ObjectId(2), vmState, false)
+      objectSystem.registerObject(list2)
+      list1.initWith(List(one, two))
+      list2.initWith(List(three, four))
+
+      val newList = toTadsList(list1 + list2.id)
+      newList.size must_== 4
+      newList must_!= list1
+      newList.valueAtIndex(T3Integer(1)) must_== T3Integer(1)
+      newList.valueAtIndex(T3Integer(2)) must_== T3Integer(2)
+      newList.valueAtIndex(T3Integer(3)) must_== T3Integer(3)
+      newList.valueAtIndex(T3Integer(4)) must_== T3Integer(4)
     }
   }
 }

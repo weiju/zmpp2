@@ -104,13 +104,17 @@ extends IndexedCollection(id, vmState, isTransient) {
   }
 
   override def +(value: T3Value): T3Value = {
-    val obj = objectSystem.toT3Object(value)
-    printf("List.+(), value = %s, obj = %s\n", value, obj)
-    if (obj.isOfMetaClass(objectSystem.listMetaClass)) {
-      throw new UnsupportedOperationException("List.add(aList) not yet supported")
+    if (value.isObject) {
+      val obj = objectSystem.toT3Object(value)
+      printf("List.+(), value = %s, obj = %s\n", value, obj)
+      if (obj.isOfMetaClass(objectSystem.listMetaClass)) {
+        val otherList = obj.asInstanceOf[TadsList]
+        staticMetaClass.createList(_container.toSeq ++ otherList._container.toSeq).id
+      } else {
+        staticMetaClass.createList(_container.toSeq :+ value, false).id
+      }
     } else {
-      val newSeq = _container.toSeq :+ value
-      staticMetaClass.createList(newSeq, false).id
+      staticMetaClass.createList(_container.toSeq :+ value, false).id
     }
   }
 
