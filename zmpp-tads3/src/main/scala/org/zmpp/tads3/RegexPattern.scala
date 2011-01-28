@@ -74,12 +74,15 @@ extends AbstractT3Object(id, vmState, isTransient) {
     regexPattern
   }
 
-  // This is a version of search() that only returns the length of the match
-  // and does not create TADS objects, to implement tads-gen.rexMatch()
-  def matches(str: TadsString, index: Int): Int = {
+  // Note: I did not get the semantics of matches() at first:
+  // The idea is that it should match a subststring of any length starting
+  // at index. If the match does not start at index, there is no match
+  def matches(str: TadsString, index: Int): T3Value = {
     currentMatcher = compile.matcher(str.string)
-    if (currentMatcher.find(index - 1)) currentMatcher.group.length
-    else -1
+    if (currentMatcher.find(index - 1) &&
+        currentMatcher.start() == index - 1) {
+      T3Integer(currentMatcher.group.length)
+    } else T3Nil
   }
 
   def search(str: TadsString, index: Int): TadsList = {

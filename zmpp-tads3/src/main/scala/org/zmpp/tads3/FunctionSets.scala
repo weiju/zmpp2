@@ -295,9 +295,10 @@ class TadsGenFunctionSet extends IntrinsicFunctionSet {
     val matchResult =
       patObj.asInstanceOf[RegexPattern].matches(searchStr.asInstanceOf[TadsString],
                                                 index)
-    printf("rexMatch(%s, %s, %d) patObj = %s, searchStr = '%s' matchResult = %d\n",
+    printf("rexMatch(pat = %s, str = %s, idx = %d) patObj = %s, " +
+           "searchStr = '%s' matchResult = %s\n",
            pat, str, index, patObj, searchStr, matchResult)
-    vmState.r0 = if (matchResult == -1) T3Nil else T3Integer(matchResult)
+    vmState.r0 = matchResult
   }
   private def rexSearch(argc: Int) {
     argc mustBeInRange(2, 3)
