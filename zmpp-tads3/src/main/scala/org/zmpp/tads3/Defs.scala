@@ -86,6 +86,8 @@ sealed abstract class T3Value {
   def isTrue = true
   def valueType: Int
   def value = 0
+  def isSimple = true
+  def isObject = !isSimple
 
   override def hashCode: Int = valueType + value
   override def equals(obj: Any): Boolean = {
@@ -126,6 +128,7 @@ case object T3Empty extends T3Value {
 }
 case class T3ListConstant(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmList
+  override def isSimple = false
   override def toString = "list (offset = %d)".format(value)
   override def t3vmEquals(other: T3Value): Boolean = {
     throw new UnsupportedOperationException("not implemented yet")
@@ -138,6 +141,7 @@ case class T3PropertyId(override val value: Int) extends T3Value {
 }
 case class T3ObjectId(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmObj
+  override def isSimple = false
   override def toString = "objectid (value = %d)".format(value)
   override def t3vmEquals(other: T3Value): Boolean = {
     printf("OBJEQLS-COMPARE: %s with %s\n", this, other)
@@ -165,6 +169,7 @@ case class T3StackRef(override val value: Int) extends T3Value {
 }
 case class T3SString(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmSString
+  override def isSimple = false
   override def toString = "sstring (value = %d)".format(value)
   override def t3vmEquals(other: T3Value): Boolean = {
     throw new UnsupportedOperationException(
@@ -173,6 +178,7 @@ case class T3SString(override val value: Int) extends T3Value {
 }
 case class T3DString(override val value: Int) extends T3Value {
   def valueType = TypeIds.VmDString
+  override def isSimple = false
   override def toString = "dstring (value = %d)".format(value)
   override def t3vmEquals(other: T3Value): Boolean = {
     throw new UnsupportedOperationException("not implemented yet")
