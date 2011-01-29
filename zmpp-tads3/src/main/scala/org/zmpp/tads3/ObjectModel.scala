@@ -354,6 +354,7 @@ class ObjectSystem {
   }
   def createFromStack(argc: Int, metaClassId: Int, isTransient: Boolean) = {
     val id = T3ObjectId(newId)
+    printf("%s.createFromStack()\n", _metaClassMap(metaClassId))
     val obj = _metaClassMap(metaClassId).createFromStack(id, argc, isTransient)
     _objectCache(id.value) = obj
     id
