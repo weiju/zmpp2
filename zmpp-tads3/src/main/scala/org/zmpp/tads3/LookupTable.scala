@@ -34,6 +34,54 @@ import org.zmpp.base._
 import TypeIds._
 import T3Assert._
 
+// Due to the organization of a T3 image file, there is no easy/efficient
+// way around implementing our own hash table structure.
+// Of all data structures in T3, lookup tables are the data structures that
+// are (together with regular expressions) the ones that seem to make the least
+// sense in a modern programming platform.
+//
+// Reasons for this:
+// 1. Bucket and value counts are given explicitly in the image file, when
+//    we save the image, we will have to preserve it. Providing a bucket
+//    and value organization factually requires to provide your own hash
+//    table implementation, it might have been more portable to just list
+//    key-value pairs.
+// 2. The Constant Pool Page blocks can come _after_ the static object block
+//    which means at lookup table creation time, we might not have access
+//    to the lookup keys yet.
+//
+// Note: it seems that the image organization not only dictates the hash table
+// organization, but also - the hash function itself !!! That's what it seems
+// to me at least at the moment.
+case class LookupTableEntry(key: T3Value, value: T3Value)
+
+class T3LookupTable(id: T3ObjectId, vmState: TadsVMState,
+                       isTransient: Boolean, bucketCount: Int,
+                       initialValueSize: Int)
+extends AbstractT3Object(id, vmState, isTransient) {
+
+  val _container = new Array[List[LookupTableEntry]](bucketCount)
+  for (i <- 0 until bucketCount) _container(i) = Nil
+
+  def metaClass = objectSystem.lookupTableMetaClass
+  private def staticMetaClass = objectSystem.lookupTableMetaClass
+
+  def addValueToBucket(bucketIndex: Int, key: T3Value, value: T3Value) {
+    val index = bucketIndex - 1
+    _container(index) = LookupTableEntry(key, value) :: _container(index)
+  }
+
+  def valuesInBucket(bucketIndex: Int): Seq[LookupTableEntry] = {
+    _container(bucketIndex - 1).toSeq
+  }
+
+  def entryCount = {
+    var count = 0
+    for (i <- 0 until _container.length) count += _container(i).length
+    count
+  }
+}
+
 class LookupTable(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean,
                   bucketCount: Int, initialValueSize: Int)
 extends AbstractT3Object(id, vmState, isTransient) {

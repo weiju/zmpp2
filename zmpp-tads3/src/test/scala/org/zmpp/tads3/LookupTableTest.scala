@@ -116,4 +116,24 @@ object LookupTableSpec extends Specification {
       keys.size must_== 2
     }
   }
+
+  // new lookup table
+  "T3LookupTable" should {
+    doBefore {
+      objectSystem = new ObjectSystem
+      functionSetMapper = new IntrinsicFunctionSetMapper
+      vmState = new TadsVMState(objectSystem, functionSetMapper)
+    }
+    "be created" in {
+      val lookupTable = new T3LookupTable(T3ObjectId(1), vmState, false, 10, 1)
+      lookupTable.entryCount must_== 0
+    }
+    "add a value to a bucket" in {
+      val lookupTable = new T3LookupTable(T3ObjectId(1), vmState, false, 10, 1)
+      lookupTable.addValueToBucket(1, T3Integer(4), T3Integer(5))
+      lookupTable.entryCount must_== 1
+      val entry = LookupTableEntry(T3Integer(4), T3Integer(5))
+      lookupTable.valuesInBucket(1).contains(entry) must beTrue
+    }
+  }
 }
