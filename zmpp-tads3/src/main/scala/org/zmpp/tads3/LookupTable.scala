@@ -55,90 +55,19 @@ import T3Assert._
 // to me at least at the moment.
 case class LookupTableEntry(key: T3Value, value: T3Value)
 
-class T3LookupTable(id: T3ObjectId, vmState: TadsVMState,
+class LookupTable(id: T3ObjectId, vmState: TadsVMState,
                        isTransient: Boolean, bucketCount: Int,
                        initialValueSize: Int)
 extends AbstractT3Object(id, vmState, isTransient) {
 
-  val _container = new Array[List[LookupTableEntry]](bucketCount)
-  for (i <- 0 until bucketCount) _container(i) = Nil
+  val _buckets = new Array[List[LookupTableEntry]](bucketCount)
+  for (i <- 0 until bucketCount) _buckets(i) = Nil
 
   def metaClass = objectSystem.lookupTableMetaClass
   private def staticMetaClass = objectSystem.lookupTableMetaClass
 
-  def addValueToBucket(bucketIndex: Int, key: T3Value, value: T3Value) {
-    val index = bucketIndex - 1
-    _container(index) = LookupTableEntry(key, value) :: _container(index)
-  }
-
-  def valuesInBucket(bucketIndex: Int): Seq[LookupTableEntry] = {
-    _container(bucketIndex - 1).toSeq
-  }
-
-  def entryCount = {
-    var count = 0
-    for (i <- 0 until _container.length) count += _container(i).length
-    count
-  }
-}
-
-class LookupTable(id: T3ObjectId, vmState: TadsVMState, isTransient: Boolean,
-                  bucketCount: Int, initialValueSize: Int)
-extends AbstractT3Object(id, vmState, isTransient) {
-  // we store hash keys and the values in separate collections,
-  // since we can not simply call hashCode() on every T3Value
-  // TODO: this is not entirely water-proof. Different values might be
-  // mapping to the same hashcode.
-  val _keys = new HashSet[T3Value]
-  val _container = new HashMap[Int, T3Value]
-
-  def metaClass = objectSystem.lookupTableMetaClass
-  private def staticMetaClass = objectSystem.lookupTableMetaClass
-
-  def entryCount = _keys.size
-
-  private def isStringOrObject(key: T3Value) = {
-    key.valueType == VmSString || key.valueType == VmObj
-  }
-
-  def isKeyPresent(key: T3Value) = {
-    // we need to check whether the key is a string constant or a reference
-    // to a string object
-    if (isStringOrObject(key)) _container.contains(makeHash(key))
-    else _keys.contains(key)
-  }
-  // implements "array-like" access semantics
-  def apply(key: T3Value): T3Value = {
-    _container(makeHash(key))
-  }
-  def update(key: T3Value, value: T3Value) {
-    if (!isKeyPresent(key)) _keys += key
-    _container(makeHash(key)) = value
-  }
-  def removeElement(key: T3Value): T3Value = {
-    if (isKeyPresent(key)) {
-      val result = this(key)
-      _keys -= key
-      _container -= makeHash(key)
-      result
-    } else T3Nil
-  }
-  def forEachAssoc(func: T3Value) {
-    printf("forEachAssoc(), func = %s\n", func)
-    _keys.foreach(key => {
-      printf("iteration -> (k = %s, v = %s)\n", key, this(key))
-      vmState.stack.push(this(key))
-      vmState.stack.push(key)
-      new Executor(vmState).executeCallback(func, 2)
-    })
-  }
-
-  def keysToList: T3ObjectId = {
-    objectSystem.listMetaClass.createList(_keys.toSeq).id
-  }
-
-  private def makeHash(key: T3Value) = {
-    if (key.valueType == VmSString) {
+  private def bucketIndexFor(key: T3Value) = {
+    val rawHash = if (key.valueType == VmSString) {
       objectSystem.stringConstantWithOffset(key.asInstanceOf[T3SString]).hashCode
     } else if (key.valueType == VmEnum || key.valueType == VmInt) {
       key.value
@@ -147,16 +76,80 @@ extends AbstractT3Object(id, vmState, isTransient) {
     } else {
       throw new UnsupportedOperationException("unsupported hash type")
     }
+    rawHash % bucketCount
   }
 
-  override def valueAtIndex(index: T3Value): T3Value = {
-    if (isKeyPresent(index)) this(index) else T3Nil
+  // bucketIndex _must_ be 0-based !!!
+  def addValueToBucket(bucketIndex: Int, key: T3Value, value: T3Value) {
+    _buckets(bucketIndex) = _buckets(bucketIndex) :+ LookupTableEntry(key, value)
   }
+
+  def valuesInBucket(bucketIndex: Int): Seq[LookupTableEntry] = {
+    _buckets(bucketIndex - 1).toSeq
+  }
+
+  def entryCount = {
+    var count = 0
+    for (i <- 0 until _buckets.length) count += _buckets(i).length
+    count
+  }
+
+  def removeElement(key: T3Value): T3Value = {
+    val bucketIndex = bucketIndexFor(key)
+    val previous = this(key)
+    if (previous != T3Nil) {
+      _buckets(bucketIndex) = _buckets(bucketIndex).filter(entry =>
+        entry.key != key)
+    }
+    previous
+  }
+  def forEachAssoc(func: T3Value) {
+    printf("forEachAssoc(), func = %s\n", func)
+    for (bucket <- _buckets; entry <- bucket) {
+      printf("iteration -> (k = %s, v = %s)\n", entry.key, entry.value)
+      vmState.stack.push(entry.value)
+      vmState.stack.push(entry.key)
+      new Executor(vmState).executeCallback(func, 2)
+    }
+  }
+  def apply(key: T3Value): T3Value = {
+    val bucketIndex = bucketIndexFor(key)
+    for (entry <- _buckets(bucketIndex)) {
+      if (entry.key == key) return entry.value
+    }
+    T3Nil
+  }
+  def update(key: T3Value, value: T3Value) {
+    val bucketIndex = bucketIndexFor(key)
+    val listIndex = _buckets(bucketIndex).indexWhere(entry =>
+      entry.key == key
+    )
+    if (listIndex == -1)
+      addValueToBucket(bucketIndex, key, value)
+    else {
+      _buckets(bucketIndex) =
+        _buckets(bucketIndex).updated(listIndex,
+                                      LookupTableEntry(key, value))
+    }
+  }
+  def keysToList: T3ObjectId = {
+    var result: List[T3Value] = Nil
+    for (bucket <- _buckets ; entry <- bucket) {
+      result = entry.key :: result
+    }
+    objectSystem.listMetaClass.createList(result).id
+  }
+  def isKeyPresent(key: T3Value): Boolean = {
+    val bucketIndex = bucketIndexFor(key)
+    for (entry <- _buckets(bucketIndex)) if (entry.key == key) return true
+    false
+  }
+
+  override def valueAtIndex(index: T3Value): T3Value = this(index)
   override def setValueAtIndex(index: T3Value, newValue: T3Value): T3ObjectId = {
     this(index) = newValue
-    id // return this object
+    id
   }
-
   override def getProperty(propertyId: Int, argc: Int): Property = {
     val idx = staticMetaClass.functionIndexForProperty(propertyId)
     printf("lookup-table prop idx = %d\n", idx)
@@ -220,30 +213,25 @@ extends AbstractMetaClass(objectSystem) {
     val valueCount     = imageMem.shortAt(objDataAddr + 2)
     val firstFreeIndex = imageMem.shortAt(objDataAddr + 4)
     val bucketStart    = objDataAddr + 6
+    var valueStart     = bucketStart + 2 * bucketCount
+    val valueSize      = 2 * DataHolder.Size + 2
 
     val lookupTable = new LookupTable(objectId, vmState, isTransient,
                                       bucketCount, valueCount)
-    //  printf("LookupTable::createFromImage(%s), bucketCount: %d, valueCount: %d, firstFreeIndex: %d\n", objectId, bucketCount, valueCount, firstFreeIndex)
-    for (i <- 0 until bucketCount) {
-      val bucketIndex = imageMem.shortAt(bucketStart + 2 * i)
-    }
-    var valueAddr = bucketStart + 2 * bucketCount
-    val valueSize = 2 * DataHolder.Size + 2
-    var nextFree  = firstFreeIndex
+    printf("LookupTable::createFromImage(%s), bucketCount: %d, valueCount: %d, firstFreeIndex: %d\n", objectId, bucketCount, valueCount, firstFreeIndex)
 
-    for (i <- 0 until valueCount) {
-      if (i + 1 == nextFree) {
-        nextFree = imageMem.shortAt(valueAddr + 2 * DataHolder.Size)
-      } else {
-        val key = T3Value.readDataHolder(imageMem, valueAddr)
-        val value = T3Value.readDataHolder(imageMem, valueAddr + DataHolder.Size)
-        val nextIndex = imageMem.shortAt(valueAddr + 2 * DataHolder.Size)
-        if (key != T3Empty) lookupTable(key) = value
-        //printf("value[%d] = {k: %s, v: %s, nextIdx: %d}\n", i,
-        //         objectSystem.toT3Object(key), value, nextIndex)
+    // the only data that is interesting are the actual values in the
+    // buckets. If the index is > 0, we build the list of values for
+    // the current bucket
+    for (bucketIndex <- 0 until bucketCount) {
+      var valueIndex = imageMem.shortAt(bucketStart + 2 * bucketIndex)
+      while (valueIndex != 0) {
+        val valueAddr = valueStart + (valueIndex - 1) * valueSize
+        val key       = T3Value.readDataHolder(imageMem, valueAddr)
+        val value     = T3Value.readDataHolder(imageMem, valueAddr + DataHolder.Size)
+        lookupTable.addValueToBucket(bucketIndex, key, value)
+        valueIndex    = imageMem.shortAt(valueAddr + 2 * DataHolder.Size)
       }
-
-      valueAddr += valueSize
     }
     lookupTable
   }
