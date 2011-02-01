@@ -76,6 +76,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
     } else {
       throw new UnsupportedOperationException("unsupported hash type")
     }
+    printf("bucketIndexFor(key = %s), rawHash = %d, finalHash = %d\n",
+           key, rawHash, rawHash % bucketCount)
     rawHash % bucketCount
   }
 
@@ -112,18 +114,23 @@ extends AbstractT3Object(id, vmState, isTransient) {
       new Executor(vmState).executeCallback(func, 2)
     }
   }
+  private def t3vmEquals(value1: T3Value, value2: T3Value) = {
+    objectSystem.t3vmEquals(value1, value2)
+  }
+
   def apply(key: T3Value): T3Value = {
     val bucketIndex = bucketIndexFor(key)
+    printf("apply(%s)\n", key)
     for (entry <- _buckets(bucketIndex)) {
-      if (entry.key == key) return entry.value
+      printf("compare %s with [%s]\n", entry.key, key)
+      if (t3vmEquals(entry.key, key)) return entry.value
     }
+    println("not found")
     T3Nil
   }
   def update(key: T3Value, value: T3Value) {
     val bucketIndex = bucketIndexFor(key)
-    val listIndex = _buckets(bucketIndex).indexWhere(entry =>
-      entry.key == key
-    )
+    val listIndex = _buckets(bucketIndex).indexWhere(entry => t3vmEquals(entry.key, key))
     if (listIndex == -1)
       addValueToBucket(bucketIndex, key, value)
     else {
@@ -141,7 +148,7 @@ extends AbstractT3Object(id, vmState, isTransient) {
   }
   def isKeyPresent(key: T3Value): Boolean = {
     val bucketIndex = bucketIndexFor(key)
-    for (entry <- _buckets(bucketIndex)) if (entry.key == key) return true
+    for (entry <- _buckets(bucketIndex)) if (t3vmEquals(entry.key, key)) return true
     false
   }
 

@@ -47,10 +47,18 @@ extends AbstractT3Object(id, vmState, isTransient) {
   def init(str: String) = this.string = str
   def length = string.length
   override def toString = string
-  override def hashCode = string.hashCode
-  override def equals(o: Any): Boolean = o match {
-    case other: TadsString => string.equals(other.string)
-    case _ => false
+
+  // note that we need to adjust hashCode to work like
+  // the one that TADS 3 uses since we are forced to use the same
+  // hashing scheme
+  override def hashCode = string.foldLeft(0)((sum, c) => sum + c)
+
+  override def equals(o: Any): Boolean = {
+    printf("TadsString[%s].equals(%s)\n", this, o)
+    o match {
+      case other: TadsString => string.equals(other.string)
+      case _ => false
+    }
   }
 
   override def t3vmEquals(other: T3Value): Boolean = {
@@ -60,6 +68,8 @@ extends AbstractT3Object(id, vmState, isTransient) {
       printf("string.t3vmEquals() (%d) '%s', other(%d) = '%s'\n",
              id.value, this, otherString.id.value, otherString)
       this.equals(otherString)
+    } else if (other.valueType == VmObj) {
+      this.equals(objectSystem.toT3Object(other))
     } else {
       throw new UnsupportedOperationException("unsupported T3value type")
     }
