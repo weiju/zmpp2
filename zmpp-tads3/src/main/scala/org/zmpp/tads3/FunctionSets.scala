@@ -452,8 +452,13 @@ object TadsIoFunctionSet {
   val SysInfoIClassText    = 1
   val SysInfoIClassTextGui = 2
   val SysInfoIClassHtml    = 3
+
+  val CharsetDisplay       = 1
+  val CharsetFilename      = 2
+  val CharsetFileContents  = 3
 }
 class TadsIoFunctionSet extends IntrinsicFunctionSet {
+  import TadsIoFunctionSet._
   def name = "tads-io"
   var tadsOutput: TadsOutput = null
 
@@ -517,8 +522,14 @@ class TadsIoFunctionSet extends IntrinsicFunctionSet {
     throw new UnsupportedOperationException("tads-io.setScriptFile() not implemented yet")
   }
   private def getLocalCharSet(argc: Int) {
-    throw new UnsupportedOperationException("tads-io.getLocalCharSet() not " +
-                                            "implemented yet")
+    argc must_== 1
+    val which = vmState.stack.pop.value
+    printf("getLocalCharSet(%d)\n", which)
+    which match {
+      case CharsetDisplay =>
+        vmState.r0 = objectSystem.stringMetaClass.createString("utf8").id
+      case _ => throw new UnsupportedOperationException("TODO")
+    }
   }
   private def flushOutput(argc: Int) {
     throw new UnsupportedOperationException("tads-io.flushOutput() not implemented yet")
