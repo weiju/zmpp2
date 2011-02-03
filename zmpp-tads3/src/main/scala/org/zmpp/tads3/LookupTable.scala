@@ -68,10 +68,13 @@ extends AbstractT3Object(id, vmState, isTransient) {
 
   private def bucketIndexFor(key: T3Value) = {
     val rawHash = if (key.valueType == VmSString) {
+      println("calculating hash for sstring")
       objectSystem.stringConstantWithOffset(key.asInstanceOf[T3SString]).hashCode
     } else if (key.valueType == VmEnum || key.valueType == VmInt) {
+      println("calculating hash for int/enum")
       key.value
     } else if (key.valueType == VmObj) {
+      println("calculating hash for obj: " + objectSystem.objectWithId(key.value))
       objectSystem.objectWithId(key.value).hashCode
     } else {
       throw new UnsupportedOperationException("unsupported hash type")
@@ -105,6 +108,18 @@ extends AbstractT3Object(id, vmState, isTransient) {
     }
     previous
   }
+
+  override def toString = {
+    val builder = new StringBuilder
+    builder.append("LookupTable [%s] { ".format(id))
+    for (bucket <- _buckets; entry <- bucket) {
+      builder.append(entry)
+      builder.append(",\n")
+    }
+    builder.append(" }")
+    builder.toString
+  }
+
   def forEachAssoc(func: T3Value) {
     printf("forEachAssoc(), func = %s\n", func)
     for (bucket <- _buckets; entry <- bucket) {

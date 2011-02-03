@@ -61,7 +61,10 @@ extends IndexedCollection(id, vmState, isTransient) {
     else super.getProperty(propertyId, argc)
   }
 
-  def insertAt(index: Int, value: T3Value) = _container.add(index - 1, value)
+  def insertAt(index: Int, value: T3Value) {
+    printf("Vector[%d].insertAt(%d, %s)\n", id.value, index, value)
+    _container.add(index - 1, value)
+  }
   def indexWhich(cond: T3Value): T3Value = {
     printf("indexWhich(), cond: %s, len = %d\n", cond, size)
     for (i <- 0 until size) {
@@ -76,6 +79,7 @@ extends IndexedCollection(id, vmState, isTransient) {
 
   override def valueAtIndex(index: T3Value): T3Value = _container(index.value - 1)
   override def setValueAtIndex(index: T3Value, newValue: T3Value): T3ObjectId = {
+    printf("Vector[%d].setValueAtIndex(%s, %s)\n", id.value, index, newValue)
     val oldValue = _container(index.value - 1)
     _container(index.value - 1) = newValue
     id // return this object
@@ -159,6 +163,7 @@ extends IndexedCollection(id, vmState, isTransient) {
   }
 
   def createNewFromSeq(seq: Seq[T3Value], isTransient: Boolean) = {
+    printf("Vector.createNewFromSeq(%s)\n", seq)
     val result = staticMetaClass.createVector(isTransient)
     seq.foreach(result.append(_))
     result.id

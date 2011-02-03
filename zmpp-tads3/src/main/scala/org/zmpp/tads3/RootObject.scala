@@ -41,8 +41,11 @@ extends T3Object {
   def isClassObject = false
   def metaClass: MetaClass
   def objectSystem = vmState.objectSystem
-  override def hashCode = id.hashCode
-/*
+
+  // this was just copied from the reference implementation
+  override def hashCode = (id.value & 0xffff) ^ ((id.value & 0xffff0000) >> 16)
+
+  /*
   override def equals(other: Any): Boolean = {
     other match {
       case other:T3Object => this.t3vmEquals(other.id)
