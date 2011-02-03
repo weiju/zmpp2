@@ -293,7 +293,7 @@ class Executor(vmState: TadsVMState) {
     val opcode   = vmState.nextCodeByte
 
     // debug
-    if (iteration < 200 || iteration >= 74750)
+    //if (iteration < 200 || iteration >= 74750)
       printf("%04d: $%04x - %s[%02x]\n", iteration, vmState.ip - 1,
              OpcodeNames.opcodeName(opcode), opcode)
     iteration += 1
@@ -303,7 +303,17 @@ class Executor(vmState: TadsVMState) {
     opcode match {
       case Add          =>
         val val2 = vmState.stack.pop
-        vmState.stack.push(add(vmState.stack.pop, val2))        
+        vmState.stack.push(add(vmState.stack.pop, val2))
+      case AddILcl1     =>
+        val localNum = nextByteOperand
+        vmState.setLocal(localNum,
+                         add(vmState.getLocal(localNum),
+                             T3Integer(nextSignedByteOperand)))
+      case AddILcl4     =>
+        val localNum = nextShortOperand
+        vmState.setLocal(localNum,
+                         add(vmState.getLocal(localNum),
+                             T3Integer(nextIntOperand)))
       case AddToLcl     =>
         val localNum = nextShortOperand
         vmState.setLocal(localNum, add(vmState.getLocal(localNum), vmState.stack.pop))
@@ -331,6 +341,8 @@ class Executor(vmState: TadsVMState) {
       case BuiltinA     =>
         functionSetMapper.callBuiltin(varargc, nextByteOperand, 0)
       case BuiltinB     =>
+/*
+        // hacks for ditch3
         if (iteration == 30870 || iteration == 45517 || iteration == 46305) {
           // actually 30869/45516/46304
           // cheating to get ditch3.t3 running, because there is a
@@ -344,6 +356,9 @@ class Executor(vmState: TadsVMState) {
         } else {
           functionSetMapper.callBuiltin(varargc, nextByteOperand, 1)
         }
+        */
+        // normal behavior
+        functionSetMapper.callBuiltin(varargc, nextByteOperand, 1)
       case BuiltinC     =>
         functionSetMapper.callBuiltin(varargc, nextByteOperand, 2)
       case BuiltinD     =>
@@ -375,6 +390,9 @@ class Executor(vmState: TadsVMState) {
         val propId = nextShortOperand
         throw new UnsupportedOperationException("TODO")
       case Disc         => vmState.stack.pop
+      case Div          =>
+        val val2 = vmState.stack.pop
+        vmState.stack.push(div(vmState.stack.pop, val2))
       case Dup          => vmState.stack.dup
       case Eq           =>
         val val2 = vmState.stack.pop
@@ -640,14 +658,20 @@ class Executor(vmState: TadsVMState) {
         throw new UnsupportedOperationException("unknown opcode: 0x%02x"
                                                 .format(opcode))
     }
+
     // DEBUGGING
-   if (iteration == 74948) {
-     //if (iteration == 74808) {
+    /*
+    if (iteration == 74948) { // ditch3
+    if (iteration == 74800) { // problem points */
+   
+    if (iteration == 50001) {
+    //if (iteration == 18690) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
     }
 
-    if (iteration >= 74750) {
+    //if (iteration < 15 || iteration >= 74750) {
+    if (iteration >= 18695 && iteration < 19635) {
       println("R0 = " + vmState.r0)
       println(vmState.stack)
     }
@@ -702,7 +726,16 @@ class Executor(vmState: TadsVMState) {
 
   private def mul(value1: T3Value, value2: T3Value): T3Value = {
     if (value1.valueType == VmInt && value2.valueType == VmInt) {
-      T3Integer(value1.value + value2.value)
+      T3Integer(value1.value * value2.value)
+    } else if (value1.valueType == VmObj) {
+      throw new UnsupportedOperationException("TODO")
+    } else {
+      throw new BadTypeMulException
+    }
+  }
+  private def div(value1: T3Value, value2: T3Value): T3Value = {
+    if (value1.valueType == VmInt && value2.valueType == VmInt) {
+      T3Integer(value1.value / value2.value)
     } else if (value1.valueType == VmObj) {
       throw new UnsupportedOperationException("TODO")
     } else {

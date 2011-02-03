@@ -295,6 +295,7 @@ object Opcodes {
   val Shl             = 0x27
   val Shr             = 0x28
   val Xor             = 0x29
+  val Div             = 0x2a
   val Mod             = 0x2b
   val Not             = 0x2c
   val Boolize         = 0x2d
@@ -430,6 +431,7 @@ object OpcodeNames {
     DecLcl          -> "DECLCL",
     Delegate        -> "DELEGATE",
     Disc            -> "DISC",
+    Div             -> "DIV",
     Dup             -> "DUP",
     Eq              -> "EQ",
     Ge              -> "GE",
