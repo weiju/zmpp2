@@ -403,6 +403,11 @@ class Executor(vmState: TadsVMState) {
         val propId = nextShortOperand
         val objId  = nextIntOperand
         throw new UnsupportedOperationException("TODO")
+      case Ge           =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        vmState.stack.push(if (compare(val1, val2) >= 0) T3True else T3Nil)
+      case IdxInt8      => index(vmState.stack.pop, T3Integer(nextByteOperand))
       case GetArg1      =>
         vmState.stack.push(vmState.getArg(nextByteOperand))
       case GetArg2      => vmState.stack.push(vmState.getArg(nextShortOperand))
@@ -414,6 +419,10 @@ class Executor(vmState: TadsVMState) {
       case GetPropR0    => callProp(0, vmState.r0, nextShortOperand)
       case GetPropSelf  => callProp(0, vmState.currentSelf, nextShortOperand)
       case GetR0        => vmState.stack.push(vmState.r0)
+      case Gt           =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        vmState.stack.push(if (compare(val1, val2) > 0) T3True else T3Nil)
       case IdxInt8      => index(vmState.stack.pop, T3Integer(nextByteOperand))
       case IdxLcl1Int8  => index(vmState.getLocal(nextByteOperand),
                                  T3Integer(nextByteOperand))
@@ -469,6 +478,10 @@ class Executor(vmState: TadsVMState) {
         if (!stackTop.isTrue) vmState.stack.pop
         branchIfTrue(stackTop.isTrue)
       case Jt           => branchIfTrue(vmState.stack.pop.isTrue)
+      case Le           =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        vmState.stack.push(if (compare(val1, val2) <= 0) T3True else T3Nil)
       case LJsr         =>
         vmState.stack.pushInt((vmState.ip + 2) - vmState.ep)
         vmState.ip += nextShortOperand
@@ -477,6 +490,10 @@ class Executor(vmState: TadsVMState) {
         if (retOffset.valueType == VmInt) {
           vmState.ip = vmState.ep + retOffset.value
         } else throw new IntValRequiredException
+      case Lt           =>
+        val val2 = vmState.stack.pop
+        val val1 = vmState.stack.pop
+        vmState.stack.push(if (compare(val1, val2) < 0) T3True else T3Nil)
       case MakeLstPar   =>
         val value = vmState.stack.pop
         val argc  = vmState.stack.pop
@@ -664,7 +681,7 @@ class Executor(vmState: TadsVMState) {
     if (iteration == 74948) { // ditch3
     if (iteration == 74800) { // problem points */
    
-    if (iteration == 50001) {
+    if (iteration == 90001) {
     //if (iteration == 18690) {
       vmState.runState = RunStates.Halted
       printf("MAX DEBUG ITERATION REACHED")
