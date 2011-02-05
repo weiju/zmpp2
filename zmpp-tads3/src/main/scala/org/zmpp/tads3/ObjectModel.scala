@@ -186,13 +186,6 @@ class IntClassModMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "int-class-mod"
 }
-class CharacterSetMetaClass(objectSystem: ObjectSystem)
-extends AbstractMetaClass(objectSystem) {
-  def name = "character-set"
-  override def hashCode: Int = {
-    throw new UnsupportedOperationException("TODO")
-  }
-}
 class ByteArrayMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "bytearray"

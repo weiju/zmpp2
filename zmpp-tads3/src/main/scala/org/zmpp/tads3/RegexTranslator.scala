@@ -50,6 +50,28 @@ import scala.collection.JavaConversions._
 // Here I wanted to say that I used the cool Scala parser combinator library,
 // but I did not, it seems more efficient and simple to just do a straightforward
 // implementation
+//
+// Some dirty facts about T3 regexes:
+//
+// - regexes recognize the following special characters at the main level
+//   of an expression:
+//
+//     '^' | '$' | '(' | ')' | '|' |  '<' | '%' | '.' | '['
+//
+//   This means
+//
+//     '*' | '+' | '?' | '{' | '}'
+//
+//   can appear at main level and are then recognized as a regular character.
+//   These are only recognized in the "postfix" position state of the reference
+//   parser.
+//   Perl-style regexes might choke on this, because, as in T3, these are
+//   special characters, but the parsers will treat them as such even when
+//   in postfix position.
+//   Since we translate to a Java regex (which is a Perl regex), we need
+//   to explicitly escape said special characters when they are in the main
+//   position. The closing mustache needs to be escaped when it closes
+//   a non-postfix opening mustache.
 
 object RegexTranslator {
   val Punctuation = Set('%', '<', '>' )
