@@ -72,7 +72,6 @@ import scala.collection.JavaConversions._
 //   to explicitly escape said special characters when they are in the main
 //   position. The closing mustache needs to be escaped when it closes
 //   a non-postfix opening mustache.
-
 object RegexTranslator {
   val Punctuation = Set('%', '<', '>' )
   val SymbolMappings = Map("langle"   -> "<",   "rangle"    -> ">",
@@ -101,12 +100,60 @@ object RegexTranslator {
 class RegexTranslator(str: String) {
   import RegexTranslator._
 
-  private var i             = 0
+  private var parsePos    = 0
   private val builder       = new StringBuilder
   private var negate        = false
   private var caseSensitive = true
 
+  def translate = {
+    printf("RegexTranslator.translate('%s')\n", str)
+
+    while (parsePos < str.length) {
+      if (!handleRangeExpression) {
+        val c = str.charAt(parsePos)
+        if (isPunctuation(c)) handlePunctuation
+        else {
+          // this is the "non-postfix exception", escape the characters
+          // that are special in postfix position to work around a
+          // non-documented feature/bug in the reference implementation
+          // which is used in at least one game (AllHope.t3)
+          if (isPostfixSpecialChar(c)) builder.append("\\")
+          builder.append(c)
+          parsePos += 1
+        }
+      }
+      // because of the "non-postfix exception", we have to
+      // parse a postfix position in the translation mechanism.
+      if (parsePos < str.length) handlePostfix
+    }
+    (caseSensitive, builder.toString)
+  }
+
+  private def handleRangeExpression = {
+    if (str.charAt(parsePos) != '[') false
+    else {
+      var inRangeExpression = true
+      while (inRangeExpression && parsePos < str.length) {
+        val c = str.charAt(parsePos)
+        builder.append(c)
+        parsePos += 1
+        if (c == ']') inRangeExpression = false
+      }
+      true
+    }
+  }
+
   private def isPunctuation(c: Char) = Punctuation.contains(c)
+
+  private def handlePunctuation {
+    val c = str.charAt(parsePos)
+    if (c == '%') escapeCharacter
+    else if (c == '<') angleExpression
+    else {
+      throw new UnsupportedOperationException("unsupported punctuation: '%c'\n".format(c))
+    }
+  }
+
 
   // handle the '%' character
   // in the regular case, this will simply replace '%' with '\\'
@@ -114,10 +161,10 @@ class RegexTranslator(str: String) {
   // - '%<' and '%>' => '\\b' (Java/Perl do not support 'end of word')
   private def escapeCharacter {
     builder.append('\\')
-    val nextChar = str.charAt(i + 1)
+    val nextChar = str.charAt(parsePos + 1)
     if (nextChar == '<' || nextChar == '>') builder.append('b')
     else builder.append(nextChar)
-    i += 2
+    parsePos += 2
   }
 
   // This is the part that differs the most from normal (Perl) regular
@@ -125,17 +172,17 @@ class RegexTranslator(str: String) {
   // - between the angles comes a list of expressions, separated by '|'
   // - a '^' negates the content
   private def angleExpression {
-    i += 1
-    negate = if (str.charAt(i) == '^') {
-      i += 1
+    parsePos += 1
+    negate = if (str.charAt(parsePos) == '^') {
+      parsePos += 1
       true
     } else false
     val contentStringBuilder = new StringBuilder
-    while (str.charAt(i) != '>') {
-      contentStringBuilder.append(str.charAt(i))
-      i += 1
+    while (str.charAt(parsePos) != '>') {
+      contentStringBuilder.append(str.charAt(parsePos))
+      parsePos += 1
     }
-    i += 1 // skip the terminator '>'
+    parsePos += 1 // skip the terminator '>'
     val comps = contentStringBuilder.toString.split('|')
     var identifiers = comps.map(comp => if (comp.contains("-")) comp.trim
                                         else comp.trim.toLowerCase)
@@ -157,28 +204,28 @@ class RegexTranslator(str: String) {
     }
   }
 
-  private def handlePunctuation {
-    val c = str.charAt(i)
-    if (c == '%') escapeCharacter
-    else if (c == '<') angleExpression
-    else {
-      throw new UnsupportedOperationException("unsupported punctuation: '%c'\n".format(c))
+  private def handlePostfix = {
+    if (str.charAt(parsePos) == '{') {
+      var inRepetitionDef = true
+      while (inRepetitionDef && parsePos < str.length) {
+        val c = str.charAt(parsePos)
+        builder.append(c)
+        if (c == '}') inRepetitionDef = false
+        parsePos += 1
+      }
+    } else if (isPostfixSpecialCharPos1(str.charAt(parsePos))) {
+      builder.append(str.charAt(parsePos))
+      parsePos += 1
     }
   }
 
-  def translate = {
-    printf("RegexTranslator.translate('%s')\n", str)
-    var inRangeExpression = false
-    while (i < str.length) {
-      val c = str.charAt(i)
-      if (!inRangeExpression && isPunctuation(c)) handlePunctuation
-      else {
-        if (inRangeExpression && c == ']') inRangeExpression = false
-        else if (c == '[') inRangeExpression = true
-        builder.append(c)
-        i += 1
-      }
-    }
-    (caseSensitive, builder.toString)
+  // note that we exclude the '}' character here so we only handle
+  // it either in non-postfix or ending a postfix expression
+  private def isPostfixSpecialCharPos1(c: Char) = {
+    c == '*' || c == '+' || c == '?' | c == '{'
+  }
+
+  private def isPostfixSpecialChar(c: Char) = {
+    isPostfixSpecialCharPos1(c) || c == '}'
   }
 }
