@@ -32,6 +32,7 @@ import java.util.ArrayList
 import java.util.regex._
 import scala.collection.JavaConversions._
 import org.zmpp.base._
+import T3Assert._
 
 // RegexPatterns are stored in the image as pointers to string constants
 // For efficiency, the underlying pattern strings are retrieved when a
@@ -136,5 +137,11 @@ extends AbstractMetaClass(objectSystem) {
     pattern.init(str.id)
     objectSystem.registerObject(pattern)
     pattern
+  }
+
+  override def createFromStack(id: T3ObjectId, argc: Int,
+                               isTransient: Boolean) = {
+    argc must_== 1
+    createFromTadsString(objectSystem.toTadsString(vmState.stack.pop))
   }
 }
