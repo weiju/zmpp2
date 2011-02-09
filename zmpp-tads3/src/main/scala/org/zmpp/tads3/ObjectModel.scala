@@ -107,7 +107,7 @@ trait MetaClass {
   // This is so each object only needs to store the reference to its
   // meta class, but can still query the system state if necessary
   var id: Int
-  var vmState: TadsVMState
+  def vmState: TadsVMState
   def name: String
 
   // instead of creating a parallel inheritance hierarchy of meta classes
@@ -170,7 +170,7 @@ abstract class AbstractMetaClass(val objectSystem: ObjectSystem) extends MetaCla
     } else prop
   }
   var id: Int = 0
-  var vmState: TadsVMState = null
+  def vmState = objectSystem.vmState
   def imageMem = vmState.image.memory
   def addFunctionMapping(propertyId: Int, functionIndex: Int) {
     printf("%s.addFunctionMapping(%d, %d)\n", name, propertyId, functionIndex)
@@ -196,10 +196,6 @@ extends AbstractMetaClass(objectSystem) {
 class WeakRefLookupTableMetaClass(objectSystem: ObjectSystem)
 extends AbstractMetaClass(objectSystem) {
   def name = "weakreflookuptable"
-}
-class FileMetaClass(objectSystem: ObjectSystem)
-extends AbstractMetaClass(objectSystem) {
-  def name = "file"
 }
 
 // Predefined symbols that the image defines. Can be accessed by the VM through
@@ -307,7 +303,6 @@ class ObjectSystem {
     _metaClassMap(metaClassIndex) = MetaClasses(name)
     _metaClassMap(metaClassIndex).reset
     _metaClassMap(metaClassIndex).id      = metaClassIndex
-    _metaClassMap(metaClassIndex).vmState = vmState
   }
 
   def addMetaClassPropertyId(metaClassIndex: Int, propertyIndex: Int,

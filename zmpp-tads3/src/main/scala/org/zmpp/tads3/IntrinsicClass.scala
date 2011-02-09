@@ -49,6 +49,19 @@ extends AbstractT3Object(id, vmState, isTransient) {
   override def isInstanceOf(obj: T3Object): Boolean = {
     throw new UnsupportedOperationException("not implemented yet")
   }
+
+  override def getProperty(propertyId: Int, argc: Int): Property = {
+    // call static property of represented meta class
+    printf("this meta class is: %s\n", representedMetaClass)
+    callStaticMethodForProperty(propertyId, argc)
+  }
+
+  def callStaticMethodForProperty(propertyId: Int, argc: Int): Property = {
+    val funcIndex = representedMetaClass.functionIndexForProperty(propertyId)
+    val prop = representedMetaClass.callMethodWithIndex(null, funcIndex, argc)
+    if (prop != InvalidPropertyId) new Property(propertyId, prop, id)
+    else throw new UnsupportedOperationException("TODO add handling")
+  }
 }
 
 // Image data format of an intrinsic-class entry
