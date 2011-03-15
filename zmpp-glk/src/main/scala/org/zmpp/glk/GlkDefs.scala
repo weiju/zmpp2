@@ -206,5 +206,19 @@ object GlkWindowDivision {
   }
 }
 
+/**
+ * Window border style (part of winmethod bit mask).
+ */
+object GlkWindowBorderStyle {
+  val Border       = 0x000
+  val NoBorder     = 0x100
+  val Mask         = 0x100
+  def name(method: Int) = (method & Mask) match {
+    case Border       => "Border"
+    case NoBorder     => "NoBorder"
+    case _            => throw new IllegalArgumentException("unknown border style: %d".format(method & Mask))
+  }
+}
+
 class GlkDimension(val width: Int, val height: Int)
 class GlkIterateResult(val id: Int, val rock: Int)
