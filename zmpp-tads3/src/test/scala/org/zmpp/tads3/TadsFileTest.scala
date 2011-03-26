@@ -28,28 +28,32 @@
  */
 package org.zmpp.tads3
 
-import org.specs._
-import org.specs.runner.{ConsoleRunner, JUnit4}
-import TadsFile._
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.BeforeAndAfterEach
 
-class TadsFileTest extends JUnit4(TadsFileSpec)
-object TadsFileSpecRunner extends ConsoleRunner(TadsFileSpec)
+@RunWith(classOf[JUnitRunner])
+class TadsFileSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
-object TadsFileSpec extends Specification {
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
   var vmState : TadsVMState = null
 
-  "TadsFileMetaClass" should {
-    doBefore {
-      objectSystem = new ObjectSystem
-      functionSetMapper = new IntrinsicFunctionSetMapper
-      vmState = new TadsVMState(objectSystem, functionSetMapper)
-    }
-    "open library default file without encoding" in {
-      vmState.stack.pushInt(FileAccessRead)
-      vmState.stack.pushInt(LibraryDefaultsFile)
-      objectSystem.fileMetaClass.openTextFile(null, 2) must throwA[FileNotFoundException]
-    }
+  override def beforeEach {
+    objectSystem = new ObjectSystem
+    functionSetMapper = new IntrinsicFunctionSetMapper
+    vmState = new TadsVMState(objectSystem, functionSetMapper)
+  }
+
+  "TadsFileMetaClass" should "open library default file without encoding" in {
+    import TadsFile._
+
+    vmState.stack.pushInt(FileAccessRead)
+    vmState.stack.pushInt(LibraryDefaultsFile)
+    evaluating {
+      objectSystem.fileMetaClass.openTextFile(null, 2)
+    } should produce[FileNotFoundException]
   }
 }

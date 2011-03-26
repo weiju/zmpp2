@@ -28,97 +28,99 @@
  */
 package org.zmpp.tads3
 
-import org.specs._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.BeforeAndAfterEach
 
-class TadsStringTest extends JUnit4(TadsStringSpec)
-object TadsStringSpecRunner extends ConsoleRunner(TadsStringSpec)
+@RunWith(classOf[JUnitRunner])
+class TadsStringSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
-object TadsStringSpec extends Specification {
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
   var vmState : TadsVMState = null
   
-  def makeString(id: Int, str: String) = {
+  override def beforeEach {
+    objectSystem = new ObjectSystem
+    functionSetMapper = new IntrinsicFunctionSetMapper
+    vmState = new TadsVMState(objectSystem, functionSetMapper)
+  }
+  "TadsString" should "be created" in {
+    makeString(1, "astring").length should equal ("astring".length)
+  }
+  it should "be concatenated" in {
+    val str1 = makeString(1, "Hello, ")
+    val str2 = makeString(2, "World !")
+    val str3Id = str1 + str2.id
+    objectSystem.toTadsString(str3Id).string should equal ("Hello, World !")
+  }
+  it should "do a find" in {
+    val str1 = makeString(1, "Hello, World !")
+    val str2 = makeString(3, "ello")
+    val str3 = makeString(2, "salami")
+
+    // success
+    str1.find(str1, 1) should equal (1)
+    str1.find(str2, 1) should equal (2)
+    // failure
+    str1.find(str2, 3) should equal (0)
+    str1.find(str3, 1) should equal (0)
+  }
+  it should "do a findReplace" in {
+    val str1 = makeString(1, "blablabla")
+    ( str1.findReplace(makeString(2, "bla"),
+                     makeString(3, "rhabarber"), true, 1).string
+     should equal ("rhabarberrhabarberrhabarber") )
+    ( str1.findReplace(makeString(2, "bla"),
+                       makeString(3, "rhabarber"), false, 2).string
+     should equal ("blarhabarberbla") )
+    ( str1.findReplace(makeString(2, "bla"),
+                       makeString(3, "rhabarber"), true, 2).string
+     should equal ("blarhabarberrhabarber") )
+  }
+  it should "do a substr" in {
+    val str1 = makeString(1, "abcdef")
+    str1.substr(3).string     should equal ("cdef")
+    str1.substr(3, 2).string  should equal ("cd")
+
+    val str2 = makeString(2, "abcdefghi")
+    str2.substr(-3).string    should equal ("ghi")
+    str2.substr(-3, 2).string should equal ("gh")
+    str2.substr(-3, 5).string should equal ("ghi")
+    str2.substr(1, 0).string  should equal ("")
+  }
+  it should "do substr with start = 0 (undocumented)" in {
+    makeString(1, "abcdef").substr(0, 1).string should equal ("a")
+  }
+  it should "when containing invisible char not equal to empty string" in {
+    // this is a strange case that happened while
+    // developing, we keep it to catch it in the future
+    val str1 = makeString(1, "\u000f")
+    val str2 = makeString(2, "")
+    str1 should not equal (str2)
+  }
+  it should "perform endsWith()" in {
+    val str1 = makeString(1, "HelloWorld")
+    val str2 = makeString(2, "World")
+    val str3 = makeString(3, "Welt")
+      
+    str1.endsWith(str2) should be (true)
+    str1.endsWith(str3) should be (false)
+  }
+  it should "perform startsWith()" in {
+    val str1 = makeString(1, "HelloWorld")
+    val str2 = makeString(2, "Hello")
+    val str3 = makeString(3, "Hallo")
+      
+    str1.startsWith(str2) should be (true)
+    str1.startsWith(str3) should be (false)
+  }
+
+  private def makeString(id: Int, str: String) = {
     val result = new TadsString(T3ObjectId(id), vmState, false)
     result.init(str)
     objectSystem.registerObject(result)
     result
-  }
-
-  "TadsString" should {
-    doBefore {
-      objectSystem = new ObjectSystem
-      functionSetMapper = new IntrinsicFunctionSetMapper
-      vmState = new TadsVMState(objectSystem, functionSetMapper)
-    }
-    "be created" in {
-      makeString(1, "astring").length must_== "astring".length
-    }
-    "be concatenated" in {
-      val str1 = makeString(1, "Hello, ")
-      val str2 = makeString(2, "World !")
-      val str3Id = str1 + str2.id
-      objectSystem.toTadsString(str3Id).string must_== "Hello, World !"
-    }
-    "do a find" in {
-      val str1 = makeString(1, "Hello, World !")
-      val str2 = makeString(3, "ello")
-      val str3 = makeString(2, "salami")
-      // success
-      str1.find(str1, 1) must_== 1
-      str1.find(str2, 1) must_== 2
-      // failure
-      str1.find(str2, 3) must_== 0
-      str1.find(str3, 1) must_== 0
-    }
-    "do a findReplace" in {
-      val str1 = makeString(1, "blablabla")
-      str1.findReplace(makeString(2, "bla"),
-                       makeString(3, "rhabarber"), true, 1).string must_==
-        "rhabarberrhabarberrhabarber"
-      str1.findReplace(makeString(2, "bla"),
-                       makeString(3, "rhabarber"), false, 2).string must_==
-        "blarhabarberbla"
-      str1.findReplace(makeString(2, "bla"),
-                       makeString(3, "rhabarber"), true, 2).string must_==
-        "blarhabarberrhabarber"
-    }
-    "do a substr" in {
-      val str1 = makeString(1, "abcdef")
-      str1.substr(3).string must_== "cdef"
-      str1.substr(3, 2).string must_== "cd"
-      val str2 = makeString(2, "abcdefghi")
-      str2.substr(-3).string must_== "ghi"
-      str2.substr(-3, 2).string must_== "gh"
-      str2.substr(-3, 5).string must_== "ghi"
-      str2.substr(1, 0).string must_== ""
-    }
-    "do substr with start = 0 (undocumented)" in {
-      makeString(1, "abcdef").substr(0, 1).string must_== "a"
-    }
-    "when containing invisible char not equal to empty string" in {
-      // this is a strange case that happened while
-      // developing, we keep it to catch it in the future
-      val str1 = makeString(1, "\u000f")
-      val str2 = makeString(2, "")
-      str1 must_!= str2
-    }
-    "perform endsWith()" in {
-      val str1 = makeString(1, "HelloWorld")
-      val str2 = makeString(2, "World")
-      val str3 = makeString(3, "Welt")
-      
-      str1.endsWith(str2) must beTrue
-      str1.endsWith(str3) must beFalse
-    }
-    "perform startsWith()" in {
-      val str1 = makeString(1, "HelloWorld")
-      val str2 = makeString(2, "Hello")
-      val str3 = makeString(3, "Hallo")
-      
-      str1.startsWith(str2) must beTrue
-      str1.startsWith(str3) must beFalse
-    }
   }
 }

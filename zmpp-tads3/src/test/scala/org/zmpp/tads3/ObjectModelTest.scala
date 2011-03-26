@@ -28,76 +28,84 @@
  */
 package org.zmpp.tads3
 
-import org.specs._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.BeforeAndAfterEach
 
-class ObjectModelTest extends JUnit4(ObjectModelSpec)
-object ObjectModelSpecRunner extends ConsoleRunner(ObjectModelSpec)
+@RunWith(classOf[JUnitRunner])
+class TadsObjectIdSpec extends FlatSpec with ShouldMatchers {
 
-object ObjectModelSpec extends Specification {
+  "T3ObjectId" should "be equal" in {
+    val objId42      = T3ObjectId(42)
+    val objId43      = T3ObjectId(43)
+    val objId42too   = T3ObjectId(42)
+    val objId42three = T3Value.create(TypeIds.VmObj, 42)
+    val int42        = T3Value.create(TypeIds.VmInt, 42)
+
+    objId42      should equal (objId42)
+    objId42      should equal (objId42too)
+    objId42too   should equal (objId42)
+    objId42      should equal (objId42three)
+    objId42three should equal (objId42)
+    
+    objId42      should not equal (objId43)
+    objId43      should not equal (objId42)
+    int42        should not equal (objId42)
+    objId42      should not equal (int42)
+  }
+}
+
+@RunWith(classOf[JUnitRunner])
+class ObjectSystemSpec extends FlatSpec with ShouldMatchers {
+
+  "ObjectSystem" should "be initialized" in {
+    val objectSystem = new ObjectSystem
+    val id1 = objectSystem.newObjectId
+    id1.value     should equal (1)
+    id1.valueType should equal (TypeIds.VmObj)
+  }
+}
+
+@RunWith(classOf[JUnitRunner])
+class TadsObjectSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
   var vmState : TadsVMState = null
 
-  "T3ObjectId" should {
-    "be equal" in {
-      val objId42      = T3ObjectId(42)
-      val objId43      = T3ObjectId(43)
-      val objId42too   = T3ObjectId(42)
-      val objId42three = T3Value.create(TypeIds.VmObj, 42)
-      val int42        = T3Value.create(TypeIds.VmInt, 42)
-
-      objId42      must_== objId42
-      objId42      must_== objId42too
-      objId42too   must_== objId42
-      objId42      must_== objId42three
-      objId42three must_== objId42
-
-      objId42      must_!= objId43
-      objId43      must_!= objId42
-      int42        must_!= objId42
-      objId42      must_!= int42
-    }
-  }
-  "ObjectSystem" should {
-    "be initialized" in {
-      val objectSystem = new ObjectSystem
-      val id1 = objectSystem.newObjectId
-      id1.value     must_== 1
-      id1.valueType must_== TypeIds.VmObj
-    }
+  override def beforeEach {
+    objectSystem      = new ObjectSystem
+    functionSetMapper = new IntrinsicFunctionSetMapper
+    vmState = new TadsVMState(objectSystem, functionSetMapper)
   }
 
-  "TadsObject" should {
-    doBefore {
-      objectSystem      = new ObjectSystem
-      functionSetMapper = new IntrinsicFunctionSetMapper
-      vmState = new TadsVMState(objectSystem, functionSetMapper)
-    }
-    "be created" in {
-      val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
-      obj.metaClass.name must_== "tads-object"
-    }
-    "get non-existing" in {
-      val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
-      obj.getProperty(2831, 0) must_== InvalidProperty
-      obj.numProperties must_== 0
-    }
-    "set non-existing" in {
-      val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
-      val testVal = T3Integer(4711)
-      obj.setProperty(2831, testVal)
-      obj.numProperties must_== 1
-      obj.getProperty(2831, 0).tadsValue must_== testVal
-    }
-    "overwrite existing" in {
-      val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
-      val testVal1 = T3Integer(4711)
-      val testVal2 = T3Integer(4712)
-      obj.setProperty(2831, testVal1)
-      obj.setProperty(2831, testVal2)
-      obj.numProperties must_== 1
-      obj.getProperty(2831, 0).tadsValue must_== testVal2
-    }
+  "TadsObject" should "be created" in {
+    val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
+    obj.metaClass.name should equal ("tads-object")
+  }
+  it should "get non-existing" in {
+    val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
+    obj.getProperty(2831, 0) should equal (InvalidProperty)
+    obj.numProperties        should equal (0)
+  }
+  it should "set non-existing" in {
+    val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
+    val testVal = T3Integer(4711)
+    obj.setProperty(2831, testVal)
+
+    obj.numProperties                  should equal (1)
+    obj.getProperty(2831, 0).tadsValue should equal (testVal)
+  }
+  it should "overwrite existing" in {
+    val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
+    val testVal1 = T3Integer(4711)
+    val testVal2 = T3Integer(4712)
+    obj.setProperty(2831, testVal1)
+    obj.setProperty(2831, testVal2)
+
+    obj.numProperties                  should equal (1)
+    obj.getProperty(2831, 0).tadsValue should equal (testVal2)
   }
 }

@@ -28,184 +28,182 @@
  */
 package org.zmpp.tads3
 
-import org.specs._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
-class RegexTranslatorTest extends JUnit4(RegexTranslatorSpec)
-object RegexTranslatorSpecRunner extends ConsoleRunner(RegexTranslatorSpec)
+@RunWith(classOf[JUnitRunner])
+class RegexTranslatorSpec extends FlatSpec with ShouldMatchers {
 
-object RegexTranslatorSpec extends Specification {
+  "RegexTranslator" should "do a series of translations" in {
+    ( new RegexTranslator("apattern").translate
+     should equal ((true, "apattern")) )
+    ( new RegexTranslator("%(apattern%)").translate
+     should equal ((true, "\\(apattern\\)")) )
+    ( new RegexTranslator("%<apattern%>").translate
+     should equal ((true, "\\bapattern\\b")) )
+  }
+  it should "translate with nocase flag set" in {
+    ( new RegexTranslator("apattern<NoCase>").translate
+     should equal ((false, "apattern")) )
+  }
+  it should "translate with angle brackets" in {
+    ( new RegexTranslator("<LANGLE>apattern<RAngle>").translate
+     should equal ((true, "[<]apattern[>]")) )
+    // mix in a nocase
+    ( new RegexTranslator("<LANGLE>apattern<RAngle|nocase>").translate
+     should equal ((false, "[<]apattern[>]")) )
+  }
+  it should "translate with square brackets" in {
+    val pat = new RegexTranslator("<lSquare>apattern<rsquare>").translate
+    pat should equal ((true, "[\\[]apattern[\\]]"))
+    "[apattern]".matches(pat._2) should be (true)
+  }
+  it should "translate with curly braces" in {
+    ( new RegexTranslator("<lbrace>apattern<rbrace>").translate
+     should equal ((true, "[{]apattern[}]")) )
+  }
+  it should "translate with vertical bar" in {
+    ( new RegexTranslator("apattern<vbar>").translate
+     should equal ((true, "apattern[|]")) )
+  }
+  it should "translate with caret" in {
+    ( new RegexTranslator("apattern<caret>").translate
+     should equal ((true, "apattern[\\^]")) )
+  }
+  it should "translate with single quotes" in {
+    ( new RegexTranslator("<squote>apattern<squote>").translate
+     should equal ((true, "[']apattern[']")) )
+  }
+  it should "translate with double quotes" in {
+    val pat = new RegexTranslator("<dquote>apattern<dquote>").translate
+    pat should equal ((true, "[\"]apattern[\"]"))
+    "\"apattern\"".matches(pat._2) should be (true)
+  }
+  it should "translate with star" in {
+    val pat = new RegexTranslator("apattern<star>").translate
+    pat should equal ((true, "apattern[*]"))
+    "apattern*".matches(pat._2) should be (true)
+  }
+  it should "translate with plus" in {
+    val pat = new RegexTranslator("apattern<plus>").translate
+    pat should equal ((true, "apattern[+]"))
+    "apattern+".matches(pat._2) should be (true)
+  }
+  it should "translate with percent" in {
+    val pat = new RegexTranslator("apattern<percent>").translate
+    pat should equal ((true, "apattern[%]"))
+    "apattern%".matches(pat._2) should be (true)
+  }
+  it should "translate with question mark" in {
+    val pat = new RegexTranslator("apattern<question>").translate
+    pat should equal ((true, "apattern[?]"))
+    "apattern?".matches(pat._2) should be (true)
+  }
+  it should "translate with dollar" in {
+    val pat = new RegexTranslator("apattern<dollar>").translate
+    pat should equal ((true, "apattern[$]"))
+    "apattern$".matches(pat._2) should be (true)
+  }
+  it should "translate with backslash" in {
+    val pat = new RegexTranslator("apattern<backslash>").translate
+    pat should equal ((true, "apattern[\\\\]"))
+    "apattern\\".matches(pat._2) should be (true)
+  }
+  it should "translate with return" in {
+    val pat = new RegexTranslator("apattern<return>").translate
+    pat should equal ((true, "apattern[\r]"))
+    "apattern\r".matches(pat._2) should be (true)
+  }
+  it should "translate with linefeed" in {
+    val pat = new RegexTranslator("apattern<linefeed>").translate
+    pat should equal ((true, "apattern[\n]"))
+    "apattern\n".matches(pat._2) should be (true)
+  }
+  it should "translate with tab" in {
+    val pat = new RegexTranslator("apattern<tab>").translate
+    pat should equal ((true, "apattern[\t]"))
+    "apattern\t".matches(pat._2) should be (true)
+  }
+  it should "translate with nul" in {
+    val pat = new RegexTranslator("apattern<nul>").translate
+    pat should equal ((true, "apattern[\0]"))
+    "apattern\0".matches(pat._2) should be (true)
+  }
+  it should "translate with null" in {
+    val pat = new RegexTranslator("apattern<null>").translate
+    pat should equal ((true, "apattern[\0]"))
+    "apattern\0".matches(pat._2) should be (true)
+  }
+  it should "translate with alphanum" in {
+    val pat1 = new RegexTranslator("apattern<alphanum>").translate
+    pat1 should equal ((true, "apattern[\\p{Alnum}]"))
+    "apattern2".matches(pat1._2) should be (true)
+    val pat2 = new RegexTranslator("apattern<^alphanum>").translate
+    pat2 should equal ((true, "apattern[^\\p{Alnum}]"))
+    "apattern\t".matches(pat2._2) should be (true)
+  }
+  it should "translate with upper" in {
+    val pat = new RegexTranslator("apattern<upper>").translate
+    pat should equal ((true, "apattern[\\p{Upper}]"))
+    "apatternJ".matches(pat._2) should be (true)
+  }
+  it should "translate with lower" in {
+    val pat = new RegexTranslator("apattern<lower>").translate
+    pat should equal ((true, "apattern[\\p{Lower}]"))
+    "apatternj".matches(pat._2) should be (true)
+  }
+  it should "translate with alpha" in {
+    val pat = new RegexTranslator("apattern<alpha>").translate
+    pat should equal ((true, "apattern[\\p{Alpha}]"))
+    "apatternj".matches(pat._2) should be (true)
+  }
+  it should "translate with digit" in {
+    val pat = new RegexTranslator("apattern<digit>").translate
+    pat should equal ((true, "apattern[\\p{Digit}]"))
+    "apattern3".matches(pat._2) should be (true)
+  }
+  it should "translate with space" in {
+    val pat = new RegexTranslator("apattern<space>").translate
+    pat should equal ((true, "apattern[\\p{Space}]"))
+    "apattern\t".matches(pat._2) should be (true)
+  }
+  it should "translate with punct" in {
+    val pat = new RegexTranslator("apattern<punct>").translate
+    pat should equal ((true, "apattern[\\p{Punct}]"))
+    "apattern!".matches(pat._2) should be (true)
+  }
+  it should "translate with newline" in {
+    val pat = new RegexTranslator("apattern<newline>").translate
+    pat should equal ((true, "apattern[\r\n\u2028]"))
+    "apattern\r".matches(pat._2) should be (true)
+    "apattern\n".matches(pat._2) should be (true)
+    "apattern\u2028".matches(pat._2) should be (true)
+  }
 
-  "RegexTranslator" should {
-    "do a series of translations" in {
-      (new RegexTranslator("apattern").translate
-       must_== (true, "apattern") )
-      ( new RegexTranslator("%(apattern%)").translate
-       must_== (true, "\\(apattern\\)") )
-      ( new RegexTranslator("%<apattern%>").translate
-       must_== (true, "\\bapattern\\b") )
-    }
-    "translate with nocase flag set" in {
-      ( new RegexTranslator("apattern<NoCase>").translate
-       must_== (false, "apattern") )
-    }
-    "translate with angle brackets" in {
-      ( new RegexTranslator("<LANGLE>apattern<RAngle>").translate
-       must_== (true, "[<]apattern[>]") )
-      // mix in a nocase
-      ( new RegexTranslator("<LANGLE>apattern<RAngle|nocase>").translate
-       must_== (false, "[<]apattern[>]") )
-    }
-    "translate with square brackets" in {
-      val pat = new RegexTranslator("<lSquare>apattern<rsquare>").translate
-      pat must_== (true, "[\\[]apattern[\\]]")
-      "[apattern]".matches(pat._2) must beTrue
-    }
-    "translate with curly braces" in {
-      ( new RegexTranslator("<lbrace>apattern<rbrace>").translate
-       must_== (true, "[{]apattern[}]") )
-    }
-    "translate with vertical bar" in {
-      ( new RegexTranslator("apattern<vbar>").translate
-       must_== (true, "apattern[|]") )
-    }
-    "translate with caret" in {
-      ( new RegexTranslator("apattern<caret>").translate
-       must_== (true, "apattern[\\^]") )
-    }
-    "translate with single quotes" in {
-      ( new RegexTranslator("<squote>apattern<squote>").translate
-       must_== (true, "[']apattern[']") )
-    }
-    "translate with double quotes" in {
-      val pat = new RegexTranslator("<dquote>apattern<dquote>").translate
-      pat must_== (true, "[\"]apattern[\"]")
-      "\"apattern\"".matches(pat._2) must beTrue
-    }
-    "translate with star" in {
-      val pat = new RegexTranslator("apattern<star>").translate
-      pat must_== (true, "apattern[*]")
-      "apattern*".matches(pat._2) must beTrue
-    }
-    "translate with plus" in {
-      val pat = new RegexTranslator("apattern<plus>").translate
-      pat must_== (true, "apattern[+]")
-      "apattern+".matches(pat._2) must beTrue
-    }
-    "translate with percent" in {
-      val pat = new RegexTranslator("apattern<percent>").translate
-      pat must_== (true, "apattern[%]")
-      "apattern%".matches(pat._2) must beTrue
-    }
-    "translate with question mark" in {
-      val pat = new RegexTranslator("apattern<question>").translate
-      pat must_== (true, "apattern[?]")
-      "apattern?".matches(pat._2) must beTrue
-    }
-    "translate with dollar" in {
-      val pat = new RegexTranslator("apattern<dollar>").translate
-      pat must_== (true, "apattern[$]")
-      "apattern$".matches(pat._2) must beTrue
-    }
-    "translate with backslash" in {
-      val pat = new RegexTranslator("apattern<backslash>").translate
-      pat must_== (true, "apattern[\\\\]")
-      "apattern\\".matches(pat._2) must beTrue
-    }
-    "translate with return" in {
-      val pat = new RegexTranslator("apattern<return>").translate
-      pat must_== (true, "apattern[\r]")
-      "apattern\r".matches(pat._2) must beTrue
-    }
-    "translate with linefeed" in {
-      val pat = new RegexTranslator("apattern<linefeed>").translate
-      pat must_== (true, "apattern[\n]")
-      "apattern\n".matches(pat._2) must beTrue
-    }
-    "translate with tab" in {
-      val pat = new RegexTranslator("apattern<tab>").translate
-      pat must_== (true, "apattern[\t]")
-      "apattern\t".matches(pat._2) must beTrue
-    }
-    "translate with nul" in {
-      val pat = new RegexTranslator("apattern<nul>").translate
-      pat must_== (true, "apattern[\0]")
-      "apattern\0".matches(pat._2) must beTrue
-    }
-    "translate with null" in {
-      val pat = new RegexTranslator("apattern<null>").translate
-      pat must_== (true, "apattern[\0]")
-      "apattern\0".matches(pat._2) must beTrue
-    }
-    "translate with alphanum" in {
-      val pat1 = new RegexTranslator("apattern<alphanum>").translate
-      pat1 must_== (true, "apattern[\\p{Alnum}]")
-      "apattern2".matches(pat1._2) must beTrue
-      val pat2 = new RegexTranslator("apattern<^alphanum>").translate
-      pat2 must_== (true, "apattern[^\\p{Alnum}]")
-      "apattern\t".matches(pat2._2) must beTrue
-    }
-    "translate with upper" in {
-      val pat = new RegexTranslator("apattern<upper>").translate
-      pat must_== (true, "apattern[\\p{Upper}]")
-      "apatternJ".matches(pat._2) must beTrue
-    }
-    "translate with lower" in {
-      val pat = new RegexTranslator("apattern<lower>").translate
-      pat must_== (true, "apattern[\\p{Lower}]")
-      "apatternj".matches(pat._2) must beTrue
-    }
-    "translate with alpha" in {
-      val pat = new RegexTranslator("apattern<alpha>").translate
-      pat must_== (true, "apattern[\\p{Alpha}]")
-      "apatternj".matches(pat._2) must beTrue
-    }
-    "translate with digit" in {
-      val pat = new RegexTranslator("apattern<digit>").translate
-      pat must_== (true, "apattern[\\p{Digit}]")
-      "apattern3".matches(pat._2) must beTrue
-    }
-    "translate with space" in {
-      val pat = new RegexTranslator("apattern<space>").translate
-      pat must_== (true, "apattern[\\p{Space}]")
-      "apattern\t".matches(pat._2) must beTrue
-    }
-    "translate with punct" in {
-      val pat = new RegexTranslator("apattern<punct>").translate
-      pat must_== (true, "apattern[\\p{Punct}]")
-      "apattern!".matches(pat._2) must beTrue
-    }
-    "translate with newline" in {
-      val pat = new RegexTranslator("apattern<newline>").translate
-      pat must_== (true, "apattern[\r\n\u2028]")
-      "apattern\r".matches(pat._2) must beTrue
-      "apattern\n".matches(pat._2) must beTrue
-      "apattern\u2028".matches(pat._2) must beTrue
-    }
+  it should "translate something harder" in {
+    ( new RegexTranslator("<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>").translate
+     should equal ((false, "[<]\\.(/?[a-z][a-z0-9]*)[>]")) )
+    ( new RegexTranslator("(<langle><dot>[pP]0?<rangle>)+").translate
+     should equal ((true, "([<][.][pP]0?[>])+")) )
+    ( new RegexTranslator("[.;:!?]<^alphanum>").translate
+     should equal ((true, "[.;:!?][^\\p{Alnum}]")) )
+  }
 
-    "translate something harder" in {
-      ( new RegexTranslator("<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>").translate
-       must_== (false, "[<]\\.(/?[a-z][a-z0-9]*)[>]") )
-      ( new RegexTranslator("(<langle><dot>[pP]0?<rangle>)+").translate
-       must_== (true, "([<][.][pP]0?[>])+") )
-      ( new RegexTranslator("[.;:!?]<^alphanum>").translate
-       must_== (true, "[.;:!?][^\\p{Alnum}]") )
-    }
+  // regressions and special cases
+  it should "translate with literal character (regression 1)" in {
+    val pat = new RegexTranslator(
+      "(<^space|/>+)<space>+(<^space|/>+)(/<^space|/>+)").translate
+    pat should equal ((true, "([^\\p{Space}/]+)[\\p{Space}]+([^\\p{Space}/]+)(/[^\\p{Space}/]+)"))
+  }
 
-    // regressions and special cases
-    "translate with literal character (regression 1)" in {
-      val pat = new RegexTranslator(
-        "(<^space|/>+)<space>+(<^space|/>+)(/<^space|/>+)").translate
-      pat must_== (true, "([^\\p{Space}/]+)[\\p{Space}]+([^\\p{Space}/]+)(/[^\\p{Space}/]+)")
-    }
+  it should "translate with angle bracket in range (regression 2)" in {
+    new RegexTranslator("[<\"']").translate should equal ((true, "[<\"']"))
+    new RegexTranslator("[><%]").translate  should equal ((true, "[><%]"))
+  }
 
-    "translate with angle bracket in range (regression 2)" in {
-      new RegexTranslator("[<\"']").translate must_== (true, "[<\"']")
-      new RegexTranslator("[><%]").translate must_== (true, "[><%]")
-    }
-
-    "translate with mustache in non-postfix position" in {
-      new RegexTranslator("{[^}]+<squote>[^}]*}").translate must_== (true, "\\{[^}]+['][^}]*\\}")
-    }
+  it should "translate with mustache in non-postfix position" in {
+    new RegexTranslator("{[^}]+<squote>[^}]*}").translate should equal ((true, "\\{[^}]+['][^}]*\\}"))
   }
 }

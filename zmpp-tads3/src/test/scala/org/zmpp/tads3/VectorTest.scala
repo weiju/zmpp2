@@ -28,109 +28,115 @@
  */
 package org.zmpp.tads3
 
-import org.specs._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.BeforeAndAfterEach
 
-class VectorTest extends JUnit4(VectorSpec)
-object VectorSpecRunner extends ConsoleRunner(VectorSpec)
+@RunWith(classOf[JUnitRunner])
+class VectorSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
-object VectorSpec extends Specification {
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
   var vmState : TadsVMState = null
 
-  "Vector" should {
-    doBefore {
-      objectSystem = new ObjectSystem
-      functionSetMapper = new IntrinsicFunctionSetMapper
-      vmState = new TadsVMState(objectSystem, functionSetMapper)
-    }
-    "be created" in {
-      val vector = new Vector(T3ObjectId(1), vmState, false)
-      vector.metaClass.name must_== "vector"
-      vector.size must_== 0
-    }
-    "append an element" in {
-      val vector = new Vector(T3ObjectId(1), vmState, false)
-      val value = T3Integer(4711)
-      vector.append(value)
-      vector.size must_== 1
-      vector.valueAtIndex(T3Integer(1)) must_== value
-    }
-    "insert an element at position 1" in {
-      val vector = new Vector(T3ObjectId(1), vmState, false)
-      val value0 = T3Integer(0)
-      val value1 = T3Integer(1)
-      vector.append(value0)
-      vector.insertAt(1, value1)
-      vector.size must_== 2
-      vector.valueAtIndex(T3Integer(1)) must_== value1
-      vector.valueAtIndex(T3Integer(2)) must_== value0
-    }
-    "insert an element at the end" in {
-      val vector = new Vector(T3ObjectId(1), vmState, false)
-      val value0 = T3Integer(0)
-      val value1 = T3Integer(1)
-      vector.append(value0)
-      vector.insertAt(2, value1)
-      vector.size must_== 2
-      vector.valueAtIndex(T3Integer(1)) must_== value0
-      vector.valueAtIndex(T3Integer(2)) must_== value1
-    }
-    "determine indexOf()" in {
-      val vector = new Vector(T3ObjectId(1), vmState, false)
-      val value0 = T3Integer(0)
-      val value1 = T3Integer(1)
-      val value2 = T3Integer(2)
-      val value3 = T3Integer(3)
-      val value4 = T3Integer(4)
-      val value5 = T3Integer(5)
-      val value6 = T3Integer(6)
-      vector.append(value0)
-      vector.append(value1)
-      vector.append(value2)
-      vector.append(value3)
-      vector.append(value4)
-      vector.append(value5)
-      vector.indexOf(value0) must_== T3Integer(1)
-      vector.indexOf(value5) must_== T3Integer(6)
-      vector.indexOf(value2) must_== T3Integer(3)
-      // not found
-      vector.indexOf(value6) must_== T3Nil
-    }
-    "create a list from a vector" in {
-      val vector = new Vector(T3ObjectId(1), vmState, false)
-      val value0 = T3Integer(0)
-      val value1 = T3Integer(1)
-      val value2 = T3Integer(2)
-      vector.append(value0)
-      vector.append(value1)
-      vector.append(value2)
-      val list =
-        objectSystem.objectWithId(vector.toList(2, 3)).asInstanceOf[TadsList]
-      list.size must_== 2
-      list.valueAtIndex(T3Integer(1)) must_== value1
-      list.valueAtIndex(T3Integer(2)) must_== value2
-    }
-    "remove a range from a vector" in {
-      val vector = new Vector(T3ObjectId(1), vmState, false)
-      val value0 = T3Integer(0)
-      val value1 = T3Integer(1)
-      val value2 = T3Integer(2)
-      val value3 = T3Integer(3)
-      val value4 = T3Integer(4)
-      vector.append(value0)
-      vector.append(value1)
-      vector.append(value2)
-      vector.append(value3)
-      vector.append(value4)
+  override def beforeEach {
+    objectSystem = new ObjectSystem
+    functionSetMapper = new IntrinsicFunctionSetMapper
+    vmState = new TadsVMState(objectSystem, functionSetMapper)
+  }
 
-      val id = vector.removeRange(2, 3)
-      id must_== vector.id
-      vector.size must_== 3
-      vector.valueAtIndex(T3Integer(1)) must_== value0
-      vector.valueAtIndex(T3Integer(2)) must_== value3
-      vector.valueAtIndex(T3Integer(3)) must_== value4
-    }
+  "Vector" should "be created" in {
+    val vector = new Vector(T3ObjectId(1), vmState, false)
+    vector.metaClass.name should equal ("vector")
+    vector.size           should equal (0)
+  }
+  it should "append an element" in {
+    val vector = new Vector(T3ObjectId(1), vmState, false)
+    val value = T3Integer(4711)
+    vector.append(value)
+
+    vector.size should equal (1)
+    vector.valueAtIndex(T3Integer(1)) should equal (value)
+  }
+  it should "insert an element at position 1" in {
+    val vector = new Vector(T3ObjectId(1), vmState, false)
+    val value0 = T3Integer(0)
+    val value1 = T3Integer(1)
+    vector.append(value0)
+    vector.insertAt(1, value1)
+
+    vector.size should equal (2)
+    vector.valueAtIndex(T3Integer(1)) should equal (value1)
+    vector.valueAtIndex(T3Integer(2)) should equal (value0)
+  }
+  it should "insert an element at the end" in {
+    val vector = new Vector(T3ObjectId(1), vmState, false)
+    val value0 = T3Integer(0)
+    val value1 = T3Integer(1)
+    vector.append(value0)
+    vector.insertAt(2, value1)
+
+    vector.size should equal (2)
+    vector.valueAtIndex(T3Integer(1)) should equal (value0)
+    vector.valueAtIndex(T3Integer(2)) should equal (value1)
+  }
+  it should "determine indexOf()" in {
+    val vector = new Vector(T3ObjectId(1), vmState, false)
+    val value0 = T3Integer(0)
+    val value1 = T3Integer(1)
+    val value2 = T3Integer(2)
+    val value3 = T3Integer(3)
+    val value4 = T3Integer(4)
+    val value5 = T3Integer(5)
+    val value6 = T3Integer(6)
+    vector.append(value0)
+    vector.append(value1)
+    vector.append(value2)
+    vector.append(value3)
+    vector.append(value4)
+    vector.append(value5)
+
+    vector.indexOf(value0) should equal (T3Integer(1))
+    vector.indexOf(value5) should equal (T3Integer(6))
+    vector.indexOf(value2) should equal (T3Integer(3))
+    // not found
+    vector.indexOf(value6) should equal (T3Nil)
+  }
+  it should "create a list from a vector" in {
+    val vector = new Vector(T3ObjectId(1), vmState, false)
+    val value0 = T3Integer(0)
+    val value1 = T3Integer(1)
+    val value2 = T3Integer(2)
+    vector.append(value0)
+    vector.append(value1)
+    vector.append(value2)
+    val list =
+      objectSystem.objectWithId(vector.toList(2, 3)).asInstanceOf[TadsList]
+
+    list.size should equal (2)
+    list.valueAtIndex(T3Integer(1)) should equal (value1)
+    list.valueAtIndex(T3Integer(2)) should equal (value2)
+  }
+  it should "remove a range from a vector" in {
+    val vector = new Vector(T3ObjectId(1), vmState, false)
+    val value0 = T3Integer(0)
+    val value1 = T3Integer(1)
+    val value2 = T3Integer(2)
+    val value3 = T3Integer(3)
+    val value4 = T3Integer(4)
+    vector.append(value0)
+    vector.append(value1)
+    vector.append(value2)
+    vector.append(value3)
+    vector.append(value4)
+
+    val id = vector.removeRange(2, 3)
+    id should equal (vector.id)
+    vector.size should equal (3)
+    vector.valueAtIndex(T3Integer(1)) should equal (value0)
+    vector.valueAtIndex(T3Integer(2)) should equal (value3)
+    vector.valueAtIndex(T3Integer(3)) should equal (value4)
   }
 }

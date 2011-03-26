@@ -44,13 +44,13 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.8.2</version>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.scala-tools.testing</groupId>
-      <artifactId>specs_2.8.0</artifactId>
-      <version>1.6.5</version>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest</artifactId>
+      <version>${scalatest.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -86,41 +86,33 @@
             <arg>-target:jvm-1.5</arg>
             <arg>-deprecation</arg>
           </args>
-	  <!--
-	      Simply run this Scala project with
-	      mvn scala:run
-	  -->
-	  <launchers>
-	    <launcher>
-	      <id>stdrun</id>
-	      <mainClass>org.zmpp.tads3.Tads3Main</mainClass>
-	      <args>
-		      <arg>/Users/weiju/Games/tads3/ditch3.t3</arg>
-	      </args>
-	      <jvmArgs>
-		      <jvmArg>-Xmx512m</jvmArg>
-	      </jvmArgs>
-	    </launcher>
-	  </launchers>
+          <!--
+              Simply run this Scala project with
+              mvn scala:run
+          -->
+          <launchers>
+            <launcher>
+              <id>stdrun</id>
+              <mainClass>org.zmpp.tads3.Tads3Main</mainClass>
+              <args>
+                <arg>/Users/weiju/Games/tads3/ditch3.t3</arg>
+              </args>
+              <jvmArgs>
+                <jvmArg>-Xmx512m</jvmArg>
+              </jvmArgs>
+            </launcher>
+          </launchers>
         </configuration>
       </plugin>
-      <!-- maven-eclipse -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-eclipse-plugin</artifactId>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <downloadSources>true</downloadSources>
-          <buildcommands>
-            <buildcommand>ch.epfl.lamp.sdt.core.scalabuilder</buildcommand>
-          </buildcommands>
-          <additionalProjectnatures>
-            <projectnature>ch.epfl.lamp.sdt.core.scalanature</projectnature>
-          </additionalProjectnatures>
-          <classpathContainers>	    <classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER</classpathContainer>
-<classpathContainer>ch.epfl.lamp.sdt.launching.SCALA_CONTAINER</classpathContainer>
-          </classpathContainers>
+          <includes>
+            <include>**/*Spec.class</include>
+          </includes>
         </configuration>
-      </plugin>
+			</plugin>
     </plugins>
   </build>
 </project>
