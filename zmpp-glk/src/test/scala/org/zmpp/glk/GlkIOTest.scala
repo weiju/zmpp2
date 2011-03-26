@@ -28,14 +28,13 @@
  */
 package org.zmpp.glk
 
-import org.specs._
-import org.specs.matcher._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.BeforeAndAfterEach
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
 import java.io._
-
-class GlkIOTest extends JUnit4(GlkIOSpec)
-object GlkIOSpecRunner extends ConsoleRunner(GlkIOSpec)
 
 class DummyStream extends GlkStream {
   var id: Int = 0
@@ -63,48 +62,47 @@ class DummyStream extends GlkStream {
   def setHyperlink(linkval: Int) { }
 }
 
-/**
- * Note: We compare with xUnit matchers, there seems to be a Scala/Specs bug, which
- * tries to use String.isEmpty which only exists in Java SE 6
- */
-object GlkIOSpec extends Specification with xUnit {
-  "GlkIOSystem" should {
-    "be initialized" in {
-      val ioSystem = new GlkIOSystem
-      ioSystem.currentStream.id must_== 0
-      ioSystem.currentStreamId must_== 0
-      assertNull(ioSystem.iterate(0))
-    }
-    "set current stream" in {
-      val ioSystem = new GlkIOSystem
-      val stream = new DummyStream
-      ioSystem.currentStream = stream
-      assertTrue(ioSystem.currentStream == stream)
-    }
-    "register a stream" in {
-      val ioSystem = new GlkIOSystem
-      val stream = new DummyStream
-      ioSystem.registerStream(stream)
-      assertTrue(ioSystem.currentStream != stream)
-      assertTrue(ioSystem.iterate(0) == stream)
-      assertNull(ioSystem.iterate(stream.id))
-    }
-    "register a stream and close it" in {
-      val ioSystem = new GlkIOSystem
-      val stream = new DummyStream
-      ioSystem.registerStream(stream)
-      ioSystem.closeStream(stream.id)
-      assertTrue(ioSystem.iterate(0) == null)
-    }
-    "register two streams" in {
-      val ioSystem = new GlkIOSystem
-      val stream1 = new DummyStream
-      val stream2 = new DummyStream
-      ioSystem.registerStream(stream1)
-      ioSystem.registerStream(stream2)
-      assertTrue(ioSystem.iterate(0) == stream2)
-      assertTrue(ioSystem.iterate(stream2.id) == stream1)
-      assertNull(ioSystem.iterate(stream1.id))
-    }
+@RunWith(classOf[JUnitRunner])
+class GlkIOSpec extends FlatSpec with ShouldMatchers {
+  "GlkIOSystem" should "be initialized" in {
+    val ioSystem = new GlkIOSystem
+    ioSystem.currentStream.id should be (0)
+    ioSystem.currentStreamId  should be (0)
+    ioSystem.iterate(0) should be (null)
+  }
+  it should "set current stream" in {
+    val ioSystem = new GlkIOSystem
+    val stream = new DummyStream
+    ioSystem.currentStream = stream
+
+    ioSystem.currentStream should equal (stream)
+  }
+  it should "register a stream" in {
+    val ioSystem = new GlkIOSystem
+    val stream = new DummyStream
+    ioSystem.registerStream(stream)
+
+    ioSystem.currentStream      should not equal (stream)
+    ioSystem.iterate(0)         should equal (stream)
+    ioSystem.iterate(stream.id) should be (null)
+  }
+  it should "register a stream and close it" in {
+    val ioSystem = new GlkIOSystem
+    val stream = new DummyStream
+    ioSystem.registerStream(stream)
+    ioSystem.closeStream(stream.id)
+
+    ioSystem.iterate(0) should be (null)
+  }
+  it should "register two streams" in {
+    val ioSystem = new GlkIOSystem
+    val stream1 = new DummyStream
+    val stream2 = new DummyStream
+    ioSystem.registerStream(stream1)
+    ioSystem.registerStream(stream2)
+
+    ioSystem.iterate(0)          should equal (stream2)
+    ioSystem.iterate(stream2.id) should equal (stream1)
+    ioSystem.iterate(stream1.id) should be (null)
   }
 }

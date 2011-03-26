@@ -28,24 +28,19 @@
  */
 package org.zmpp.glk
 
-import org.specs._
-import org.specs.matcher._
-import org.specs.runner.{ConsoleRunner, JUnit4}
-
-import java.io._
-
-class GlkWindowsTest extends JUnit4(GlkWindowsSpec)
-object GlkWindowsSpecRunner extends ConsoleRunner(GlkWindowsSpec)
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
 /**
  * Note: We compare with xUnit matchers, there seems to be a Scala/Specs bug, which
  * tries to use String.isEmpty which only exists in Java SE 6
  */
-object GlkWindowsSpec extends Specification with xUnit {
-  "GlkWindowSystem" should {
-    "be initialized" in {
-      val windowSystem = new GlkWindowSystem
-      assertNull(windowSystem.iterate(0))
-    }
+@RunWith(classOf[JUnitRunner])
+class GlkWindowsSpec extends FlatSpec with ShouldMatchers {
+  "GlkWindowSystem" should "be initialized" in {
+    val windowSystem = new GlkWindowSystem
+    windowSystem.iterate(0) should be (null)
   }
 }

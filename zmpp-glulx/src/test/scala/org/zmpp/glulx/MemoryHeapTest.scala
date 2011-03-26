@@ -28,56 +28,46 @@
  */
 package org.zmpp.glulx
 
-import org.specs._
-import org.specs.matcher._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
-class MemoryHeapTest extends JUnit4(MemoryHeapSpec)
-object MemoryHeapSpecRunner extends ConsoleRunner(MemoryHeapSpec)
+@RunWith(classOf[JUnitRunner])
+class MemoryHeapSpec extends FlatSpec with ShouldMatchers {
 
-object MemoryHeapSpec extends Specification with xUnit {
-  "MemoryHeap" should {
-    "be initialized" in {
-      val heap = new MemoryHeap(1000)
-      heap.address must_== 1000
-    }
-    "allocate a block of memory" in {
-      val heap = new MemoryHeap(1000)
-      val addr = heap.allocate(20)
-      addr must be_>=(1000)
-      heap.setByteAt(addr + 2, 42)
-      heap.byteAt(addr + 2) must_== 42
-      try {
-        heap.setByteAt(addr * 2, 42)
-        fail("accessing a non-existing memory area should throw an exception")
-      } catch {
-        case e:NullPointerException => assertTrue(true)
-      }
-    }
-    "free a block of memory" in {
-      val heap = new MemoryHeap(1000)
-      val addr = heap.allocate(20)
-      heap.free(addr)
-      try {
-        heap.setByteAt(addr, 42)
-        fail("accessing a freed memory block should throw an exception")
-      } catch {
-        case e:NullPointerException => assertTrue(true)
-      }
-    }
-    "allocate 3 blocks of memory" in {
-      val heap = new MemoryHeap(1000)
-      val addr1 = heap.allocate(20)
-      val addr2 = heap.allocate(40)
-      val addr3 = heap.allocate(60)
-      heap.setByteAt(addr1 + 2, 42)
-      heap.byteAt(addr1 + 2) must_== 42
+  "MemoryHeap" should "be initialized" in {
+    val heap = new MemoryHeap(1000)
+    heap.address should equal (1000)
+  }
+  it should "allocate a block of memory" in {
+    val heap = new MemoryHeap(1000)
+    val addr = heap.allocate(20)
+    addr should be >= (1000)
+
+    heap.setByteAt(addr + 2, 42)
+    heap.byteAt(addr + 2) should equal (42)
+    evaluating { heap.setByteAt(addr * 2, 42) } should produce [NullPointerException]
+  }
+  it should "free a block of memory" in {
+    val heap = new MemoryHeap(1000)
+    val addr = heap.allocate(20)
+    heap.free(addr)
+    evaluating { heap.setByteAt(addr, 42) } should produce [NullPointerException]
+  }
+  it should "allocate 3 blocks of memory" in {
+    val heap = new MemoryHeap(1000)
+    val addr1 = heap.allocate(20)
+    val addr2 = heap.allocate(40)
+    val addr3 = heap.allocate(60)
+
+    heap.setByteAt(addr1 + 2, 42)
+    heap.byteAt(addr1 + 2) should equal (42)
       
-      heap.setByteAt(addr2 + 4, 43)
-      heap.byteAt(addr2 + 4) must_== 43
+    heap.setByteAt(addr2 + 4, 43)
+    heap.byteAt(addr2 + 4) should equal (43)
       
-      heap.setByteAt(addr3 + 6, 44)
-      heap.byteAt(addr3 + 6) must_== 44
-    }
+    heap.setByteAt(addr3 + 6, 44)
+    heap.byteAt(addr3 + 6) should equal (44)
   }
 }

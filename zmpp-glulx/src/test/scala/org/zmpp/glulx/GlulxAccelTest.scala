@@ -28,41 +28,40 @@
  */
 package org.zmpp.glulx
 
-import org.specs._
-import org.specs.matcher._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.BeforeAndAfterEach
 
 import org.zmpp.glk.Glk
 
-class GlulxAccelTest extends JUnit4(AccelSystemSpec)
-object AccelSystemSpecRunner extends ConsoleRunner(AccelSystemSpec)
+@RunWith(classOf[JUnitRunner])
+class AccelSystemSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+  var vm: GlulxVM = null
+  var accelSys: AccelSystem = null
 
-object AccelSystemSpec extends Specification with xUnit {
-  "AccelSystem" should {
-    var vm: GlulxVM = null
-    var accelSys: AccelSystem = null
+  override def beforeEach {
+    vm = new GlulxVM
+    accelSys = new AccelSystem(vm)
+  }
 
-    doBefore {
-      vm = new GlulxVM
-      accelSys = new AccelSystem(vm)
-    }
-    "be initialized" in {
-      assertFalse(accelSys.isAccelerated(100))
-    }
-    "accelerate a function" in {
-      accelSys.setFunction(1, 100)
-      assertTrue(accelSys.isAccelerated(100))
-    }
-    "cancel a function acceleration" in {
-      accelSys.setFunction(1, 100)
-      accelSys.setFunction(0, 100)
-      assertFalse(accelSys.isAccelerated(100))
-    }
-    "redefine a function acceleration" in {
-      accelSys.setFunction(1, 100)
-      accelSys.setFunction(2, 100)
-      assertTrue(accelSys.isAccelerated(100))
-      // test if the mapping is different from before (TODO)
-    }
+  "AccelSystem" should "be initialized" in {
+    accelSys.isAccelerated(100) should be (false)
+  }
+  it should "accelerate a function" in {
+    accelSys.setFunction(1, 100)
+    accelSys.isAccelerated(100) should be (true)
+  }
+  it should "cancel a function acceleration" in {
+    accelSys.setFunction(1, 100)
+    accelSys.setFunction(0, 100)
+    accelSys.isAccelerated(100) should be (false)
+  }
+  it should "redefine a function acceleration" in {
+    accelSys.setFunction(1, 100)
+    accelSys.setFunction(2, 100)
+    accelSys.isAccelerated(100) should be (true)
+    // test if the mapping is different from before (TODO)
   }
 }

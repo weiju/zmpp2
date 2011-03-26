@@ -28,59 +28,54 @@
  */
 package org.zmpp.glk
 
-import org.zmpp.glk._
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.BeforeAndAfterEach
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
-import org.specs._
-import org.specs.matcher._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+@RunWith(classOf[JUnitRunner])
+class EventQueueSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+  var eventQueue: EventManager = null
 
-class EventQueueTest extends JUnit4(EventQueueSpec)
-object EventQueueSpecRunner extends ConsoleRunner(EventQueueSpec)
-
-object EventQueueSpec extends Specification with xUnit {
-  "EventQueue" should {
-    var eventQueue: EventManager = null
-    
-    doBefore {
-      eventQueue = new EventManager(null)
-    }
-    
-    "be initialized" in {
-      eventQueue.length must_== 0
-      assertTrue(eventQueue.isEmpty)
-    }
-    "add only one timer event" in {
-      eventQueue.addTimerEvent
-      eventQueue.addTimerEvent
-      eventQueue.length must_== 1
-      assertFalse(eventQueue.isEmpty)
-    }
-    "add only one arrange event" in {
-      eventQueue.addArrangeEvent
-      eventQueue.addArrangeEvent
-      eventQueue.length must_== 1
-    }
-    "add only one keyboard event for same window" in {
-      eventQueue.addCharInputEvent(1, 10)
-      eventQueue.addCharInputEvent(1, 10)
-      eventQueue.addLineInputEvent(1, "Hallo")
-      eventQueue.length must_== 1
-    }
-    "add two char events for different windows" in {
-      eventQueue.addCharInputEvent(1, 10)
-      eventQueue.addCharInputEvent(2, 10)
-      eventQueue.length must_== 2
-    }
-    "add only one line event for same window" in {
-      eventQueue.addLineInputEvent(1, "Hallo")
-      eventQueue.addLineInputEvent(1, "Hallo2")
-      eventQueue.addCharInputEvent(1, 10)
-      eventQueue.length must_== 1
-    }
-    "add two line events for different windows" in {
-      eventQueue.addLineInputEvent(1, "Hallo")
-      eventQueue.addLineInputEvent(2, "Hallo")
-      eventQueue.length must_== 2
-    }
+  override def beforeEach {
+    eventQueue = new EventManager(null)
+  }
+  "EventQueue" should "be initialized" in {
+    eventQueue.length should be (0)
+    eventQueue.isEmpty should be (true)
+  }
+  it should "add only one timer event" in {
+    eventQueue.addTimerEvent
+    eventQueue.addTimerEvent
+    eventQueue.length should be (1)
+    eventQueue.isEmpty should be (false)
+  }
+  it should "add only one arrange event" in {
+    eventQueue.addArrangeEvent
+    eventQueue.addArrangeEvent
+    eventQueue.length should be (1)
+  }
+  it should "add only one keyboard event for same window" in {
+    eventQueue.addCharInputEvent(1, 10)
+    eventQueue.addCharInputEvent(1, 10)
+    eventQueue.addLineInputEvent(1, "Hallo")
+    eventQueue.length should be (1)
+  }
+  it should "add two char events for different windows" in {
+    eventQueue.addCharInputEvent(1, 10)
+    eventQueue.addCharInputEvent(2, 10)
+    eventQueue.length should be (2)
+  }
+  it should "add only one line event for same window" in {
+    eventQueue.addLineInputEvent(1, "Hallo")
+    eventQueue.addLineInputEvent(1, "Hallo2")
+    eventQueue.addCharInputEvent(1, 10)
+    eventQueue.length should be (1)
+  }
+  it should "add two line events for different windows" in {
+    eventQueue.addLineInputEvent(1, "Hallo")
+    eventQueue.addLineInputEvent(2, "Hallo")
+    eventQueue.length should be (2)
   }
 }

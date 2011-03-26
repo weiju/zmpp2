@@ -28,53 +28,52 @@
  */
 package org.zmpp.glulx
 
-import org.specs._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
 import java.io._
 
-class StackTest extends JUnit4(StackSpec)
-object StackSpecRunner extends ConsoleRunner(StackSpec)
+@RunWith(classOf[JUnitRunner])
+class StackSpec extends FlatSpec with ShouldMatchers {
 
-object StackSpec extends Specification {
+  "Stack" should "be initialized" in {
+    val stack = new Stack(10)
+    stack.empty should be (true)
+  }
+  it should "push and pop a byte" in {
+    val stack = new Stack(10)
+    stack.pushByte(1)
+    stack.empty   should be (false)
+    stack.topByte should be (1)
+    stack.empty   should be (false)
+    stack.popByte should be (1)
+    stack.empty   should be (true)
 
-  "Stack" should {
-    "be initialized" in {
-      val stack = new Stack(10)
-      stack.empty must beTrue
-    }
-    "push and pop byte" in {
-      val stack = new Stack(10)
-      stack.pushByte(1)
-      stack.empty must beFalse
-      stack.topByte must_== 1
-      stack.empty must beFalse
-      stack.popByte must_== 1
-      stack.empty must beTrue
-      stack.pushByte(255)
-      stack.topByte must_== 255
-      stack.popByte must_== 255
-    }
-    "push and pop short" in {
-      val stack = new Stack(10)
-      stack.pushShort(32767)
-      stack.topShort must_== 32767
-      stack.pushShort(65535)
-      stack.topShort must_== 65535
-      stack.popShort must_== 65535
-      stack.popShort must_== 32767
-      stack.empty must beTrue
-    }
-    "push and pop int" in {
-      val stack = new Stack(10)
-      stack.pushInt(32767)
-      stack.topInt must_== 32767
-      stack.pushInt(-42)
-      stack.topInt must_== -42
-      stack.popInt must_== -42
-      stack.popInt must_== 32767
-      stack.empty must beTrue
-    }
+    stack.pushByte(255)
+    stack.topByte should be (255)
+    stack.popByte should be (255)
+  }
+  it should "push and pop short" in {
+    val stack = new Stack(10)
+    stack.pushShort(32767)
+    stack.topShort should be (32767)
+    stack.pushShort(65535)
+    stack.topShort should be (65535)
+    stack.popShort should be (65535)
+    stack.popShort should be (32767)
+    stack.empty    should be (true)
+  }
+  it should "push and pop int" in {
+    val stack = new Stack(10)
+    stack.pushInt(32767)
+    stack.topInt should equal (32767)
+    stack.pushInt(-42)
+    stack.topInt should equal (-42)
+    stack.popInt should equal (-42)
+    stack.popInt should equal (32767)
+    stack.empty  should be (true)
   }
 }
 

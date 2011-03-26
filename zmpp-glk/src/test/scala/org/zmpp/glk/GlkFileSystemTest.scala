@@ -28,49 +28,25 @@
  */
 package org.zmpp.glk
 
-import org.specs._
-import org.specs.matcher._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
 import java.io._
 
-class GlkFileSystemTest extends JUnit4(GlkFileSystemSpec)
-object GlkFileSystemSpecRunner extends ConsoleRunner(GlkFileSystemSpec)
+@RunWith(classOf[JUnitRunner])
+class GlkFileSystemSpec extends FlatSpec with ShouldMatchers {
+  "GlkFileSystem" should "be initialized" in {
+    val fileSystem = new GlkFileSystem
+    fileSystem.iterate(0) should be (null)
+  }
+  it should "create a fileref by name" in {
+    val fileSystem = new GlkFileSystem
+    fileSystem.createFileRefByName(0, "myfile", 0)
+    val fileRef = fileSystem.iterate(0)
 
-/**
- * Note: We compare with xUnit matchers, there seems to be a Scala/Specs bug, which
- * tries to use String.isEmpty which only exists in Java SE 6
- */
-object GlkFileSystemSpec extends Specification with xUnit {
-  "GlkFileSystem" should {
-    "be initialized" in {
-      val fileSystem = new GlkFileSystem
-      assertNull(fileSystem.iterate(0))
-    }
-    "create a fileref by name" in {
-      val fileSystem = new GlkFileSystem
-      fileSystem.createFileRefByName(0, "myfile", 0)
-      val fileRef = fileSystem.iterate(0)
-      assertNotNull(fileRef)
-      assertNull(fileSystem.iterate(fileRef.id))
-    }
-    /*
-    "register a stream and close it" in {
-      val ioSystem = new GlkIOSystem
-      val stream = new DummyStream
-      ioSystem.registerStream(stream)
-      ioSystem.closeStream(stream.id)
-      assertTrue(ioSystem.iterate(0) == null)
-    }
-    "register two streams" in {
-      val ioSystem = new GlkIOSystem
-      val stream1 = new DummyStream
-      val stream2 = new DummyStream
-      ioSystem.registerStream(stream1)
-      ioSystem.registerStream(stream2)
-      assertTrue(ioSystem.iterate(0) == stream2)
-      assertTrue(ioSystem.iterate(stream2.id) == stream1)
-      assertNull(ioSystem.iterate(stream1.id))
-    }*/
+    fileRef should not be (null)
+    fileSystem.iterate(fileRef.id) should be (null)
   }
 }

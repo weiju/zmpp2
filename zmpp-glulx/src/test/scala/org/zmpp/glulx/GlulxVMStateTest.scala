@@ -28,16 +28,17 @@
  */
 package org.zmpp.glulx
 
-import org.specs._
-import org.specs.matcher._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.BeforeAndAfterEach
 
 import org.zmpp.base._
 
-class GlulxVMStateTest extends JUnit4(GlulxVMStateSpec)
-object GlulxVMStateSpecRunner extends ConsoleRunner(GlulxVMStateSpec)
+@RunWith(classOf[JUnitRunner])
+class GlulxVMStateSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
-object GlulxVMStateSpec extends Specification with xUnit {
   val DummyMem = Array[Byte](0x47, 0x6c, 0x75, 0x6c, 0x00, 0x03, 0x01, 0x01,
                              0x00, 0x00, 0x00, 0x00, // RAMSTART
                              0x00, 0x00, 0x00, 0x00, // EXTSTART
@@ -49,81 +50,81 @@ object GlulxVMStateSpec extends Specification with xUnit {
                             )
   var story: Memory = null
   var vmstate = new GlulxVMState
-  "GlulxVMStateSpec" should {
-    doBefore {
-      story = new DefaultMemory(DummyMem)
-      // push artificial call frame
-      vmstate.init(story)
-      vmstate.pushInt(12)
-      vmstate.pushInt(12)
-      vmstate.pushInt(0)
-    }
-    "be initialized" in {
-      vmstate.pc must_== 0
-      vmstate.fp must_== 0
-      vmstate.sp must_== 12
-    }
-    "do StkSwap" in {
-      vmstate.pushInt(1)
-      vmstate.pushInt(2)
-      vmstate.pushInt(3)
+
+  override def beforeEach {
+    story = new DefaultMemory(DummyMem)
+    // push artificial call frame
+    vmstate.init(story)
+    vmstate.pushInt(12)
+    vmstate.pushInt(12)
+    vmstate.pushInt(0)
+  }
+
+  "GlulxVMStateSpec" should "be initialized" in {
+    vmstate.pc should equal (0)
+    vmstate.fp should equal (0)
+    vmstate.sp should equal (12)
+  }
+  it should "do StkSwap" in {
+    vmstate.pushInt(1)
+    vmstate.pushInt(2)
+    vmstate.pushInt(3)
+
+    // after stack swap, order must be 2, 3, 1
+    vmstate.stackSwap
+    vmstate.popInt should equal (2)
+    vmstate.popInt should equal (3)
+    vmstate.popInt should equal (1)
+  }
+  it should "do StkPeek" in {
+    vmstate.pushInt(1)
+    vmstate.pushInt(2)
+    vmstate.pushInt(3)
       
-      // after stack swap, order must be 2, 3, 1
-      vmstate.stackSwap
-      vmstate.popInt must_== 2
-      vmstate.popInt must_== 3
-      vmstate.popInt must_== 1
-    }
-    "do StkPeek" in {
-      vmstate.pushInt(1)
-      vmstate.pushInt(2)
-      vmstate.pushInt(3)
+    vmstate.stackPeek(0) should equal (3)
+    vmstate.stackPeek(1) should equal (2)
+    vmstate.stackPeek(2) should equal (1)
+  }
+  it should "do StkRoll with positive rotate" in {
+    vmstate.pushInt(8)
+    vmstate.pushInt(7)
+    vmstate.pushInt(6)
+    vmstate.pushInt(5)
+    vmstate.pushInt(4)
+    vmstate.pushInt(3)
+    vmstate.pushInt(2)
+    vmstate.pushInt(1)
+    vmstate.pushInt(0)
       
-      vmstate.stackPeek(0) must_== 3
-      vmstate.stackPeek(1) must_== 2
-      vmstate.stackPeek(2) must_== 1
-    }
-    "do StkRoll with positive rotate" in {
-      vmstate.pushInt(8)
-      vmstate.pushInt(7)
-      vmstate.pushInt(6)
-      vmstate.pushInt(5)
-      vmstate.pushInt(4)
-      vmstate.pushInt(3)
-      vmstate.pushInt(2)
-      vmstate.pushInt(1)
-      vmstate.pushInt(0)
+    vmstate.stackRoll(5, 1)
+    vmstate.popInt should equal (1)
+    vmstate.popInt should equal (2)
+    vmstate.popInt should equal (3)
+    vmstate.popInt should equal (4)
+    vmstate.popInt should equal (0)
+  }
+  it should "do StkRoll with negative rotate" in {
+    vmstate.pushInt(8)
+    vmstate.pushInt(7)
+    vmstate.pushInt(6)
+    vmstate.pushInt(5)
+    vmstate.pushInt(4)
+    vmstate.pushInt(3)
+    vmstate.pushInt(2)
+    vmstate.pushInt(1)
+    vmstate.pushInt(0)
       
-      vmstate.stackRoll(5, 1)
-      vmstate.popInt must_== 1
-      vmstate.popInt must_== 2
-      vmstate.popInt must_== 3
-      vmstate.popInt must_== 4
-      vmstate.popInt must_== 0
-    }
-    "do StkRoll with negative rotate" in {
-      vmstate.pushInt(8)
-      vmstate.pushInt(7)
-      vmstate.pushInt(6)
-      vmstate.pushInt(5)
-      vmstate.pushInt(4)
-      vmstate.pushInt(3)
-      vmstate.pushInt(2)
-      vmstate.pushInt(1)
-      vmstate.pushInt(0)
-      
-      vmstate.stackRoll(5, 1)
-      vmstate.stackRoll(9, -3)
-      vmstate.popInt must_== 6
-      vmstate.popInt must_== 7
-      vmstate.popInt must_== 8
-      vmstate.popInt must_== 1
-      vmstate.popInt must_== 2
-      vmstate.popInt must_== 3
-      vmstate.popInt must_== 4
-      vmstate.popInt must_== 0
-      vmstate.popInt must_== 5
-    }
+    vmstate.stackRoll(5, 1)
+    vmstate.stackRoll(9, -3)
+    vmstate.popInt should equal (6)
+    vmstate.popInt should equal (7)
+    vmstate.popInt should equal (8)
+    vmstate.popInt should equal (1)
+    vmstate.popInt should equal (2)
+    vmstate.popInt should equal (3)
+    vmstate.popInt should equal (4)
+    vmstate.popInt should equal (0)
+    vmstate.popInt should equal (5)
   }
 }
 

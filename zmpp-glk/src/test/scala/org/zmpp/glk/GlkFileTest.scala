@@ -28,69 +28,67 @@
  */
 package org.zmpp.glk
 
-import org.specs._
-import org.specs.runner.{ConsoleRunner, JUnit4}
+import org.scalatest.FlatSpec
+import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.BeforeAndAfterEach
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
 import java.io._
 
-class GlkFileTest extends JUnit4(GlkFileSpec)
-object GlkFileSpecRunner extends ConsoleRunner(GlkFileSpec)
+@RunWith(classOf[JUnitRunner])
+class GlkFileSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
-object GlkFileSpec extends Specification {
+  var fileStream: GlkFileStream = null
+  override def beforeEach {
+    val tmpfile = File.createTempFile("zmppfiletest", "tmp")
+    val fileRef = new FileReference(1, 0, 1, tmpfile, 0)
+    fileStream = new GlkFileStream(fileRef, 1, 0, false)
+  }
+  override def afterEach {
+    fileStream.close
+  }
 
-  "GlkFileStream" should {
-    var fileStream: GlkFileStream = null
-
-    doBefore {
-      val tmpfile = File.createTempFile("zmppfiletest", "tmp")
-      val fileRef = new FileReference(1, 0, 1, tmpfile, 0)
-      fileStream = new GlkFileStream(fileRef, 1, 0, false)
-    }
-    doAfter {
-      fileStream.close
-    }
-
-    "be initialized" in {
-      fileStream.id         must_== 0
-      fileStream.writeCount must_== 0
-      fileStream.readCount  must_== 0
-      fileStream.size       must_== 0
-    }
-    "put a character" in {
-      fileStream.putChar('a')
-      fileStream.readCount  must_== 0
-      fileStream.writeCount must_== 1
-      fileStream.size       must_== 1
-    }
-    "resize buffer" in {
+  "GlkFileStream" should "be initialized" in {
+    fileStream.id         should be (0)
+    fileStream.writeCount should be (0)
+    fileStream.readCount  should be (0)
+    fileStream.size       should be (0)
+  }
+  it should "put a character" in {
+    fileStream.putChar('a')
+    fileStream.readCount  should be (0)
+    fileStream.writeCount should be (1)
+    fileStream.size       should be (1)
+  }
+  it should "resize buffer" in {
       val numToWrite = 2000
       for (i <- 0 until numToWrite) fileStream.putChar('a')
-      fileStream.size       must_== numToWrite
-      fileStream.writeCount must_== numToWrite
-      fileStream.position   must_== numToWrite
-    }
-    "seek from start" in {
-      for (i <- 0 until 5) fileStream.putChar('a')
-      fileStream.seek(3, SeekModes.Start)
-      fileStream.size       must_== 5
-      fileStream.writeCount must_== 5
-      fileStream.position   must_== 3
-    }
-    "seek from current" in {
-      for (i <- 0 until 5) fileStream.putChar('a')
-      fileStream.seek(3, SeekModes.Current)
-      fileStream.size       must_== 5
-      fileStream.writeCount must_== 5
-      fileStream.position   must_== 8
-    }
-    "seek from end" in {
-      for (i <- 0 until 5) fileStream.putChar('a')
-      fileStream.seek(0, SeekModes.Start)
-      fileStream.seek(3, SeekModes.End)
-      fileStream.size       must_== 5
-      fileStream.writeCount must_== 5
-      fileStream.position   must_== 8
-    }
+      fileStream.size       should equal (numToWrite)
+      fileStream.writeCount should equal (numToWrite)
+      fileStream.position   should equal (numToWrite)
+  }
+  it should "seek from start" in {
+    for (i <- 0 until 5) fileStream.putChar('a')
+    fileStream.seek(3, SeekModes.Start)
+    fileStream.size       should equal (5)
+    fileStream.writeCount should equal (5)
+    fileStream.position   should equal (3)
+  }
+  it should "seek from current" in {
+    for (i <- 0 until 5) fileStream.putChar('a')
+    fileStream.seek(3, SeekModes.Current)
+    fileStream.size       should equal (5)
+    fileStream.writeCount should equal (5)
+    fileStream.position   should equal (8)
+  }
+  it should "seek from end" in {
+    for (i <- 0 until 5) fileStream.putChar('a')
+    fileStream.seek(0, SeekModes.Start)
+    fileStream.seek(3, SeekModes.End)
+    fileStream.size       should equal (5)
+    fileStream.writeCount should equal (5)
+    fileStream.position   should equal (8)
   }
 }
 
