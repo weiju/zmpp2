@@ -38,10 +38,10 @@ import java.io._
 @RunWith(classOf[JUnitRunner])
 class TokenizerSpec extends FlatSpec with ShouldMatchers {
 
-  "Tokenizer" should "be initialized" in {
+  "Tokenizer" should "emit start tokens" in {
     val reader = new StringReader("<html><body onload=\"bla\">")
     val tokenizer = new Tokenizer(reader)
-    tokenizer.nextToken should be (HtmlStartTag)
-    tokenizer.nextToken should be (HtmlStartTag)
+    tokenizer.nextToken should be (StartTag("html", Map()))
+    tokenizer.nextToken should be (StartTag("body", Map("onload" -> "bla")))
   }
 }

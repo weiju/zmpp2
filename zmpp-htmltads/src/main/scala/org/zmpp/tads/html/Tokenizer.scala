@@ -36,25 +36,14 @@ import java.lang.StringBuilder
 import java.io.Reader
 import java.io.PushbackReader
 
-import scala.collection.mutable.Map
 import scala.collection.mutable.HashMap
 
 trait Token {
 }
 case class PCData(text: String) extends Token
 
-trait StartTag extends Token {
-  def name: String
-}
-trait EndTag extends Token {
-  def name: String
-}
-case object HtmlStartTag extends StartTag {
-  def name = "html"
-}
-case object HtmlEndTag extends StartTag {
-  def name = "html"
-}
+case class StartTag(name: String, attributes: Map[String, String]) extends Token
+case class EndTag(name: String) extends Token
 
 /**
  * A HTML TADS Tokenizer. It reads a stream of characters and
@@ -120,9 +109,9 @@ class Tokenizer(reader: Reader) {
       for (i <- 1 until comps.length) {
         processAttribute(attributeMap, comps(i))
       }
-      HtmlStartTag
+      StartTag(name, attributeMap.toMap)
     }
-    private def processAttribute(attributeMap: Map[String, String],
+    private def processAttribute(attributeMap: HashMap[String, String],
                                  attrString: String) = {
       val attrComps = attrString.split("=")
       val key = attrComps(0)
