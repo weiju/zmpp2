@@ -41,7 +41,7 @@ import scala.collection.mutable.HashMap
 trait Token {
 }
 case class PCData(text: String) extends Token
-
+case object EOF extends Token
 case class StartTag(name: String, attributes: Map[String, String]) extends Token
 case class EndTag(name: String) extends Token
 
@@ -64,8 +64,10 @@ class Tokenizer(reader: Reader) {
   object StartTokenize extends TokenizerState {
     def processChars = {
       val c = nextChar
-      if (c == '<') {
-        println("KLAMMER")
+      if (c == -1) {
+        currentToken = EOF
+        (true, StopTokenize)
+      } else if (c == '<') {
         (false, TokenizeTag)
       } else {
         putbackChar(c)
@@ -74,8 +76,15 @@ class Tokenizer(reader: Reader) {
     }
   }
   object ReadPCData extends TokenizerState {
-    def processChars = {
-      (false, TokenizeStartTag)
+    def processChars: (Boolean, TokenizerState) = {
+      var c = nextChar
+      val builder = new StringBuilder
+      while (c != '<' && c != -1) {
+        builder.appendCodePoint(c)
+        c = nextChar
+      }
+      currentToken = PCData(builder.toString)
+      (true, StartTokenize)
     }
   }
   
@@ -91,7 +100,6 @@ class Tokenizer(reader: Reader) {
   }
   object TokenizeStartTag extends TokenizerState {
     def processChars = {
-      println("TokenizeStartTag.processChars")
       var c = nextChar
       val builder = new StringBuilder
       while (c != '>') {
@@ -104,7 +112,6 @@ class Tokenizer(reader: Reader) {
     private def buildStartTag(str: String) = {
       val comps = str.split("\\s")
       val name = comps(0)
-      println("start tag: " + name)
       val attributeMap = new HashMap[String, String]
       for (i <- 1 until comps.length) {
         processAttribute(attributeMap, comps(i))
@@ -132,7 +139,21 @@ class Tokenizer(reader: Reader) {
   }
   object TokenizeEndTag extends TokenizerState {
     def processChars = {
-      (false, null)
+      var c = nextChar
+      val builder = new StringBuilder
+      while (c != '>') {
+        builder.appendCodePoint(c)
+        c = nextChar
+      }
+      currentToken = EndTag(builder.toString)
+      (true, StartTokenize)
+    }
+  }
+
+  object StopTokenize extends TokenizerState {
+    def processChars = {
+      currentToken = EOF
+      (true, StopTokenize)
     }
   }
 

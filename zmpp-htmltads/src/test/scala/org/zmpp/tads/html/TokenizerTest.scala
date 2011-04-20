@@ -44,4 +44,22 @@ class TokenizerSpec extends FlatSpec with ShouldMatchers {
     tokenizer.nextToken should be (StartTag("html", Map()))
     tokenizer.nextToken should be (StartTag("body", Map("onload" -> "bla")))
   }
+  "Tokenizer" should "emit end tokens" in {
+    val reader = new StringReader("</body></html>")
+    val tokenizer = new Tokenizer(reader)
+    tokenizer.nextToken should be (EndTag("body"))
+    tokenizer.nextToken should be (EndTag("html"))
+  }
+
+  "Tokenizer" should "emit PCData" in {
+    val reader = new StringReader("some text")
+    val tokenizer = new Tokenizer(reader)
+    tokenizer.nextToken should be (PCData("some text"))
+    tokenizer.nextToken should be (EOF)
+  }
+  "Tokenizer" should "emit EOF" in {
+    val reader = new StringReader("")
+    val tokenizer = new Tokenizer(reader)
+    tokenizer.nextToken should be (EOF)
+  }
 }
