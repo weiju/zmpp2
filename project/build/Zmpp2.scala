@@ -5,7 +5,7 @@ class Zmpp2Project(info: ProjectInfo) extends ParentProject(info) {
     (Path.userHome / ".m2" / "repository").absolutePath
 
   val specs = "org.scala-tools.testing" % "specs_2.8.0" % "1.6.5" % "test"
-  val scalatest = "org.scalatest" % "scalatest" % "1.3" % "test"
+  val scalatest = "org.scalatest" % "scalatest_2.9.0" % "1.4.1" % "test"
 
   lazy val common = project("zmpp-common", "zmpp-common")
   lazy val glk    = project("zmpp-glk", "zmpp-glk", common)
