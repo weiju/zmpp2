@@ -4,7 +4,6 @@ class Zmpp2Project(info: ProjectInfo) extends ParentProject(info) {
   val mavenLocal = "Local Maven Reository" at "file://" +
     (Path.userHome / ".m2" / "repository").absolutePath
 
-  val specs = "org.scala-tools.testing" % "specs_2.8.0" % "1.6.5" % "test"
   val scalatest = "org.scalatest" % "scalatest_2.9.0" % "1.4.1" % "test"
 
   lazy val common = project("zmpp-common", "zmpp-common")
