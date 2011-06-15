@@ -445,10 +445,15 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def textColor       = getColor(currentForeground)
 
   def setFont(font: Int): Int = {
-    val previousFont = currentFont
-    flush
-    currentFont = font
-    previousFont
+    if (isFontSupported(font)) {
+      val previousFont = currentFont
+      flush
+      currentFont = font
+      previousFont
+    } else 0
+  }
+  private def isFontSupported(font: Int): Boolean = {
+    font == Fonts.Normal || font == Fonts.Fixed
   }
 
   // TODO: Specify whether it can be switched between fixed and

@@ -110,8 +110,14 @@ object ExecutionControl {
   }
 }
 
-object ZcodeMain {
-  def readFileData(file: File) = {
+object ZcodeMain extends App {
+  val frame = if (args.length == 0) {
+    readZcodeFile(new File("minizork.z3"))
+  } else {
+    readZcodeFile(new File(args(0)))
+  }
+
+  private def readFileData(file: File) = {
     val filebytes = new Array[Byte](file.length.toInt)
     var fileIs : FileInputStream = null
     try {
@@ -125,19 +131,11 @@ object ZcodeMain {
     }
     filebytes
   }
-  def readZcodeFile(file : File) = {
+  private def readZcodeFile(file : File) = {
     val story = new DefaultMemory(readFileData(file))
     val frame = new ZcodeFrame(story.byteAt(0))
     val vm = new Machine
     vm.init(story, frame.screenModel)
     frame.runMachine(vm)
-  }
-  
-  def main(args: Array[String]) {
-    val frame = if (args.length == 0) {
-      readZcodeFile(new File("minizork.z3"))
-    } else {
-      readZcodeFile(new File(args(0)))
-    }
   }
 }
