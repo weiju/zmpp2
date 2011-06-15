@@ -182,6 +182,9 @@ class VMState {
     setByteAt(0x1e, 0x06)
     setByteAt(0x1f, '6'.asInstanceOf[Int])
     setShortAt(0x32, 0x0101)
+    
+    // supports colors
+    setByteAt(0x01, byteAt(0x01) | 0x01)
   }
 
   def reset(story: Memory) {

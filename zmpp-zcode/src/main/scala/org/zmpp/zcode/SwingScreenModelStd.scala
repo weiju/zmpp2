@@ -276,12 +276,15 @@ extends JTextPane with KeyListener {
 /*
  * Standard screen model for all versions except 6.
  */
-class SwingScreenModelStd(topWindow: TextGrid) extends JPanel(new BorderLayout)
+class SwingScreenModelStd(topWindow: TextGrid,
+                          var DefaultBackground: Int = Colors.White,
+                          var DefaultForeground: Int = Colors.Black)
+extends JPanel(new BorderLayout)
 with OutputStream with InputStream with SwingScreenModel with FocusListener {
   var vm: Machine       = null
   var activeWindow      = 0 // 0 is the bottom window, 1 is the top window
-  var currentBackground = Colors.White
-  var currentForeground = Colors.Black
+  var currentBackground = DefaultBackground
+  var currentForeground = DefaultForeground
   var style             = TextStyles.Roman
   var currentFont       = Fonts.Normal
   val fixedFont         = new Font("Courier New", Font.PLAIN, 14)
@@ -427,22 +430,26 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     currentBackground = background
   }
 
-  private def getColor(colorId: Int) = {
+  private def getColor(colorId: Int, isForeground: Boolean): Color = {
     colorId match {
       case Colors.Black   => Color.BLACK
       case Colors.Red     => Color.RED
-      case Colors.Green   => Color.YELLOW
+      case Colors.Green   => Color.GREEN
+      case Colors.Yellow  => Color.YELLOW
       case Colors.Blue    => Color.BLUE
       case Colors.Magenta => Color.MAGENTA
       case Colors.Cyan    => Color.CYAN
       case Colors.White   => Color.WHITE
+      case Colors.Default =>
+        if (isForeground) getColor(DefaultForeground, true)
+        else getColor(DefaultBackground, false)
       case _ =>
         throw new IllegalArgumentException("Unknown color value: %d"
                                            .format(colorId))
     }
   }
-  def backgroundColor = getColor(currentBackground)
-  def textColor       = getColor(currentForeground)
+  def backgroundColor = getColor(currentBackground, false)
+  def textColor       = getColor(currentForeground, true)
 
   def setFont(font: Int): Int = {
     if (isFontSupported(font)) {
