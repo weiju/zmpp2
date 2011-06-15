@@ -31,7 +31,7 @@ package org.zmpp.zcode
 import javax.swing._
 import javax.swing.text.StyleConstants
 import javax.swing.text.MutableAttributeSet
-import java.awt._
+import java.awt.{FlowLayout,BorderLayout,GridLayout,Color,Font,Dimension}
 import java.awt.event._
 
 /*
@@ -307,6 +307,10 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
       add(statusBar, BorderLayout.NORTH)
     }
   }
+
+  def capabilities = List(SupportsColors,      SupportsBoldFont,   SupportsItalicFont,
+                          SupportsFixedFont,   SupportsTimedInput, SupportsSound,
+                          SupportsScreenSplit, SupportsMouse)
 
   import TextStyles._
   def isRoman        = style                  == Roman

@@ -121,4 +121,6 @@ trait ScreenModel {
   def setTextStyle(style: Int)
   def setFont(font: Int): Int
   def setColour(foreground: Int, background: Int, window: Int)
+
+  def capabilities: List[CapabilityFlag]
 }

@@ -31,6 +31,19 @@ package org.zmpp.zcode
 import org.zmpp.base.VMRunStates
 import org.zmpp.base.Memory
 
+sealed class CapabilityFlag
+case object SupportsColors      extends CapabilityFlag
+case object SupportsUndo        extends CapabilityFlag
+case object SupportsBoldFont    extends CapabilityFlag
+case object SupportsItalicFont  extends CapabilityFlag
+case object SupportsFixedFont   extends CapabilityFlag
+case object SupportsTimedInput  extends CapabilityFlag
+case object SupportsSound       extends CapabilityFlag
+case object SupportsScreenSplit extends CapabilityFlag
+case object SupportsMouse       extends CapabilityFlag
+case object SupportsMenus       extends CapabilityFlag
+case object SupportsPictures    extends CapabilityFlag
+
 class StoryHeader(story: Memory) {
   def version             = story.byteAt(0x00)
   def flags1              = story.byteAt(0x01)
@@ -181,10 +194,7 @@ class VMState {
     // set interpreter information
     setByteAt(0x1e, 0x06)
     setByteAt(0x1f, '6'.asInstanceOf[Int])
-    setShortAt(0x32, 0x0101)
-    
-    // supports colors
-    setByteAt(0x01, byteAt(0x01) | 0x01)
+    setShortAt(0x32, 0x0101)    
   }
 
   def reset(story: Memory) {
@@ -334,6 +344,24 @@ class VMState {
     _stack.initFromArray(snapshot.stackValues)
     pc = snapshot.pc
     fp = snapshot.fp
+  }
+
+  def setCapabilityFlags(flags: List[CapabilityFlag]) {
+    var flags1 = byteAt(0x01)
+    var flags2 = byteAt(0x10)
+    flags.foreach(flag => flag match {
+      case SupportsColors      => if (header.version >= 5) flags1 |= 0x01
+      case SupportsPictures    => if (header.version == 6) flags1 |= 0x02
+      case SupportsBoldFont    => if (header.version >= 4) flags1 |= 0x04
+      case SupportsItalicFont  => if (header.version >= 4) flags1 |= 0x08
+      case SupportsFixedFont   => if (header.version >= 4) flags1 |= 0x10
+      case SupportsScreenSplit => if (header.version != 6) flags1 |= 0x20
+      case SupportsSound       => if (header.version == 6) flags1 |= 0x20
+      case SupportsTimedInput  => if (header.version >= 4) flags1 |= 0x80
+      case _ => // do nothing
+    })
+    setByteAt(0x01, flags1)
+    setByteAt(0x10, flags2)
   }
 }
 

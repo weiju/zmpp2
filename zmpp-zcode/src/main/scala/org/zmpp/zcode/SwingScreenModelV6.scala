@@ -29,7 +29,7 @@
 package org.zmpp.zcode
 
 import javax.swing._
-import java.awt._
+import java.awt.{Dimension,Font}
 
 /*
  * Implementation of the V6 screen model using Swing components.
@@ -42,6 +42,11 @@ with OutputStream with InputStream with SwingScreenModel {
   private var selected  = true
   val fixedFont         = new Font("Courier New", Font.PLAIN, 14)
   setPreferredSize(new Dimension(640, 480))
+
+  def capabilities = List(SupportsColors,    SupportsBoldFont,    SupportsItalicFont,
+                          SupportsFixedFont, SupportsTimedInput,  SupportsSound,
+                          SupportsPictures,  SupportsScreenSplit, SupportsMouse,
+                          SupportsMenus)
 
   // OutputStream
   def isSelected = selected

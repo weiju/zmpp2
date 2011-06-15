@@ -73,6 +73,8 @@ class Machine {
     this.screenModel = screenModel
     ioSystem.reset(screenModel)
     dynamicMem = state.cloneDynamicMem
+
+    state.setCapabilityFlags(screenModel.capabilities ++ List(SupportsUndo))
   }
   def version = state.header.version 
 
