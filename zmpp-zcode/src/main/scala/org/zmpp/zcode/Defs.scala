@@ -55,7 +55,12 @@ class StoryHeader(story: Memory) {
   def staticStart         = story.shortAt(0x0e)
   def flags2              = story.shortAt(0x10)
   def abbrevTable         = story.shortAt(0x18)
-  def fileLength          = story.shortAt(0x1a)
+  def fileLength          = {
+    val factor = if (version <= 3) 2
+                 else if (version == 4 || version == 5) 4
+                 else 8
+    story.shortAt(0x1a) * factor
+  }
   def checksum            = story.shortAt(0x1c)
   def terpNumber          = story.shortAt(0x1e) // V4
   def terpVersion         = story.shortAt(0x1f) // V4
@@ -175,13 +180,13 @@ class VMState {
   var header     : StoryHeader   = null
   val encoding = new ZsciiEncoding(this)
   var runState = VMRunStates.Running
+  var calculatedChecksum = 0
 
   var pc       = 0
   var fp       = 0 // frame pointer
   def sp       = _stack.sp
 
   def reset {
-    header    = new StoryHeader(_story)
     _stack.sp = 0
     fp        = 0
     if (header.version != 6) {
@@ -199,8 +204,25 @@ class VMState {
 
   def reset(story: Memory) {
     _story = story
+    header    = new StoryHeader(_story)
+    // calculate the checksum before we make any in-memory modifications
+    // but after we have a header
+    calculatedChecksum = calculateChecksum
     reset
   }
+
+  private def calculateChecksum = {
+    var currentByteAddress = 0x40
+    var checksum = 0
+    printf("CALC checksum, file size: %d, stored file size: %d\n",
+           _story.size, header.fileLength)
+    while (currentByteAddress < header.fileLength) {
+      checksum += byteAt(currentByteAddress)
+      currentByteAddress += 1
+    }
+    checksum & 0xffff
+  }
+
   def byteAt(addr: Int)  = _story.byteAt(addr)
   def shortAt(addr: Int) = _story.shortAt(addr)
   def intAt(addr: Int)   = _story.intAt(addr)

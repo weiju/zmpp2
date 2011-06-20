@@ -266,6 +266,8 @@ class Machine {
       case 0x0c => // show_status
         if (version > 3) fatal("@show_status not allowed in version > 3")
         else screenModel.updateStatusLine
+      case 0x0d => // verify
+        decideBranch(state.header.checksum == state.calculatedChecksum)
       case 0x0f => // piracy (as recommended in the spec, always branch)
         decideBranch(true)
       case _ =>
