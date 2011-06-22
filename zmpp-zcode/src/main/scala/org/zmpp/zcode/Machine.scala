@@ -520,8 +520,14 @@ class Machine {
       case 0x0f => // set_cursor
         val line   = nextOperand
         val column = nextOperand
-        if (screenModel != null) screenModel.setCursor(line, column)
+        if (screenModel != null) screenModel.setCursorPosition(line, column)
         else warn("@set_window, platformIO not set")
+      case 0x10 => // get_cursor
+        val array     = nextOperand
+        printf("get_cursor $%02x\n", array)
+        val (cursorRow: Int, cursorColumn: Int) = screenModel.getCursorPosition
+        state.setShortAt(array,     cursorRow)
+        state.setShortAt(array + 2, cursorColumn)
       case 0x11 => // set_text_style
         screenModel.setTextStyle(nextOperand)
       case 0x12 => // buffer_mode

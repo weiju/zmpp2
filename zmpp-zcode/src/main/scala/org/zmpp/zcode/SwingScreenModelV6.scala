@@ -31,6 +31,23 @@ package org.zmpp.zcode
 import javax.swing._
 import java.awt.{Dimension,Font}
 
+sealed trait V6WindowState {
+}
+
+class V6TextGrid extends V6WindowState {
+}
+class V6TextWindow extends V6WindowState {
+}
+class V6GraphicsWindow extends V6WindowState {
+}
+
+class V6Window {
+  private var currentState: V6WindowState = null
+  def setCurrentState(state: V6WindowState) {
+    currentState = state
+  }
+}
+
 /*
  * Implementation of the V6 screen model using Swing components.
  * The V6 screen model is pixel-based, so rendering is entirely done
@@ -39,6 +56,9 @@ import java.awt.{Dimension,Font}
 class SwingScreenModelV6 extends JComponent
 with OutputStream with InputStream with SwingScreenModel {
   var vm: Machine = null
+  val windows = Array.ofDim[V6Window](8)
+  (0 until 7).foreach{ i => windows(i) = new V6Window }
+
   private var selected  = true
   val fixedFont         = new Font("Courier New", Font.PLAIN, 14)
   setPreferredSize(new Dimension(640, 480))
@@ -51,7 +71,9 @@ with OutputStream with InputStream with SwingScreenModel {
   // OutputStream
   def isSelected = selected
   def select(flag: Boolean) = selected = flag
-  def putChar(c: Char) { }
+  def putChar(c: Char) {
+    //println("@put_char: '%c'".format(c))
+  }
   def flush { }
 
   // InputStream
@@ -94,7 +116,10 @@ with OutputStream with InputStream with SwingScreenModel {
   def splitWindow(lines: Int) {
     printf("@split_window %d (TODO)\n", lines)
   }
-  def setCursor(line: Int, column: Int) {
+  def getCursorPosition: (Int, Int) = {
+    throw new UnsupportedOperationException("getCursorPosition() not yet implemented in screen model")
+  }
+  def setCursorPosition(line: Int, column: Int) {
     printf("@set_cursor %d %d (TODO)\n", line, column)
   }
   def updateStatusLine { }

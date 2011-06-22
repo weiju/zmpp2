@@ -31,7 +31,8 @@ package org.zmpp.zcode
 import javax.swing._
 import javax.swing.text.StyleConstants
 import javax.swing.text.MutableAttributeSet
-import java.awt.{FlowLayout,BorderLayout,GridLayout,Color,Font,Dimension}
+import java.awt.{FlowLayout,BorderLayout,GridLayout,Color,Font,Dimension,Graphics2D}
+import java.awt.{Rectangle}
 import java.awt.event._
 
 /*
@@ -196,9 +197,18 @@ extends JTextPane with KeyListener {
     attrs
   }
 
+  private def numRows = {
+    val g2d = getGraphics.asInstanceOf[Graphics2D]
+    val lineMetrics = screenModel.stdFont.getLineMetrics("0", g2d.getFontRenderContext)
+    (getHeight / lineMetrics.getHeight).toInt + 1
+  }
+
   def clear {
     // TODO: also take into account the background color
-    setText("")
+    val clearScreenBuilder = new StringBuilder()
+    println("Window has " + numRows + " rows.")
+    (1 to numRows).foreach(_ => clearScreenBuilder.append('\n'))
+    setText(clearScreenBuilder.toString)
     setBackground(screenModel.backgroundColor)
   }
 
@@ -263,6 +273,7 @@ extends JTextPane with KeyListener {
     requestFocusInWindow
     getCaret.setVisible(true)
     inputStart    = getDocument.getLength
+    setCaretPosition(inputStart)
     maxInputChars = maxChars
     inputMode     = TextInputMode.ReadLine
   }
@@ -281,6 +292,8 @@ class SwingScreenModelStd(topWindow: TextGrid,
                           var DefaultForeground: Int = Colors.Black)
 extends JPanel(new BorderLayout)
 with OutputStream with InputStream with SwingScreenModel with FocusListener {
+  import ScrollPaneConstants._
+
   var vm: Machine       = null
   var activeWindow      = 0 // 0 is the bottom window, 1 is the top window
   var currentBackground = DefaultBackground
@@ -293,9 +306,12 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   val statusBar    = new StatusBar
   val mainPane     = new JPanel(new BorderLayout)
   val bottomWindow = new TextBuffer(this)
-  val scrollPane   = new JScrollPane(bottomWindow)
+  val scrollPane   = new JScrollPane(bottomWindow, VERTICAL_SCROLLBAR_NEVER,
+                                     HORIZONTAL_SCROLLBAR_NEVER)
+  
   scrollPane.setPreferredSize(new Dimension(640, 480))
   mainPane.add(scrollPane, BorderLayout.CENTER)
+
   add(mainPane, BorderLayout.CENTER)
   topWindow.addFocusListener(this)
   topWindow.screenModel = this
@@ -356,8 +372,14 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     val maxChars = vm.readLineInfo.maxInputChars
     println("MAX_CHARS FOR READLINE: " + maxChars)
     if (vm.version <= 3) updateStatusLine
+    scrollPane.getViewport.scrollRectToVisible(bottomRectangle)
     bottomWindow.requestLineInput(maxChars)
     0
+  }
+  private def bottomRectangle: Rectangle = {
+    val right = bottomWindow.getWidth
+    val bottom = bottomWindow.getHeight
+    new Rectangle(0, bottom - 10, right, 10)
   }
   def readChar {
     if (vm.version <= 3) updateStatusLine
@@ -379,10 +401,13 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def keyboardStream     = this
   def screenModel        = this
   def splitWindow(lines: Int) {
+    println("@split_window, lines = " + lines)
     topWindow.windowSize = lines
     if (vm.version == 3) topWindow.clear
   }
   def setWindow(windowId: Int) {
+    println("@set_window, window id = " + windowId)
+    flush
     if (windowId == 0 || windowId == 1) {
       activeWindow = windowId
     } else {
@@ -390,7 +415,13 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
         "@set_window illegal window: %d".format(windowId))
     }
   }
-  def setCursor(line: Int, column: Int) {
+
+  def getCursorPosition: (Int, Int) = {
+    throw new UnsupportedOperationException("getCursorPosition() not yet implemented in screen model")
+  }
+
+  def setCursorPosition(line: Int, column: Int) {
+    //println("@set_cursor, line = " + line + " col = " + column)
     if (activeWindow == 1) {
       topWindow.cursorPos = (line, column)
     } else {
@@ -400,10 +431,12 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
 
   def bufferMode(flag: Int) {
+    println("@buffer_mode, flag = " + flag)
     bottomWindow.useBufferMode = (flag != 0)
   }
   def eraseWindow(windowId: Int) {
     // TODO: polymorphism might make this prettier and shorter
+    println("@erase_window, win = " + windowId)
     if (windowId == -1) {
       topWindow.windowSize = 0
       topWindow.clear
@@ -432,6 +465,12 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     flush
     currentForeground = foreground
     currentBackground = background
+    // we need to change the caret color of the bottom window, too
+    if (isReverseVideo) {
+      bottomWindow.setCaretColor(getColor(background, false))
+    } else {
+      bottomWindow.setCaretColor(getColor(foreground, true))
+    }
   }
 
   private def getColor(colorId: Int, isForeground: Boolean): Color = {
