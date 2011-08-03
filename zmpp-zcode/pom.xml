@@ -90,8 +90,12 @@
 	      <id>stdrun</id>
 	      <mainClass>org.zmpp.zcode.ZcodeMain</mainClass>
 	      <args>
-		      <arg>/Users/weiju/Games/Inform/photopia.z5</arg>
+		      <arg>/Users/weiju/Games/Inform/vgame.z8</arg>
           <!--
+		      <arg>/Users/weiju/Games/Inform/bronze.z8</arg>
+		      <arg>/Users/weiju/Games/infocom/hitchhiker.z3</arg>
+		      <arg>/Users/weiju/Games/Inform/custard.z7</arg>
+		      <arg>/Users/weiju/Games/Inform/photopia.z5</arg>
 		      <arg>/Users/weiju/Games/infocom/ztuu.z5</arg>
 		      <arg>/Users/weiju/Games/infocom/borderzone.z5</arg>
 		      <arg>/Users/weiju/Games/infocom/h2.z6</arg>

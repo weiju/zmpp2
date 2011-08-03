@@ -475,6 +475,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
 
   private def getColor(colorId: Int, isForeground: Boolean): Color = {
     colorId match {
+      case Colors.Current =>
+        if (isForeground) getColor(currentForeground, true) else getColor(currentBackground, true)
       case Colors.Black   => Color.BLACK
       case Colors.Red     => Color.RED
       case Colors.Green   => Color.GREEN

@@ -112,7 +112,8 @@ object ExecutionControl {
 
 object ZcodeMain extends App {
   val frame = if (args.length == 0) {
-    readZcodeFile(new File("minizork.z3"))
+    println("Usage: Please provide a game file as argument")
+    System.exit(0)
   } else {
     readZcodeFile(new File(args(0)))
   }

@@ -91,8 +91,9 @@ class StoryHeader(story: Memory) {
       case 2 => addr << 1
       case 3 => addr << 1
       case 4 => addr << 2
-      case 5 => (addr << 2) + (routinesOffset << 3)
+      case 5 => addr << 2
       case 6 => (addr << 2) + (routinesOffset << 3)
+      case 7 => (addr << 2) + (routinesOffset << 3)
       case 8 => addr << 3
     }
   }
@@ -102,8 +103,9 @@ class StoryHeader(story: Memory) {
       case 2 => addr << 1
       case 3 => addr << 1
       case 4 => addr << 2
-      case 5 => (addr << 2) + (staticStringsOffset << 3)
+      case 5 => addr << 2
       case 6 => (addr << 2) + (staticStringsOffset << 3)
+      case 7 => (addr << 2) + (staticStringsOffset << 3)
       case 8 => addr << 3
     }
   }
