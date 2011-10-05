@@ -166,16 +166,31 @@ object FrameOffset {
   val Locals   = 4
 }
 object ZMachineRunStates {
-  val Halted       = 0
-  val Running      = 1
-  val ReadLine     = 2
+  val Halted       = VMRunStates.Halted
+  val Running      = VMRunStates.Running
+  val ReadLine     = VMRunStates.WaitForEvent
   val ReadChar     = 11
 }
 
 class Snapshot(val dynamicMem: Array[Byte], val stackValues: Array[Int],
                val pc: Int, val fp: Int)
 
-class VMState {
+trait VMState {
+  def header: StoryHeader
+  def encoding: ZsciiEncoding
+  def runState: Int
+  def pc: Int
+  def pc_=(newpc: Int)
+
+  def byteAt(addr: Int): Int
+  def shortAt(addr: Int): Int
+  def intAt(addr: Int): Int
+  def setByteAt(addr: Int, value: Int)
+  def setShortAt(addr: Int, value: Int)
+  def setIntAt(addr: Int, value: Int)
+}
+
+class VMStateImpl extends VMState {
   private var _story : Memory = null
   private val _stack = new Stack
 

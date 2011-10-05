@@ -42,44 +42,47 @@ abstract class Alphabet {
   }
   def contains(c: Char) = table.filter{tableChar => c == tableChar}.length > 0
 }
-class Alphabet0 extends Alphabet {
+object Alphabet0 extends Alphabet {
   val table = "abcdefghijklmnopqrstuvwxyz"
-  def name = "A0" // debugging
+  def name = "A0"
 }
-class Alphabet1 extends Alphabet {
+object Alphabet1 extends Alphabet {
   val table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  def name = "A1" // debugging
+  def name = "A1"
 }
-class Alphabet2 extends Alphabet {
+object Alphabet2 extends Alphabet {
   val table = " \n0123456789.,!?+#'\"/\\-:()"
-  def name = "A2" // just debugging
+  def name = "A2"
+}
+object Alphabet2_V1 extends Alphabet {
+  val table = " 0123456789.,!?+#'\"/\\<-:()"
+  def name = "A2"
 }
 
 object ZsciiEncoding {
-  val NullChar = 0
-  
+  val NullChar = 0  
   def zsciiCodeFor(c: Int) = c
 }
 
 class ZsciiEncoding(_state: VMState) {
 
-  private val A0 = new Alphabet0
-  private val A1 = new Alphabet1
-  private val A2 = new Alphabet2
+  private def A0 = Alphabet0
+  private def A1 = Alphabet1
+  private def A2 = if (_state.header.version == 1) Alphabet2_V1 else Alphabet2
 
   // processing state: abbreviations and multi-character sequences
-  private var currentAlphabet: Alphabet = A0
-  private var currentAbbreviation       = 0
-  private var decode10bit               = false
-  private var decode10bitStage          = 0
-  private var decode10bitFirst          = 0
+  var currentAlphabet: Alphabet = A0
+  var currentAbbreviation       = 0
+  var decode10bit               = false
+  var decode10bitStage          = 0
+  var decode10bitFirst          = 0
 
   def reset {
     currentAlphabet = A0
     decode10bit     = false
   }
 
-  private def decodeZchar(zchar: Int, stream: OutputStream) {
+  def decodeZchar(zchar: Int, stream: OutputStream) {
     if (currentAbbreviation != 0) {
       //printf("process abbreviation: %d zchar: %02x ALPHABET = %s\n",
       //       currentAbbreviation, zchar, currentAlphabet.name)

@@ -41,7 +41,7 @@ import java.util.Random
  * efficient.
  */
 class Machine {
-  val state                     = new VMState
+  val state                     = new VMStateImpl
   var ioSystem                  = new IoSystem(state)
   val readLineInfo              = new ReadLineInfo
   val randomGenerator           = new Random

@@ -57,6 +57,7 @@ with WindowListener {
     screenModel = new SwingScreenModelV6
   }
   getContentPane.add(screenModel.asInstanceOf[Component], BorderLayout.CENTER)
+  setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
   pack
   addWindowListener(this)
 
