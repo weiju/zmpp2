@@ -71,15 +71,61 @@ class ZsciiEncoding(_state: VMState) {
   private def A2 = if (_state.header.version == 1) Alphabet2_V1 else Alphabet2
 
   // processing state: abbreviations and multi-character sequences
-  var currentAlphabet: Alphabet = A0
-  var currentAbbreviation       = 0
-  var decode10bit               = false
-  var decode10bitStage          = 0
-  var decode10bitFirst          = 0
+  var currentAlphabet: Alphabet      = A0
+  var currentAbbreviation            = 0
+  var decode10bit                    = false
+  var decode10bitStage               = 0
+  var decode10bitFirst               = 0
+  private var shiftLock              = false
+  private var lastAlphabet: Alphabet = A0
 
   def reset {
     currentAlphabet = A0
+    lastAlphabet    = A0
     decode10bit     = false
+    shiftLock       = false
+  }
+
+  def isShiftCharacter(zchar: Int) = {
+    zchar == 4 || zchar == 5 ||
+    (_state.header.version <= 2 && (zchar == 2 || zchar == 3))
+  }
+
+  private def handleShift(zchar: Int) {
+    if (_state.header.version <= 2) handleShiftV1V2(zchar)
+    else handleShiftStd(zchar)
+  }
+  private def handleShiftV1V2(zchar: Int) = {
+    lastAlphabet = currentAlphabet
+    zchar match {
+      case 2 => doShiftCode2
+      case 3 => doShiftCode3
+      case 4 => doShiftCode2
+      case 5 => doShiftCode3
+    }
+    shiftLock = (zchar == 4) || (zchar == 5) 
+  }
+  private def doShiftCode2 {
+    if (currentAlphabet == A0) currentAlphabet = A1
+    else if (currentAlphabet == A1) currentAlphabet = A2
+    else if (currentAlphabet == A2) currentAlphabet = A0
+  }
+  private def doShiftCode3 {
+    if (currentAlphabet == A0) currentAlphabet = A2
+    else if (currentAlphabet == A1) currentAlphabet = A0
+    else if (currentAlphabet == A2) currentAlphabet = A1
+  }
+  private def handleShiftStd(zchar: Int) = zchar match {
+    case 4 => currentAlphabet = A1
+    case 5 => currentAlphabet = A2
+  }
+  private def unshiftAlphabet = {
+    currentAlphabet = if (_state.header.version <= 2) lastAlphabet else A0
+  }
+  private def isV1Newline(zchar: Int) = _state.header.version == 1 && zchar == 1
+  private def isAbbreviationCharacter(zchar: Int) = {
+    (_state.header.version >= 3 && zchar >= 1 && zchar <= 3) ||
+    (_state.header.version == 2 && zchar == 1)
   }
 
   def decodeZchar(zchar: Int, stream: OutputStream) {
@@ -89,7 +135,18 @@ class ZsciiEncoding(_state: VMState) {
       var entryNum = 32 * (currentAbbreviation - 1) + zchar
       currentAbbreviation = 0 // mark abbreviation as processed
       var abbrevAddr = _state.shortAt(_state.header.abbrevTable + entryNum * 2)
+
+      // save old state
+      val oldCurrentAlphabet = currentAlphabet
+      val oldLastAlphabet = lastAlphabet
+      val oldShiftLock = shiftLock
+      shiftLock = false
       decodeZStringAtByteAddress(abbrevAddr * 2, stream)
+
+      // restore old state
+      currentAlphabet = oldCurrentAlphabet
+      lastAlphabet = oldLastAlphabet
+      shiftLock = oldShiftLock
     } else if (decode10bit) {
       if (decode10bitStage == 2) {
         // second half of decode 10 bit
@@ -104,16 +161,12 @@ class ZsciiEncoding(_state: VMState) {
         //printf("IN 10 bit decoding, first: %02x\n", zchar)
       }
     }
-    else if (zchar == 0) {
-      stream.putChar(' ')
-      //println("decoded ZCHAR [SPACE]")
-    }
-    else if (zchar >= 1 && zchar <= 3) {
+    else if (zchar == 0) stream.putChar(' ')
+    else if (isV1Newline(zchar)) stream.putChar('\n')
+    else if (isShiftCharacter(zchar)) handleShift(zchar)
+    else if (isAbbreviationCharacter(zchar)) {
       if (currentAbbreviation == 0) currentAbbreviation = zchar
-    }
-    else if (zchar == 4) currentAlphabet = A1
-    else if (zchar == 5) currentAlphabet = A2
-    else if (zchar == 6 && currentAlphabet == A2) {
+    } else if (zchar == 6 && currentAlphabet == A2) {
       // 10-bit mode
       //println("START 10 bit MODE")
       decode10bit      = true
@@ -124,7 +177,7 @@ class ZsciiEncoding(_state: VMState) {
       //printf("decoded ZCHAR '%c'\n", currentAlphabet.lookup(zchar))
     }
     // always reset the alphabet if not shift
-    if (zchar != 4 && zchar != 5) currentAlphabet = A0
+    if (!shiftLock && !isShiftCharacter(zchar)) unshiftAlphabet
   }
   def decodeZString(stream: OutputStream) {
     _state.pc += decodeZStringAtByteAddress(_state.pc, stream)
@@ -133,7 +186,7 @@ class ZsciiEncoding(_state: VMState) {
     var numBytesDecoded = 0
     var currentWord = _state.shortAt(addr)
     var endofText   = false
-
+    reset
     while (!endofText) {
       numBytesDecoded += 2
       //printf("CURRENT WORD: %02x (Alphabet: %s)\n", currentWord,
@@ -152,7 +205,6 @@ class ZsciiEncoding(_state: VMState) {
     }
     // not sure if we should always reset the decoder, but it seems to work
     // what happens in nested invocations (abbreviations ?)
-    reset
     numBytesDecoded
   }
   def decodeZStringAtPackedAddress(paddr: Int, stream: OutputStream) {
