@@ -6,27 +6,26 @@ Missing:
 01. @save
 02. @restore
 03. @throw
-04. @input_stream
-05. @encode_text
+04. @encode_text
 
 ext:
 
-07. @save
-08. @restore
-09. @draw_picture
-10. @picture_data
-11. @erase_picture
-12. @set_margins
-13. @move_window
-14. @window_size
-15. @window_style
-16. @get_wind_prop
-17. @scroll_window
-18. @read_mouse
-19. @mouse_window
-20. @put_wind_prop
-21. @print_form
-22. @make_menu
+05. @save
+06. @restore
+07. @draw_picture
+08. @picture_data
+09. @erase_picture
+10. @set_margins
+11. @move_window
+12. @window_size
+13. @window_style
+14. @get_wind_prop
+15. @scroll_window
+16. @read_mouse
+17. @mouse_window
+18. @put_wind_prop
+19. @print_form
+20. @make_menu
 
 TODO:
 

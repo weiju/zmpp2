@@ -206,10 +206,16 @@ extends JTextPane with KeyListener {
   def clear {
     // TODO: also take into account the background color
     val clearScreenBuilder = new StringBuilder()
-    println("Window has " + numRows + " rows.")
+    println("Bottom Window has " + numRows + " rows.")
     (1 to numRows).foreach(_ => clearScreenBuilder.append('\n'))
     setText(clearScreenBuilder.toString)
     setBackground(screenModel.backgroundColor)
+    setCaretToEnd
+  }
+
+  private def setCaretToEnd {
+    inputStart    = getDocument.getLength
+    setCaretPosition(inputStart)
   }
 
   def putChar(c: Char) {
@@ -272,8 +278,7 @@ extends JTextPane with KeyListener {
     println("requestLineInput")
     requestFocusInWindow
     getCaret.setVisible(true)
-    inputStart    = getDocument.getLength
-    setCaretPosition(inputStart)
+    setCaretToEnd
     maxInputChars = maxChars
     inputMode     = TextInputMode.ReadLine
   }

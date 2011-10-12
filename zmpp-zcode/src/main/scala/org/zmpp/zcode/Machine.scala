@@ -533,6 +533,8 @@ class Machine {
         screenModel.bufferMode(nextOperand)
       case 0x13 => // output_stream
         outputStream(nextSignedOperand)
+      case 0x14 => // input_stream
+        ioSystem.currentInputStreamId = nextOperand
       case 0x15 => // sound_effect
         val number = if (numOperands > 0) nextOperand else 1
         val effect = if (numOperands > 1) nextOperand else 2
