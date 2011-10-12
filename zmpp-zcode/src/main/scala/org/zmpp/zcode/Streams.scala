@@ -147,8 +147,6 @@ class IoSystem(state: VMState) extends OutputStream {
   // ********************************************************************
   // ***** OUTPUT
   // ********************************************************************
-  def printMessage(msg: String) = msg.map(c => putChar(c))
-  def printError(msg: String) = printMessage("ERROR: %s".format(msg))
   def printNum(num: Int) = "%d".format(num).map{c => putChar(c)}
   def putChar(c: Char) {
     // if stream 3 is selected, only write to that one
@@ -162,4 +160,9 @@ class IoSystem(state: VMState) extends OutputStream {
   // selective output
   def putChar(c: Char, stream: Int) = outputStreams(stream).putChar(c)
   def flush(stream: Int) = outputStreams(stream).flush
+  def printMessage(msg: String) = {
+    msg.map(c => putChar(c, Screen))
+    flush(Screen)
+  }
+  def printError(msg: String) = printMessage("ERROR: %s".format(msg))
 }

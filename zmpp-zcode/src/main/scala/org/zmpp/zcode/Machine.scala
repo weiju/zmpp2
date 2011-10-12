@@ -240,6 +240,14 @@ class Machine {
         ioSystem.putChar('\n')
         state.returnFromRoutine(1)
       case 0x04 => // nop
+      case 0x05 => // save V1-V4
+        if (version < 4) println("PRE-V4 SAVE (TODO)")
+        else if (version == 4) println("V4 SAVE (TODO)")
+        else fatal("illegal 0OP: $05, Version >= 5")
+      case 0x06 => // restore V1-V4
+        if (version < 4) println("PRE-V4 RESTORE (TODO)")
+        else if (version == 4) println("V4 RESTORE (TODO)")
+        else fatal("illegal 0OP: $06, Version >= 5")
       case 0x07 => // restart
         // bit 0 of flags2 (transcript)
         // bit 1 of flags2 (fixed pitch)
@@ -270,8 +278,7 @@ class Machine {
       case 0x0f => // piracy (as recommended in the spec, always branch)
         decideBranch(true)
       case _ =>
-        throw new UnsupportedOperationException(
-          "0OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
+        fatal("illegal 0OP: $%02x".format(_decodeInfo.opnum))
     }
   }
   private def execute1Op {
@@ -322,8 +329,7 @@ class Machine {
         if (version <= 4) storeResult((~nextOperand) & 0xffff)
         else state.call(nextOperand, _callArgs, -1, 0)
       case _ =>
-        throw new UnsupportedOperationException(
-          "1OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
+        fatal("illegal 1OP: $%02x".format(_decodeInfo.opnum))
     }
   }
   private def execute2Op {
@@ -434,9 +440,10 @@ class Machine {
         val window = if (numOperands > 2) nextOperand
                      else 3
         screenModel.setColour(foreground, background, window)
+      case 0x1c => // throw
+        fatal("@throw instruction not supported yet (TODO)")
       case _ =>
-        throw new UnsupportedOperationException(
-          "2OP opnum: 0x%02x\n".format(_decodeInfo.opnum))
+        fatal("illegal 2OP: $%02x".format(_decodeInfo.opnum))
     }
   }
   private def executeVar {
@@ -576,6 +583,8 @@ class Machine {
         val parserHelper = new ParserHelper(state, textBuffer, parseBuffer,
                                             userDictionary, flag != 0)
         parserHelper.tokenize
+      case 0x1c => // encode_text
+        fatal("@encode_text not supported yet (TODO)")
       case 0x1d => // copy_table
         val first  = nextOperand
         val second = nextOperand
@@ -593,12 +602,15 @@ class Machine {
         val argNum = nextOperand
         decideBranch(argNum <= state.numArgsCurrentRoutine)
       case _ =>
-        throw new UnsupportedOperationException(
-          "VAR opcode not supported: 0x%02x\n".format(_decodeInfo.opnum))
+        fatal("illegal VAR: $%02x".format(_decodeInfo.opnum))
     }
   }
   private def executeExt {
     _decodeInfo.opnum match {
+      case 0x00 => // save
+        fatal("@save V5 not supported yet (TODO)")
+      case 0x01 => // restore
+        fatal("@restore V5 not supported yet (TODO)")
       case 0x02 => // log_shift
         val number: Char = nextOperand.asInstanceOf[Char]
         val places = nextSignedOperand
@@ -613,6 +625,14 @@ class Machine {
         storeResult(result)
       case 0x04 => // set_font
         storeResult(screenModel.setFont(nextOperand))
+      case 0x05 => // draw_picture
+        fatal("@draw_picture not supported yet")
+      case 0x06 => // picture_data
+        fatal("@picture_data not supported yet")
+      case 0x07 => // erase_picture
+        fatal("@erase_picture not supported yet")
+      case 0x08 => // set_margins
+        fatal("@set_margins not supported yet")
       case 0x09 => // save_undo
         storeResult(1)
         _undoSnapshots ::= state.createSnapshot
@@ -635,6 +655,16 @@ class Machine {
         // we simply assume that most Java systems can process Unicode
         nextOperand
         storeResult(3)
+      case 0x10 => // move_window
+        fatal("@move_window not supported yet")
+      case 0x11 => // window_size
+        fatal("@window_size not supported yet")
+      case 0x12 => // window_style
+        fatal("@window_style not supported yet")
+      case 0x13 => // get_wind_prop
+        fatal("@get_wind_prop not supported yet")
+      case 0x14 => // scroll_window
+        fatal("@scroll_window not supported yet")
       case 0x15 => // pop_stack
         val numItems = nextOperand
         val userStack = if (_decodeInfo.numOperands > 1) nextOperand else 0
@@ -642,6 +672,10 @@ class Machine {
           if (userStack == 0) state.variableValue(0)
           else state.popUserStack(userStack)
         }
+      case 0x16 => // read_mouse
+        fatal("@read_mouse not supported yet")
+      case 0x17 => // mouse_window
+        fatal("@mouse_window not supported yet")
       case 0x18 => // push_stack
         val value = nextOperand
         val userStack = if (_decodeInfo.numOperands > 1) nextOperand else 0
@@ -649,10 +683,15 @@ class Machine {
           state.setVariableValue(0, value)
           decideBranch(true)
         } else decideBranch(state.pushUserStack(userStack, value))
-      case 0x1c => // picture_table, do nothing
+      case 0x19 => // put_wind_prop
+        fatal("@put_wind_prop not supported yet")
+      case 0x1a => // print_form
+        fatal("@print_form not supported yet")
+      case 0x1b => // make_menu
+        fatal("@make_menu not supported yet")
+      case 0x1c => // picture_table (we do not need to implement this)
       case _ =>
-        throw new UnsupportedOperationException(
-          "EXT opcode not supported: 0x%02x\n".format(_decodeInfo.opnum))
+        fatal("illegal EXT: $%02x".format(_decodeInfo.opnum))
     }
   }
 
