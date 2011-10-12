@@ -112,7 +112,7 @@ trait ScreenModel {
   def splitWindow(lines: Int)
   def setWindow(windowId: Int)
   def setCursorPosition(line: Int, column: Int)
-  def getCursorPosition: (Int, Int)
+  def cursorPosition: (Int, Int)
   def connect(vm: Machine)
   def initUI // set sizes etc.
 

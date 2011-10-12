@@ -72,12 +72,12 @@ class ZsciiEncoding(_state: VMState) {
 
   // processing state: abbreviations and multi-character sequences
   var currentAlphabet: Alphabet      = A0
+  var lastAlphabet: Alphabet         = A0
   var currentAbbreviation            = 0
   var decode10bit                    = false
   var decode10bitStage               = 0
   var decode10bitFirst               = 0
-  private var shiftLock              = false
-  private var lastAlphabet: Alphabet = A0
+  var shiftLock                      = false
 
   def reset {
     currentAlphabet = A0

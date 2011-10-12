@@ -51,7 +51,6 @@ class Machine {
 
   // save dynamic memory state for restarting
   var dynamicMem: Array[Byte]   = null
-
   
   private var _undoSnapshots: List[Snapshot] = Nil
 
@@ -139,7 +138,7 @@ class Machine {
   // **********************************************************************
   // ***** Private methods
   // *****************************
-  
+  private def numOperands = _decodeInfo.numOperands
   private def printObject(obj: Int, outputStream: OutputStream) {
     state.encoding.decodeZStringAtByteAddress(
       objectTable.propertyTableAddress(obj) + 1, outputStream)
@@ -215,18 +214,18 @@ class Machine {
     state.call(packedAddr, _callArgs, storeVar, numCallArgs)
   }
   private def callWithReturnValueVs2(numCallArgs: Int) {
-    printf("CALL_VS2 #ARGS = %d PC = %02x\n", numCallArgs, state.pc)
+    //printf("CALL_VS2 #ARGS = %d PC = %02x\n", numCallArgs, state.pc)
     val packedAddr = nextOperand
     for (i <- 0 until numCallArgs) {
       val argnum  = _currentArg - 1
       val vartype = _decodeInfo.types(argnum)
       _callArgs(i) = nextOperand
-      printf("ARG(%d) = %02x, TYPE = %d, ", argnum, _callArgs(i), vartype)
+      //printf("ARG(%d) = %02x, TYPE = %d, ", argnum, _callArgs(i), vartype)
     }
-    println
-    printf("CALL_VS2 PC AFTER ARGS = %02x\n", state.pc)
+    //println
+    //printf("CALL_VS2 PC AFTER ARGS = %02x\n", state.pc)
     val storeVar = state.nextByte
-    printf("CALL_VS2 PC AFTER STOREVAR = %02x PC = %02x\n", storeVar, state.pc)
+    //printf("CALL_VS2 PC AFTER STOREVAR = %02x PC = %02x\n", storeVar, state.pc)
     state.call(packedAddr, _callArgs, storeVar, numCallArgs)
   }
 
@@ -332,7 +331,7 @@ class Machine {
       case 0x01 => // je -> Note: Variable number of arguments !!!
         var equalsAny = false
         val first = nextOperand
-        for (i <- 1 until _decodeInfo.numOperands) {
+        for (i <- 1 until numOperands) {
           if (nextOperand == first) equalsAny = true
         }
         decideBranch(equalsAny)
@@ -432,7 +431,7 @@ class Machine {
       case 0x1b => // set_colour
         val foreground = nextSignedOperand
         val background = nextSignedOperand
-        val window = if (_decodeInfo.numOperands > 2) nextOperand
+        val window = if (numOperands > 2) nextOperand
                      else 3
         screenModel.setColour(foreground, background, window)
       case _ =>
@@ -443,7 +442,7 @@ class Machine {
   private def executeVar {
     _decodeInfo.opnum match {
       case 0x00 => // call
-        callWithReturnValue(_decodeInfo.numOperands - 1)
+        callWithReturnValue(numOperands - 1)
       case 0x01 => // storew
         val array     = nextOperand
         val wordIndex = nextSignedOperand
@@ -474,11 +473,11 @@ class Machine {
         }
       case 0x04 => // sread V1-V3
         val textBuffer = nextOperand
-        val parseBuffer = if (_decodeInfo.numOperands > 1) nextOperand
+        val parseBuffer = if (numOperands > 1) nextOperand
                           else 0
         if (version >= 4) {
-          val time = if (_decodeInfo.numOperands > 2) nextOperand else 0
-          val routine = if (_decodeInfo.numOperands > 3) nextOperand else 0
+          val time = if (numOperands > 2) nextOperand else 0
+          val routine = if (numOperands > 3) nextOperand else 0
         }
         val terminator = readLine(textBuffer, parseBuffer)
       case 0x05 => // print_char
@@ -491,7 +490,7 @@ class Machine {
         state.setVariableValue(0, nextOperand)
       case 0x09 => // pull
         if (version == 6) {
-          val userStack = if (_decodeInfo.numOperands > 0) nextOperand else 0
+          val userStack = if (numOperands > 0) nextOperand else 0
           if (userStack > 0) storeResult(state.popUserStack(userStack))
           else {
             if (state.stackEmpty) fatal("Stack underflow !")
@@ -512,7 +511,7 @@ class Machine {
         if (screenModel != null) screenModel.setWindow(nextOperand)
         else warn("@set_window, platformIO not set")
       case 0x0c => // call_vs2
-        callWithReturnValueVs2(_decodeInfo.numOperands - 1)
+        callWithReturnValueVs2(numOperands - 1)
       case 0x0d => // erase_window
         screenModel.eraseWindow(nextSignedOperand)
       case 0x0e => // erase_line
@@ -525,7 +524,7 @@ class Machine {
       case 0x10 => // get_cursor
         val array     = nextOperand
         printf("get_cursor $%02x\n", array)
-        val (cursorRow: Int, cursorColumn: Int) = screenModel.getCursorPosition
+        val (cursorRow: Int, cursorColumn: Int) = screenModel.cursorPosition
         state.setShortAt(array,     cursorRow)
         state.setShortAt(array + 2, cursorColumn)
       case 0x11 => // set_text_style
@@ -535,43 +534,43 @@ class Machine {
       case 0x13 => // output_stream
         outputStream(nextSignedOperand)
       case 0x15 => // sound_effect
-        val number = if (_decodeInfo.numOperands > 0) nextOperand else 1
-        val effect = if (_decodeInfo.numOperands > 1) nextOperand else 2
+        val number = if (numOperands > 0) nextOperand else 1
+        val effect = if (numOperands > 1) nextOperand else 2
         val volumeRepeats =
-          if (_decodeInfo.numOperands > 2) nextOperand else 0x01a0
-        val routine = if (_decodeInfo.numOperands > 3) nextOperand else 0
+          if (numOperands > 2) nextOperand else 0x01a0
+        val routine = if (numOperands > 3) nextOperand else 0
         printf("TODO: @sound_effect not connected yet\n")
       case 0x16 => // readchar
-        val inp = if (_decodeInfo.numOperands > 0) nextOperand else 1
+        val inp = if (numOperands > 0) nextOperand else 1
         if (version >= 4) {
-          val time = if (_decodeInfo.numOperands > 1) nextOperand else 0
-          val routine = if (_decodeInfo.numOperands > 2) nextOperand else 0
+          val time = if (numOperands > 1) nextOperand else 0
+          val routine = if (numOperands > 2) nextOperand else 0
         }
         readChar
       case 0x17 => // scan_table
         val x     = nextOperand
         val table = nextOperand
         val len   = nextOperand
-        val form = if (_decodeInfo.numOperands > 3) nextOperand else 0x82
+        val form = if (numOperands > 3) nextOperand else 0x82
         val result = scanTable(x, table, len, form)
         storeResult(result)
         decideBranch(result > 0)
       case 0x18 => // not (V5/V6)
         storeResult((~nextOperand) & 0xffff)
       case 0x19 => // call_vn
-        callWithoutReturnValue(_decodeInfo.numOperands - 1)
+        callWithoutReturnValue(numOperands - 1)
       case 0x1a => // call_vn2
-        callWithoutReturnValue(_decodeInfo.numOperands - 1)
+        callWithoutReturnValue(numOperands - 1)
       case 0x1b => // tokenise
         val textBuffer = nextOperand
         val parseBuffer = nextOperand
         val userDictionary =
-          if (_decodeInfo.numOperands > 2) nextOperand else 0
+          if (numOperands > 2) nextOperand else 0
         if (userDictionary != 0) {
           throw new UnsupportedOperationException("user dictionaries not " +
                                                   "supported yet")
         }
-        val flag = if (_decodeInfo.numOperands > 3) nextOperand else 0
+        val flag = if (numOperands > 3) nextOperand else 0
         val parserHelper = new ParserHelper(state, textBuffer, parseBuffer,
                                             userDictionary, flag != 0)
         parserHelper.tokenize
@@ -579,7 +578,15 @@ class Machine {
         val first  = nextOperand
         val second = nextOperand
         val size   = nextSignedOperand
-        copyTable(first, second, size);
+        copyTable(first, second, size)
+      case 0x1e => // print_table
+        if (numOperands < 2 || numOperands > 4) {
+          throw new IllegalArgumentException(
+            "@print_table wrong number of operands")
+        }
+        printTable(nextOperand, nextOperand,
+                   if (numOperands > 2) nextOperand else 1,
+                   if (numOperands > 3) nextOperand else 0)
       case 0x1f => // check_arg_count
         val argNum = nextOperand
         decideBranch(argNum <= state.numArgsCurrentRoutine)
@@ -701,6 +708,19 @@ class Machine {
       for (i <- (absSize - 1) to 0 by -1) {
         state.setByteAt(second + i, state.byteAt(first + i))
       }
+    }
+  }
+
+  private def printTable(table: Int, width: Int, height: Int,
+                         skip: Int) {
+    var position = table
+    for (row <- 0 until height) {
+      for (column <- 0 until width) {
+        ioSystem.putChar(state.byteAt(position).asInstanceOf[Char],
+                         StreamIds.Screen)
+        position += 1
+      }
+      position += skip
     }
   }
 

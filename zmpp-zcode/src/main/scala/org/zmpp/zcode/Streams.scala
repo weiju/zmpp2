@@ -28,12 +28,23 @@
  */
 package org.zmpp.zcode
 
+object StreamIds {
+  val Screen     = 1
+  val Transcript = 2
+  val Memory     = 3
+  val ScriptOut  = 4
+
+  val Keyboard   = 0
+  val ScriptIn   = 1
+}
+
 trait OutputStream {
   def putChar(c: Char)
   def flush
   def select(flag: Boolean)
   def isSelected: Boolean
 }
+
 
 trait InputStream {
   def readLine: Int
@@ -91,40 +102,38 @@ class StringBuilderOutputStream extends OutputStream {
 
 /**
  * Output Streams
- *
- * 1: Screen
- * 2: Transcript
- * 3: Memory
- * 4: Script file
- *
- * Input Streams
- * 0: Keyboard
- * 1: Script File (stream output stream 4)
  */
 class IoSystem(state: VMState) extends OutputStream {
-  private val outputStreams = new Array[OutputStream](4)
+  import StreamIds._
+
+  // entry 0 is null
+  private val outputStreams = new Array[OutputStream](5)
   private val inputStreams  = new Array[InputStream](2)
   private val NullOut = new NullOutputStream
-  private var _currentInputStreamId     = 0
+  private var _currentInputStreamId     = Keyboard
   private var _screenModel: ScreenModel = null
 
   def reset(screenModel: ScreenModel) {
-    outputStreams(0)       = screenModel.screenOutputStream
-    outputStreams(1)       = NullOut
-    outputStreams(2)       = new MemoryOutputStream(state)
-    outputStreams(3)       = NullOut
-    inputStreams(0)        = screenModel.keyboardStream
-    inputStreams(1)        = new NullInputStream
-    _currentInputStreamId  = 0
+    outputStreams(0)          = NullOut
+    outputStreams(Screen)     = screenModel.screenOutputStream
+    outputStreams(Transcript) = NullOut
+    outputStreams(Memory)     = new MemoryOutputStream(state)
+    outputStreams(ScriptOut)  = NullOut
+    inputStreams(Keyboard)    = screenModel.keyboardStream
+    inputStreams(ScriptIn)    = new NullInputStream
+    _currentInputStreamId     = Keyboard
   }
   def selectOutputStream(streamId: Int, flag: Boolean) {
-    if (streamId < 1 || streamId > 4) {
+    if (streamId < Screen || streamId > ScriptOut) {
       printError("Can't set current output stream to id: %d " +
                  "(Only 1-4 are allowed)".format(streamId))
-    } else outputStreams(streamId - 1).select(flag)
+    } else {
+      printf("SELECT OUTPUTSTREAM %d: %b\n", streamId, flag)
+      outputStreams(streamId).select(flag)
+    }
   }
   def createAndSelectMemoryStream(table: Int) {
-    outputStreams(2).asInstanceOf[MemoryOutputStream].table = table
+    outputStreams(Memory).asInstanceOf[MemoryOutputStream].table = table
   }
 
   def currentInputStreamId = _currentInputStreamId
@@ -143,10 +152,14 @@ class IoSystem(state: VMState) extends OutputStream {
   def printNum(num: Int) = "%d".format(num).map{c => putChar(c)}
   def putChar(c: Char) {
     // if stream 3 is selected, only write to that one
-    if (outputStreams(2).isSelected) outputStreams(2).putChar(c)
+    if (outputStreams(Memory).isSelected) outputStreams(Memory).putChar(c)
     else outputStreams.filter{s => s.isSelected}.map{s => s.putChar(c)}
   }
   def flush = outputStreams.filter{s => s.isSelected}.map{s => s.flush}
   def select(flag: Boolean) { }
   def isSelected = true
+
+  // selective output
+  def putChar(c: Char, stream: Int) = outputStreams(stream).putChar(c)
+  def flush(stream: Int) = outputStreams(stream).flush
 }

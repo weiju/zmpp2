@@ -116,7 +116,7 @@ with OutputStream with InputStream with SwingScreenModel {
   def splitWindow(lines: Int) {
     printf("@split_window %d (TODO)\n", lines)
   }
-  def getCursorPosition: (Int, Int) = {
+  def cursorPosition: (Int, Int) = {
     throw new UnsupportedOperationException("getCursorPosition() not yet implemented in screen model")
   }
   def setCursorPosition(line: Int, column: Int) {

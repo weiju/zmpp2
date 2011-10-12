@@ -163,4 +163,14 @@ with BeforeAndAfterEach {
     encoding.decodeZchar(10, out)
     encoding.currentAlphabet should be (Alphabet2)
   }
+  it should "reset its state properly after invoking reset" in {
+    val encoding = new ZsciiEncoding(new MockVMState(2, null))
+    encoding.decodeZchar(2, out)
+    encoding.decodeZchar(5, out)
+    encoding.reset
+    encoding.currentAlphabet should be (Alphabet0)
+    encoding.lastAlphabet should be (Alphabet0)
+    encoding.shiftLock should be (false)
+    encoding.decode10bit should be (false)
+  }
 }

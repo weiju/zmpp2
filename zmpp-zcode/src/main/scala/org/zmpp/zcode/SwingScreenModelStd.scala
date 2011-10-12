@@ -416,12 +416,15 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     }
   }
 
-  def getCursorPosition: (Int, Int) = {
-    throw new UnsupportedOperationException("getCursorPosition() not yet implemented in screen model")
+  def cursorPosition: (Int, Int) = {
+    if (activeWindow == 1) topWindow.cursorPos  
+    else {
+      throw new UnsupportedOperationException("getCursorPosition() not yet implemented in screen model")
+    }
   }
 
   def setCursorPosition(line: Int, column: Int) {
-    //println("@set_cursor, line = " + line + " col = " + column)
+    println("@set_cursor, line = " + line + " col = " + column)
     if (activeWindow == 1) {
       topWindow.cursorPos = (line, column)
     } else {
