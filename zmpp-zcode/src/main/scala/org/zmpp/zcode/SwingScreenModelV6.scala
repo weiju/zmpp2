@@ -67,6 +67,9 @@ with OutputStream with InputStream with SwingScreenModel {
                           SupportsFixedFont, SupportsTimedInput,  SupportsSound,
                           SupportsPictures,  SupportsScreenSplit, SupportsMouse,
                           SupportsMenus)
+  def activeWindow = {
+    throw new UnsupportedOperationException("Not supported yet")
+  }
 
   // OutputStream
   def isSelected = selected

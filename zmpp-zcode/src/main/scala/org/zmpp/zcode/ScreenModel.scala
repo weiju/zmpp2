@@ -104,9 +104,15 @@ object WindowProperties {
   val LineCount          = 15
 }
 
+object ScreenModel {
+  val BottomWindow = 0
+  val TopWindow = 1
+}
+
 trait ScreenModel {
   def screenOutputStream : OutputStream
   def keyboardStream     : InputStream
+  def activeWindow       : ScreenModelWindow
 
   def updateStatusLine
   def splitWindow(lines: Int)
@@ -124,4 +130,13 @@ trait ScreenModel {
   def setColour(foreground: Int, background: Int, window: Int)
 
   def capabilities: List[CapabilityFlag]
+}
+
+trait ScreenModelWindow {
+  def reset: Unit
+  def flush: Unit
+  def putChar(c: Char): Unit
+  def clear: Unit
+  def cursorPosition_=(pos: (Int, Int)): Unit
+  def cursorPosition: (Int, Int)
 }

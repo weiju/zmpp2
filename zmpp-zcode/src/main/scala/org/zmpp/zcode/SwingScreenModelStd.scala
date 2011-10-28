@@ -65,7 +65,7 @@ class StatusBar extends JPanel(new GridLayout(1, 2)) {
 // show the stacked components below. This is also one of the reasons
 // why the Glk can't fully implement the Z-machine screen model, V6
 // is a another story.
-class TextGrid extends JTextPane {
+class TextGrid extends JTextPane with ScreenModelWindow {
 
   private var numLines     = 0
   private var _cursorPos   = (1, 1)
@@ -84,8 +84,8 @@ class TextGrid extends JTextPane {
   def windowSize_=(numLines: Int) {
     this.numLines = numLines
   }
-  def cursorPos = _cursorPos
-  def cursorPos_=(pos: (Int, Int)) = {
+  def cursorPosition = _cursorPos
+  def cursorPosition_=(pos: (Int, Int)) = {
     // TODO: check boundaries, if outside set to column 1 of current line
     _cursorPos = pos
   }
@@ -153,6 +153,8 @@ class TextGrid extends JTextPane {
     printf("SCREEN SIZE: %d LINES %d COLS\n", totalLines, charsPerLine)
     clear
   }
+
+  def flush { }
 }
 
 object TextBuffer {
@@ -169,7 +171,7 @@ object TextInputMode extends Enumeration {
 } 
 
 class TextBuffer(screenModel: SwingScreenModelStd)
-extends JTextPane with KeyListener {
+extends JTextPane with ScreenModelWindow with KeyListener {
   setMargin(new java.awt.Insets(TextBuffer.MarginTop,
                                 TextBuffer.MarginLeft,
                                 TextBuffer.MarginBottom,
@@ -287,6 +289,13 @@ extends JTextPane with KeyListener {
     getCaret.setVisible(true)
     inputMode = TextInputMode.ReadChar
   }
+
+  def cursorPosition = {
+    throw new UnsupportedOperationException("@get_cursor not supported for bottom window")
+  }
+  def cursorPosition_=(pos: (Int, Int)) = {
+    throw new UnsupportedOperationException("@set_cursor not supported for bottom window")
+  }
 }
 
 /*
@@ -298,9 +307,10 @@ class SwingScreenModelStd(topWindow: TextGrid,
 extends JPanel(new BorderLayout)
 with OutputStream with InputStream with SwingScreenModel with FocusListener {
   import ScrollPaneConstants._
+  import ScreenModel._
 
   var vm: Machine       = null
-  var activeWindow      = 0 // 0 is the bottom window, 1 is the top window
+  var activeWindowId    = BottomWindow // 0 is the bottom window, 1 is the top window
   var currentBackground = DefaultBackground
   var currentForeground = DefaultForeground
   var style             = TextStyles.Roman
@@ -320,6 +330,11 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   add(mainPane, BorderLayout.CENTER)
   topWindow.addFocusListener(this)
   topWindow.screenModel = this
+
+  def activeWindow: ScreenModelWindow = activeWindowId match {
+    case BottomWindow => bottomWindow
+    case _ => topWindow
+  }
 
   def connect(aVm: Machine) {
     vm = aVm
@@ -351,13 +366,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
       })
     }
   }
-  def _putChar(c: Char) {
-    if (activeWindow == 0) bottomWindow.putChar(c)
-    else topWindow.putChar(c)
-  }
-  def _flush {
-    if (activeWindow == 0) bottomWindow.flush
-  }
+  def _putChar(c: Char) = activeWindow.putChar(c)
+  def _flush = activeWindow.flush
   def flush {
     if (SwingUtilities.isEventDispatchThread) _flush
     else {
@@ -413,29 +423,19 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def setWindow(windowId: Int) {
     println("@set_window, window id = " + windowId)
     flush
-    if (windowId == 0 || windowId == 1) {
-      activeWindow = windowId
+    if (windowId == BottomWindow || windowId == TopWindow) {
+      activeWindowId = windowId
     } else {
       throw new IllegalArgumentException(
         "@set_window illegal window: %d".format(windowId))
     }
   }
 
-  def cursorPosition: (Int, Int) = {
-    if (activeWindow == 1) topWindow.cursorPos  
-    else {
-      throw new UnsupportedOperationException("getCursorPosition() not yet implemented in screen model")
-    }
-  }
+  def cursorPosition: (Int, Int) = activeWindow.cursorPosition
 
   def setCursorPosition(line: Int, column: Int) {
     println("@set_cursor, line = " + line + " col = " + column)
-    if (activeWindow == 1) {
-      topWindow.cursorPos = (line, column)
-    } else {
-      throw new UnsupportedOperationException(
-        "Can not set cursor in bottom window")
-    }   
+    activeWindow.cursorPosition = (line, column)
   }
 
   def bufferMode(flag: Int) {
@@ -452,9 +452,9 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     } else if (windowId == -2) {
       topWindow.clear
       bottomWindow.clear
-    } else if (windowId == 1 || windowId == 3 && activeWindow == 1) {
+    } else if (windowId == TopWindow || windowId == 3 && activeWindowId == TopWindow) {
       topWindow.clear
-    } else if (windowId == 0 || windowId == 3 && activeWindow == 0) {
+    } else if (windowId == BottomWindow || windowId == 3 && activeWindowId == BottomWindow) {
       bottomWindow.clear
     }
   }
