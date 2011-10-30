@@ -204,7 +204,7 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
 
   def process(input: String) {
     val version = storyVersion
-    storeInputToTextBuffer(input)
+    storeInputToTextBuffer(input.toLowerCase)
     if (version < 5 || version >= 5 && parseBuffer > 0) {
       tokenize
     }

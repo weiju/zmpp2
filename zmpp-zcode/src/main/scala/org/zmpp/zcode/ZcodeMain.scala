@@ -91,7 +91,7 @@ with WindowListener {
 object ExecutionControl {
   def _executeTurn(vm: Machine, screenModel: SwingScreenModel) {
     while (vm.state.runState == ZMachineRunStates.Running) {
-      vm.doInstruction
+      vm.doInstruction()
     }
     if (vm.state.runState == ZMachineRunStates.ReadLine) {
       SwingUtilities.invokeAndWait(new Runnable {

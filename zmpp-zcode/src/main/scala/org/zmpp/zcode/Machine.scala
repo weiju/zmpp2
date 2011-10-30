@@ -108,7 +108,7 @@ class Machine {
     if (state.header.isScoreGame) {
       "%d/%d".format(Types.signExtend16(global2), global3)
     } else {
-      "%d:%d".format(global2, global3)
+      "%d:%02d".format(global2, global3)
     }
   }
 
@@ -856,12 +856,14 @@ class Machine {
     _currentArg = 0
   }
 
-  def doInstruction {
+  def doInstruction(verbose: Boolean=false) {
     val oldpc = state.pc
     decodeInstruction
     decodeForm
-//    printf("%04d - $%05x: %s %s\n", iterations, oldpc,
-//           _decodeInfo.opcodeName(version), makeOperandString)
+    if (verbose) {
+      printf("%04d - $%05x: %s %s\n", iterations, oldpc,
+             _decodeInfo.opcodeName(version), makeOperandString)
+    }
     // execute
     import Instruction._
     _decodeInfo.operandCount match {
