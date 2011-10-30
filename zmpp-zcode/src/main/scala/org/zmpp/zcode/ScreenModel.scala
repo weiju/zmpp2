@@ -140,3 +140,41 @@ trait ScreenModelWindow {
   def cursorPosition_=(pos: (Int, Int)): Unit
   def cursorPosition: (Int, Int)
 }
+
+/*
+ * Auxiliary structures to help building screen models.
+ */
+case class StyledCharacter(isItalic: Boolean, isBold: Boolean,
+                           isReverseVideo: Boolean, isFixed: Boolean) {
+  def isRoman = !(isItalic || isBold)
+}
+object DefaultBlank extends StyledCharacter(false, false, false, true)
+
+/*
+ * While text grids are not technically "buffered" according to the
+ * specification, storing them before flushing them to the screen
+ * comes with a lot of advantages:
+ * - Game responsiveness appears to be much better when the top window is buffered
+ * - Output can be easily clipped
+ * - we can store and serialize the state
+ */
+class TextGridBuffer(numRows: Int, numColumns: Int) {
+  private val grid = Array.ofDim[StyledCharacter](numRows, numColumns)
+  fillGridWith(DefaultBlank)
+
+  def fillGridWith(styledChar: StyledCharacter) {
+    var row = 0
+    var col = 0
+    while (row < numRows) {
+      while (col < numColumns) {
+        grid(row)(col) = styledChar
+        col += 1
+      }
+      row += 1
+    }
+  }
+
+  def putChar(c: StyledCharacter, row: Int, column: Int) {
+    grid(row)(column) = c
+  }
+}

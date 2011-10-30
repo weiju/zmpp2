@@ -9,6 +9,7 @@ object Zmpp2 extends Build {
     organization := "org.zmpp",
     version := "1.0",
     scalaVersion := "2.9.1",
+    scalacOptions ++= Seq("-deprecation", "-unchecked"),
     javacOptions in Compile ++= Seq("-target", "6", "-source", "6")
   )
 

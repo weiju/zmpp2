@@ -89,9 +89,10 @@ with WindowListener {
 }
 
 object ExecutionControl {
+  var verbose = false
   def _executeTurn(vm: Machine, screenModel: SwingScreenModel) {
     while (vm.state.runState == ZMachineRunStates.Running) {
-      vm.doInstruction()
+      vm.doInstruction(verbose)
     }
     if (vm.state.runState == ZMachineRunStates.ReadLine) {
       SwingUtilities.invokeAndWait(new Runnable {

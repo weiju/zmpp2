@@ -122,6 +122,7 @@ class IoSystem(state: VMState) extends OutputStream {
     inputStreams(Keyboard)    = screenModel.keyboardStream
     inputStreams(ScriptIn)    = new NullInputStream
     _currentInputStreamId     = Keyboard
+    _screenModel              = screenModel
   }
   def selectOutputStream(streamId: Int, flag: Boolean) {
     if (streamId < Screen || streamId > ScriptOut) {
@@ -161,6 +162,7 @@ class IoSystem(state: VMState) extends OutputStream {
   def putChar(c: Char, stream: Int) = outputStreams(stream).putChar(c)
   def flush(stream: Int) = outputStreams(stream).flush
   def printMessage(msg: String) = {
+    _screenModel.setWindow(0)
     msg.map(c => putChar(c, Screen))
     flush(Screen)
   }
