@@ -172,7 +172,9 @@ class TextGridBuffer(numRows: Int, numColumns: Int) {
   }
 
   def putChar(c: StyledCharacter, row: Int, column: Int) {
-    grid(row)(column) = c
+    if (row >= 0 && row < numRows && column >= 0 && column < numColumns) {
+      grid(row)(column) = c
+    }
   }
   def charAt(row: Int, column: Int) = grid(row)(column)
 }
