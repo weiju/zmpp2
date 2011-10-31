@@ -71,7 +71,7 @@ class TextGrid extends JTextPane with ScreenModelWindow {
   private var _cursorPos   = (1, 1)
   // Even though the text grid is a non-buffered window type, we still buffer
   // it up to prepare for resizing of the main window
-  // TODO: Use annotated characters
+  var buffer: TextGridBuffer = null
   var totalLines   = 0
   var charsPerLine = 0
 
@@ -94,11 +94,9 @@ class TextGrid extends JTextPane with ScreenModelWindow {
     else {
       val col  = _cursorPos._2
       val line = _cursorPos._1
-      val offset = (line - 1) * (charsPerLine + 1) + (col - 1)
-      getDocument.remove(offset, 1)
-      getDocument.insertString(offset, String.valueOf(c),
-                               currentAttributeSet)
 
+      // new style
+      buffer.putChar(styleCharacter(c), line - 1, col -1)
       if (col < charsPerLine) _cursorPos = (line, col + 1)
       else moveCursorToNextLine
     }
@@ -108,41 +106,13 @@ class TextGrid extends JTextPane with ScreenModelWindow {
     _cursorPos = (nextLine, 0)
   }
 
-  private def currentAttributeSet = {
-    val attrs = getInputAttributes
-    screenModel.setAttributeSet(attrs, false)
-    attrs
-  }
-
-  private def appendCharacter(c: AttributedChar) {
-    // this is a workaround for whitespace only, we need to properly deal with
-    // blanks
-    if (c.attribute == null) {
-      getDocument.insertString(getDocument.getLength,
-                               c.toString,
-                               null)
-    } else {
-      getDocument.insertString(getDocument.getLength,
-                               c.toString,
-                               currentAttributeSet)
-    }
-  }
-  private def appendNewline {
-    getDocument.insertString(getDocument.getLength, "\n", null)
+  private def styleCharacter(c: Char): StyledCharacter = {
+    screenModel.styleCharacter(c)
   }
 
   def clear {
-    setBackground(screenModel.backgroundColor)
-    // TODO: also take into account the background color
-    val blank = new AttributedChar(' ', null)
-    getDocument.remove(0, getDocument.getLength)
-    
-    for (line <- 0 until totalLines) {
-      for (col <- 0 until charsPerLine) {
-        appendCharacter(blank)
-      }
-      appendNewline
-    }
+    println("TOPWINDOW.CLEAR()")
+    buffer.fillGridWith(DefaultBlank, 0)
   }
 
   def reset {
@@ -150,11 +120,28 @@ class TextGrid extends JTextPane with ScreenModelWindow {
     val fontMetrics = getGraphics.getFontMetrics(getFont)
     charsPerLine  = currentSize.width / fontMetrics.charWidth('0')
     totalLines    = currentSize.height / fontMetrics.getHeight
+    buffer = new TextGridBuffer(totalLines, charsPerLine)
     printf("SCREEN SIZE: %d LINES %d COLS\n", totalLines, charsPerLine)
     clear
   }
 
-  def flush { }
+  def flush {
+    val doc = getDocument
+    doc.remove(0, doc.getLength)
+    var row = 0
+    var col = 0
+    val attrs = getInputAttributes
+    while (row < totalLines) {
+      col = 0
+      while (col < charsPerLine) {
+        screenModel.setAttributeSet(attrs, buffer.charAt(row, col))
+        doc.insertString(doc.getLength, buffer.charAt(row, col).c.toString, attrs)
+        col += 1
+      }
+      doc.insertString(doc.getLength, "\n", null)
+      row += 1
+    }
+  }
 }
 
 object TextBuffer {
@@ -243,7 +230,6 @@ extends JTextPane with ScreenModelWindow with KeyListener {
         val input = doc.getText(inputStart, doc.getLength - inputStart)
         doc.insertString(doc.getLength, "\n", null)
         println("Input was: " + input)
-        //printChar('\n')
         screenModel.resumeWithLineInput(input + "\n")          
         inputMode = TextInputMode.InputNone
       } else if (event.getKeyCode == KeyEvent.VK_BACK_SPACE ||
@@ -367,7 +353,10 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     }
   }
   def _putChar(c: Char) = activeWindow.putChar(c)
-  def _flush = activeWindow.flush
+  def _flush = {
+    topWindow.flush
+    bottomWindow.flush
+  }
   def flush {
     if (SwingUtilities.isEventDispatchThread) _flush
     else {
@@ -514,6 +503,23 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
   private def isFontSupported(font: Int): Boolean = {
     font == Fonts.Normal || font == Fonts.Fixed
+  }
+
+  def styleCharacter(c: Char) = {
+    StyledCharacter(c, this.isItalic, this.isBold, this.isReverseVideo,
+                    true, currentForeground, currentBackground)
+  }
+  val Transparent = new Color(0, 0, 0, 0)
+  def setAttributeSet(attrs: MutableAttributeSet, styledChar: StyledCharacter) = {
+    StyleConstants.setBold(attrs,   styledChar.isBold)
+    StyleConstants.setItalic(attrs, styledChar.isItalic)
+    if (styledChar.isReverseVideo) {
+      StyleConstants.setBackground(attrs, getColor(styledChar.foreground, false))
+      StyleConstants.setForeground(attrs, getColor(styledChar.background, true))
+    } else {
+      StyleConstants.setForeground(attrs, getColor(styledChar.foreground, true))
+      StyleConstants.setBackground(attrs, Transparent)
+    }
   }
 
   // TODO: Specify whether it can be switched between fixed and

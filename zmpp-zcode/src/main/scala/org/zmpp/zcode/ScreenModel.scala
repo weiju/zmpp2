@@ -71,13 +71,6 @@ class TextAttribute(val font: Int, val style: Int) {
   def isFixedStyle   = (style & FixedPitch)   == FixedPitch
 }
 
-class AttributedChar(val c: Char, val attribute: TextAttribute) {
-  override def toString = String.valueOf(c)
-}
-class AttributedString(val s: String, val attribute: TextAttribute) {
-  override def toString = s
-}
-
 object WindowAttributes {
   val Wrapping           = 0
   val Scrolling          = 1
@@ -144,11 +137,13 @@ trait ScreenModelWindow {
 /*
  * Auxiliary structures to help building screen models.
  */
-case class StyledCharacter(isItalic: Boolean, isBold: Boolean,
-                           isReverseVideo: Boolean, isFixed: Boolean) {
+case class StyledCharacter(c: Char, isItalic: Boolean, isBold: Boolean,
+                           isReverseVideo: Boolean, isFixed: Boolean,
+                           foreground: Int, background: Int) {
   def isRoman = !(isItalic || isBold)
 }
-object DefaultBlank extends StyledCharacter(false, false, false, true)
+object DefaultBlank extends StyledCharacter(' ', false, false, false, true,
+                                            Colors.Default, Colors.Default)
 
 /*
  * While text grids are not technically "buffered" according to the
@@ -160,12 +155,14 @@ object DefaultBlank extends StyledCharacter(false, false, false, true)
  */
 class TextGridBuffer(numRows: Int, numColumns: Int) {
   private val grid = Array.ofDim[StyledCharacter](numRows, numColumns)
-  fillGridWith(DefaultBlank)
+  fillGridWith(DefaultBlank, 0)
 
-  def fillGridWith(styledChar: StyledCharacter) {
-    var row = 0
+  def fillGridWith(styledChar: StyledCharacter, startRow: Int=0) {
+    printf("fillGridWith, c = '%c', startRow = %d\n", styledChar.c, startRow)
+    var row = startRow
     var col = 0
     while (row < numRows) {
+      col = 0
       while (col < numColumns) {
         grid(row)(col) = styledChar
         col += 1
@@ -177,4 +174,5 @@ class TextGridBuffer(numRows: Int, numColumns: Int) {
   def putChar(c: StyledCharacter, row: Int, column: Int) {
     grid(row)(column) = c
   }
+  def charAt(row: Int, column: Int) = grid(row)(column)
 }
