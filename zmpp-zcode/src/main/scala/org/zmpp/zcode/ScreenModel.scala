@@ -137,13 +137,13 @@ trait ScreenModelWindow {
 /*
  * Auxiliary structures to help building screen models.
  */
-case class StyledCharacter(c: Char, isItalic: Boolean, isBold: Boolean,
-                           isReverseVideo: Boolean, isFixed: Boolean,
-                           foreground: Int, background: Int) {
+case class StyledChar(c: Char, isItalic: Boolean, isBold: Boolean,
+                      isReverseVideo: Boolean, isFixed: Boolean,
+                      foreground: Int, background: Int) {
   def isRoman = !(isItalic || isBold)
 }
-object DefaultBlank extends StyledCharacter(' ', false, false, false, true,
-                                            Colors.Default, Colors.Default)
+object DefaultBlank extends StyledChar(' ', false, false, false, true,
+                                       Colors.Default, Colors.Default)
 
 /*
  * While text grids are not technically "buffered" according to the
@@ -154,10 +154,10 @@ object DefaultBlank extends StyledCharacter(' ', false, false, false, true,
  * - we can store and serialize the state
  */
 class TextGridBuffer(numRows: Int, numColumns: Int) {
-  private val grid = Array.ofDim[StyledCharacter](numRows, numColumns)
+  private val grid = Array.ofDim[StyledChar](numRows, numColumns)
   fillGridWith(DefaultBlank, 0)
 
-  def fillGridWith(styledChar: StyledCharacter, startRow: Int=0) {
+  def fillGridWith(styledChar: StyledChar, startRow: Int=0) {
     printf("fillGridWith, c = '%c', startRow = %d\n", styledChar.c, startRow)
     var row = startRow
     var col = 0
@@ -171,7 +171,7 @@ class TextGridBuffer(numRows: Int, numColumns: Int) {
     }
   }
 
-  def putChar(c: StyledCharacter, row: Int, column: Int) {
+  def putChar(c: StyledChar, row: Int, column: Int) {
     if (row >= 0 && row < numRows && column >= 0 && column < numColumns) {
       grid(row)(column) = c
     }

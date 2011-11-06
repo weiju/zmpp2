@@ -388,11 +388,11 @@ class Machine {
         objectTable.insertObject(obj, dest)
       case 0x0f => // loadw
         val array = nextOperand
-        val wordIndex = nextSignedOperand
+        val wordIndex = nextOperand
         storeResult(state.shortAt(array + wordIndex * 2))
       case 0x10 => // loadb
         val array     = nextOperand
-        val byteIndex = nextSignedOperand
+        val byteIndex = nextOperand
         storeResult(state.byteAt(array + byteIndex))
       case 0x11 => // get_prop
         storeResult(objectTable.propertyValue(nextOperand, nextOperand))

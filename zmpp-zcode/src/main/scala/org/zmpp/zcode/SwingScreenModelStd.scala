@@ -106,7 +106,7 @@ class TextGrid extends JTextPane with ScreenModelWindow {
     _cursorPos = (nextLine, 0)
   }
 
-  private def styleCharacter(c: Char): StyledCharacter = {
+  private def styleCharacter(c: Char): StyledChar = {
     screenModel.styleCharacter(c)
   }
 
@@ -506,11 +506,11 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
 
   def styleCharacter(c: Char) = {
-    StyledCharacter(c, this.isItalic, this.isBold, this.isReverseVideo,
-                    true, currentForeground, currentBackground)
+    StyledChar(c, this.isItalic, this.isBold, this.isReverseVideo,
+               true, currentForeground, currentBackground)
   }
   val Transparent = new Color(0, 0, 0, 0)
-  def setAttributeSet(attrs: MutableAttributeSet, styledChar: StyledCharacter) = {
+  def setAttributeSet(attrs: MutableAttributeSet, styledChar: StyledChar) = {
     StyleConstants.setBold(attrs,   styledChar.isBold)
     StyleConstants.setItalic(attrs, styledChar.isItalic)
     if (styledChar.isReverseVideo) {
