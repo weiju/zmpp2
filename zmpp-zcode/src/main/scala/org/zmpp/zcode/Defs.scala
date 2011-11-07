@@ -363,6 +363,14 @@ class VMStateImpl extends VMState {
     setVariableValue(storeVar, retval)
   }
 
+  def unwindStackToFramePointer(targetFramePointer: Int) {
+    while (fp != targetFramePointer) {
+      val oldfp = _stack.valueAt(fp + FrameOffset.OldFP)
+      _stack.sp = fp
+      fp = oldfp
+    }
+  }
+
   def numArgsCurrentRoutine = _stack.valueAt(fp + FrameOffset.NumArgs)
 
   def cloneDynamicMem: Array[Byte] = {

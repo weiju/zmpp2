@@ -59,12 +59,43 @@ object Alphabet2_V1 extends Alphabet {
   def name = "A2"
 }
 
+trait AccentTable {
+  def apply(index: Int): Char
+}
+
+object DefaultAccentTable extends AccentTable {
+  val StandardAccents: Array[Char] = Array(
+    '\u00e4', '\u00f6', '\u00fc', '\u00c4', '\u00d6', '\u00dc', '\u00df',
+    '\u00bb', '\u00ab',
+    '\u00eb', '\u00ef', '\u00ff', '\u00cb', '\u00cf',
+    '\u00e1', '\u00e9', '\u00ed', '\u00f3', '\u00fa', '\u00fd',
+    '\u00c1', '\u00c9', '\u00cd', '\u00d3', '\u00da', '\u00dd',
+    '\u00e0', '\u00e8', '\u00ec', '\u00f2', '\u00f9',
+    '\u00c0', '\u00c8', '\u00cc', '\u00d2', '\u00d9',
+    '\u00e2', '\u00ea', '\u00ee', '\u00f4', '\u00fb',
+    '\u00c2', '\u00ca', '\u00ce', '\u00d4', '\u00db',
+    '\u00e5', '\u00c5', '\u00f8', '\u00d8',
+    '\u00e3', '\u00f1', '\u00f5', '\u00c3', '\u00d1', '\u00d5',
+    '\u00e6', '\u00c6', '\u00e7', '\u00c7',
+    '\u00fe', '\u00fd', '\u00f0', '\u00d0',
+    '\u00a3', '\u0153', '\u0152', '\u00a1', '\u00bf')
+
+  def apply(index: Int) = {
+    if (index < StandardAccents.length) StandardAccents(index) else '?'
+  }
+}
+
 object ZsciiEncoding {
   val NullChar = 0  
   def zsciiCodeFor(c: Int) = c
+  val AccentStart = 155
+  val AccentEnd   = 251
+  def isAccent(c: Char) = c >= AccentStart && c <= AccentEnd
 }
 
 class ZsciiEncoding(_state: VMState) {
+
+  import ZsciiEncoding._
 
   private def A0 = Alphabet0
   private def A1 = Alphabet1
@@ -78,12 +109,14 @@ class ZsciiEncoding(_state: VMState) {
   var decode10bitStage               = 0
   var decode10bitFirst               = 0
   var shiftLock                      = false
+  var accentTable                    = DefaultAccentTable
 
   def reset {
     currentAlphabet = A0
     lastAlphabet    = A0
     decode10bit     = false
     shiftLock       = false
+    accentTable     = DefaultAccentTable
   }
 
   def isShiftCharacter(zchar: Int) = {
@@ -128,6 +161,14 @@ class ZsciiEncoding(_state: VMState) {
     (_state.header.version == 2 && zchar == 1)
   }
 
+  def putZsciiCharToStream(zsciiChar: Char, stream: OutputStream) {
+    stream.putChar(zsciiToUnicode(zsciiChar))
+  }
+  def zsciiToUnicode(zsciiChar: Char) = {
+    if (isAccent(zsciiChar)) accentTable(zsciiChar - AccentStart)
+    else zsciiChar
+  }
+
   def decodeZchar(zchar: Int, stream: OutputStream) {
     if (currentAbbreviation != 0) {
       //printf("process abbreviation: %d zchar: %02x ALPHABET = %s\n",
@@ -154,15 +195,15 @@ class ZsciiEncoding(_state: VMState) {
         decode10bit = false
         //printf("END 10 bit decoding, second: %02x, merged: %02x (%c)\n",
         //       zchar, char10, char10)
-        stream.putChar(char10.asInstanceOf[Char])
+        putZsciiCharToStream(char10.asInstanceOf[Char], stream)
       } else {
         decode10bitFirst = zchar
         decode10bitStage += 1
         //printf("IN 10 bit decoding, first: %02x\n", zchar)
       }
     }
-    else if (zchar == 0) stream.putChar(' ')
-    else if (isV1Newline(zchar)) stream.putChar('\n')
+    else if (zchar == 0) putZsciiCharToStream(' ', stream)
+    else if (isV1Newline(zchar)) putZsciiCharToStream('\n', stream)
     else if (isShiftCharacter(zchar)) handleShift(zchar)
     else if (isAbbreviationCharacter(zchar)) {
       if (currentAbbreviation == 0) currentAbbreviation = zchar
@@ -173,7 +214,7 @@ class ZsciiEncoding(_state: VMState) {
       decode10bitStage = 1
     }
     else if (zchar > 5) {
-      stream.putChar(currentAlphabet.lookup(zchar))
+      putZsciiCharToStream(currentAlphabet.lookup(zchar), stream)
       //printf("decoded ZCHAR '%c'\n", currentAlphabet.lookup(zchar))
     }
     // always reset the alphabet if not shift

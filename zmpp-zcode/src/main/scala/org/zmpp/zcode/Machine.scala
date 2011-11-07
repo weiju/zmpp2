@@ -237,7 +237,7 @@ class Machine {
         state.encoding.decodeZString(ioSystem)
       case 0x03 => // print_ret
         state.encoding.decodeZString(ioSystem)
-        ioSystem.putChar('\n')
+        state.encoding.putZsciiCharToStream('\n', ioSystem)
         state.returnFromRoutine(1)
       case 0x04 => // nop
       case 0x05 => // save V1-V4
@@ -269,7 +269,7 @@ class Machine {
         ioSystem.printMessage("*Game Ended*")
         ioSystem.flush
         state.runState = VMRunStates.Halted
-      case 0x0b => ioSystem.putChar('\n') // new_line
+      case 0x0b => state.encoding.putZsciiCharToStream('\n', ioSystem) // new_line
       case 0x0c => // show_status
         if (version > 3) fatal("@show_status not allowed in version > 3")
         else screenModel.updateStatusLine
@@ -441,7 +441,9 @@ class Machine {
                      else 3
         screenModel.setColour(foreground, background, window)
       case 0x1c => // throw
-        fatal("@throw instruction not supported yet (TODO)")
+        val returnValue = nextOperand
+        state.unwindStackToFramePointer(nextOperand)
+        state.returnFromRoutine(returnValue)
       case _ =>
         fatal("illegal 2OP: $%02x".format(_decodeInfo.opnum))
     }
@@ -488,7 +490,7 @@ class Machine {
         }
         val terminator = readLine(textBuffer, parseBuffer)
       case 0x05 => // print_char
-        ioSystem.putChar(nextOperand.asInstanceOf[Char])
+        state.encoding.putZsciiCharToStream(nextOperand.asInstanceOf[Char], ioSystem)
       case 0x06 => // print_num
         ioSystem.printNum(nextSignedOperand)
       case 0x07 => // random
@@ -650,7 +652,7 @@ class Machine {
       case 0x0b => // print_unicode
         // printing a 16 bit char code means that the Z-Machine can only
         // handle characters from the BMP (Basic Multilingual Plane)
-        ioSystem.putChar(nextOperand.asInstanceOf[Char])
+        state.encoding.putZsciiCharToStream(nextOperand.asInstanceOf[Char], ioSystem)
       case 0x0c => // check_unicode
         // we simply assume that most Java systems can process Unicode
         nextOperand
@@ -757,8 +759,8 @@ class Machine {
     var position = table
     for (row <- 0 until height) {
       for (column <- 0 until width) {
-        ioSystem.putChar(state.byteAt(position).asInstanceOf[Char],
-                         StreamIds.Screen)
+        ioSystem.putChar(state.encoding.zsciiToUnicode(
+          state.byteAt(position).asInstanceOf[Char]), StreamIds.Screen)
         position += 1
       }
       position += skip
