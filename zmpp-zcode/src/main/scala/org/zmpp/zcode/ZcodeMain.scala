@@ -89,7 +89,7 @@ with WindowListener {
 }
 
 object ExecutionControl {
-  var verbose = false
+  var verbose = true
   def _executeTurn(vm: Machine, screenModel: SwingScreenModel) {
     while (vm.state.runState == ZMachineRunStates.Running) {
       vm.doInstruction(verbose)

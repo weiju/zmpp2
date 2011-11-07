@@ -791,8 +791,13 @@ class Machine {
         typeByte = state.nextByte
         offset = 4
       } else {
-        if (optype == OperandTypes.Omitted || index == 4) hasMoreTypes = false
-        else index += 1
+        // tricky: make sure we have maximum 4/8 parameters, yet have
+        // the correct amount of operands stored in the decode info
+        if (optype == OperandTypes.Omitted) hasMoreTypes = false
+        else {
+          index += 1
+          hasMoreTypes = index < 4
+        }
       }
     }
     _decodeInfo.numOperands = index + offset
