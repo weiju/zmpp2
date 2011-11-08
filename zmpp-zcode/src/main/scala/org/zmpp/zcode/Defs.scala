@@ -47,6 +47,7 @@ case object SupportsPictures    extends CapabilityFlag
 class StoryHeader(story: Memory) {
   def version             = story.byteAt(0x00)
   def flags1              = story.byteAt(0x01)
+  def releaseNumber       = story.shortAt(0x02)
   def himemStart          = story.shortAt(0x04)
   def startPC             = story.shortAt(0x06)
   def dictionary          = story.shortAt(0x08)
@@ -54,6 +55,11 @@ class StoryHeader(story: Memory) {
   def globalVars          = story.shortAt(0x0c)
   def staticStart         = story.shortAt(0x0e)
   def flags2              = story.shortAt(0x10)
+  def serialNumber        = {
+    val result = new Array[Byte](6)
+    for (i <- 0 until 6) result(i) = story.byteAt(0x12 + i).asInstanceOf[Byte]
+    result
+  }
   def abbrevTable         = story.shortAt(0x18)
   def fileLength          = {
     val factor = if (version <= 3) 2
@@ -198,10 +204,13 @@ class VMStateImpl extends VMState {
   val encoding = new ZsciiEncoding(this)
   var runState = VMRunStates.Running
   var calculatedChecksum = 0
+  var originalDynamicMem: Array[Byte] = null
 
   var pc       = 0
   var fp       = 0 // frame pointer
   def sp       = _stack.sp
+
+  def storyData = _story.buffer
 
   def reset {
     _stack.sp = 0
@@ -222,10 +231,18 @@ class VMStateImpl extends VMState {
   def reset(story: Memory) {
     _story = story
     header    = new StoryHeader(_story)
+    saveOriginalDynamicMem
+
     // calculate the checksum before we make any in-memory modifications
     // but after we have a header
     calculatedChecksum = calculateChecksum
     reset
+  }
+
+  private def saveOriginalDynamicMem {
+    val dynamicMemSize = header.staticStart
+    originalDynamicMem = new Array[Byte](dynamicMemSize)
+    System.arraycopy(storyData, 0, originalDynamicMem, 0, dynamicMemSize)
   }
 
   private def calculateChecksum = {

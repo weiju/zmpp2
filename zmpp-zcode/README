@@ -3,34 +3,22 @@ Z-machine implementation
 Known issues:
 
 Missing:
-01. @save
-02. @restore
-03. @encode_text
+01. @encode_text
 
 ext:
 
-04. @save
-05. @restore
-06. @draw_picture
-07. @picture_data
-08. @erase_picture
-09. @set_margins
-10. @move_window
-11. @window_size
-12. @window_style
-13. @get_wind_prop
-14. @scroll_window
-15. @read_mouse
-16. @mouse_window
-17. @put_wind_prop
-18. @print_form
-19. @make_menu
+02. @draw_picture
+03. @picture_data
+04. @erase_picture
+05. @set_margins
+06. @move_window
+07. @window_size
+08. @window_style
+09. @get_wind_prop
+10. @scroll_window
+11. @read_mouse
+12. @mouse_window
+13. @put_wind_prop
+14. @print_form
+15. @make_menu
 
-TODO:
-
-- research feasibility and performance of decoding like in Mahatma68k
-- accents: no custom accent table yet
-- praxix.z5:
-    - array test fails
-    - specfixes fails 1 test
-    - does not yet support 1.2 standard

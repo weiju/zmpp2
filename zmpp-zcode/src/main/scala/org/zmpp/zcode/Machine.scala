@@ -241,12 +241,12 @@ class Machine {
         state.returnFromRoutine(1)
       case 0x04 => // nop
       case 0x05 => // save V1-V4
-        if (version < 4) println("PRE-V4 SAVE (TODO)")
-        else if (version == 4) println("V4 SAVE (TODO)")
+        if (version < 4) saveV3
+        else if (version == 4) saveV4
         else fatal("illegal 0OP: $05, Version >= 5")
       case 0x06 => // restore V1-V4
-        if (version < 4) println("PRE-V4 RESTORE (TODO)")
-        else if (version == 4) println("V4 RESTORE (TODO)")
+        if (version < 4) restoreV3
+        else if (version == 4) restoreV4
         else fatal("illegal 0OP: $06, Version >= 5")
       case 0x07 => // restart
         // bit 0 of flags2 (transcript)
@@ -609,10 +609,8 @@ class Machine {
   }
   private def executeExt {
     _decodeInfo.opnum match {
-      case 0x00 => // save
-        fatal("@save V5 not supported yet (TODO)")
-      case 0x01 => // restore
-        fatal("@restore V5 not supported yet (TODO)")
+      case 0x00 => saveV5 // save
+      case 0x01 => restoreV5 // restore
       case 0x02 => // log_shift
         val number: Char = nextOperand.asInstanceOf[Char]
         val places = nextSignedOperand
@@ -906,5 +904,54 @@ class Machine {
       state.setShortAt(0x24, height)
     }
   }
-}
 
+  // **********************************************************************
+  // ****** Save/restore games
+  // **********************************************************************
+
+  private def saveV3 {
+    val writer = new QuetzalWriter(state, state.pc)
+    decideBranch(writer.write)
+  }
+  private def saveV4 {
+    val writer = new QuetzalWriter(state, state.pc)
+    storeResult(if (writer.write) 1 else 0)
+  }
+  private def saveV5 {
+    if (numOperands > 0) {
+      // save data-area mode
+      val table = nextOperand
+      val numBytes = if (numOperands > 1) nextOperand else 0
+      val name: String = if (numOperands > 2) {
+        val nameAddress = nextOperand
+        val nameLength = state.byteAt(nameAddress)
+        val nameBuilder = new StringBuilder
+        for (i <- 0 until nameLength) {
+          nameBuilder.append(state.byteAt(nameAddress + 1 + i).asInstanceOf[Char])
+        }
+        nameBuilder.toString
+      } else null
+
+      if (table == 0 || numBytes == 0) {
+        warn("save data area will fail, either table address or size is 0")
+        storeResult(0)
+      } else {
+        warn("save data area not implemented yet")
+        storeResult(0)
+      }
+    } else {
+      val writer = new QuetzalWriter(state, state.pc)
+      storeResult(if (writer.write) 1 else 0)
+    }
+  }
+
+  private def restoreV3 {
+    println("PRE-V4 RESTORE (TODO)")
+  }
+  private def restoreV4 {
+    println("V4 RESTORE (TODO)")
+  }
+  private def restoreV5 {
+    fatal("@restore V5 not supported yet (TODO)")
+  }
+}

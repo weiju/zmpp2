@@ -186,8 +186,8 @@ class SaveGameWriter(glk: Glk, streamId: Int, vmState: GlulxVMState,
     glk.stream_set_position(streamId, 0, SeekModes.Start)
     writeByteArray("FORM".getBytes)
     writeInt(bytesWritten)
-    writeByteArray("IFZS".getBytes)
-    bytesWritten += 4 // FORM and size not included
+    writeByteArray("IFZS".getBytes) // Quetzal ID
+    bytesWritten += 4 // FORM and size not counted, data size starts at IFZS
   }
   
   private def writeIFhdChunk {
