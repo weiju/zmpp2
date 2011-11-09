@@ -63,27 +63,27 @@ object QuetzalCompression {
     val out = new DataOutputStream(resultStream)
     var srcIndex = 0
     var zeroCount = 0
-    printf("Compress Data: \n[")
     def writeZeroRun {
-      out.writeByte(0)
-      printf("(0, %d), ", zeroCount - 1)
-      out.writeByte(((zeroCount - 1) & 0xff).asInstanceOf[Byte])
+      while (zeroCount > 256) {
+        out.writeByte(0)
+        out.writeByte(255)
+        zeroCount -= 256
+      }
+      if (zeroCount > 0) {
+        out.writeByte(0)
+        out.writeByte(((zeroCount - 1) & 0xff).asInstanceOf[Byte])
+      }
       zeroCount = 0
     }
     while (srcIndex < numBytes) {
       val xorValue = (changedBytes(srcIndex) ^ originalBytes(srcIndex)) & 0xff
-      if (xorValue == 0) {
-        zeroCount += 1
-        // number of zeros exceeds range of a byte, write a run
-        if (zeroCount == 256) writeZeroRun
-      } else {
+      if (xorValue == 0) zeroCount += 1
+      else {
         if (zeroCount > 0) writeZeroRun
-        printf("[%d], ", xorValue)
         out.writeByte(xorValue)
       }
       srcIndex += 1
     }
-    printf("]\n\n")
     out.flush
     out.close
     resultStream.toByteArray

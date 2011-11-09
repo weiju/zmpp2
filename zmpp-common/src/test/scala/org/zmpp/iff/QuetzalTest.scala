@@ -94,26 +94,54 @@ class QuetzalCompressionSpec extends FlatSpec with ShouldMatchers {
   }
 
   it should "compress real data" in {
-    def readBytes(filename: String) = {
-      val out = new ByteArrayOutputStream
-      val in = new BufferedReader(new InputStreamReader(
-      getClass.getClassLoader.getResourceAsStream(filename)))
-      var line = in.readLine
-      while (line != null) {
-        if (line.trim.length > 0) {
-          val num = line.trim.toInt
-          out.write(num)
-          line = in.readLine
-        }
-      }
-      in.close
-      out.toByteArray
-    }
     val original = readBytes("originalmem.txt")
     val current = readBytes("currentmem.txt")
-    println("# original = " + original.length)
-    println("# current = " + current.length)
+    val expected = Array(
+      0, 0, 32, 0, 47, 1, 0, 255, 0, 255, 0, 255, 0, 43, 64, 0, 255, 0, 30,
+      64, 0, 117, 32, 0, 61, 32, 0, 2, 200, 0, 190, 64, 0, 7, 64, 0, 209, 68,
+      0, 26, 200, 0, 255, 0, 255, 0, 232, 121, 114, 0, 255, 0, 255, 0, 39, 18,
+      52, 0, 104, 19, 164, 0, 255, 0, 255, 0, 220, 17, 251, 0, 152, 21, 234,
+      0, 141, 18, 138, 0, 255, 0, 255, 0, 215, 18, 55, 0, 11, 26, 65, 0, 255,
+      0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255,
+      0, 255, 0, 202, 21, 205, 0, 216, 30, 18, 0, 123, 68, 0, 2, 2, 0, 58, 4,
+      0, 23, 34, 163, 0, 93, 255, 255, 0, 6, 4, 0, 51, 52, 73, 0, 16, 11, 84,
+      139, 0, 46, 1, 0, 60, 200, 0, 28, 23, 0, 0, 1, 0, 46, 1, 0, 75, 119, 148,
+      0, 0, 4, 0, 6, 1, 84, 139, 4, 1, 0, 236, 1, 84, 139, 4, 1, 0, 255, 0, 222,
+      115, 97, 118, 101, 0, 237, 115, 97, 118, 101, 0, 118, 1, 0, 0, 4, 0, 0, 5,
+      0, 0, 185, 39, 26, 0, 16, 129, 39, 26, 0, 15, 84, 139, 4, 1)
     val compressed = QuetzalCompression.compressDiffBytes(original, current, original.length)
-    println("# compressed = " + compressed.length)
+    compressed.length should be (expected.length)
+    for (i <- 0 until compressed.length) {
+      (compressed(i) & 0xff) should be (expected(i))
+    }
+  }
+
+  it should "decompress real data" in {
+    val original = readBytes("originalmem.txt")
+    val current = readBytes("currentmem.txt")
+    val target = new Array[Byte](original.length)
+    val compressed = QuetzalCompression.compressDiffBytes(original, current, original.length)
+    val decompressed = QuetzalCompression.decompressDiffBytes(compressed, original, target,
+                                                              original.length)
+    decompressed should be (target)
+    for (i <- 0 until original.length) {
+      (target(i) & 0xff) should be (current(i) & 0xff)
+    }
+  }
+
+  def readBytes(filename: String) = {
+    val out = new ByteArrayOutputStream
+    val in = new BufferedReader(new InputStreamReader(
+      getClass.getClassLoader.getResourceAsStream(filename)))
+    var line = in.readLine
+    while (line != null) {
+      if (line.trim.length > 0) {
+        val num = line.trim.toInt
+        out.write(num)
+        line = in.readLine
+      }
+    }
+    in.close
+    out.toByteArray
   }
 }
