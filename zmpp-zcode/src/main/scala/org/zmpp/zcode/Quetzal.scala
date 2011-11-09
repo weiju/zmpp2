@@ -28,8 +28,51 @@
  */
 package org.zmpp.zcode
 
+import scala.collection.JavaConversions._
 import java.io.{ByteArrayOutputStream, DataOutputStream}
 import org.zmpp.iff.{QuetzalCompression}
+import java.util.ArrayList
+
+/**
+ * store variable = -1 => ignore
+ */
+case class StackFrame(pc: Int, storeVariable: Int,
+                      numArgs: Int, locals: Array[Int],
+                      evalStackWords: Array[Int]) {
+  def write(out: DataOutputStream) {
+    out.writeByte((pc >>> 16) & 0xff)
+    out.writeChar(pc & 0xffff)
+    var flags = locals.length
+    if (storeVariable == -1) flags |= 0x10
+    out.writeByte(flags & 0xff)
+    out.writeByte(storeVariable & 0xff)
+    out.writeByte(argByte)
+    out.writeChar(evalStackWords.length)
+    for (i <- 0 until locals.length) out.writeChar(locals(i) & 0xff)
+    for (i <- 0 until evalStackWords.length) out.writeChar(evalStackWords(i) & 0xff)
+
+    printf("pc = $%04x, flags = $%02x storeVar = %d, argByte = $%02x, # eval stack = %d, locals = [",
+           pc, flags & 0xff, storeVariable, argByte & 0xff, evalStackWords.length)
+    for (i <- 0 until locals.length) {
+      if (i > 0) printf(", ")
+      printf("%d", locals(i))
+    }
+    printf("], eval stack = [")
+    for (i <- 0 until evalStackWords.length) {
+      if (i > 0) printf(", ")
+      printf("%d", evalStackWords(i))
+    }
+    printf("]\n")
+  }
+
+  // basically 2^n - 1 for n > 0
+  def argByte = if (numArgs == 0) 0 else (1 << numArgs) - 1
+  def sizeInBytes = 8 + locals.length * 2 + evalStackWords.length * 2
+  override def toString = {
+    "pc = $%04x, storevar = %d, # args = %d, locals = %s, eval stack = %s".format(
+    pc, storeVariable, numArgs, locals, evalStackWords)
+  }
+}
 
 class QuetzalWriter(vmState: VMStateImpl, savePC: Int) {
   import QuetzalCompression._
@@ -39,9 +82,14 @@ class QuetzalWriter(vmState: VMStateImpl, savePC: Int) {
 
   def write: Boolean = {
     writeIffHeader
-    writeIFhdChunk
-    writeCMemChunk
-    writeStksChunk
+    var numFormBytes = 8
+    numFormBytes += writeIFhdChunk
+    numFormBytes += writeCMemChunk
+    numFormBytes += writeStksChunk
+    out.flush
+    out.close
+    val dataBytes: Array[Byte] = byteOut.toByteArray
+    printf("# form bytes = %d\n", dataBytes.length)
     true
   }
 
@@ -51,28 +99,95 @@ class QuetzalWriter(vmState: VMStateImpl, savePC: Int) {
     out.writeBytes("IFZS") // Quetzal ID
   }
 
-  private def writeIFhdChunk {
+  private def writeIFhdChunk = {
     out.writeBytes("IFhd")
     out.writeInt(13)
     out.writeShort(vmState.header.releaseNumber)
     out.write(vmState.header.serialNumber)
-    out.write(vmState.header.checksum)
+    out.writeShort(vmState.header.checksum)
     out.writeByte((savePC >>> 16) & 0xff)
     out.writeChar(savePC & 0xffff)
+    out.writeByte(0) // pad byte
+    22 // "IFhd" + length + (13 data bytes + pad)
   }
 
-  private def writeCMemChunk {
+  private def writeCMemChunk = {
     val compressed = compressDiffBytes(vmState.storyData, vmState.originalDynamicMem,
                                        vmState.header.staticStart)
-    System.out.println("# dynamic bytes: " + vmState.header.staticStart)
-    System.out.println("# compressed bytes: " + compressed.length)
-    val decompressed = decompressDiffBytes(compressed,
-                                           vmState.originalDynamicMem,
-                                           vmState.header.staticStart)
-    System.out.println("# decompressed bytes: " + decompressed.length)
-    out.writeBytes("IFhd")
+    out.writeBytes("CMem")
+    printf("CMem: compressed data len = %d\n", compressed.length)
+    out.writeInt(compressed.length)
+    out.write(compressed)
+    val datalen = if ((compressed.length % 2) == 1) {
+      out.writeByte(0)
+      compressed.length + 1
+    } else compressed.length
+    printf("CMem size = %d\n", datalen + 8)
+    datalen + 8
   }
 
-  private def writeStksChunk {
+  private def writeStksChunk = {
+    out.writeBytes("Stks")
+    val stackFrames = getStackFrames
+    var numStackFrameBytes = 0
+    stackFrames.foreach { stackFrame =>
+      numStackFrameBytes += stackFrame.sizeInBytes
+    }
+    printf("# stack frame bytes = %d\n", numStackFrameBytes)
+    out.writeInt(numStackFrameBytes)
+    for (i <- stackFrames.size - 1 to 0 by - 1) {
+      //printf("Stack Frame: %s\n", stackFrames.get(i))
+      printf("Stack frame %d: ", i)
+      stackFrames.get(i).write(out)
+    }
+    printf("Stks size = %d\n", numStackFrameBytes + 8)
+    numStackFrameBytes + 8
+  }
+
+  private def getStackFrames = {
+    import FrameOffset._
+
+    // 1. build a list of stack frames working from top to bottom
+    val stackFrames = new ArrayList[StackFrame]
+    var currentFp = vmState.fp
+    var lastValidFp = currentFp
+    var currentSp = vmState.sp // top of the stack of the current processed frame
+    while ((currentFp & 0xffff) != 0xffff) {
+      val numLocals = vmState.stack.valueAt(currentFp + NumLocals)
+/*
+      printf("CURRENT FP IS: %d, RET PC = $%04x OLDFP = %d, STOREVAR = %d, # args = %d, # locals: %d\n",
+             currentFp, vmState.stack.value32At(currentFp + ReturnPC),
+             vmState.stack.valueAt(currentFp + OldFP),
+             vmState.stack.valueAt(currentFp + StoreVar),
+             vmState.stack.valueAt(currentFp + NumArgs),
+             numLocals)*/
+      val locals = new Array[Int](numLocals)
+      for (i <- 0 until numLocals) locals(i) = vmState.stack.valueAt(currentFp + Locals + i)
+
+      val evalStackWordsStart = currentFp + NumInfoWords + numLocals
+      val numEvalStackWords = currentSp - evalStackWordsStart
+      printf("# eval stack words: %d\n", numEvalStackWords)
+
+      val evalStackWords = new Array[Int](numEvalStackWords)
+      for (i <- 0 until numEvalStackWords) {
+        evalStackWords(i) = vmState.stack.valueAt(evalStackWordsStart + i)
+      }
+      val stackFrame = StackFrame(vmState.stack.value32At(currentFp + ReturnPC),
+                                  vmState.stack.valueAt(currentFp + StoreVar),
+                                  vmState.stack.valueAt(currentFp + NumArgs),
+                                  locals, evalStackWords)
+      stackFrames.add(stackFrame)
+      lastValidFp = currentFp
+      currentSp = currentFp
+      currentFp = vmState.stack.valueAt(currentFp + OldFP)
+    }
+    if (vmState.header.version != 6) {
+      // push dummy frame, only use only the eval stack words
+      val evalStackWords: Array[Int] = new Array[Int](lastValidFp)
+      for (i <- 0 until lastValidFp) evalStackWords(i) = vmState.stack.valueAt(i)
+      val dummyStackFrame = StackFrame(0, 0, 0, Array(), evalStackWords)
+      stackFrames.add(dummyStackFrame)
+    }
+    stackFrames
   }
 }

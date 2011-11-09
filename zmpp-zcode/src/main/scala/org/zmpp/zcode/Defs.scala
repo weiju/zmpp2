@@ -165,11 +165,13 @@ class Stack {
 }
 
 object FrameOffset {
-  val ReturnPC = 0
-  val OldFP    = 1
-  val StoreVar = 2
-  val NumArgs  = 3
-  val Locals   = 4
+  val ReturnPC  = 0
+  val OldFP     = 1
+  val StoreVar  = 2
+  val NumArgs   = 3
+  val NumLocals = 4
+  val Locals    = 5
+  val NumInfoWords = 5
 }
 object ZMachineRunStates {
   val Halted       = VMRunStates.Halted
@@ -209,12 +211,15 @@ class VMStateImpl extends VMState {
   var pc       = 0
   var fp       = 0 // frame pointer
   def sp       = _stack.sp
+  def stack    = _stack
 
   def storyData = _story.buffer
 
   def reset {
     _stack.sp = 0
-    fp        = 0
+    // Set the initial frame pointer to -1. This is serving as a marker
+    // when we search the stack to save
+    fp        =  -1
     if (header.version != 6) {
       pc = header.startPC      
     } else {
@@ -355,6 +360,7 @@ class VMStateImpl extends VMState {
       _stack.push(oldfp)
       _stack.push(storeVar)
       _stack.push(numArgs)
+      _stack.push(numLocals)
       pc = routineAddr + 1 // place PC after routine header
 
       if (header.version <= 4) {
