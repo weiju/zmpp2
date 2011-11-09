@@ -32,6 +32,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+import java.io._
 
 @RunWith(classOf[JUnitRunner])
 class QuetzalCompressionSpec extends FlatSpec with ShouldMatchers {
@@ -40,9 +41,7 @@ class QuetzalCompressionSpec extends FlatSpec with ShouldMatchers {
     val originalBytes: Array[Byte] = Array(1, 2, 3, 4)
     val saveBytes: Array[Byte] = Array(1, 2, 3, 4)
     val compressed = QuetzalCompression.compressDiffBytes(originalBytes, saveBytes, 4)
-    compressed.length should be (2)
-    compressed(0) should be (0)
-    compressed(1) should be (3)
+    compressed.length should be (0)
   }
   it should "compress an array with one change at the end" in {
     val originalBytes = new Array[Byte](300)
@@ -59,10 +58,24 @@ class QuetzalCompressionSpec extends FlatSpec with ShouldMatchers {
     compressed(4) should be (3)
   }
 
-  it should "decompress an array with no changes" in {
+  it should "decompress an array with no changes encoded in zero-runs" in {
     val originalBytes: Array[Byte] = Array(1, 2, 3, 4)
+    val targetBytes: Array[Byte] = new Array[Byte](4)
     val compressed: Array[Byte] = Array(0, 3)
-    val result = QuetzalCompression.decompressDiffBytes(compressed, originalBytes, 4)
+    val result = QuetzalCompression.decompressDiffBytes(compressed, originalBytes,
+                                                        targetBytes, 4)
+    result.length should be (4)
+    result(0) should be (1)
+    result(1) should be (2)
+    result(2) should be (3)
+    result(3) should be (4)
+  }
+  it should "decompress an array with no changes encoded in an empty array" in {
+    val originalBytes: Array[Byte] = Array(1, 2, 3, 4)
+    val targetBytes: Array[Byte] = new Array[Byte](4)
+    val compressed: Array[Byte] = Array()
+    val result = QuetzalCompression.decompressDiffBytes(compressed, originalBytes,
+                                                        targetBytes, 4)
     result.length should be (4)
     result(0) should be (1)
     result(1) should be (2)
@@ -72,9 +85,35 @@ class QuetzalCompressionSpec extends FlatSpec with ShouldMatchers {
 
   it should "decompress an array with one change at the end" in {
     val originalBytes = new Array[Byte](300)
+    val targetBytes = new Array[Byte](300)
     for (i <- 0 until 300) originalBytes(i) = (i % 256).asInstanceOf[Byte]
     val compressed: Array[Byte] = Array(0, 255.asInstanceOf[Byte], 0, 42, 3)
-    val result = QuetzalCompression.decompressDiffBytes(compressed, originalBytes, 300)
+    val result = QuetzalCompression.decompressDiffBytes(compressed, originalBytes,
+                                                        targetBytes, 300)
     result(299) should be (0x28)
+  }
+
+  it should "compress real data" in {
+    def readBytes(filename: String) = {
+      val out = new ByteArrayOutputStream
+      val in = new BufferedReader(new InputStreamReader(
+      getClass.getClassLoader.getResourceAsStream(filename)))
+      var line = in.readLine
+      while (line != null) {
+        if (line.trim.length > 0) {
+          val num = line.trim.toInt
+          out.write(num)
+          line = in.readLine
+        }
+      }
+      in.close
+      out.toByteArray
+    }
+    val original = readBytes("originalmem.txt")
+    val current = readBytes("currentmem.txt")
+    println("# original = " + original.length)
+    println("# current = " + current.length)
+    val compressed = QuetzalCompression.compressDiffBytes(original, current, original.length)
+    println("# compressed = " + compressed.length)
   }
 }

@@ -36,10 +36,9 @@ import java.io.{ByteArrayOutputStream, DataOutputStream}
 object QuetzalCompression {
   def decompressDiffBytes(compressed: Array[Byte],
                           originalBytes: Array[Byte],
+                          targetBytes: Array[Byte],
                           numBytes: Int) = {
-    val result = new Array[Byte](numBytes)
-    System.arraycopy(originalBytes, 0, result, 0, numBytes)
-
+    System.arraycopy(originalBytes, 0, targetBytes, 0, numBytes)
     var compressedIndex = 0
     var targetIndex = 0
     while (compressedIndex < compressed.length) {
@@ -48,41 +47,43 @@ object QuetzalCompression {
         targetIndex += numZeroBytes
         compressedIndex += 1
       } else {
-        result(targetIndex) = (result(targetIndex) ^ compressed(compressedIndex)).asInstanceOf[Byte]
+        targetBytes(targetIndex) =
+          (originalBytes(targetIndex) ^ compressed(compressedIndex)).asInstanceOf[Byte]
+        targetIndex += 1
       }
       compressedIndex += 1
     }
-    result
+    targetBytes
   }
 
   def compressDiffBytes(changedBytes: Array[Byte],
                         originalBytes: Array[Byte],
                         numBytes: Int) = {
-    val xorBytes = new Array[Byte](numBytes)
-    for (i <- 0 until numBytes) {
-      xorBytes(i) = ((changedBytes(i) ^ originalBytes(i)) & 0xff).asInstanceOf[Byte]
-    }
     val resultStream = new ByteArrayOutputStream
     val out = new DataOutputStream(resultStream)
     var srcIndex = 0
     var zeroCount = 0
+    printf("Compress Data: \n[")
     def writeZeroRun {
       out.writeByte(0)
+      printf("(0, %d), ", zeroCount - 1)
       out.writeByte(((zeroCount - 1) & 0xff).asInstanceOf[Byte])
       zeroCount = 0
     }
     while (srcIndex < numBytes) {
-      if (xorBytes(srcIndex) == 0) {
+      val xorValue = (changedBytes(srcIndex) ^ originalBytes(srcIndex)) & 0xff
+      if (xorValue == 0) {
         zeroCount += 1
         // number of zeros exceeds range of a byte, write a run
         if (zeroCount == 256) writeZeroRun
       } else {
         if (zeroCount > 0) writeZeroRun
-        out.writeByte(xorBytes(srcIndex))
+        printf("[%d], ", xorValue)
+        out.writeByte(xorValue)
       }
       srcIndex += 1
     }
-    if (zeroCount > 0) writeZeroRun
+    printf("]\n\n")
     out.flush
     out.close
     resultStream.toByteArray
