@@ -29,7 +29,7 @@
 package org.zmpp.zcode
 
 import scala.collection.JavaConversions._
-import java.io.{ByteArrayOutputStream, DataOutputStream, FileOutputStream}
+import java.io.{ByteArrayOutputStream, DataOutputStream, FileOutputStream, DataInputStream}
 import org.zmpp.iff.{QuetzalCompression}
 import java.util.ArrayList
 
@@ -74,7 +74,15 @@ case class StackFrame(pc: Int, storeVariable: Int,
   }
 }
 
-class QuetzalWriter(vmState: VMStateImpl, savePC: Int) {
+object QuetzalFormat {
+  val IdFORM = 0x464f524d
+  val IdIFZS = 0x49465a53 
+  val IdIFhd = 0x49466864
+  val IdCMem = 0x434d656d
+  val IdStks = 0x53746b73
+}
+
+class QuetzalWriter(vmState: VMStateImpl) {
   import QuetzalCompression._
 
   val byteOut = new ByteArrayOutputStream
@@ -118,8 +126,8 @@ class QuetzalWriter(vmState: VMStateImpl, savePC: Int) {
     out.writeShort(vmState.header.releaseNumber)
     out.write(vmState.header.serialNumber)
     out.writeShort(vmState.header.checksum)
-    out.writeByte((savePC >>> 16) & 0xff)
-    out.writeChar(savePC & 0xffff)
+    out.writeByte((vmState.pc >>> 16) & 0xff)
+    out.writeChar(vmState.pc & 0xffff)
     out.writeByte(0) // pad byte
     22 // "IFhd" + length + (13 data bytes + pad)
   }
@@ -202,5 +210,70 @@ class QuetzalWriter(vmState: VMStateImpl, savePC: Int) {
       stackFrames.add(dummyStackFrame)
     }
     stackFrames
+  }
+}
+
+class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
+  import QuetzalCompression._
+  import QuetzalFormat._
+
+  def read(in: java.io.InputStream): Boolean = {
+    if (in != null) {
+      var dataIn: DataInputStream = null
+      try {
+        dataIn = new DataInputStream(in)
+        val formInt = dataIn.readInt
+        if (formInt == IdFORM) {
+          val numBytes = dataIn.readInt
+          println("valid file, # bytes to read: " + numBytes)
+          val iffType = dataIn.readInt
+          if (iffType == IdIFZS) {
+            var numBytesRead = 4
+            while (numBytesRead < numBytes) numBytesRead += readChunk(dataIn)
+          } else return false
+        }
+      } finally {
+        if (dataIn != null) dataIn.close
+      }
+    }
+    true
+  }
+
+  private def readChunk(dataIn: DataInputStream): Int = {
+    val chunkType = dataIn.readInt
+    chunkType match {
+      case IdIFhd =>
+        println("IFhd recognized")
+        readIFhdChunk(dataIn)
+      case IdCMem =>
+        println("CMem recognized")
+        readCMemChunk(dataIn)
+      case IdStks =>
+        println("Stks recognized")
+        readStksChunk(dataIn)
+      case _ =>
+        println("unknown tag")
+        464 // debug
+    }
+  }
+
+  private def readIFhdChunk(dataIn: DataInputStream): Int = {
+    val chunkLength = dataIn.readInt
+    val release = dataIn.readChar.asInstanceOf[Int]
+    val serial = new Array[Int](6)
+    for (i <- 0 until 6) serial(i) = dataIn.readByte & 0xff
+    val checksum = dataIn.readChar.asInstanceOf[Int]
+    val pcHi = dataIn.readByte & 0xff
+    val pcLo = dataIn.readChar.asInstanceOf[Int]
+    val restorePc = (pcHi << 16) | pcLo
+    dataIn.readByte // skip pad byte
+    printf("IFhd read, restore PC = $%04x\n", restorePc)
+    22
+  }
+  private def readCMemChunk(dataIn: DataInputStream): Int = {
+    0
+  }
+  private def readStksChunk(dataIn: DataInputStream): Int = {
+    0
   }
 }

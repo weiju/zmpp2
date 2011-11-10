@@ -910,11 +910,11 @@ class Machine {
   // **********************************************************************
 
   private def saveV3 {
-    val writer = new QuetzalWriter(state, state.pc)
+    val writer = new QuetzalWriter(state)
     decideBranch(writer.write(screenModel.outputStreamForSaveGame))
   }
   private def saveV4 {
-    val writer = new QuetzalWriter(state, state.pc)
+    val writer = new QuetzalWriter(state)
     storeResult(if (writer.write(screenModel.outputStreamForSaveGame)) 1 else 0)
   }
   private def saveV5 {
@@ -940,18 +940,47 @@ class Machine {
         storeResult(0)
       }
     } else {
-      val writer = new QuetzalWriter(state, state.pc)
+      val writer = new QuetzalWriter(state)
       storeResult(if (writer.write(screenModel.outputStreamForSaveGame)) 1 else 0)
     }
   }
 
   private def restoreV3 {
-    println("PRE-V4 RESTORE (TODO)")
+    println("PRE-V4 RESTORE")
+    val reader = new QuetzalReader(state, this)
+    decideBranch(reader.read(screenModel.inputStreamForSaveGame))
   }
   private def restoreV4 {
     println("V4 RESTORE (TODO)")
+    val reader = new QuetzalReader(state, this)
+    storeResult(if (reader.read(screenModel.inputStreamForSaveGame)) 1 else 0)
   }
   private def restoreV5 {
     fatal("@restore V5 not supported yet (TODO)")
+    if (numOperands > 0) {
+      // save data-area mode
+      val table = nextOperand
+      val numBytes = if (numOperands > 1) nextOperand else 0
+      val name: String = if (numOperands > 2) {
+        val nameAddress = nextOperand
+        val nameLength = state.byteAt(nameAddress)
+        val nameBuilder = new StringBuilder
+        for (i <- 0 until nameLength) {
+          nameBuilder.append(state.byteAt(nameAddress + 1 + i).asInstanceOf[Char])
+        }
+        nameBuilder.toString
+      } else null
+
+      if (table == 0 || numBytes == 0) {
+        warn("read data area will fail, either table address or size is 0")
+        storeResult(0)
+      } else {
+        warn("read data area not implemented yet")
+        storeResult(0)
+      }
+    } else {
+      val reader = new QuetzalReader(state, this)
+      storeResult(if (reader.read(screenModel.inputStreamForSaveGame)) 1 else 0)
+    }
   }
 }
