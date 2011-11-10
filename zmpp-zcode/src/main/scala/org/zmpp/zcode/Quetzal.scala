@@ -29,7 +29,7 @@
 package org.zmpp.zcode
 
 import scala.collection.JavaConversions._
-import java.io.{ByteArrayOutputStream, DataOutputStream}
+import java.io.{ByteArrayOutputStream, DataOutputStream, FileOutputStream}
 import org.zmpp.iff.{QuetzalCompression}
 import java.util.ArrayList
 
@@ -80,17 +80,30 @@ class QuetzalWriter(vmState: VMStateImpl, savePC: Int) {
   val byteOut = new ByteArrayOutputStream
   val out = new DataOutputStream(byteOut)
 
-  def write: Boolean = {
-    writeIffHeader
-    var numFormBytes = 8
-    numFormBytes += writeIFhdChunk
-    numFormBytes += writeCMemChunk
-    numFormBytes += writeStksChunk
-    out.flush
-    out.close
-    val dataBytes: Array[Byte] = byteOut.toByteArray
-    printf("# form bytes = %d\n", dataBytes.length)
-    true
+  def write(outputStream: java.io.OutputStream): Boolean = {
+    if (outputStream != null) {
+      writeIffHeader
+      var numFormBytes = 8
+      numFormBytes += writeIFhdChunk
+      numFormBytes += writeCMemChunk
+      numFormBytes += writeStksChunk
+      out.flush
+      out.close
+      val dataBytes: Array[Byte] = byteOut.toByteArray
+      val formSize = dataBytes.length - 8
+      dataBytes(4) = ((formSize >>> 24) & 0xff).asInstanceOf[Byte]
+      dataBytes(5) = ((formSize >>> 16) & 0xff).asInstanceOf[Byte]
+      dataBytes(6) = ((formSize >>> 8) & 0xff).asInstanceOf[Byte]
+      dataBytes(7) = (formSize & 0xff).asInstanceOf[Byte]
+      printf("# form bytes = %d\n", formSize)
+      try {
+        outputStream.write(dataBytes)
+        outputStream.flush
+      } finally {
+        outputStream.close
+      }
+    }
+    outputStream != null
   }
 
   private def writeIffHeader {

@@ -34,6 +34,7 @@ import javax.swing.text.MutableAttributeSet
 import java.awt.{FlowLayout,BorderLayout,GridLayout,Color,Font,Dimension,Graphics2D}
 import java.awt.{Rectangle}
 import java.awt.event._
+import java.io.{FileOutputStream, FileInputStream}
 
 /*
  * Implementation of the standard screen model using Swing components.
@@ -567,4 +568,20 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   // in case the cursor is set in the visible area of the top window
   def focusGained(e: FocusEvent) = bottomWindow.requestFocusInWindow
   def focusLost(e: FocusEvent) { }
+
+  def outputStreamForSaveGame: java.io.OutputStream = {
+    val fileChooser = new JFileChooser
+    fileChooser.setDialogTitle("Save Game As...")
+    if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+      new FileOutputStream(fileChooser.getSelectedFile)
+    } else null
+  }
+
+  def inputStreamForSaveGame: java.io.InputStream = {
+    val fileChooser = new JFileChooser
+    fileChooser.setDialogTitle("Restore Game From...")
+    if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+      new FileInputStream(fileChooser.getSelectedFile)
+    } else null
+  }
 }

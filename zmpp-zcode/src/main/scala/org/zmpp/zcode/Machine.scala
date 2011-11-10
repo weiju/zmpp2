@@ -911,11 +911,11 @@ class Machine {
 
   private def saveV3 {
     val writer = new QuetzalWriter(state, state.pc)
-    decideBranch(writer.write)
+    decideBranch(writer.write(screenModel.outputStreamForSaveGame))
   }
   private def saveV4 {
     val writer = new QuetzalWriter(state, state.pc)
-    storeResult(if (writer.write) 1 else 0)
+    storeResult(if (writer.write(screenModel.outputStreamForSaveGame)) 1 else 0)
   }
   private def saveV5 {
     if (numOperands > 0) {
@@ -941,7 +941,7 @@ class Machine {
       }
     } else {
       val writer = new QuetzalWriter(state, state.pc)
-      storeResult(if (writer.write) 1 else 0)
+      storeResult(if (writer.write(screenModel.outputStreamForSaveGame)) 1 else 0)
     }
   }
 

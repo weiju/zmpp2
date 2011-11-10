@@ -30,6 +30,7 @@ package org.zmpp.zcode
 
 import javax.swing._
 import java.awt.{Dimension,Font}
+import java.io.{FileInputStream, FileOutputStream}
 
 sealed trait V6WindowState {
 }
@@ -134,4 +135,18 @@ with OutputStream with InputStream with SwingScreenModel {
 
   // SwingStreamModel
   def readChar { }
+
+  def outputStreamForSaveGame: java.io.OutputStream = {
+    val fileChooser = new JFileChooser
+    if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+      new FileOutputStream(fileChooser.getSelectedFile)
+    } else null
+  }
+  def inputStreamForSaveGame: java.io.InputStream = {
+    val fileChooser = new JFileChooser
+    fileChooser.setDialogTitle("Restore Game From...")
+    if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+      new FileInputStream(fileChooser.getSelectedFile)
+    } else null
+  }
 }
