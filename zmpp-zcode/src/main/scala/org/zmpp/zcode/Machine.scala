@@ -634,6 +634,8 @@ class Machine {
       case 0x08 => // set_margins
         fatal("@set_margins not supported yet")
       case 0x09 => // save_undo
+        // Probably the storeResult should be after the creating of the snapshot
+        // Then we do not have to hack the PC
         storeResult(1)
         _undoSnapshots ::= state.createSnapshot
       case 0x0a => // restore_undo
