@@ -43,7 +43,7 @@ case class StackFrame(pc: Int, storeVariable: Int,
     out.writeByte((pc >>> 16) & 0xff)
     out.writeChar(pc & 0xffff)
     var flags = locals.length
-    if (storeVariable == -1) flags |= 0x10
+    if ((storeVariable & 0xff) == 0xff) flags |= 0x10
     out.writeByte(flags & 0xff)
     out.writeByte(storeVariable & 0xff)
     out.writeByte(argByte)
@@ -79,6 +79,7 @@ object QuetzalFormat {
   val IdIFZS = 0x49465a53 
   val IdIFhd = 0x49466864
   val IdCMem = 0x434d656d
+  val IdUMem = 0x554d656d
   val IdStks = 0x53746b73
 }
 
@@ -175,13 +176,13 @@ class QuetzalWriter(vmState: VMStateImpl) {
     var currentSp = vmState.sp // top of the stack of the current processed frame
     while ((currentFp & 0xffff) != 0xffff) {
       val numLocals = vmState.stack.valueAt(currentFp + NumLocals)
-/*
+
       printf("CURRENT FP IS: %d, RET PC = $%04x OLDFP = %d, STOREVAR = %d, # args = %d, # locals: %d\n",
              currentFp, vmState.stack.value32At(currentFp + ReturnPC),
              vmState.stack.valueAt(currentFp + OldFP),
              vmState.stack.valueAt(currentFp + StoreVar),
              vmState.stack.valueAt(currentFp + NumArgs),
-             numLocals)*/
+             numLocals)
       val locals = new Array[Int](numLocals)
       for (i <- 0 until numLocals) locals(i) = vmState.stack.valueAt(currentFp + Locals + i)
 
@@ -232,6 +233,10 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
             while (numBytesRead < numBytes) numBytesRead += readChunk(dataIn)
           } else return false
         }
+      } catch {
+        case _ =>
+          machine.warn("Could not read save file")
+          return false
       } finally {
         if (dataIn != null) dataIn.close
       }
@@ -271,9 +276,16 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
     22
   }
   private def readCMemChunk(dataIn: DataInputStream): Int = {
+    val chunkLength = dataIn.readInt
+    
+    if ((chunkLength % 2) == 0) chunkLength + 8
+    else chunkLength + 8 + 1
+  }
+  private def readUMemChunk(dataIn: DataInputStream): Int = {
     0
   }
   private def readStksChunk(dataIn: DataInputStream): Int = {
-    0
+    val chunkLength = dataIn.readInt
+    chunkLength + 8
   }
 }
