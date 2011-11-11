@@ -28,9 +28,7 @@
  */
 package org.zmpp.zcode
 
-import org.zmpp.base.Types
-import org.zmpp.base.VMRunStates
-import org.zmpp.base.Memory
+import org.zmpp.base.{Types, VMRunStates, Memory, CircularStack}
 import java.util.StringTokenizer
 import java.util.Random
 
@@ -52,7 +50,7 @@ class Machine {
   // save dynamic memory state for restarting
   var dynamicMem: Array[Byte]   = null
   
-  private var _undoSnapshots: List[Snapshot] = Nil
+  private val undoSnapshots = new CircularStack[Snapshot](2)
 
   // for efficiency reasons, we cache the current decoding state here.
   // there is only one instance of decoding info for stage 1 and
@@ -634,20 +632,13 @@ class Machine {
       case 0x08 => // set_margins
         fatal("@set_margins not supported yet")
       case 0x09 => // save_undo
-        // Probably the storeResult should be after the creating of the snapshot
-        // Then we do not have to hack the PC
+        undoSnapshots.push(state.createSnapshot)
         storeResult(1)
-        _undoSnapshots ::= state.createSnapshot
       case 0x0a => // restore_undo
-        if (_undoSnapshots != Nil) {
-          state.readSnapshot(_undoSnapshots.head)
-          _undoSnapshots = _undoSnapshots.tail
-          // note: we have to change the return code to 2, but the pc is already
-          // behind the store byte. We solve this by re-reading the store
-          // variable number and adjusting the value
-          state.setVariableValue(state.byteAt(state.pc - 1), 2)
-        } else {
-          storeResult(0)
+        if (undoSnapshots.empty) storeResult(0)
+        else {
+          state.readSnapshot(undoSnapshots.pop)
+          storeResult(2)
         }
       case 0x0b => // print_unicode
         // printing a 16 bit char code means that the Z-Machine can only
