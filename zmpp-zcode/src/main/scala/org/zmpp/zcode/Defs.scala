@@ -30,6 +30,7 @@ package org.zmpp.zcode
 
 import org.zmpp.base.VMRunStates
 import org.zmpp.base.Memory
+import org.zmpp.iff.QuetzalCompression
 
 sealed class CapabilityFlag
 case object SupportsColors      extends CapabilityFlag
@@ -180,7 +181,11 @@ object ZMachineRunStates {
   val ReadChar     = 11
 }
 
-class Snapshot(val dynamicMem: Array[Byte], val stackValues: Array[Int],
+/**
+ * An undo snapshot of the vm state, the dynamic memory is compressed
+ * using the same method as Quetzal to reduce memory footprint
+ */
+class Snapshot(val compressedDiff: Array[Byte], val stackValues: Array[Int],
                val pc: Int, val fp: Int)
 
 trait VMState {
@@ -199,6 +204,8 @@ trait VMState {
 }
 
 class VMStateImpl extends VMState {
+  import QuetzalCompression._
+
   private var _story : Memory = null
   private val _stack = new Stack
 
@@ -206,6 +213,8 @@ class VMStateImpl extends VMState {
   val encoding = new ZsciiEncoding(this)
   var runState = VMRunStates.Running
   var calculatedChecksum = 0
+  // store the original dynamic memory as a reference point for
+  // restart, undo snapshots and saving
   var originalDynamicMem: Array[Byte] = null
 
   var pc       = 0
@@ -248,6 +257,9 @@ class VMStateImpl extends VMState {
     val dynamicMemSize = header.staticStart
     originalDynamicMem = new Array[Byte](dynamicMemSize)
     System.arraycopy(storyData, 0, originalDynamicMem, 0, dynamicMemSize)
+  }
+  def restoreOriginalDynamicMem {
+    System.arraycopy(originalDynamicMem, 0, storyData, 0, header.staticStart)
   }
 
   private def calculateChecksum = {
@@ -395,22 +407,15 @@ class VMStateImpl extends VMState {
   }
 
   def numArgsCurrentRoutine = _stack.valueAt(fp + FrameOffset.NumArgs)
-
-  def cloneDynamicMem: Array[Byte] = {
-    // (size dynamic mem) == header.staticStart
-    val dynamicMem = new Array[Byte](header.staticStart)
-    _story.copyBytesTo(dynamicMem, 0, header.staticStart)
-    dynamicMem
-  }
-  def overwriteDynamicMemWith(dynamicMem: Array[Byte]) = {
-    _story.copyBytesFrom(dynamicMem, 0, 0, dynamicMem.length)
-  }
-
   def createSnapshot : Snapshot = {
-    new Snapshot(cloneDynamicMem, _stack.cloneValues, pc, fp)
+    new Snapshot(compressDiffBytes(storyData, originalDynamicMem,
+                                   header.staticStart),
+                 _stack.cloneValues, pc, fp)
   }
+
   def readSnapshot(snapshot: Snapshot) {
-    _story.copyBytesFrom(snapshot.dynamicMem, 0, 0, snapshot.dynamicMem.length)
+    decompressDiffBytes(snapshot.compressedDiff, originalDynamicMem,
+                        storyData, header.staticStart)
     _stack.initFromArray(snapshot.stackValues)
     pc = snapshot.pc
     fp = snapshot.fp

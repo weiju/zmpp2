@@ -45,11 +45,7 @@ class Machine {
   val randomGenerator           = new Random
   var screenModel : ScreenModel = null
 
-  var objectTable: ObjectTable  = null
-
-  // save dynamic memory state for restarting
-  var dynamicMem: Array[Byte]   = null
-  
+  var objectTable: ObjectTable  = null  
   private val undoSnapshots = new CircularStack[Snapshot](2)
 
   // for efficiency reasons, we cache the current decoding state here.
@@ -69,8 +65,6 @@ class Machine {
                   else new ModernObjectTable(this)
     this.screenModel = screenModel
     ioSystem.reset(screenModel)
-    dynamicMem = state.cloneDynamicMem
-
     state.setCapabilityFlags(screenModel.capabilities ++ List(SupportsUndo))
   }
   def version = state.header.version 
@@ -250,7 +244,7 @@ class Machine {
         // bit 0 of flags2 (transcript)
         // bit 1 of flags2 (fixed pitch)
         val preserveFlags = state.byteAt(0x10) & 0x03
-        state.overwriteDynamicMemWith(dynamicMem)
+        state.restoreOriginalDynamicMem
         state.reset
         // restore preserved flags
         state.setByteAt(0x10, state.byteAt(0x10) | preserveFlags)
