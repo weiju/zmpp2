@@ -33,6 +33,9 @@ import java.io.{ByteArrayOutputStream, DataOutputStream, FileOutputStream, DataI
 import org.zmpp.iff.{QuetzalCompression}
 import java.util.ArrayList
 
+class NonMatchingGameSaveException extends Exception
+class IllegalFormatException extends Exception
+
 /**
  * store variable = -1 => ignore
  */
@@ -155,11 +158,8 @@ class QuetzalWriter(vmState: VMStateImpl) {
     stackFrames.foreach { stackFrame =>
       numStackFrameBytes += stackFrame.sizeInBytes
     }
-    printf("# stack frame bytes = %d\n", numStackFrameBytes)
     out.writeInt(numStackFrameBytes)
     for (i <- stackFrames.size - 1 to 0 by - 1) {
-      //printf("Stack Frame: %s\n", stackFrames.get(i))
-      printf("Stack frame %d: ", i)
       stackFrames.get(i).write(out)
     }
     printf("Stks size = %d\n", numStackFrameBytes + 8)
@@ -231,11 +231,17 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
           if (iffType == IdIFZS) {
             var numBytesRead = 4
             while (numBytesRead < numBytes) numBytesRead += readChunk(dataIn)
-          } else return false
-        }
+          } else throw new IllegalFormatException
+        } else throw new IllegalFormatException
       } catch {
+        case e:NonMatchingGameSaveException =>
+          machine.warn("Save file was not created for this game\n")
+          return false
+        case e:IllegalFormatException =>
+          machine.warn("Save file is not in Quetzal format\n")
+          return false
         case _ =>
-          machine.warn("Could not read save file")
+          machine.warn("Could not read save file\n")
           return false
       } finally {
         if (dataIn != null) dataIn.close
@@ -273,19 +279,103 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
     val restorePc = (pcHi << 16) | pcLo
     dataIn.readByte // skip pad byte
     printf("IFhd read, restore PC = $%04x\n", restorePc)
+    verifyStory(release, serial, checksum)
+    vmState.pc = restorePc
     22
   }
+
+  private def verifyStory(release: Int, serial: Array[Int], checksum: Int) {
+    if (release != vmState.header.releaseNumber ||
+        !checkSerial(serial) || checksum != vmState.header.checksum) {
+          throw new NonMatchingGameSaveException
+        }
+  }
+  private def checkSerial(serial: Array[Int]): Boolean = {
+    val originalSerial = vmState.header.serialNumber
+    for (i <- 0 until 6) if (serial(i) != originalSerial(i)) return false
+    true
+  }
+
   private def readCMemChunk(dataIn: DataInputStream): Int = {
     val chunkLength = dataIn.readInt
+    val compressed = new Array[Byte](chunkLength)
+
+    var pos = 0
+    var bytesToRead = chunkLength
+    while (bytesToRead > 0) {
+      val bytesRead = dataIn.read(compressed, pos, bytesToRead)
+      pos += bytesRead
+      bytesToRead -= bytesRead
+    }
+    decompressDiffBytes(compressed,
+                        vmState.originalDynamicMem,
+                        vmState.storyData,
+                        vmState.header.staticStart)
     
     if ((chunkLength % 2) == 0) chunkLength + 8
     else chunkLength + 8 + 1
   }
+
   private def readUMemChunk(dataIn: DataInputStream): Int = {
     0
   }
   private def readStksChunk(dataIn: DataInputStream): Int = {
+    import FrameOffset._
+
     val chunkLength = dataIn.readInt
+    var bytesToRead = chunkLength
+    var numEvalWords = 0
+    var sp = 0
+    var oldFP = -1
+    if (vmState.header.version != 6) { // read in dummy frame
+      dataIn.skipBytes(6)
+      numEvalWords = dataIn.readChar
+      for (i <- 0 until numEvalWords) {
+        vmState.stack.setValueAt(sp, dataIn.readChar)
+        sp += 1
+      }
+      bytesToRead -= (8 + numEvalWords * 2)
+    }
+    while (bytesToRead > 0) {
+      // read stack frame
+      val pc = (dataIn.readByte << 16) | dataIn.readChar
+      val flags = dataIn.readByte
+      var storeVariable = dataIn.readByte
+      if ((flags & 0x10) == 0x10) storeVariable = -1
+      val numLocals = flags & 0x0f
+      val numArgs = getNumArgs(dataIn.readByte)
+      numEvalWords = dataIn.readChar
+
+      // advance frame pointer, so at the end, it will point at
+      // the correct one
+      vmState.fp = sp
+      vmState.stack.setValueAt(sp, pc)
+      vmState.stack.setValueAt(sp + OldFP, oldFP)
+      vmState.stack.setValueAt(sp + StoreVar, storeVariable)
+      vmState.stack.setValueAt(sp + NumArgs, numArgs)
+      vmState.stack.setValueAt(sp + NumLocals, numLocals)
+      sp += 5
+      for (i <- 0 until numLocals) {
+        vmState.stack.setValueAt(sp, dataIn.readChar)
+        sp += 1
+      }
+      for (i <- 0 until numEvalWords) {
+        vmState.stack.setValueAt(sp, dataIn.readChar)
+        sp += 1
+      }
+      oldFP = vmState.fp
+      bytesToRead -= (8 + numLocals * 2 + numEvalWords * 2)
+    }
+    vmState.stack.sp = sp
     chunkLength + 8
+  }
+
+  private def getNumArgs(argDescriptor: Int) = {
+    var result = 0
+    for (i <- 0 until 7) {
+      val mask = 1 << i
+      if ((argDescriptor & mask) == mask) result += 1
+    }
+    result
   }
 }

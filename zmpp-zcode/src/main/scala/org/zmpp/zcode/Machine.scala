@@ -939,24 +939,18 @@ class Machine {
         warn("save data area not implemented yet")
         storeResult(0)
       }
-    } else {
-      val writer = new QuetzalWriter(state)
-      storeResult(if (writer.write(screenModel.outputStreamForSaveGame)) 1 else 0)
-    }
+    } else saveV4
   }
 
   private def restoreV3 {
-    println("PRE-V4 RESTORE")
     val reader = new QuetzalReader(state, this)
     decideBranch(reader.read(screenModel.inputStreamForSaveGame))
   }
   private def restoreV4 {
-    println("V4 RESTORE (TODO)")
     val reader = new QuetzalReader(state, this)
     storeResult(if (reader.read(screenModel.inputStreamForSaveGame)) 1 else 0)
   }
   private def restoreV5 {
-    fatal("@restore V5 not supported yet (TODO)")
     if (numOperands > 0) {
       // save data-area mode
       val table = nextOperand
@@ -978,9 +972,6 @@ class Machine {
         warn("read data area not implemented yet")
         storeResult(0)
       }
-    } else {
-      val reader = new QuetzalReader(state, this)
-      storeResult(if (reader.read(screenModel.inputStreamForSaveGame)) 1 else 0)
-    }
+    } else restoreV4
   }
 }
