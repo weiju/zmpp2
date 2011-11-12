@@ -372,7 +372,10 @@ class Machine {
       case 0x0c => // clear_attr
         objectTable.clearAttribute(nextOperand, nextOperand)
       case 0x0d => // store
-        state.setVariableValue(nextOperand, nextOperand)
+        val varnum = nextOperand
+        val value = nextOperand
+        if (varnum == 0) state.stack.pop // see Spec 1.1
+        state.setVariableValue(varnum, value)
       case 0x0e => // insert_obj
         val obj  = nextOperand
         val dest = nextOperand

@@ -28,6 +28,8 @@
  */
 package org.zmpp.zcode
 
+import scala.collection.mutable.ArrayBuffer
+
 object Fonts {
   val Normal             = 1
   val Picture            = 2
@@ -60,15 +62,12 @@ object TextStyles {
   val Bold               = 2
   val Italic             = 4
   val FixedPitch         = 8
-}
 
-class TextAttribute(val font: Int, val style: Int) {
-  import TextStyles._
-  def isRoman        = style                  == Roman
-  def isReverseVideo = (style & ReverseVideo) == ReverseVideo
-  def isBold         = (style & Bold)         == Bold
-  def isItalic       = (style & Italic)       == Italic
-  def isFixedStyle   = (style & FixedPitch)   == FixedPitch
+  def isRoman(style: Int) = style == Roman
+  def isReverseVideo(style: Int) = (style & ReverseVideo) == ReverseVideo
+  def isBold(style: Int) = (style & Bold)  == Bold
+  def isItalic(style: Int) = (style & Italic) == Italic
+  def isFixed(style: Int) = (style & FixedPitch) == FixedPitch
 }
 
 object WindowAttributes {
@@ -140,13 +139,52 @@ trait ScreenModelWindow {
 /*
  * Auxiliary structures to help building screen models.
  */
-case class StyledChar(c: Char, isItalic: Boolean, isBold: Boolean,
-                      isReverseVideo: Boolean, isFixed: Boolean,
-                      foreground: Int, background: Int) {
+case class TextStyle(isItalic: Boolean, isBold: Boolean,
+                     isReverseVideo: Boolean, fontnum: Int,
+                     foreground: Int, background: Int) {
   def isRoman = !(isItalic || isBold)
+  def isFixed = fontnum == Fonts.Fixed
+  def withStyle(style: Int) = {
+    TextStyle(TextStyles.isItalic(style),
+              TextStyles.isBold(style),
+              TextStyles.isReverseVideo(style),
+              if (TextStyles.isFixed(style)) Fonts.Fixed else fontnum,
+              foreground, background)
+  }
+  def withColor(newForeground: Int, newBackground: Int) = {
+    TextStyle(isItalic, isBold, isReverseVideo, fontnum,
+              newForeground, newBackground)
+  }
+  def withFont(newFontnum: Int) = {
+    TextStyle(isItalic, isBold, isReverseVideo, newFontnum,
+              foreground, background)
+  }
 }
-object DefaultBlank extends StyledChar(' ', false, false, false, true,
-                                       Colors.Default, Colors.Default)
+
+case class StyledText(text: String, style: TextStyle) {
+  def isItalic = style.isItalic
+  def isBold = style.isBold
+  def isReverseVideo = style.isReverseVideo
+  def isFixed = style.isFixed
+  def foreground = style.foreground
+  def background = style.background
+}
+case class StyledChar(c: Char, style: TextStyle) {
+  def isItalic = style.isItalic
+  def isBold = style.isBold
+  def isReverseVideo = style.isReverseVideo
+  def isFixed = style.isFixed
+  def foreground = style.foreground
+  def background = style.background
+}
+
+object TextStyle {
+  val DefaultNormal = TextStyle(false, false, false, Fonts.Normal,
+                                Colors.Default, Colors.Default)
+  val DefaultFixed = TextStyle(false, false, false, Fonts.Fixed,
+                                Colors.Default, Colors.Default)
+  val DefaultFixedBlank = StyledChar(' ', DefaultFixed)
+}
 
 /*
  * While text grids are not technically "buffered" according to the
@@ -157,8 +195,10 @@ object DefaultBlank extends StyledChar(' ', false, false, false, true,
  * - we can store and serialize the state
  */
 class TextGridBuffer(numRows: Int, numColumns: Int) {
+  import TextStyle._
+
   private val grid = Array.ofDim[StyledChar](numRows, numColumns)
-  fillGridWith(DefaultBlank, 0)
+  fillGridWith(DefaultFixedBlank, 0)
 
   def fillGridWith(styledChar: StyledChar, startRow: Int=0) {
     printf("fillGridWith, c = '%c', startRow = %d\n", styledChar.c, startRow)
@@ -180,4 +220,51 @@ class TextGridBuffer(numRows: Int, numColumns: Int) {
     }
   }
   def charAt(row: Int, column: Int) = grid(row)(column)
+}
+
+/**
+ * A more sophisticated buffer to store text runs before they are
+ * flushed. This is to increase the user response time by letting
+ * the game thread run without waiting for the UI thread each time
+ * a style change occurs.
+ */
+class TextRunBuffer {
+  import TextStyle._
+  private var currentStyle: TextStyle = DefaultNormal
+  private var currentText: StringBuilder = new StringBuilder
+  private var runBuffer = new ArrayBuffer[StyledText]()
+
+  def reset {
+    clear
+    currentStyle = DefaultNormal
+  }
+
+  private def clear {
+    currentText = new StringBuilder
+    runBuffer = new ArrayBuffer[StyledText]()
+  }
+
+  def append(char: Char) = currentText.append(char)
+  def setStyle(style: Int) {
+    applyCurrentStyle
+    currentStyle = currentStyle.withStyle(style)
+  }
+  def setColor(foreground: Int, background: Int) {
+    applyCurrentStyle
+    currentStyle = currentStyle.withColor(foreground, background)
+  }
+  def setFont(fontnum: Int) {
+    applyCurrentStyle
+    currentStyle = currentStyle.withFont(fontnum)
+  }
+  def applyCurrentStyle {
+    runBuffer.append(StyledText(currentText.toString, currentStyle))
+    currentText = new StringBuilder
+  }
+  def grabRuns: ArrayBuffer[StyledText] = {
+    applyCurrentStyle
+    val result = runBuffer
+    clear
+    result
+  }
 }

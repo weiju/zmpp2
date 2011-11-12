@@ -113,7 +113,7 @@ class TextGrid extends JTextPane with ScreenModelWindow {
 
   def clear {
     println("TOPWINDOW.CLEAR()")
-    buffer.fillGridWith(DefaultBlank, 0)
+    buffer.fillGridWith(TextStyle.DefaultFixedBlank, 0)
   }
 
   def reset {
@@ -165,7 +165,8 @@ extends JTextPane with ScreenModelWindow with KeyListener {
                                 TextBuffer.MarginBottom,
                                 TextBuffer.MarginRight))
   addKeyListener(this)
-  var builder = new StringBuilder
+  val runBuffer = new TextRunBuffer
+
   var inputMode = TextInputMode.InputNone
   var useBufferMode = true
   def isCharInputMode = inputMode == TextInputMode.ReadChar
@@ -175,15 +176,19 @@ extends JTextPane with ScreenModelWindow with KeyListener {
 
   def reset {
     inputMode     = TextInputMode.InputNone
-    builder       = new StringBuilder
+    runBuffer.reset
     inputStart    = 0
     maxInputChars = 0
     clear
   }
-  
-  private def currentAttributeSet = {
+
+  def setStyle(style: Int) = runBuffer.setStyle(style)
+  def setFont(fontnum: Int) = runBuffer.setFont(fontnum)
+  def setColor(foreground: Int, background: Int) = runBuffer.setColor(foreground, background)
+
+  private def attributeSetFor(style: TextStyle) = {
     val attrs = getInputAttributes
-    screenModel.setAttributeSet(attrs, true)
+    screenModel.attributeSetFor(attrs, style)
     attrs
   }
 
@@ -194,6 +199,7 @@ extends JTextPane with ScreenModelWindow with KeyListener {
   }
 
   def clear {
+    // TODO: we might want to incorporate the run buffer here
     // TODO: also take into account the background color
     val clearScreenBuilder = new StringBuilder()
     println("Bottom Window has " + numRows + " rows.")
@@ -209,12 +215,14 @@ extends JTextPane with ScreenModelWindow with KeyListener {
   }
 
   def putChar(c: Char) {
-    builder.append(c)
+    runBuffer.append(c)
   }
   def flush {
     val doc = getDocument
-    doc.insertString(doc.getLength, builder.toString, currentAttributeSet)
-    builder = new StringBuilder
+    val styledRuns = runBuffer.grabRuns
+    for (styledRun <- styledRuns) {
+      doc.insertString(doc.getLength, styledRun.text, attributeSetFor(styledRun.style))
+    }
   }
   
   // ****** KeyListener ******
@@ -412,7 +420,6 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
   def setWindow(windowId: Int) {
     println("@set_window, window id = " + windowId)
-    flush
     if (windowId == BottomWindow || windowId == TopWindow) {
       activeWindowId = windowId
     } else {
@@ -452,15 +459,16 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     printf("@erase_line %d not implemented yet (TODO)\n", value)
   }
   def setTextStyle(aStyle: Int) {
-    flush
-    style = aStyle
+    bottomWindow.setStyle(aStyle)
   }
 
   // Note: window parameter is only relevant for V6
   // The method is called "setColour" only to express that it
   // implements the Z-instruction
   def setColour(foreground: Int, background: Int, window: Int) {
-    flush
+    printf("setColour(), foreground = %d, background = %d, window = %d\n",
+           foreground, background, window)
+    bottomWindow.setColor(foreground, background)
     currentForeground = foreground
     currentBackground = background
     // we need to change the caret color of the bottom window, too
@@ -469,6 +477,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     } else {
       bottomWindow.setCaretColor(getColor(foreground, true))
     }
+    println("exiting setColour")
   }
 
   private def getColor(colorId: Int, isForeground: Boolean): Color = {
@@ -497,8 +506,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def setFont(font: Int): Int = {
     if (isFontSupported(font)) {
       val previousFont = currentFont
-      flush
       currentFont = font
+      bottomWindow.setFont(font)
       previousFont
     } else 0
   }
@@ -507,8 +516,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
 
   def styleCharacter(c: Char) = {
-    StyledChar(c, this.isItalic, this.isBold, this.isReverseVideo,
-               true, currentForeground, currentBackground)
+    StyledChar(c, TextStyle(this.isItalic, this.isBold, this.isReverseVideo,
+               Fonts.Fixed, currentForeground, currentBackground))
   }
   val Transparent = new Color(0, 0, 0, 0)
   def setAttributeSet(attrs: MutableAttributeSet, styledChar: StyledChar) = {
@@ -523,19 +532,17 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     }
   }
 
-  // TODO: Specify whether it can be switched between fixed and
-  // proportional font
-  def setAttributeSet(attrs: MutableAttributeSet, fixedOnly: Boolean) = {
-    StyleConstants.setBold(attrs,   this.isBold)
-    StyleConstants.setItalic(attrs, this.isItalic)
-    if (this.isReverseVideo) {
-      StyleConstants.setBackground(attrs, this.textColor)
-      StyleConstants.setForeground(attrs, this.backgroundColor)
+  def attributeSetFor(attrs: MutableAttributeSet, style: TextStyle) = {
+    StyleConstants.setBold(attrs,   style.isBold)
+    StyleConstants.setItalic(attrs, style.isItalic)
+    if (style.isReverseVideo) {
+      StyleConstants.setBackground(attrs, getColor(style.foreground, true))
+      StyleConstants.setForeground(attrs, getColor(style.background, false))
     } else {
-      StyleConstants.setForeground(attrs, this.textColor)
-      StyleConstants.setBackground(attrs, this.backgroundColor)
+      StyleConstants.setForeground(attrs, getColor(style.foreground, true))
+      StyleConstants.setBackground(attrs, getColor(style.background, false))
     }
-    if (currentFont == Fonts.Normal && fixedOnly) {
+    if (currentFont == Fonts.Normal) {
       // TODO
     } else if (currentFont == Fonts.Fixed) {
       // TODO
@@ -545,6 +552,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
       // TODO
       throw new UnsupportedOperationException("Character GFX font not supported")
     }
+    attrs
   }
 
   def initUI {
