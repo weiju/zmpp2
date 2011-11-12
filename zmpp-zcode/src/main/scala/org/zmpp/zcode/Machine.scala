@@ -453,14 +453,19 @@ class Machine {
       case 0x01 => // storew
         val array     = nextOperand
         val wordIndex = nextSignedOperand
+        // note that values need to always be truncated to
+        // unsigned 16 bit values !!!
+        val memAddress = (array + wordIndex * 2) & 0xffff
         val value     = nextOperand
-        //printf("storew $%02x %d %d\n", array, wordIndex, value)
-        state.setShortAt(array + wordIndex * 2, value)
+        state.setShortAt(memAddress, value)
       case 0x02 => // storeb
         val array     = nextOperand
         val byteIndex = nextSignedOperand
         val value     = nextOperand
-        state.setByteAt(array + byteIndex, value)
+        // note that values need to always be truncated to
+        // unsigned 16 bit values !!!
+        val memAddress = (array + byteIndex) & 0xffff
+        state.setByteAt(memAddress, value)
       case 0x03 => // put_prop
         val obj      = nextOperand
         val property = nextOperand
