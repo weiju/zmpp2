@@ -381,11 +381,17 @@ class Machine {
       case 0x0f => // loadw
         val array = nextOperand
         val wordIndex = nextOperand
-        storeResult(state.shortAt(array + wordIndex * 2))
+        // note that values need to always be truncated to
+        // unsigned 16 bit values !!!
+        val memAddress = (array + wordIndex * 2) & 0xffff
+        storeResult(state.shortAt(memAddress))
       case 0x10 => // loadb
         val array     = nextOperand
         val byteIndex = nextOperand
-        storeResult(state.byteAt(array + byteIndex))
+        // note that values need to always be truncated to
+        // unsigned 16 bit values !!!
+        val memAddress = (array + byteIndex) & 0xffff
+        storeResult(state.byteAt(memAddress))
       case 0x11 => // get_prop
         storeResult(objectTable.propertyValue(nextOperand, nextOperand))
       case 0x12 => // get_prop_addr
