@@ -361,7 +361,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
       })
     }
   }
-  def _putChar(c: Char) = activeWindow.putChar(c)
+  def _putChar(c: Char) = activeWindow.putChar(vm.state.encoding.zsciiToUnicode(c))
   def _flush = {
     topWindow.flush
     bottomWindow.flush

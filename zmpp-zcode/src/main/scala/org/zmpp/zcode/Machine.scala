@@ -229,7 +229,7 @@ class Machine {
         state.encoding.decodeZString(ioSystem)
       case 0x03 => // print_ret
         state.encoding.decodeZString(ioSystem)
-        state.encoding.putZsciiCharToStream('\n', ioSystem)
+        ioSystem.putChar('\n')
         state.returnFromRoutine(1)
       case 0x04 => // nop
       case 0x05 => // save V1-V4
@@ -261,7 +261,7 @@ class Machine {
         ioSystem.printMessage("*Game Ended*")
         ioSystem.flush
         state.runState = VMRunStates.Halted
-      case 0x0b => state.encoding.putZsciiCharToStream('\n', ioSystem) // new_line
+      case 0x0b => ioSystem.putChar('\n') // new_line
       case 0x0c => // show_status
         if (version > 3) fatal("@show_status not allowed in version > 3")
         else screenModel.updateStatusLine
@@ -496,7 +496,7 @@ class Machine {
         }
         val terminator = readLine(textBuffer, parseBuffer)
       case 0x05 => // print_char
-        state.encoding.putZsciiCharToStream(nextOperand.asInstanceOf[Char], ioSystem)
+        ioSystem.putChar(nextOperand.asInstanceOf[Char])
       case 0x06 => // print_num
         ioSystem.printNum(nextSignedOperand)
       case 0x07 => // random
@@ -651,7 +651,7 @@ class Machine {
       case 0x0b => // print_unicode
         // printing a 16 bit char code means that the Z-Machine can only
         // handle characters from the BMP (Basic Multilingual Plane)
-        state.encoding.putZsciiCharToStream(nextOperand.asInstanceOf[Char], ioSystem)
+        ioSystem.putChar(nextOperand.asInstanceOf[Char])
       case 0x0c => // check_unicode
         // we simply assume that most Java systems can process Unicode
         nextOperand

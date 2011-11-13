@@ -69,9 +69,12 @@ extends OutputStream {
     }
   }
   def putChar(c: Char) {
-    state.setByteAt(tableAddr + 2 + pos, c & 0xff)
-    pos += 1
+    if (c != 0) {
+      state.setByteAt(tableAddr + 2 + pos, c & 0xff)
+      pos += 1
+    }
   }
+
   def flush { }
   def select(flag: Boolean) {
     // write num written
@@ -91,6 +94,10 @@ class NullInputStream extends InputStream {
   def readLine = 0
 }
 
+/**
+ * A simple output stream that maps to a string builder. Used for status
+ * line rendering in V3.
+ */
 class StringBuilderOutputStream extends OutputStream {
   val builder = new StringBuilder
   def putChar(c: Char) = builder.append(c)

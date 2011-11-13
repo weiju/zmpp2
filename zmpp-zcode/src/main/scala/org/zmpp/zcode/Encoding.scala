@@ -160,10 +160,6 @@ class ZsciiEncoding(_state: VMState) {
     (_state.header.version >= 3 && zchar >= 1 && zchar <= 3) ||
     (_state.header.version == 2 && zchar == 1)
   }
-
-  def putZsciiCharToStream(zsciiChar: Char, stream: OutputStream) {
-    stream.putChar(zsciiToUnicode(zsciiChar))
-  }
   def zsciiToUnicode(zsciiChar: Char) = {
     if (isAccent(zsciiChar)) accentTable(zsciiChar - AccentStart)
     else zsciiChar
@@ -195,15 +191,15 @@ class ZsciiEncoding(_state: VMState) {
         decode10bit = false
         //printf("END 10 bit decoding, second: %02x, merged: %02x (%c)\n",
         //       zchar, char10, char10)
-        putZsciiCharToStream(char10.asInstanceOf[Char], stream)
+        stream.putChar(char10.asInstanceOf[Char])
       } else {
         decode10bitFirst = zchar
         decode10bitStage += 1
         //printf("IN 10 bit decoding, first: %02x\n", zchar)
       }
     }
-    else if (zchar == 0) putZsciiCharToStream(' ', stream)
-    else if (isV1Newline(zchar)) putZsciiCharToStream('\n', stream)
+    else if (zchar == 0) stream.putChar(' ')
+    else if (isV1Newline(zchar)) stream.putChar('\n')
     else if (isShiftCharacter(zchar)) handleShift(zchar)
     else if (isAbbreviationCharacter(zchar)) {
       if (currentAbbreviation == 0) currentAbbreviation = zchar
@@ -214,7 +210,7 @@ class ZsciiEncoding(_state: VMState) {
       decode10bitStage = 1
     }
     else if (zchar > 5) {
-      putZsciiCharToStream(currentAlphabet.lookup(zchar), stream)
+      stream.putChar(currentAlphabet.lookup(zchar))
       //printf("decoded ZCHAR '%c'\n", currentAlphabet.lookup(zchar))
     }
     // always reset the alphabet if not shift
