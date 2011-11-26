@@ -97,8 +97,9 @@ object WindowProperties {
 }
 
 object ScreenModel {
-  val BottomWindow = 0
-  val TopWindow = 1
+  val BottomWindow  = 0
+  val TopWindow     = 1
+  val CurrentWindow = -3
 }
 
 trait ScreenModel {

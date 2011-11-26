@@ -439,7 +439,7 @@ class Machine {
         val foreground = nextSignedOperand
         val background = nextSignedOperand
         val window = if (numOperands > 2) nextOperand
-                     else 3
+                     else ScreenModel.CurrentWindow
         screenModel.setColour(foreground, background, window)
       case 0x1c => // throw
         val returnValue = nextOperand

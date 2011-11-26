@@ -58,6 +58,52 @@ class StatusBar extends JPanel(new GridLayout(1, 2)) {
   }
 }
 
+// Define _two_ color tables, one for background colors
+// and one for foreground tables. The reason is that some
+// games (e.g. Varicella) don't really deal with colors properly.
+// They rely on the foreground color being brighter than the foreground
+// color. Unfortunately, Varicella also assumes that the default foreground
+// color is not black.
+object BackgroundColors {
+  val colorTable = new Array[Color](13)
+  // current is never accessed and default is set by screen model
+  colorTable(Colors.Black)   = Color.BLACK
+  colorTable(Colors.Red)     = Color.RED
+  colorTable(Colors.Green)   = Color.GREEN
+  colorTable(Colors.Yellow)  = Color.YELLOW
+  colorTable(Colors.Blue)    = Color.BLUE
+  colorTable(Colors.Magenta) = Color.MAGENTA
+  colorTable(Colors.Cyan)    = Color.CYAN
+  colorTable(Colors.White)   = Color.WHITE
+
+  def apply(colornum: Int): Color = {
+    colorTable(colornum)
+  }
+  def setDefault(colornum: Int) {
+    colorTable(Colors.Default) = colorTable(colornum)
+  }
+}
+object ForegroundColors {
+  val Black = new Color(60, 60, 60)
+  val colorTable = new Array[Color](13)
+  // current is never accessed and default is set by screen model
+  colorTable(Colors.Black)   = Black
+  colorTable(Colors.Red)     = Color.RED.brighter
+  colorTable(Colors.Green)   = Color.GREEN.brighter
+  colorTable(Colors.Yellow)  = Color.YELLOW.brighter
+  colorTable(Colors.Blue)    = Color.BLUE.brighter
+  colorTable(Colors.Magenta) = Color.MAGENTA.brighter
+  colorTable(Colors.Cyan)    = Color.CYAN.brighter
+  colorTable(Colors.White)   = Color.WHITE.brighter
+
+  def apply(colornum: Int): Color = {
+    colorTable(colornum)
+  }
+  def setDefault(colornum: Int) {
+    colorTable(Colors.Default) = colorTable(colornum)
+  }
+}
+
 // A class to implement the top window. In Swing, the top window sits
 // in the glass pane. This is done to implement the tricky behaviour
 // of the Z-machine screen model of overlaying bottom window in a
@@ -318,7 +364,10 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   val bottomWindow = new TextBuffer(this)
   val scrollPane   = new JScrollPane(bottomWindow, VERTICAL_SCROLLBAR_NEVER,
                                      HORIZONTAL_SCROLLBAR_NEVER)
-  
+
+  ForegroundColors.setDefault(DefaultForeground)
+  BackgroundColors.setDefault(DefaultBackground)
+
   scrollPane.setPreferredSize(new Dimension(640, 480))
   mainPane.add(scrollPane, BorderLayout.CENTER)
 
@@ -472,9 +521,12 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     currentForeground = foreground
     currentBackground = background
     // we need to change the caret color of the bottom window, too
+    println("setting caret color")
     if (isReverseVideo) {
+      println("reverse")
       bottomWindow.setCaretColor(getColor(background, false))
     } else {
+      println("normal video")
       bottomWindow.setCaretColor(getColor(foreground, true))
     }
     println("exiting setColour")
@@ -484,20 +536,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     colorId match {
       case Colors.Current =>
         if (isForeground) getColor(currentForeground, true) else getColor(currentBackground, true)
-      case Colors.Black   => Color.BLACK
-      case Colors.Red     => Color.RED
-      case Colors.Green   => Color.GREEN
-      case Colors.Yellow  => Color.YELLOW
-      case Colors.Blue    => Color.BLUE
-      case Colors.Magenta => Color.MAGENTA
-      case Colors.Cyan    => Color.CYAN
-      case Colors.White   => Color.WHITE
-      case Colors.Default =>
-        if (isForeground) getColor(DefaultForeground, true)
-        else getColor(DefaultBackground, false)
       case _ =>
-        throw new IllegalArgumentException("Unknown color value: %d"
-                                           .format(colorId))
+        if (isForeground) ForegroundColors(colorId) else BackgroundColors(colorId)
     }
   }
   def backgroundColor = getColor(currentBackground, false)
