@@ -40,7 +40,7 @@ import java.util.Random
  */
 class Machine {
   val state                     = new VMStateImpl
-  var ioSystem                  = new IoSystem(state)
+  var ioSystem                  = new IoSystem(this)
   val readLineInfo              = new ReadLineInfo
   val randomGenerator           = new Random
   var screenModel : ScreenModel = null
@@ -584,8 +584,7 @@ class Machine {
         val userDictionary =
           if (numOperands > 2) nextOperand else 0
         if (userDictionary != 0) {
-          throw new UnsupportedOperationException("user dictionaries not " +
-                                                  "supported yet")
+          fatal("user dictionaries not supported yet")
         }
         val flag = if (numOperands > 3) nextOperand else 0
         val parserHelper = new ParserHelper(state, textBuffer, parseBuffer,
@@ -600,8 +599,7 @@ class Machine {
         copyTable(first, second, size)
       case 0x1e => // print_table
         if (numOperands < 2 || numOperands > 4) {
-          throw new IllegalArgumentException(
-            "@print_table wrong number of operands")
+          fatal("@print_table wrong number of operands")
         }
         printTable(nextOperand, nextOperand,
                    if (numOperands > 2) nextOperand else 1,
@@ -701,9 +699,9 @@ class Machine {
     else if (streamnum < 0) ioSystem.selectOutputStream(-streamnum, false)
     else if (streamnum == 3) {
       if (version == 6) {
-        throw new UnsupportedOperationException("VERSION 6 NOT SUPPORTED YET")
+        fatal("VERSION 6 NOT SUPPORTED YET")
       }
-      ioSystem.createAndSelectMemoryStream(nextOperand)
+      ioSystem.selectMemoryStream(nextOperand)
     } else {
       ioSystem.selectOutputStream(streamnum, true)
     }
@@ -826,8 +824,7 @@ class Machine {
       case Instruction.FormVar   => decodeVarTypes
       case Instruction.FormExt   => decodeVarTypes
       case _ =>
-        throw new UnsupportedOperationException(
-          "form not supported: %s\n".format(_decodeInfo.toString))
+        fatal("form not supported: %s\n".format(_decodeInfo.toString))
     }
   }
 
@@ -878,9 +875,7 @@ class Machine {
       case 2 => execute2Op
       case OperandCountVar    => executeVar
       case OperandCountExtVar => executeExt
-      case _ =>
-        throw new UnsupportedOperationException(
-          "form not supported: %s\n".format(_decodeInfo.toString))
+      case _ => fatal("operand count not supported: %s\n".format(_decodeInfo.toString))
     }
     iterations += 1
   }

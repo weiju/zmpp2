@@ -50,35 +50,49 @@ trait InputStream {
   def readLine: Int
 }
 
-class MemoryOutputStream(state: VMState)
-extends OutputStream {
-  private var tableAddr = 0
-  private var selected = false
-  private var pos: Int = 0
+object MemoryOutputStream {
+  val MaxNestingDepth = 16
+}
 
-  def table = tableAddr
-  def table_=(addr: Int) {
+class MemoryStreamPosition(var tableAddress: Int, var byteNum: Int)
+
+class MemoryOutputStream(machine: Machine)
+extends OutputStream {
+  import MemoryOutputStream._
+
+  private val streamPositions = new Array[MemoryStreamPosition](MaxNestingDepth)
+  private var selected = false
+  private var nestingLevel = 0
+
+  private def state = machine.state
+  private def tableAddress = streamPositions(nestingLevel).tableAddress
+  private def byteNum = streamPositions(nestingLevel).byteNum
+  private def advancePosition = streamPositions(nestingLevel).byteNum += 1
+
+  def selectWithTable(addr: Int) {
     if (selected) {
-      // nesting should actually be supported
-      throw new IllegalStateException("can not change table address while " +
-                                      "selected - nesting not supported")
-    } else {
-      tableAddr = addr
-      selected  = true
-      pos       = 0
+      if (nestingLevel >= MaxNestingDepth) {
+        machine.fatal("maximum nesting level for memory stream exceeded")        
+      } else nestingLevel += 1
     }
+    streamPositions(nestingLevel) = new MemoryStreamPosition(addr, 0)
+    selected = true
   }
   def putChar(c: Char) {
-    if (c != 0) {
-      state.setByteAt(tableAddr + 2 + pos, c & 0xff)
-      pos += 1
+    val printChar = if (c == '\n') 13 else c
+    if (printChar != 0) {
+      state.setByteAt(tableAddress + 2 + byteNum, printChar & 0xff)
+      advancePosition
     }
   }
 
   def flush { }
   def select(flag: Boolean) {
-    // write num written
-    if (!flag) state.setShortAt(tableAddr, pos)
+    if (!flag) {
+      // write num bytes written
+      state.setShortAt(tableAddress, byteNum)
+      if (nestingLevel > 0) nestingLevel -= 1
+    }
     selected = flag
   }
   def isSelected = selected
@@ -110,7 +124,7 @@ class StringBuilderOutputStream extends OutputStream {
 /**
  * Output Streams
  */
-class IoSystem(state: VMState) extends OutputStream {
+class IoSystem(machine: Machine) extends OutputStream {
   import StreamIds._
 
   // entry 0 is null
@@ -124,7 +138,7 @@ class IoSystem(state: VMState) extends OutputStream {
     outputStreams(0)          = NullOut
     outputStreams(Screen)     = screenModel.screenOutputStream
     outputStreams(Transcript) = NullOut
-    outputStreams(Memory)     = new MemoryOutputStream(state)
+    outputStreams(Memory)     = new MemoryOutputStream(machine)
     outputStreams(ScriptOut)  = NullOut
     inputStreams(Keyboard)    = screenModel.keyboardStream
     inputStreams(ScriptIn)    = new NullInputStream
@@ -140,8 +154,8 @@ class IoSystem(state: VMState) extends OutputStream {
       outputStreams(streamId).select(flag)
     }
   }
-  def createAndSelectMemoryStream(table: Int) {
-    outputStreams(Memory).asInstanceOf[MemoryOutputStream].table = table
+  def selectMemoryStream(table: Int) {
+    outputStreams(Memory).asInstanceOf[MemoryOutputStream].selectWithTable(table)
   }
 
   def currentInputStreamId = _currentInputStreamId
