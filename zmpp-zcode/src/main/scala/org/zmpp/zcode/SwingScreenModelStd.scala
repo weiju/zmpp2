@@ -518,8 +518,11 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     printf("setColour(), foreground = %d, background = %d, window = %d\n",
            foreground, background, window)
     bottomWindow.setColor(foreground, background)
-    currentForeground = foreground
-    currentBackground = background
+
+    // Make sure that we don't end up in an infinite loop
+    // This could happen when we set currentForeground/currentBackground to CURRENT
+    if (foreground != Colors.Current) currentForeground = foreground
+    if (background != Colors.Current) currentBackground = background
     // we need to change the caret color of the bottom window, too
     println("setting caret color")
     if (isReverseVideo) {
@@ -527,7 +530,9 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
       bottomWindow.setCaretColor(getColor(background, false))
     } else {
       println("normal video")
-      bottomWindow.setCaretColor(getColor(foreground, true))
+      val color = getColor(foreground, true)
+      println("color will be: " + color)
+      bottomWindow.setCaretColor(color)
     }
     println("exiting setColour")
   }
