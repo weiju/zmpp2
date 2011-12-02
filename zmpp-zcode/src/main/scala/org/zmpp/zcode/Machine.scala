@@ -46,17 +46,17 @@ class Machine {
   var screenModel : ScreenModel = null
 
   var objectTable: ObjectTable  = null  
-  private val undoSnapshots = new CircularStack[Snapshot](2)
+  private[this] val undoSnapshots = new CircularStack[Snapshot](2)
 
   // for efficiency reasons, we cache the current decoding state here.
   // there is only one instance of decoding info for stage 1 and
   // one for each form to hold decoding information. This is, so weaker
   // JVM's like Dalvik has less objects to garbage collect
-  private val _decodeInfo = new DecodeInfo(0, 0, 0, 0)
+  private[this] val _decodeInfo = new DecodeInfo(0, 0, 0, 0)
   // Decode information end
   // transient information, current routine decoding data
-  private val _callArgs    = new Array[Int](8)
-  private var _currentArg  = 0
+  private[this] val _callArgs    = new Array[Int](8)
+  private[this] var _currentArg  = 0
   var iterations  = 1
 
   def init(story: Memory, screenModel: ScreenModel) {

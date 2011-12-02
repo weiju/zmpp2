@@ -68,13 +68,13 @@ object BackgroundColors {
   val colorTable = new Array[Color](13)
   // current is never accessed and default is set by screen model
   colorTable(Colors.Black)   = Color.BLACK
-  colorTable(Colors.Red)     = Color.RED
-  colorTable(Colors.Green)   = Color.GREEN
-  colorTable(Colors.Yellow)  = Color.YELLOW
-  colorTable(Colors.Blue)    = Color.BLUE
-  colorTable(Colors.Magenta) = Color.MAGENTA
-  colorTable(Colors.Cyan)    = Color.CYAN
-  colorTable(Colors.White)   = Color.WHITE
+  colorTable(Colors.Red)     = new Color(200, 0, 0)
+  colorTable(Colors.Green)   = new Color(0, 200, 0)
+  colorTable(Colors.Yellow)  = new Color(200, 200, 0)
+  colorTable(Colors.Blue)    = new Color(0, 0, 200)
+  colorTable(Colors.Magenta) = new Color(200, 0, 200)
+  colorTable(Colors.Cyan)    = new Color(0, 200, 200)
+  colorTable(Colors.White)   = new Color(255, 255, 255)
 
   def apply(colornum: Int): Color = {
     colorTable(colornum)
@@ -88,13 +88,13 @@ object ForegroundColors {
   val colorTable = new Array[Color](13)
   // current is never accessed and default is set by screen model
   colorTable(Colors.Black)   = Black
-  colorTable(Colors.Red)     = Color.RED.brighter
-  colorTable(Colors.Green)   = Color.GREEN.brighter
-  colorTable(Colors.Yellow)  = Color.YELLOW.brighter
-  colorTable(Colors.Blue)    = Color.BLUE.brighter
-  colorTable(Colors.Magenta) = Color.MAGENTA.brighter
-  colorTable(Colors.Cyan)    = Color.CYAN.brighter
-  colorTable(Colors.White)   = Color.WHITE.brighter
+  colorTable(Colors.Red)     = new Color(255, 0, 0)
+  colorTable(Colors.Green)   = new Color(0, 255, 0)
+  colorTable(Colors.Yellow)  = new Color(255, 255, 0)
+  colorTable(Colors.Blue)    = new Color(0, 0, 255)
+  colorTable(Colors.Magenta) = new Color(255, 0, 255)
+  colorTable(Colors.Cyan)    = new Color(0, 255, 255)
+  colorTable(Colors.White)   = new Color(200, 200, 200)
 
   def apply(colornum: Int): Color = {
     colorTable(colornum)
@@ -145,7 +145,6 @@ class TextGrid extends JTextPane with ScreenModelWindow {
       // new style
       buffer.putChar(styleCharacter(c), line - 1, col -1)
       if (col < charsPerLine) _cursorPos = (line, col + 1)
-      else moveCursorToNextLine
     }
   }
   private def moveCursorToNextLine {
@@ -181,8 +180,12 @@ class TextGrid extends JTextPane with ScreenModelWindow {
     while (row < totalLines) {
       col = 0
       while (col < charsPerLine) {
-        screenModel.setAttributeSet(attrs, buffer.charAt(row, col))
-        doc.insertString(doc.getLength, buffer.charAt(row, col).c.toString, attrs)
+        val styledChar = buffer.charAt(row, col)
+        if (styledChar == TextStyle.DefaultFixedBlank) {
+          screenModel.setTransparentAttributeSet(attrs)
+        }
+        else screenModel.setAttributeSet(attrs, styledChar)
+        doc.insertString(doc.getLength, styledChar.c.toString, attrs)
         col += 1
       }
       doc.insertString(doc.getLength, "\n", null)
@@ -509,6 +512,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
   def setTextStyle(aStyle: Int) {
     bottomWindow.setStyle(aStyle)
+    style = aStyle
   }
 
   // Note: window parameter is only relevant for V6
@@ -565,15 +569,20 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
                Fonts.Fixed, currentForeground, currentBackground))
   }
   val Transparent = new Color(0, 0, 0, 0)
+
+  def setTransparentAttributeSet(attrs: MutableAttributeSet) = {
+    StyleConstants.setBackground(attrs, Transparent)
+  }
+
   def setAttributeSet(attrs: MutableAttributeSet, styledChar: StyledChar) = {
     StyleConstants.setBold(attrs,   styledChar.isBold)
     StyleConstants.setItalic(attrs, styledChar.isItalic)
     if (styledChar.isReverseVideo) {
-      StyleConstants.setBackground(attrs, getColor(styledChar.foreground, false))
-      StyleConstants.setForeground(attrs, getColor(styledChar.background, true))
+      StyleConstants.setBackground(attrs, getColor(styledChar.foreground, true))
+      StyleConstants.setForeground(attrs, getColor(styledChar.background, false))
     } else {
       StyleConstants.setForeground(attrs, getColor(styledChar.foreground, true))
-      StyleConstants.setBackground(attrs, Transparent)
+      StyleConstants.setBackground(attrs, getColor(styledChar.background, false))
     }
   }
 
