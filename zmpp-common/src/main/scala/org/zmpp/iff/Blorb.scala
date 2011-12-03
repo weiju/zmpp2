@@ -29,7 +29,6 @@
 package org.zmpp.iff
 
 import java.io.InputStream
-import java.util.logging._
 import org.zmpp.base._
 
 object UsageTypes {
@@ -68,8 +67,9 @@ object BlorbData {
 }
 
 class BlorbData(val formChunk: FormChunk) {
-  val logger = Logger.getLogger("zmppbase")
-  
+  def isValid = formChunk.subId == "IFRS"
+  def hasZcodeChunk = formChunk.hasSubChunk("ZCOD")
+
   def zcodeData = formChunk.chunkDataForId("ZCOD")
   def glulxData = formChunk.chunkDataForId("GLUL")
   val frontispieceNum =
@@ -129,12 +129,8 @@ class BlorbData(val formChunk: FormChunk) {
 
   def listResources {
     for (res <- resources) {
-      logger.info("res #%d, usage: %02x start: %02x".format(res.number,
-                                                            res.usage,
-                                                            res.start))
       if (res.resourceType == ResourceTypes.Sound) {        
         val chunk = formChunk.chunkAtAddress(res.start)
-        logger.info("RESNUM: %d SOUND ID: %s".format(res.number, chunk.id))
       }
     }
   }

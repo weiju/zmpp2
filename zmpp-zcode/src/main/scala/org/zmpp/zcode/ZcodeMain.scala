@@ -39,6 +39,7 @@ import java.awt._
 import org.zmpp.base.Memory
 import org.zmpp.base.DefaultMemory
 import org.zmpp.base.VMRunStates
+import org.zmpp.iff._
 
 trait SwingScreenModel extends ScreenModel with InputStream {
   def readChar
@@ -117,7 +118,22 @@ object ZcodeMain extends App {
     println("Usage: Please provide a game file as argument")
     System.exit(0)
   } else {
-    readZcodeFile(new File(args(0)))
+    val fileBytes = readFileData(new File(args(0)))
+    if (fileBytes(0) >= 1 && fileBytes(0) <= 8) {
+      runStory(new DefaultMemory(fileBytes))
+    } else if (FormChunk.isIffFile(fileBytes)) {
+      val blorbData = new BlorbData(new DefaultFormChunk(new DefaultMemory(fileBytes)))
+      if (blorbData.isValid && blorbData.hasZcodeChunk) {
+        runStory(blorbData.zcodeData)
+      }
+    }
+  }
+
+  private def runStory(story: Memory) {
+    val frame = new ZcodeFrame(story.byteAt(0))
+    val vm = new Machine
+    vm.init(story, frame.screenModel)
+    frame.runMachine(vm)
   }
 
   private def readFileData(file: File) = {
@@ -133,12 +149,5 @@ object ZcodeMain extends App {
       if (fileIs != null) fileIs.close
     }
     filebytes
-  }
-  private def readZcodeFile(file : File) = {
-    val story = new DefaultMemory(readFileData(file))
-    val frame = new ZcodeFrame(story.byteAt(0))
-    val vm = new Machine
-    vm.init(story, frame.screenModel)
-    frame.runMachine(vm)
   }
 }

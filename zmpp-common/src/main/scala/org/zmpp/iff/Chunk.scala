@@ -63,6 +63,13 @@ protected class DefaultChunk(val memory: Memory, val address: Int) extends Chunk
 /*
  * FORM Chunks
  */
+object FormChunk {
+  def isIffFile(dataBytes: Array[Byte]) = {
+    (dataBytes(0) == 'F' && dataBytes(1) == 'O' &&
+     dataBytes(2) == 'R' && dataBytes(3) == 'M')
+  }
+}
+
 trait FormChunk extends Chunk {
   def subId: String
   def hasSubChunk(chunkId: String)      : Boolean
