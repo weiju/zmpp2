@@ -121,10 +121,18 @@ object ZcodeMain extends App {
     val fileBytes = readFileData(new File(args(0)))
     if (fileBytes(0) >= 1 && fileBytes(0) <= 8) {
       runStory(new DefaultMemory(fileBytes))
-    } else if (FormChunk.isIffFile(fileBytes)) {
+    } else if (FormChunk.isBlorbFile(fileBytes)) {
       val blorbData = new BlorbData(new DefaultFormChunk(new DefaultMemory(fileBytes)))
-      if (blorbData.isValid && blorbData.hasZcodeChunk) {
+      if (blorbData.hasZcodeChunk) {
+        val frontispieceNum = blorbData.frontispieceNum
+        if (frontispieceNum != -1) {
+          println("FRONTISPIECE AVAILABLE: " + frontispieceNum)
+        } else {
+          println("NO FRONTISPIECE")
+        }
         runStory(blorbData.zcodeData)
+      } else {
+          println("no ZCOD chunk found")
       }
     }
   }

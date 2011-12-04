@@ -67,7 +67,6 @@ object BlorbData {
 }
 
 class BlorbData(val formChunk: FormChunk) {
-  def isValid = formChunk.subId == "IFRS"
   def hasZcodeChunk = formChunk.hasSubChunk("ZCOD")
 
   def zcodeData = formChunk.chunkDataForId("ZCOD")
