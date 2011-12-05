@@ -28,7 +28,7 @@
  */
 package org.zmpp.iff
 
-import java.io.InputStream
+import java.io.{InputStream, IOException}
 import org.zmpp.base._
 
 object UsageTypes {
@@ -64,6 +64,85 @@ class ResourceInfo(val usage: Int, val number: Int, val start: Int) {
 object BlorbData {
   val ResourceIndexEntrySize  = 12
   val ResourceIndexEntryStart = 4
+  val RIdx = 0x52496478
+  val FORM = 0x464f524d
+  val IFRS = 0x49465253
+  val ZCOD = 0x5a434f44
+
+  private val BufferSize = 1024
+  private val HeaderSize = 52
+  private var chunkId = 0
+  private var chunklen = 0
+
+  // Checking for valid Blorb files
+  def isIffFile(dataBytes: Array[Byte]) = intAt(dataBytes, 0) == FORM
+  def isBlorbFile(dataBytes: Array[Byte]) = {
+    isIffFile(dataBytes) && intAt(dataBytes, 8) == IFRS
+  }
+  private def intAt(dataBytes: Array[Byte], offset: Int) = {
+    ((dataBytes(offset) & 0xff) << 24) | ((dataBytes(offset + 1) & 0xff) << 16) |
+    ((dataBytes(offset + 2) & 0xff) << 8) | (dataBytes(offset + 3) & 0xff)
+  }
+  private def shortAt(dataBytes: Array[Byte], offset: Int) = {
+    ((dataBytes(offset + 0) & 0xff) << 8) | (dataBytes(offset + 1) & 0xff)
+  }
+
+  // A faster, less memory-consuming version of a Z info scan
+  // which can be used to retrieve the information in a batch, possibly
+  // on a memory-restricted environment. We just read information
+  // on the fly and just use the header information we need
+  // Currently, this can read Z-blorbs and plain Z-files
+  def quickScanZInfo(inputStream: InputStream): (Int, Int, String, Int) = {
+    val buffer = new Array[Byte](BufferSize)
+    // read the identifier
+    var bytesRead = inputStream.read(buffer, 0, 12)
+    var bytesReadSoFar = bytesRead
+
+    if (isBlorbFile(buffer)) {
+      val filelen = intAt(buffer, 4)
+      chunkId = 0
+      chunklen = 0
+      while (chunkId != ZCOD && bytesReadSoFar < filelen) {
+        readChunkHeader(inputStream, buffer)
+        bytesReadSoFar += 8
+        if (chunkId != ZCOD) {
+          // pad to even
+          var bytesToRead = if (chunklen % 2 == 1) chunklen + 1 else chunklen
+          while (bytesToRead > 0) {
+            val readlen = math.min(bytesToRead, BufferSize)
+            bytesRead = inputStream.read(buffer, 0, readlen)
+            bytesToRead -= bytesRead
+            bytesReadSoFar += bytesRead
+          }
+        }
+      }
+      if (bytesReadSoFar < filelen) {
+        inputStream.read(buffer, 0, HeaderSize)
+        zinfo(buffer)
+      } else throw new IOException("no ZCOD chunk found")
+    } else {
+      // just assume we are a Z-code file
+      inputStream.read(buffer, 12, HeaderSize - 12)
+      zinfo(buffer)
+    }
+  }
+
+  private def zinfo(buffer: Array[Byte]) = {
+    val version = buffer(0).asInstanceOf[Int]    
+    val serialBuffer = new StringBuilder
+    for (i <- 0 until 6) {
+      serialBuffer.append(buffer(0x12 + i).asInstanceOf[Char])
+    }
+    val serial = if (version > 1) serialBuffer.toString else null
+    (version, shortAt(buffer, 2), serial, shortAt(buffer, 0x1c))
+  }
+
+  private def readChunkHeader(inputStream: InputStream, buffer: Array[Byte]) {
+    if (inputStream.read(buffer, 0, 8) == 8) {
+      chunkId = intAt(buffer, 0)
+      chunklen = intAt(buffer, 4)
+    } else throw new IOException("error reading Blorb file")
+  }
 }
 
 class BlorbData(val formChunk: FormChunk) {

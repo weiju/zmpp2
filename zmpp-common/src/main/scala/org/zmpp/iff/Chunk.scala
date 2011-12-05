@@ -61,20 +61,6 @@ protected class DefaultChunk(val memory: Memory, val address: Int) extends Chunk
 }
 
 /*
- * Quick way to check for a valid IFF file.
- */
-object FormChunk {
-  def isIffFile(dataBytes: Array[Byte]) = intValueAt(dataBytes, 0) == 0x464f524d
-  def isBlorbFile(dataBytes: Array[Byte]) = {
-    isIffFile(dataBytes) && intValueAt(dataBytes, 8) == 0x49465253
-  }
-  private def intValueAt(dataBytes: Array[Byte], offset: Int) = {
-    ((dataBytes(offset) & 0xff) << 24) | ((dataBytes(offset + 1) & 0xff) << 16) |
-    ((dataBytes(offset + 2) & 0xff) << 8) | (dataBytes(offset + 3) & 0xff)
-  }
-}
-
-/*
  * FORM Chunks
  */
 trait FormChunk extends Chunk {
