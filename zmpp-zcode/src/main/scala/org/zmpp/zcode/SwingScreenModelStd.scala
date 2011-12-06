@@ -631,19 +631,22 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def focusGained(e: FocusEvent) = bottomWindow.requestFocusInWindow
   def focusLost(e: FocusEvent) { }
 
-  def outputStreamForSaveGame: java.io.OutputStream = {
+  def requestSaveFile {
     val fileChooser = new JFileChooser
     fileChooser.setDialogTitle("Save Game As...")
-    if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+    val outputStream = if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
       new FileOutputStream(fileChooser.getSelectedFile)
     } else null
+    vm.resumeWithSaveStream(outputStream)
+    ExecutionControl.executeTurn(vm, this)
   }
-
-  def inputStreamForSaveGame: java.io.InputStream = {
+  def requestRestoreFile {
     val fileChooser = new JFileChooser
     fileChooser.setDialogTitle("Restore Game From...")
-    if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+    val inputStream = if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
       new FileInputStream(fileChooser.getSelectedFile)
     } else null
+    vm.resumeWithRestoreStream(inputStream)
+    ExecutionControl.executeTurn(vm, this)
   }
 }

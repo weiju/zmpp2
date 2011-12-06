@@ -145,9 +145,11 @@ object BlorbData {
   }
 }
 
+// Assumes that the form chunk given as constructor argument is a valid
+// blorb file and provides Blorb-specific accesssors
 class BlorbData(val formChunk: FormChunk) {
-  def hasZcodeChunk = formChunk.hasSubChunk("ZCOD")
 
+  def hasZcodeChunk = formChunk.hasSubChunk("ZCOD")
   def zcodeData = formChunk.chunkDataForId("ZCOD")
   def glulxData = formChunk.chunkDataForId("GLUL")
   val frontispieceNum =

@@ -233,12 +233,10 @@ class Machine {
         state.returnFromRoutine(1)
       case 0x04 => // nop
       case 0x05 => // save V1-V4
-        if (version < 4) saveV3
-        else if (version == 4) saveV4
+        if (version <= 4) state.runState = ZMachineRunStates.SaveGame
         else fatal("illegal 0OP: $05, Version >= 5")
       case 0x06 => // restore V1-V4
-        if (version < 4) restoreV3
-        else if (version == 4) restoreV4
+        if (version <= 4) state.runState = ZMachineRunStates.RestoreGame
         else fatal("illegal 0OP: $06, Version >= 5")
       case 0x07 => // restart
         // bit 0 of flags2 (transcript)
@@ -905,14 +903,16 @@ class Machine {
   // ****** Save/restore games
   // **********************************************************************
 
-  private def saveV3 {
+  def resumeWithSaveStream(outputStream: java.io.OutputStream) {
+    state.runState = ZMachineRunStates.Running
     val writer = new QuetzalWriter(state)
-    decideBranch(writer.write(screenModel.outputStreamForSaveGame))
+    val success = writer.write(outputStream)
+    if (version <= 3) resumeSaveV3(success)
+    else resumeSaveV4(success)
   }
-  private def saveV4 {
-    val writer = new QuetzalWriter(state)
-    storeResult(if (writer.write(screenModel.outputStreamForSaveGame)) 1 else 0)
-  }
+
+  private def resumeSaveV3(success: Boolean) = decideBranch(success)
+  private def resumeSaveV4(success: Boolean) = storeResult(if (success) 1 else 0)
   private def saveV5 {
     if (numOperands > 0) {
       // save data-area mode
@@ -935,17 +935,19 @@ class Machine {
         warn("save data area not implemented yet")
         storeResult(0)
       }
-    } else saveV4
+    } else state.runState = ZMachineRunStates.SaveGame
   }
 
-  private def restoreV3 {
+  def resumeWithRestoreStream(inputStream: java.io.InputStream) {
+    state.runState = ZMachineRunStates.Running
     val reader = new QuetzalReader(state, this)
-    decideBranch(reader.read(screenModel.inputStreamForSaveGame))
+    val success = reader.read(inputStream)
+    if (version <= 3) resumeRestoreV3(success)
+    else resumeRestoreV4(success)
   }
-  private def restoreV4 {
-    val reader = new QuetzalReader(state, this)
-    storeResult(if (reader.read(screenModel.inputStreamForSaveGame)) 1 else 0)
-  }
+  private def resumeRestoreV3(success: Boolean) = decideBranch(success)
+  private def resumeRestoreV4(success: Boolean) = storeResult(if (success) 1 else 0)
+
   private def restoreV5 {
     if (numOperands > 0) {
       // save data-area mode
@@ -968,6 +970,6 @@ class Machine {
         warn("read data area not implemented yet")
         storeResult(0)
       }
-    } else restoreV4
+    } else state.runState = ZMachineRunStates.RestoreGame
   }
 }

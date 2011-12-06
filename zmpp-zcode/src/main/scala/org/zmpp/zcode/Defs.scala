@@ -166,19 +166,22 @@ class Stack {
 }
 
 object FrameOffset {
-  val ReturnPC  = 0
-  val OldFP     = 1
-  val StoreVar  = 2
-  val NumArgs   = 3
-  val NumLocals = 4
-  val Locals    = 5
+  val ReturnPC     = 0
+  val OldFP        = 1
+  val StoreVar     = 2
+  val NumArgs      = 3
+  val NumLocals    = 4
+  val Locals       = 5
   val NumInfoWords = 5
 }
+
 object ZMachineRunStates {
   val Halted       = VMRunStates.Halted
   val Running      = VMRunStates.Running
   val ReadLine     = VMRunStates.WaitForEvent
   val ReadChar     = 11
+  val SaveGame     = 12
+  val RestoreGame  = 13
 }
 
 /**

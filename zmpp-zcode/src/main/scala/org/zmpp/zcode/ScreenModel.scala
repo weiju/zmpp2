@@ -123,9 +123,6 @@ trait ScreenModel {
   def setColour(foreground: Int, background: Int, window: Int)
 
   def capabilities: List[CapabilityFlag]
-
-  def outputStreamForSaveGame: java.io.OutputStream
-  def inputStreamForSaveGame: java.io.InputStream
 }
 
 trait ScreenModelWindow {

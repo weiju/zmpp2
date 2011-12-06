@@ -43,6 +43,8 @@ import org.zmpp.iff._
 
 trait SwingScreenModel extends ScreenModel with InputStream {
   def readChar
+  def requestSaveFile
+  def requestRestoreFile
 }
 
 class ZcodeFrame(version: Int) extends JFrame("ZMPP 2.0 Prototype")
@@ -102,6 +104,14 @@ object ExecutionControl {
     } else if (vm.state.runState == ZMachineRunStates.ReadChar) {
       SwingUtilities.invokeAndWait(new Runnable {
         def run = screenModel.readChar
+      })
+    } else if (vm.state.runState == ZMachineRunStates.SaveGame) {
+      SwingUtilities.invokeAndWait(new Runnable {
+        def run = screenModel.requestSaveFile
+      })
+    } else if (vm.state.runState == ZMachineRunStates.RestoreGame) {
+      SwingUtilities.invokeAndWait(new Runnable {
+        def run = screenModel.requestRestoreFile
       })
     }
   }
