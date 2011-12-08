@@ -38,33 +38,42 @@ import java.util.logging._
  * to avoid extension to long values where in most cases, we won't use the full
  * positive range of a 32-bit int
  */
-class DefaultMemory(val buffer:Array[Byte],
+class DefaultMemory(_buffer:Array[Byte],
                     val address:Int, val size:Int,
                     val startIndex: Int)
 extends Memory with Comparable[DefaultMemory] {
-  def this(buffer: Array[Byte]) = this(buffer, 0, buffer.length, 0)
-  def this(buffer: Array[Byte], addr: Int) = this(buffer, addr, buffer.length, 0)
+  def this(arr: Array[Byte]) = this(arr, 0, arr.length, 0)
+  def this(arr: Array[Byte], addr: Int) = this(arr, addr, arr.length, 0)
 
-  val _byteBuffer = ByteBuffer.wrap(buffer)
   private def indexForAddress(addr: Int) = addr - address + startIndex
 
+  def buffer = _buffer
   def byteAt    (addr: Int): Int = {
-    _byteBuffer.get(indexForAddress(addr)) & 0xff
+    _buffer(indexForAddress(addr)) & 0xff
   }
   def setByteAt (addr: Int, value: Int) {
-    _byteBuffer.put(indexForAddress(addr), value.asInstanceOf[Byte])
+    _buffer(indexForAddress(addr)) = (value & 0xff).asInstanceOf[Byte]
   }
   def shortAt   (addr: Int): Int = {
-    _byteBuffer.getChar(indexForAddress(addr))
+    val offset = indexForAddress(addr)
+    ((_buffer(offset) & 0xff) << 8) | (_buffer(offset + 1) & 0xff)
   }
   def setShortAt(addr: Int, value: Int) {
-    _byteBuffer.putChar(indexForAddress(addr), value.asInstanceOf[Char])
+    val offset = indexForAddress(addr)
+    _buffer(offset)     = ((value >>> 8) & 0xff).asInstanceOf[Byte]
+    _buffer(offset + 1) = (value & 0xff).asInstanceOf[Byte]
   }
   def intAt     (addr: Int): Int = {
-    _byteBuffer.getInt(indexForAddress(addr))
+    val offset = indexForAddress(addr)
+    ((_buffer(offset) & 0xff) << 24) | ((_buffer(offset + 1) & 0xff) << 16) |
+    ((_buffer(offset + 2) & 0xff) << 8) | (_buffer(offset + 3) & 0xff)    
   }
   def setIntAt  (addr: Int, value: Int) {
-    _byteBuffer.putInt(indexForAddress(addr), value)
+    val offset = indexForAddress(addr)
+    _buffer(offset)     = ((value >>> 24) & 0xff).asInstanceOf[Byte]
+    _buffer(offset + 1) = ((value >>> 16) & 0xff).asInstanceOf[Byte]
+    _buffer(offset + 2) = ((value >>> 8) & 0xff).asInstanceOf[Byte]
+    _buffer(offset + 3) = (value & 0xff).asInstanceOf[Byte]
   }
 
   def copyBytesTo(dest: Array[Byte], srcOffset: Int, numBytes: Int) {
@@ -88,10 +97,6 @@ extends Memory with Comparable[DefaultMemory] {
   def containsAddress(addr: Int): Boolean =
     addr >= address && addr < address + size
   def compareTo(other: DefaultMemory) = address - other.address
-  def littleEndian = {
-    _byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
-    this
-  }
 }
 
 object DefaultMemory {
@@ -121,4 +126,3 @@ extends java.io.InputStream {
     position = mark
   }
 }
-
