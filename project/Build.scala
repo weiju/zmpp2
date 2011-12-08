@@ -1,5 +1,7 @@
 import sbt._
 import Keys._
+import sbtassembly.Plugin._
+import AssemblyKeys._
 
 object Zmpp2 extends Build {
 
@@ -13,9 +15,12 @@ object Zmpp2 extends Build {
     javacOptions in Compile ++= Seq("-target", "6", "-source", "6")
   )
 
+  def appSettings = assemblySettings ++ testDependencies
+
   lazy val root = Project("root", file(".")) aggregate(zmpp_swing, zmpp_zcode, zmpp_tads3)
   lazy val zmpp_swing = Project("zmpp-swing", file("zmpp-swing")) dependsOn(common, glulx, glk)
-  lazy val zmpp_zcode = Project("zmpp-zcode", file("zmpp-zcode")) settings(testDependencies :_*) dependsOn(common)
+  lazy val zmpp_zcode = Project("zmpp-zcode",
+                                file("zmpp-zcode")) settings (appSettings: _*) dependsOn(common)
   lazy val zmpp_tads3 = Project("zmpp-tads3", file("zmpp-tads3")) settings(testDependencies :_*) dependsOn(common)
   lazy val glulx = Project("zmpp-glulx", file("zmpp-glulx")) dependsOn(common, glk)
   lazy val glk = Project("zmpp-glk", file("zmpp-glk")) dependsOn(common)

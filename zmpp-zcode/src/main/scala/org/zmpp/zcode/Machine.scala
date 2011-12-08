@@ -31,6 +31,7 @@ package org.zmpp.zcode
 import org.zmpp.base.{Types, VMRunStates, Memory, CircularStack}
 import java.util.StringTokenizer
 import java.util.Random
+import scala.annotation.switch
 
 /**
  * This is the control part of the Z-Machine. Opposed to the first generation
@@ -222,7 +223,7 @@ class Machine {
   }
 
   private def execute0Op {
-    _decodeInfo.opnum match {
+    (_decodeInfo.opnum: @switch) match {
       case 0x00 => state.returnFromRoutine(1) // rtrue
       case 0x01 => state.returnFromRoutine(0) // rfalse
       case 0x02 => // print
@@ -272,7 +273,7 @@ class Machine {
     }
   }
   private def execute1Op {
-    _decodeInfo.opnum match {
+    (_decodeInfo.opnum: @switch) match {
       case 0x00 => decideBranch(nextOperand == 0) // jz
       case 0x01 => // get_sibling
         val sibling = objectTable.sibling(nextOperand)
@@ -323,7 +324,7 @@ class Machine {
     }
   }
   private def execute2Op {
-    _decodeInfo.opnum match {
+    (_decodeInfo.opnum: @switch) match {
       case 0x01 => // je -> Note: Variable number of arguments !!!
         var equalsAny = false
         val first = nextOperand
@@ -448,7 +449,7 @@ class Machine {
     }
   }
   private def executeVar {
-    _decodeInfo.opnum match {
+    (_decodeInfo.opnum: @switch) match {
       case 0x00 => // call
         callWithReturnValue(numOperands - 1)
       case 0x01 => // storew
@@ -610,7 +611,7 @@ class Machine {
     }
   }
   private def executeExt {
-    _decodeInfo.opnum match {
+    (_decodeInfo.opnum: @switch) match {
       case 0x00 => saveV5 // save
       case 0x01 => restoreV5 // restore
       case 0x02 => // log_shift
@@ -816,11 +817,11 @@ class Machine {
   }
 
   private def decodeForm {
-    _decodeInfo.form match {
-      case Instruction.FormShort => decodeShortTypes
-      case Instruction.FormLong  => decodeLongTypes
-      case Instruction.FormVar   => decodeVarTypes
-      case Instruction.FormExt   => decodeVarTypes
+    (_decodeInfo.form: @switch) match {
+      case 0  => decodeLongTypes  // FormLong
+      case 1  => decodeShortTypes // FormShort
+      case 2  => decodeVarTypes   // FormVar
+      case 3  => decodeVarTypes   // FormExt
       case _ =>
         fatal("form not supported: %s\n".format(_decodeInfo.toString))
     }
@@ -867,12 +868,12 @@ class Machine {
     }
     // execute
     import Instruction._
-    _decodeInfo.operandCount match {
-      case 0 => execute0Op
-      case 1 => execute1Op
-      case 2 => execute2Op
-      case OperandCountVar    => executeVar
-      case OperandCountExtVar => executeExt
+    (_decodeInfo.operandCount: @switch) match {
+      case 0  => execute0Op
+      case 1  => execute1Op
+      case 2  => execute2Op
+      case -1 => executeVar // OperandCountVar
+      case -2 => executeExt // OperandCountExt
       case _ => fatal("operand count not supported: %s\n".format(_decodeInfo.toString))
     }
     iterations += 1

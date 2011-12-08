@@ -28,6 +28,7 @@
  */
 package org.zmpp.zcode
 
+import scala.annotation.switch
 import org.zmpp.base.VMRunStates
 import org.zmpp.base.Memory
 import org.zmpp.iff.QuetzalCompression
@@ -345,20 +346,16 @@ class VMStateImpl extends VMState {
   }
 
   def nextOperand(operandType: Int) = {
-    import OperandTypes._
-    operandType match {
-      case LargeConstant =>
+    (operandType: @switch) match {
+      case 0 => // large
         pc += 2
         _story.shortAt(pc - 2)
-      case SmallConstant =>
+      case 1 => // small
         pc += 1
         _story.byteAt(pc - 1)
-      case Variable      =>
+      case 2 => // var
         pc += 1
         variableValue(_story.byteAt(pc - 1))
-      case _ =>
-        throw new UnsupportedOperationException(
-          "unknown operand type: " + operandType)
     }
   }
 
