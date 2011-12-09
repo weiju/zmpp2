@@ -67,6 +67,7 @@ trait FormChunk extends Chunk {
   def subId: String
   def hasSubChunk(chunkId: String)      : Boolean
   def chunkDataForId(chunkId: String)   : Memory
+  def chunkDataForIdShared(chunkId: String)   : Memory
   def chunkAtAddress(chunkAddr: Int)    : Chunk
   def chunkDataSizeAtAddress(chunkAddr: Int): Int
 }
@@ -110,9 +111,15 @@ class DefaultFormChunk(_mem: Memory) extends DefaultChunk(_mem, 0) with FormChun
     if (hasSubChunk(chunkId)) chunkAtAddress(subChunkAddress(chunkId))
     else null
   }
-  def chunkDataForId(chunkId: String): Memory = {
+  def chunkDataForIdShared(chunkId: String): Memory = {
     val subChunk = chunkAtAddress(subChunkAddress(chunkId))
     new DefaultMemory(_mem.buffer, 0, subChunk.size, subChunk.dataStart)
+  }
+  def chunkDataForId(chunkId: String): Memory = {
+    val subChunk = chunkAtAddress(subChunkAddress(chunkId))
+    val zcodeBytes = new Array[Byte](subChunk.size)
+    System.arraycopy(_mem.buffer, subChunk.dataStart, zcodeBytes, 0, subChunk.size)
+    new DefaultMemory0(zcodeBytes)
   }
 }
 

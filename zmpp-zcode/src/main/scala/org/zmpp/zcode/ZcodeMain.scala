@@ -37,7 +37,7 @@ import java.awt.event._
 import java.awt._
 
 import org.zmpp.base.Memory
-import org.zmpp.base.DefaultMemory
+import org.zmpp.base.DefaultMemory0
 import org.zmpp.base.VMRunStates
 import org.zmpp.iff._
 
@@ -130,9 +130,9 @@ object ZcodeMain extends App {
   } else {
     val fileBytes = readFileData(new File(args(0)))
     if (fileBytes(0) >= 1 && fileBytes(0) <= 8) {
-      runStory(new DefaultMemory(fileBytes))
+      runStory(new DefaultMemory0(fileBytes))
     } else if (BlorbData.isBlorbFile(fileBytes)) {
-      val blorbData = new BlorbData(new DefaultFormChunk(new DefaultMemory(fileBytes)))
+      val blorbData = new BlorbData(new DefaultFormChunk(new DefaultMemory0(fileBytes)))
       if (blorbData.hasZcodeChunk) {
         val frontispieceNum = blorbData.frontispieceNum
         if (frontispieceNum != -1) {
@@ -142,7 +142,7 @@ object ZcodeMain extends App {
         }
         runStory(blorbData.zcodeData)
       } else {
-          println("no ZCOD chunk found")
+        println("no ZCOD chunk found")
       }
     }
   }

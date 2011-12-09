@@ -228,9 +228,9 @@ class TextGridBuffer(numRows: Int, numColumns: Int) {
  */
 class TextRunBuffer {
   import TextStyle._
-  private var currentStyle: TextStyle = DefaultNormal
-  private var currentText: StringBuilder = new StringBuilder
-  private var runBuffer = new ArrayBuffer[StyledText]()
+  private[this] var currentStyle: TextStyle = DefaultNormal
+  private[this] var currentText: StringBuilder = new StringBuilder
+  private[this] var runBuffer = new ArrayBuffer[StyledText]()
 
   def reset {
     clear

@@ -37,6 +37,9 @@ class PropertyDoesNotExistException extends Exception
  */
 abstract class ObjectTable(protected val _vm: Machine) {
 
+  // this is accessed often, so we store it here
+  protected val objectTableAddress = _vm.state.header.objectTable
+
   def removeObject(obj: Int) {
     val oldParent = parent(obj)
     setParent(obj, 0)
@@ -150,7 +153,6 @@ abstract class ObjectTable(protected val _vm: Machine) {
 
   // Protected members
   protected def objectTreeStart = objectTableAddress + propertyDefaultTableSize
-  protected def objectTableAddress = _vm.state.header.objectTable
   protected def objectAddress(obj: Int) =
     objectTreeStart + (obj - 1) * objectEntrySize
 

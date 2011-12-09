@@ -149,8 +149,10 @@ object BlorbData {
 // blorb file and provides Blorb-specific accesssors
 class BlorbData(val formChunk: FormChunk) {
 
-  def hasZcodeChunk = formChunk.hasSubChunk("ZCOD")
-  def zcodeData = formChunk.chunkDataForId("ZCOD")
+  def hasZcodeChunk   = formChunk.hasSubChunk("ZCOD")
+  def zcodeDataShared = formChunk.chunkDataForIdShared("ZCOD")
+  def zcodeData       = formChunk.chunkDataForId("ZCOD")
+
   def glulxData = formChunk.chunkDataForId("GLUL")
   val frontispieceNum =
     if (formChunk.hasSubChunk("Fspc")) formChunk.chunkDataForId("Fspc").intAt(0)
