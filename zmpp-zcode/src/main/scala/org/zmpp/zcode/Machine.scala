@@ -193,15 +193,19 @@ class Machine {
   }
   private def callWithoutReturnValue(numCallArgs: Int) {
     val packedAddr = nextOperand
-    for (i <- 0 until numCallArgs) {
+    var i = 0
+    while (i < numCallArgs) {
       _callArgs(i) = nextOperand
+      i += 1
     }
     state.call(packedAddr, _callArgs, -1, numCallArgs)
   }
   private def callWithReturnValue(numCallArgs: Int) {
     val packedAddr = nextOperand
-    for (i <- 0 until numCallArgs) {
+    var i = 0
+    while (i < numCallArgs) {
       _callArgs(i) = nextOperand
+      i += 1
     }
     val storeVar = state.nextByte
     state.call(packedAddr, _callArgs, storeVar, numCallArgs)
@@ -209,11 +213,13 @@ class Machine {
   private def callWithReturnValueVs2(numCallArgs: Int) {
     //printf("CALL_VS2 #ARGS = %d PC = %02x\n", numCallArgs, state.pc)
     val packedAddr = nextOperand
-    for (i <- 0 until numCallArgs) {
+    var i = 0
+    while (i < numCallArgs) {
       val argnum  = _currentArg - 1
       val vartype = _decodeInfo.types(argnum)
       _callArgs(i) = nextOperand
       //printf("ARG(%d) = %02x, TYPE = %d, ", argnum, _callArgs(i), vartype)
+      i += 1
     }
     //println
     //printf("CALL_VS2 PC AFTER ARGS = %02x\n", state.pc)
@@ -328,8 +334,10 @@ class Machine {
       case 0x01 => // je -> Note: Variable number of arguments !!!
         var equalsAny = false
         val first = nextOperand
-        for (i <- 1 until numOperands) {
+        var i = 1
+        while (i < numOperands) {
           if (nextOperand == first) equalsAny = true
+          i += 1
         }
         decideBranch(equalsAny)
       case 0x02 => // jl
@@ -666,9 +674,11 @@ class Machine {
       case 0x15 => // pop_stack
         val numItems = nextOperand
         val userStack = if (_decodeInfo.numOperands > 1) nextOperand else 0
-        for (i <- 0 until numItems) {
+        var i = 0
+        while (i < numItems) {
           if (userStack == 0) state.variableValue(0)
           else state.popUserStack(userStack)
+          i += 1
         }
       case 0x16 => // read_mouse
         fatal("@read_mouse not supported yet")
@@ -723,13 +733,13 @@ class Machine {
     val isWordType   = (form & 0x80) == 0x80
     val fieldLength = form & 0x7f
     var current = table
-    var found = false
-    
-    for (i <- 0 until len) {
+    var i = 0
+    while (i < len) {
       val currentValue = if (isWordType) state.shortAt(current)
                          else state.byteAt(current)
       if (currentValue == x) return current
       current += fieldLength
+      i += 1
     }
     0
   }
