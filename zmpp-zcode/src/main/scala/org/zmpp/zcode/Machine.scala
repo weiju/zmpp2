@@ -58,7 +58,7 @@ class Machine {
   // transient information, current routine decoding data
   private[this] val _callArgs    = new Array[Int](8)
   private[this] var _currentArg  = 0
-  var iterations  = 1
+  private[this] var _iterations  = 1
 
   def init(story: Memory, screenModel: ScreenModel) {
     state.reset(story)
@@ -872,10 +872,15 @@ class Machine {
     val oldpc = state.pc
     decodeInstruction
     decodeForm
+    
+/*
+    // don't do this when in production - maybe a preprocessor should
+    // be hooked in
     if (verbose) {
-      printf("%04d - $%05x: %s %s\n", iterations, oldpc,
+      printf("%04d - $%05x: %s %s\n", _iterations, oldpc,
              _decodeInfo.opcodeName(version), makeOperandString)
     }
+*/
     // execute
     import Instruction._
     (_decodeInfo.operandCount: @switch) match {
@@ -886,7 +891,8 @@ class Machine {
       case -2 => executeExt // OperandCountExt
       case _ => fatal("operand count not supported: %s\n".format(_decodeInfo.toString))
     }
-    iterations += 1
+    // don't do this when in production (preprocessor ?)
+    //_iterations += 1
   }
 
   def setFontSizeInUnits(width: Int, height: Int) {

@@ -133,20 +133,22 @@ class StoryHeader(story: Memory) {
 // value that might get stored is the return address in the call frame
 // (only happens on a push).
 class Stack {
-  private val _values = new Array[Int](1024)
-  var sp = 0
+  private[this] val _values = new Array[Int](1024)
+  private[this] var _sp = 0
   
+  def sp = _sp
+  def sp_=(value: Int) = _sp = value
   def push(value: Int) {
     _values(sp) = value
-    sp += 1
+    _sp += 1
   }
   def pop = {
-    sp -= 1
-    _values(sp) & 0xffff
+    _sp -= 1
+    _values(_sp) & 0xffff
   }
-  def top = _values(sp - 1)
+  def top = _values(_sp - 1)
   def replaceTopWith(value: Int) {
-    _values(sp - 1) = value
+    _values(_sp - 1) = value
   }
 
   // there is only one single case where we need this function: return
@@ -156,16 +158,16 @@ class Stack {
   def setValueAt(index: Int, value: Int) = _values(index) = value
   override def toString = {
     val builder = new StringBuilder
-    for (i <- 0 until sp) {
+    for (i <- 0 until _sp) {
       builder.append("%d ".format(_values(i)))
     }
     builder.toString
   }
 
   def cloneValues : Array[Int] = {
-    val values = new Array[Int](sp)
+    val values = new Array[Int](_sp)
     var i = 0
-    while (i < sp) {
+    while (i < _sp) {
       values(i) = _values(i)
       i += 1
     }
@@ -178,7 +180,7 @@ class Stack {
       _values(i) = values(i)
       i += 1
     }
-    sp = values.length
+    _sp = values.length
   }
 }
 
