@@ -16,9 +16,13 @@ object Zmpp2 extends Build {
   )
 
   def appSettings = assemblySettings ++ testDependencies
+  def zmppSwingSettings = appSettings ++ Seq(
+    mainClass in assembly := Some("org.zmpp.glulx.swing.GlulxMain")
+  )
 
   lazy val root = Project("root", file(".")) aggregate(zmpp_swing, zmpp_zcode, zmpp_tads3)
-  lazy val zmpp_swing = Project("zmpp-swing", file("zmpp-swing")) dependsOn(common, glulx, glk)
+  lazy val zmpp_swing = Project("zmpp-swing",
+                                file("zmpp-swing")) settings (zmppSwingSettings: _*) dependsOn(common, glulx, glk)
   lazy val zmpp_zcode = Project("zmpp-zcode",
                                 file("zmpp-zcode")) settings (appSettings: _*) dependsOn(common)
   lazy val zmpp_tads3 = Project("zmpp-tads3", file("zmpp-tads3")) settings(testDependencies :_*) dependsOn(common)
@@ -28,4 +32,3 @@ object Zmpp2 extends Build {
 
   def testDependencies = libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "1.6.1" % "test", "junit" % "junit" % "4.9" % "test")
 }
-

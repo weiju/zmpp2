@@ -107,27 +107,25 @@ object ExecutionControl {
   }  
 }
 
-object GlulxMain {
-  def main(args: Array[String]) {
-    val filename = if (args.length == 0) {
-      // FileChooser
-      val fileChooser = new JFileChooser
-      val result = fileChooser.showOpenDialog(null)
-      if (result == JFileChooser.APPROVE_OPTION)
-        fileChooser.getSelectedFile.getAbsolutePath
-      else null
-    } else args(0)
-    val frame = new GlkFrameUI
-    frame.addWindowListener(new WindowAdapter {
-      override def windowOpened(evt: WindowEvent) {
-        frame.initMetrics
-        ExecutionControl.runStory(frame, filename)
-      }
-    })
-    frame.setTitle("ZMPP Glulx 1.0")
-    frame.setPreferredSize(new Dimension(640, 480))
-    frame.pack
-    frame.setVisible(true)
-  }
+object GlulxMain extends App {
+  val filename = if (args.length == 0) {
+    // FileChooser
+    val fileChooser = new JFileChooser
+    val result = fileChooser.showOpenDialog(null)
+    if (result == JFileChooser.APPROVE_OPTION)
+      fileChooser.getSelectedFile.getAbsolutePath
+    else null
+  } else args(0)
+  val frame = new GlkFrameUI
+  frame.addWindowListener(new WindowAdapter {
+    override def windowOpened(evt: WindowEvent) {
+      frame.initMetrics
+      ExecutionControl.runStory(frame, filename)
+    }
+  })
+  frame.setTitle("ZMPP Glulx 1.0")
+  frame.setPreferredSize(new Dimension(640, 480))
+  frame.pack
+  frame.setVisible(true)
 }
 

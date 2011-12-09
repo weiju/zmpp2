@@ -1542,7 +1542,7 @@ class GlulxVM {
     val pc = state.pc
     decodeOpcodeNum
     readOperands
-
+/*
     // for debugging
     val builder = new StringBuilder
     builder.append("%04d: $%04x - @%s".format(iterations, pc, Opcodes.name(_opcodeNum)))
@@ -1553,7 +1553,7 @@ class GlulxVM {
     builder.append(" {FP = %d SP = %d} ".format(state.fp, state.sp))
     builder.append(" " + state.stackValuesAsString)
     logger.info(builder.toString)
-    
+*/  
     executeInstruction
     iterations += 1
   }
