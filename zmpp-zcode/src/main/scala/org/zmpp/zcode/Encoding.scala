@@ -37,7 +37,11 @@ abstract class Alphabet {
   def name: String
 
   def charCodeFor(c: Char): Int = {
-    for (i <- 0 until table.length) if (table(i) == c) return i + 6
+    var i = 0
+    while (i < table.length) {
+      if (table(i) == c) return i + 6
+      i += 1
+    }
     throw new IllegalArgumentException("Character '%c' not found".format(c))
   }
   def contains(c: Char) = table.filter{tableChar => c == tableChar}.length > 0

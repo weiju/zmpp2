@@ -47,6 +47,8 @@ case object SupportsMenus       extends CapabilityFlag
 case object SupportsPictures    extends CapabilityFlag
 
 class StoryHeader(story: Memory) {
+  private[this] var serial: Array[Byte] = null
+
   def version             = story.byteAt(0x00)
   def flags1              = story.byteAt(0x01)
   def releaseNumber       = story.shortAt(0x02)
@@ -58,9 +60,15 @@ class StoryHeader(story: Memory) {
   def staticStart         = story.shortAt(0x0e)
   def flags2              = story.shortAt(0x10)
   def serialNumber        = {
-    val result = new Array[Byte](6)
-    for (i <- 0 until 6) result(i) = story.byteAt(0x12 + i).asInstanceOf[Byte]
-    result
+    if (serial == null) {
+      serial = new Array[Byte](6)
+      var i = 0
+      while (i < 6) {
+        serial(i) = story.byteAt(0x12 + i).asInstanceOf[Byte]
+        i += 1
+      }
+    }
+    serial
   }
   def abbrevTable         = story.shortAt(0x18)
   def fileLength          = {
@@ -156,12 +164,20 @@ class Stack {
 
   def cloneValues : Array[Int] = {
     val values = new Array[Int](sp)
-    for (i <- 0 until sp) values(i) = _values(i)
+    var i = 0
+    while (i < sp) {
+      values(i) = _values(i)
+      i += 1
+    }
     values
   }
 
   def initFromArray(values: Array[Int]) {
-    for (i <- 0 until values.length) _values(i) = values(i)
+    var i = 0
+    while (i < values.length) {
+      _values(i) = values(i)
+      i += 1
+    }
     sp = values.length
   }
 }
@@ -375,16 +391,24 @@ class VMStateImpl extends VMState {
       _stack.push(numLocals)
       pc = routineAddr + 1 // place PC after routine header
 
+      var i = 0
       if (header.version <= 4) {
-        for (i <- 0 until numLocals) _stack.push(nextShort)
+        while (i < numLocals) {
+          _stack.push(nextShort)
+          i += 1
+        }
       } else {
-        for (i <- 0 until numLocals) _stack.push(0)
+        while (i < numLocals) {
+          _stack.push(0)
+          i += 1
+        }
       }
       // set arguments to locals, throw away excess parameters (6.4.4.1)
       val numParams = if (numArgs <= numLocals) numArgs else numLocals
-
-      for (i <- 0 until numParams) {
+      i = 0
+      while (i < numParams) {
         _stack.setValueAt(fp + FrameOffset.Locals + i, args(i))
+        i += 1
       }
     }
   }
