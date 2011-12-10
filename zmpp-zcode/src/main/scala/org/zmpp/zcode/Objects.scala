@@ -35,10 +35,10 @@ class PropertyDoesNotExistException extends Exception
  * The concept separating into V1-V3 and V4-V8 object tables is kept from
  * ZMPP 1.x (this is actually just the Scala port of the ZMPP 1.x object table)
  */
-abstract class ObjectTable(protected val _vm: Machine) {
+abstract class ObjectTable(protected val _vmState: VMState) {
 
   // this is accessed often, so we store it here
-  protected val objectTableAddress = _vm.state.header.objectTable
+  protected val objectTableAddress = _vmState.header.objectTable
 
   def removeObject(obj: Int) {
     val oldParent = parent(obj)
@@ -83,34 +83,34 @@ abstract class ObjectTable(protected val _vm: Machine) {
   def setSibling(obj: Int, newSibling: Int)
   
   def isAttributeSet(obj: Int, attr: Int) = {
-    val value = _vm.state.byteAt(attributeAddress(obj, attr))
+    val value = _vmState.byteAt(attributeAddress(obj, attr))
     (value & (0x80 >> (attr & 7))) > 0
   }
   
   def setAttribute(obj: Int, attr: Int) {
     if (obj > 0) { 
       val attrAddress = attributeAddress(obj, attr)
-      val value = _vm.state.byteAt(attrAddress)
-      _vm.state.setByteAt(attrAddress, value | (0x80 >> (attr & 7)))
+      val value = _vmState.byteAt(attrAddress)
+      _vmState.setByteAt(attrAddress, value | (0x80 >> (attr & 7)))
     }
   }
   def clearAttribute(obj: Int, attr: Int) {
     if (obj > 0) {
       val attrAddress = attributeAddress(obj, attr)
-      val value = _vm.state.byteAt(attrAddress)
-      _vm.state.setByteAt(attrAddress, value & ~(0x80 >> (attr & 7)))
+      val value = _vmState.byteAt(attrAddress)
+      _vmState.setByteAt(attrAddress, value & ~(0x80 >> (attr & 7)))
     }
   }
 
-  def propertyTableAddress(obj: Int) = _vm.state.shortAt(objectAddress(obj) +
+  def propertyTableAddress(obj: Int) = _vmState.shortAt(objectAddress(obj) +
                                                          objectEntrySize - 2)
   def propertyValue(obj: Int, prop: Int): Int = {
     val propAddr = propertyAddress(obj, prop)
     if (propAddr == 0) propertyDefault(prop)
     else {
-      if (propertyLength(propAddr) == 1) _vm.state.byteAt(propAddr)
+      if (propertyLength(propAddr) == 1) _vmState.byteAt(propAddr)
       // 2 is assumed if longer, we just write two bytes
-      else _vm.state.shortAt(propAddr)
+      else _vmState.shortAt(propAddr)
     }
   }
 
@@ -119,9 +119,9 @@ abstract class ObjectTable(protected val _vm: Machine) {
     if (propAddr == 0) throw new PropertyDoesNotExistException
     else {
       if (propertyLength(propAddr) == 1) {
-        _vm.state.setByteAt(propAddr, value & 0xff)
+        _vmState.setByteAt(propAddr, value & 0xff)
       } else {
-        _vm.state.setShortAt(propAddr, value & 0xffff)
+        _vmState.setShortAt(propAddr, value & 0xffff)
       }
     }
   }
@@ -143,8 +143,7 @@ abstract class ObjectTable(protected val _vm: Machine) {
     else {
       val propDataAddr = propertyAddress(obj, prop)
       if (propDataAddr == 0) {
-        _vm.fatal("property %d of object %d not available.".format(prop, obj))
-        0
+        throw new PropertyDoesNotExistException
       } else {
         propertyNum(propDataAddr + propertyLength(propDataAddr))
       }
@@ -167,69 +166,69 @@ abstract class ObjectTable(protected val _vm: Machine) {
   private def attributeAddress(obj: Int, attr: Int) =
     objectAddress(obj) + attr / 8
   private def propertyDefault(prop: Int) = {
-    _vm.state.shortAt(objectTableAddress + ((prop - 1) << 1))
+    _vmState.shortAt(objectTableAddress + ((prop - 1) << 1))
   }
   private def propertyEntriesStart(obj: Int) = {
     val propTableAddr = propertyTableAddress(obj)
-    propTableAddr + (_vm.state.byteAt(propTableAddr) << 1) + 1
+    propTableAddr + (_vmState.byteAt(propTableAddr) << 1) + 1
   }  
 }
 
-class ClassicObjectTable(vm: Machine) extends ObjectTable(vm) {
-  def parent(obj: Int)  = _vm.state.byteAt(objectAddress(obj) + 4)
+class ClassicObjectTable(vmState: VMState) extends ObjectTable(vmState) {
+  def parent(obj: Int)  = _vmState.byteAt(objectAddress(obj) + 4)
   def setParent(obj: Int, newParent: Int) {
-    _vm.state.setByteAt(objectAddress(obj) + 4, newParent)
+    _vmState.setByteAt(objectAddress(obj) + 4, newParent)
   }
-  def sibling(obj: Int) = _vm.state.byteAt(objectAddress(obj) + 5)
+  def sibling(obj: Int) = _vmState.byteAt(objectAddress(obj) + 5)
   def setSibling(obj: Int, newSibling: Int) = {
-    _vm.state.setByteAt(objectAddress(obj) + 5, newSibling)
+    _vmState.setByteAt(objectAddress(obj) + 5, newSibling)
   }
-  def child(obj: Int)   = _vm.state.byteAt(objectAddress(obj) + 6)
+  def child(obj: Int)   = _vmState.byteAt(objectAddress(obj) + 6)
   def setChild(obj: Int, newChild: Int)   = {
-    _vm.state.setByteAt(objectAddress(obj) + 6, newChild)
+    _vmState.setByteAt(objectAddress(obj) + 6, newChild)
   }
 
   protected def propertyDefaultTableSize = 31 * 2
   protected def objectEntrySize          = 9
 
   protected def propertyNum(propAddr: Int) = {
-    _vm.state.byteAt(propAddr) - 32 * (propertyLength(propAddr + 1) - 1)
+    _vmState.byteAt(propAddr) - 32 * (propertyLength(propAddr + 1) - 1)
   }  
   def propertyLength(propDataAddr: Int) = {
     if (propDataAddr == 0) 0 // Note: defined in Z-Machine Standard 1.1
     else {
       // The size byte is always the byte before the property data in any
       // version, so this is consistent
-      _vm.state.byteAt(propDataAddr - 1) / 32 + 1
+      _vmState.byteAt(propDataAddr - 1) / 32 + 1
     }
   }
   protected def numPropertySizeBytes(propAddr: Int) = 1
 }
 
-class ModernObjectTable(vm: Machine) extends ObjectTable(vm) {
-  def parent(obj: Int)  = _vm.state.shortAt(objectAddress(obj) + 6)
+class ModernObjectTable(vmState: VMState) extends ObjectTable(vmState) {
+  def parent(obj: Int)  = _vmState.shortAt(objectAddress(obj) + 6)
   def setParent(obj: Int, newParent: Int) {
-    _vm.state.setShortAt(objectAddress(obj) + 6, newParent)
+    _vmState.setShortAt(objectAddress(obj) + 6, newParent)
   }
-  def sibling(obj: Int) = _vm.state.shortAt(objectAddress(obj) + 8)
+  def sibling(obj: Int) = _vmState.shortAt(objectAddress(obj) + 8)
   def setSibling(obj: Int, newSibling: Int) = {
-    _vm.state.setShortAt(objectAddress(obj) + 8, newSibling)
+    _vmState.setShortAt(objectAddress(obj) + 8, newSibling)
   }
   def child(obj: Int)   = {
-    _vm.state.shortAt(objectAddress(obj) + 10)
+    _vmState.shortAt(objectAddress(obj) + 10)
   }
   def setChild(obj: Int, newChild: Int)   = {
-    _vm.state.setShortAt(objectAddress(obj) + 10, newChild)
+    _vmState.setShortAt(objectAddress(obj) + 10, newChild)
   }
 
   protected def propertyDefaultTableSize = 63 * 2
   protected def objectEntrySize          = 14
   
-  protected def propertyNum(propAddr: Int) = _vm.state.byteAt(propAddr) & 0x3f
+  protected def propertyNum(propAddr: Int) = _vmState.byteAt(propAddr) & 0x3f
   def propertyLength(propDataAddr: Int) = {
     if (propDataAddr == 0) 0 // Z-Machine Standard 1.1
     else {
-      val sizeByte = _vm.state.byteAt(propDataAddr - 1)
+      val sizeByte = _vmState.byteAt(propDataAddr - 1)
       if ((sizeByte & 0x80) == 0x80) {
         val proplen = sizeByte & 0x3f
         if (proplen == 0) 64 // Standard 1.0 4.2.1.1
@@ -240,7 +239,7 @@ class ModernObjectTable(vm: Machine) extends ObjectTable(vm) {
     }
   }
   protected def numPropertySizeBytes(propAddr: Int) = {
-    if ((_vm.state.byteAt(propAddr) & 0x80) == 0x80) 2 else 1
+    if ((_vmState.byteAt(propAddr) & 0x80) == 0x80) 2 else 1
   }
 }
 

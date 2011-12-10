@@ -393,30 +393,6 @@ class VMStateImpl extends VMState {
   }
 }
 
-object Instruction {
-  val FormLong           = 0
-  val FormShort          = 1
-  val FormVar            = 2
-  val FormExt            = 3
-  val OperandCountVar    = -1
-  val OperandCountExtVar = -2
-}
-
-object OperandTypes {
-  val LargeConstant = 0x00
-  val SmallConstant = 0x01
-  val Variable      = 0x02
-  val Omitted       = 0x03
-  
-  def typeName(optype: Int) = optype match {
-    case LargeConstant => "LargeConstant"
-    case SmallConstant => "SmallConstant"
-    case Variable      => "Variable"
-    case Omitted       => "Omitted"
-    case _             => "???"
-  }
-}
-
 class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
                  var opcode: Int) {
   val types = new Array[Int](8)

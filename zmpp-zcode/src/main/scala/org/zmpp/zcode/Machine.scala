@@ -62,8 +62,8 @@ class Machine {
 
   def init(story: Memory, screenModel: ScreenModel) {
     state.reset(story)
-    objectTable = if (state.header.version <= 3) new ClassicObjectTable(this)
-                  else new ModernObjectTable(this)
+    objectTable = if (state.header.version <= 3) new ClassicObjectTable(state)
+                  else new ModernObjectTable(state)
     this.screenModel = screenModel
     ioSystem.reset(screenModel)
     state.setCapabilityFlags(screenModel.capabilities ++ List(SupportsUndo))
@@ -417,7 +417,11 @@ class Machine {
         val obj = nextOperand
         val property = nextOperand
         if (obj > 0) {
-          storeResult(objectTable.nextProperty(obj, property) & 0xffff)
+          try {
+            storeResult(objectTable.nextProperty(obj, property) & 0xffff)
+          } catch {
+            case _ => fatal("could not access property %d of object %d".format(property, obj))
+          }
         } else {
           warn("@get_next_prop illegal access to object " + obj)
           storeResult(0)
