@@ -29,8 +29,7 @@
 package org.zmpp.zcode
 
 import scala.annotation.switch
-import org.zmpp.base.VMRunStates
-import org.zmpp.base.Memory
+import org.zmpp.base.{VMRunStates, Memory, IntStack}
 import org.zmpp.iff.QuetzalCompression
 
 sealed class CapabilityFlag
@@ -129,61 +128,6 @@ class StoryHeader(story: Memory) {
   def isScoreGame = if (version < 3) true else (flags1 & 0x02) == 0
 }
 
-// cheap stack implementation. This stack holds int's, but the only int
-// value that might get stored is the return address in the call frame
-// (only happens on a push).
-class Stack {
-  private[this] val _values = new Array[Int](1024)
-  private[this] var _sp = 0
-  
-  def sp = _sp
-  def sp_=(value: Int) = _sp = value
-  def push(value: Int) {
-    _values(sp) = value
-    _sp += 1
-  }
-  def pop = {
-    _sp -= 1
-    _values(_sp) & 0xffff
-  }
-  def top = _values(_sp - 1)
-  def replaceTopWith(value: Int) {
-    _values(_sp - 1) = value
-  }
-
-  // there is only one single case where we need this function: return
-  // PCs.
-  def value32At(index: Int) = _values(index)
-  def valueAt(index: Int) = _values(index) & 0xffff // truncate to 16 bit
-  def setValueAt(index: Int, value: Int) = _values(index) = value
-  override def toString = {
-    val builder = new StringBuilder
-    for (i <- 0 until _sp) {
-      builder.append("%d ".format(_values(i)))
-    }
-    builder.toString
-  }
-
-  def cloneValues : Array[Int] = {
-    val values = new Array[Int](_sp)
-    var i = 0
-    while (i < _sp) {
-      values(i) = _values(i)
-      i += 1
-    }
-    values
-  }
-
-  def initFromArray(values: Array[Int]) {
-    var i = 0
-    while (i < values.length) {
-      _values(i) = values(i)
-      i += 1
-    }
-    _sp = values.length
-  }
-}
-
 object FrameOffset {
   val ReturnPC     = 0
   val OldFP        = 1
@@ -229,7 +173,7 @@ class VMStateImpl extends VMState {
   import QuetzalCompression._
 
   private var _story : Memory = null
-  private val _stack = new Stack
+  private val _stack = new IntStack
 
   var header     : StoryHeader   = null
   val encoding = new ZsciiEncoding(this)
@@ -247,7 +191,7 @@ class VMStateImpl extends VMState {
   def storyData = _story.buffer
 
   def reset {
-    _stack.sp = 0
+    _stack.setSp(0)
     // Set the initial frame pointer to -1. This is serving as a marker
     // when we search the stack to save
     fp        =  -1
@@ -418,7 +362,7 @@ class VMStateImpl extends VMState {
     val retpc    = _stack.value32At(fp + FrameOffset.ReturnPC)
     val oldfp    = _stack.valueAt(fp + FrameOffset.OldFP)
     val storeVar = _stack.valueAt(fp + FrameOffset.StoreVar)
-    _stack.sp = fp
+    _stack.setSp(fp)
     fp = oldfp
     pc = retpc
     setVariableValue(storeVar, retval)
@@ -427,7 +371,7 @@ class VMStateImpl extends VMState {
   def unwindStackToFramePointer(targetFramePointer: Int) {
     while (fp != targetFramePointer) {
       val oldfp = _stack.valueAt(fp + FrameOffset.OldFP)
-      _stack.sp = fp
+      _stack.setSp(fp)
       fp = oldfp
     }
   }
