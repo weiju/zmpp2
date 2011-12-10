@@ -36,7 +36,7 @@ import org.scalatest.junit.JUnitRunner
 import java.io._
 
 @RunWith(classOf[JUnitRunner])
-class MemorySpec extends FlatSpec with ShouldMatchers {
+class DefaultMemorySpec extends FlatSpec with ShouldMatchers {
 
   "DefaultMemory" should "be initialized" in {
     val data : Array[Byte] = Array(0x01, 0x02, 0x03, 0xff.toByte, 0xfe.toByte)
@@ -66,6 +66,34 @@ class MemorySpec extends FlatSpec with ShouldMatchers {
     mem.setByteAt(11, 255)
 
     mem.byteAt(11) should be (255)
+  }
+  // TODO: Tests for copying
+}
+
+@RunWith(classOf[JUnitRunner])
+class DefaultMemory0Spec extends FlatSpec with ShouldMatchers {
+
+  "DefaultMemory0" should "be initialized" in {
+    val data : Array[Byte] = Array(0x01, 0x02, 0x03, 0xff.toByte, 0xfe.toByte)
+    val mem = new DefaultMemory0(data)
+    mem.byteAt(0)  should be (1)
+    mem.byteAt(1)  should be (2)
+    mem.byteAt(2)  should be (3)
+    mem.byteAt(3)  should be (255)
+    mem.shortAt(3) should be (0xfffe)
+    mem.intAt(0)   should be (0x010203ff)
+  }
+  it should  "set/get" in {
+    val data = new Array[Byte](10)
+    val mem = new DefaultMemory0(data)
+
+    mem.setByteAt(0, 255)
+    mem.setShortAt(2, 65535)
+    mem.setIntAt(4, 6553500)
+
+    mem.byteAt(0) should be (255)
+    mem.shortAt(2) should be (65535)
+    mem.intAt(4) should be (6553500)
   }
   // TODO: Tests for copying
 }

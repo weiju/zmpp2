@@ -97,6 +97,14 @@ extends Memory with Comparable[DefaultMemory] {
   def containsAddress(addr: Int): Boolean =
     addr >= address && addr < address + size
   def compareTo(other: DefaultMemory) = address - other.address
+
+  def littleEndian = {
+/*
+    // TODO: Needed for TADS
+    byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+    */
+    this
+  }
 }
 
 object DefaultMemory {
@@ -125,51 +133,4 @@ extends java.io.InputStream {
   override def reset {
     position = mark
   }
-}
-
-// Since memory access is one of the most frequent operations, it makes sense
-// to have a 0 based memory class, that doesn't need to calculate indexes.
-class DefaultMemory0(_buffer:Array[Byte]) extends Memory {
-
-  def size = _buffer.length
-  def buffer = _buffer
-  def byteAt(addr: Int): Int = _buffer(addr) & 0xff
-  def setByteAt(addr: Int, value: Int) {
-    _buffer(addr) = (value & 0xff).asInstanceOf[Byte]
-  }
-  def shortAt(addr: Int): Int = {
-    ((_buffer(addr) & 0xff) << 8) | (_buffer(addr + 1) & 0xff)
-  }
-  def setShortAt(addr: Int, value: Int) {
-    _buffer(addr)     = ((value >>> 8) & 0xff).asInstanceOf[Byte]
-    _buffer(addr + 1) = (value & 0xff).asInstanceOf[Byte]
-  }
-  def intAt     (addr: Int): Int = {
-    ((_buffer(addr) & 0xff) << 24) | ((_buffer(addr + 1) & 0xff) << 16) |
-    ((_buffer(addr + 2) & 0xff) << 8) | (_buffer(addr + 3) & 0xff)    
-  }
-  def setIntAt  (addr: Int, value: Int) {
-    _buffer(addr)     = ((value >>> 24) & 0xff).asInstanceOf[Byte]
-    _buffer(addr + 1) = ((value >>> 16) & 0xff).asInstanceOf[Byte]
-    _buffer(addr + 2) = ((value >>> 8) & 0xff).asInstanceOf[Byte]
-    _buffer(addr + 3) = (value & 0xff).asInstanceOf[Byte]
-  }
-
-  def copyBytesTo(dest: Array[Byte], srcOffset: Int, numBytes: Int) {
-    if (dest.length < numBytes)
-      throw new IllegalArgumentException("data array size too small")
-    System.arraycopy(_buffer, srcOffset, dest, 0, numBytes)
-  }
-  def copyBytesTo(dstOffset: Int, srcOffset: Int, numBytes: Int) {
-    if ((_buffer.length < dstOffset + numBytes) ||
-        (_buffer.length < srcOffset + numBytes))
-      throw new IllegalArgumentException("copying over bounds")
-    System.arraycopy(_buffer, srcOffset, _buffer, dstOffset, numBytes)
-  }
-  def copyBytesFrom(src: Array[Byte], srcOffset: Int, dstOffset: Int,
-                    numBytes: Int) {
-    System.arraycopy(src, srcOffset, _buffer, dstOffset, numBytes)
-  }
-
-  def containsAddress(addr: Int): Boolean = addr >= 0 && addr < _buffer.length
 }

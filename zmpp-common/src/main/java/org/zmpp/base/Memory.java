@@ -1,5 +1,5 @@
 /*
- * Created on 2011/11/10
+ * Created on 2011/12/09
  * Copyright (c) 2010-2011, Wei-ju Wu.
  * All rights reserved.
  *
@@ -26,29 +26,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.base
+package org.zmpp.base;
 
-/**
- * A space-saving data structure that we can use to implement undo
- */
-class CircularStack[T](capacity: Int) {
-  private val buffer = Array.ofDim[AnyRef](capacity)
-  private var top: Int = 0
-  private var size = 0
-
-  def empty = size == 0
-  def push(elem: T) {
-    buffer(top) = elem.asInstanceOf[AnyRef]
-    top = (top + 1) % capacity
-    size += 1
-    if (size > capacity) size = capacity
-  }
-  def pop: T = {
-    var pos = top - 1
-    if (pos < 0) pos = capacity + pos
-    val result = buffer(pos)
-    size -= 1
-    top = pos
-    result.asInstanceOf[T]
-  }
+public interface Memory {
+    byte[] buffer();
+    int size();
+    int byteAt(int address);
+    void setByteAt(int address, int value);
+    int shortAt(int address);
+    void setShortAt(int address, int value);
+    int intAt(int address);
+    void setIntAt(int address, int value);
+    
+    // copying data
+    void copyBytesTo(byte[] dest, int srcOffset, int numBytes);
+    void copyBytesTo(int dstOffset, int srcOffset, int numBytes);  
+    void copyBytesFrom(byte[] src, int srcOffset, int destOffset,
+                       int numBytes);
 }
