@@ -128,16 +128,6 @@ class StoryHeader(story: Memory) {
   def isScoreGame = if (version < 3) true else (flags1 & 0x02) == 0
 }
 
-object FrameOffset {
-  val ReturnPC     = 0
-  val OldFP        = 1
-  val StoreVar     = 2
-  val NumArgs      = 3
-  val NumLocals    = 4
-  val Locals       = 5
-  val NumInfoWords = 5
-}
-
 object ZMachineRunStates {
   val Halted       = VMRunStates.Halted
   val Running      = VMRunStates.Running
@@ -146,13 +136,6 @@ object ZMachineRunStates {
   val SaveGame     = 12
   val RestoreGame  = 13
 }
-
-/**
- * An undo snapshot of the vm state, the dynamic memory is compressed
- * using the same method as Quetzal to reduce memory footprint
- */
-class Snapshot(val compressedDiff: Array[Byte], val stackValues: Array[Int],
-               val pc: Int, val fp: Int)
 
 trait VMState {
   def header: StoryHeader
@@ -479,11 +462,6 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
   }
 }
 
-class ReadLineInfo {
-  var textBuffer: Int    = 0
-  var parseBuffer: Int   = 0
-  var maxInputChars: Int = 0
-}
 
 object Oc2Op extends Enumeration {
   val Je          = Value(0x01, "JE")
