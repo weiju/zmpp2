@@ -171,12 +171,6 @@ class Machine {
   private def nextSignedOperand = Types.signExtend16(nextOperand)
   private def storeResult(result: Int) = state.setVariableValue(state.nextByte,
                                                                 result)
-
-  private def doBranch(branchOffset: Int) {
-    if (branchOffset == 0)      state.returnFromRoutine(0)
-    else if (branchOffset == 1) state.returnFromRoutine(1)
-    else                        state.pc += branchOffset - 2
-  }
   private def decideBranch(cond: Boolean) {
     val branchByte0 = state.nextByte
     val branchOnTrue = ((branchByte0 & 0x80) == 0x80)
@@ -189,7 +183,7 @@ class Machine {
         if ((branchOffsetVal & 0x2000) == 0x2000) branchOffsetVal | 0xffffc000
         else branchOffsetVal
       }
-    if (branchOnTrue && cond || !branchOnTrue && !cond) doBranch(branchOffset)
+    if (branchOnTrue && cond || !branchOnTrue && !cond) state.doBranch(branchOffset)
   }
   private def callWithoutReturnValue(numCallArgs: Int) {
     val packedAddr = nextOperand
@@ -312,7 +306,7 @@ class Machine {
       case 0x0b => state.returnFromRoutine(nextOperand) // ret
       case 0x0c => // jump
         val offset = nextSignedOperand
-        state.pc += offset - 2 // address
+        state.incrementPC(offset - 2) // address
       case 0x0d => // print_paddr
         state.encoding.decodeZStringAtPackedAddress(nextOperand,
                                                     ioSystem)

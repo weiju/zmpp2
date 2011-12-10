@@ -281,7 +281,7 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
     dataIn.readByte // skip pad byte
     printf("IFhd read, restore PC = $%04x\n", restorePc)
     verifyStory(release, serial, checksum)
-    vmState.pc = restorePc
+    vmState.setPC(restorePc)
     22
   }
 

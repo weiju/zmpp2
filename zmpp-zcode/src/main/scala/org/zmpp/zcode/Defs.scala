@@ -45,88 +45,6 @@ case object SupportsMouse       extends CapabilityFlag
 case object SupportsMenus       extends CapabilityFlag
 case object SupportsPictures    extends CapabilityFlag
 
-class StoryHeader(story: Memory) {
-  private[this] var serial: Array[Byte] = null
-
-  def version             = story.byteAt(0x00)
-  def flags1              = story.byteAt(0x01)
-  def releaseNumber       = story.shortAt(0x02)
-  def himemStart          = story.shortAt(0x04)
-  def startPC             = story.shortAt(0x06)
-  def dictionary          = story.shortAt(0x08)
-  def objectTable         = story.shortAt(0x0a)
-  def globalVars          = story.shortAt(0x0c)
-  def staticStart         = story.shortAt(0x0e)
-  def flags2              = story.shortAt(0x10)
-  def serialNumber        = {
-    if (serial == null) {
-      serial = new Array[Byte](6)
-      var i = 0
-      while (i < 6) {
-        serial(i) = story.byteAt(0x12 + i).asInstanceOf[Byte]
-        i += 1
-      }
-    }
-    serial
-  }
-  def abbrevTable         = story.shortAt(0x18)
-  def fileLength          = {
-    val factor = if (version <= 3) 2
-                 else if (version == 4 || version == 5) 4
-                 else 8
-    story.shortAt(0x1a) * factor
-  }
-  def checksum            = story.shortAt(0x1c)
-  def terpNumber          = story.shortAt(0x1e) // V4
-  def terpVersion         = story.shortAt(0x1f) // V4
-  def screenHeight        = story.byteAt(0x20) // V4
-  def screenWidth         = story.byteAt(0x21) // V4
-  def screenWidthUnits    = story.shortAt(0x22) // V5
-  def screenHeightUnits   = story.shortAt(0x24) // V5
-  def fontWidthUnits      = {
-    if (version == 6) story.shortAt(0x27)
-    else story.shortAt(0x26)
-  }
-  def fontHeightUnits     = {
-    if (version == 6) story.shortAt(0x26)
-    else story.shortAt(0x27)
-  }
-  def routinesOffset      = story.shortAt(0x28)
-  def staticStringsOffset = story.shortAt(0x2a)
-  def defaultBackground   = story.shortAt(0x2c)
-  def defaultForeground   = story.shortAt(0x2e)
-  def pixelWidthInStream3_=(width: Int) = story.setShortAt(0x30, width)
-  def standardRevision_=(revision: Int) = story.setShortAt(0x32, revision)
-  def alphabetTable       = story.shortAt(0x34)
-  def headerExtTable      = story.shortAt(0x36)
-  
-  def unpackRoutineAddress(addr: Int) = {
-    version match {
-      case 1 => addr << 1
-      case 2 => addr << 1
-      case 3 => addr << 1
-      case 4 => addr << 2
-      case 5 => addr << 2
-      case 6 => (addr << 2) + (routinesOffset << 3)
-      case 7 => (addr << 2) + (routinesOffset << 3)
-      case 8 => addr << 3
-    }
-  }
-  def unpackStringAddress(addr: Int) = {
-    version match {
-      case 1 => addr << 1
-      case 2 => addr << 1
-      case 3 => addr << 1
-      case 4 => addr << 2
-      case 5 => addr << 2
-      case 6 => (addr << 2) + (staticStringsOffset << 3)
-      case 7 => (addr << 2) + (staticStringsOffset << 3)
-      case 8 => addr << 3
-    }
-  }
-  
-  def isScoreGame = if (version < 3) true else (flags1 & 0x02) == 0
-}
 
 object ZMachineRunStates {
   val Halted       = VMRunStates.Halted
@@ -135,21 +53,6 @@ object ZMachineRunStates {
   val ReadChar     = 11
   val SaveGame     = 12
   val RestoreGame  = 13
-}
-
-trait VMState {
-  def header: StoryHeader
-  def encoding: ZsciiEncoding
-  def runState: Int
-  def pc: Int
-  def pc_=(newpc: Int)
-
-  def byteAt(addr: Int): Int
-  def shortAt(addr: Int): Int
-  def intAt(addr: Int): Int
-  def setByteAt(addr: Int, value: Int)
-  def setShortAt(addr: Int, value: Int)
-  def setIntAt(addr: Int, value: Int)
 }
 
 class VMStateImpl extends VMState {
@@ -166,12 +69,15 @@ class VMStateImpl extends VMState {
   // restart, undo snapshots and saving
   var originalDynamicMem: Array[Byte] = null
 
-  var pc       = 0
+  var _pc       = 0
   var fp       = 0 // frame pointer
   def sp       = _stack.sp
   def stack    = _stack
 
   def storyData = _story.buffer
+  def pc = _pc
+  def setPC(newpc: Int) = _pc = newpc
+  def incrementPC(increment: Int) = _pc += increment
 
   def reset {
     _stack.setSp(0)
@@ -179,7 +85,7 @@ class VMStateImpl extends VMState {
     // when we search the stack to save
     fp        =  -1
     if (header.version != 6) {
-      pc = header.startPC      
+      _pc = header.startPC      
     } else {
       // V6 does function call to main routine
       call(header.startPC, null, -1, 0)
@@ -246,11 +152,11 @@ class VMStateImpl extends VMState {
   }
   
   def nextByte = {
-    pc += 1
+    _pc += 1
     _story.byteAt(pc - 1)
   }
   def nextShort = {
-    pc += 2
+    _pc += 2
     _story.shortAt(pc - 2)
   }
   def stackEmpty = _stack.sp == 0
@@ -293,13 +199,13 @@ class VMStateImpl extends VMState {
   def nextOperand(operandType: Int) = {
     (operandType: @switch) match {
       case 0 => // large
-        pc += 2
+        _pc += 2
         _story.shortAt(pc - 2)
       case 1 => // small
-        pc += 1
+        _pc += 1
         _story.byteAt(pc - 1)
       case 2 => // var
-        pc += 1
+        _pc += 1
         variableValue(_story.byteAt(pc - 1))
     }
   }
@@ -318,7 +224,7 @@ class VMStateImpl extends VMState {
       _stack.push(storeVar)
       _stack.push(numArgs)
       _stack.push(numLocals)
-      pc = routineAddr + 1 // place PC after routine header
+      _pc = routineAddr + 1 // place PC after routine header
 
       var i = 0
       if (header.version <= 4) {
@@ -347,7 +253,7 @@ class VMStateImpl extends VMState {
     val storeVar = _stack.valueAt(fp + FrameOffset.StoreVar)
     _stack.setSp(fp)
     fp = oldfp
-    pc = retpc
+    _pc = retpc
     setVariableValue(storeVar, retval)
   }
 
@@ -370,7 +276,7 @@ class VMStateImpl extends VMState {
     decompressDiffBytes(snapshot.compressedDiff, originalDynamicMem,
                         storyData, header.staticStart)
     _stack.initFromArray(snapshot.stackValues)
-    pc = snapshot.pc
+    _pc = snapshot.pc
     fp = snapshot.fp
   }
 
@@ -390,6 +296,13 @@ class VMStateImpl extends VMState {
     })
     setByteAt(0x01, flags1)
     setByteAt(0x10, flags2)
+  }
+
+
+  def doBranch(branchOffset: Int) {
+    if (branchOffset == 0)      returnFromRoutine(0)
+    else if (branchOffset == 1) returnFromRoutine(1)
+    else                        _pc += branchOffset - 2
   }
 }
 
