@@ -45,16 +45,6 @@ case object SupportsMouse       extends CapabilityFlag
 case object SupportsMenus       extends CapabilityFlag
 case object SupportsPictures    extends CapabilityFlag
 
-
-object ZMachineRunStates {
-  val Halted       = VMRunStates.Halted
-  val Running      = VMRunStates.Running
-  val ReadLine     = VMRunStates.WaitForEvent
-  val ReadChar     = 11
-  val SaveGame     = 12
-  val RestoreGame  = 13
-}
-
 class VMStateImpl extends VMState {
   import QuetzalCompression._
 
@@ -303,50 +293,5 @@ class VMStateImpl extends VMState {
     if (branchOffset == 0)      returnFromRoutine(0)
     else if (branchOffset == 1) returnFromRoutine(1)
     else                        _pc += branchOffset - 2
-  }
-}
-
-class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
-                 var opcode: Int) {
-  val types = new Array[Int](8)
-  var numOperands = 0
-
-  def set(f: Int, oc: Int, opn: Int, b0: Int) = {
-    form         = f
-    operandCount = oc
-    opnum        = opn
-    opcode       = b0
-    this
-  }
-  override def toString = {
-    opcodeName(5)
-  }
-  private def formName = {
-    form match {
-      case Instruction.FormLong  => "Long"
-      case Instruction.FormShort => "Short"
-      case Instruction.FormVar   => "Var"
-      case Instruction.FormExt   => "Ext"
-      case _         => "???"
-    }
-  }
-  private def opCount = {
-    if (operandCount == Instruction.OperandCountVar) "Var"
-    else "%dOP".format(operandCount)
-  }
-  def isCallVx2 = {
-    operandCount == Instruction.OperandCountVar &&
-    (opnum == 0x1a || opnum == 0x0c)
-  }
-
-  def opcodeName(version: Int) = {
-    operandCount match {
-      case 0 => Oc0Op.opcodeName(opnum, version)
-      case 1 => Oc1Op.opcodeName(opnum, version)
-      case 2 => Oc2Op.opcodeName(opnum, version)
-      case Instruction.OperandCountVar    => OcVar.opcodeName(opnum, version)
-      case Instruction.OperandCountExtVar => OcExt.opcodeName(opnum, version)
-      case _         => "???"
-    }
   }
 }

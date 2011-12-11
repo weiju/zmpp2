@@ -30,7 +30,7 @@ package org.zmpp.zcode;
 
 import org.zmpp.base.Memory;
 
-class StoryHeader {
+public class StoryHeader {
     private Memory story;
     private byte[] serial;
     // we make the version public, this is one of the most frequently used fields
