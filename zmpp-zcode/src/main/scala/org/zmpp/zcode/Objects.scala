@@ -28,8 +28,6 @@
  */
 package org.zmpp.zcode
 
-class PropertyDoesNotExistException extends Exception
-
 /**
  * The object table is basically an updatable view into the Z-Machine's memory.
  * The concept separating into V1-V3 and V4-V8 object tables is kept from

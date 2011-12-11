@@ -32,19 +32,6 @@ import scala.annotation.switch
 import org.zmpp.base.{VMRunStates, Memory, IntStack}
 import org.zmpp.iff.QuetzalCompression
 
-sealed class CapabilityFlag
-case object SupportsColors      extends CapabilityFlag
-case object SupportsUndo        extends CapabilityFlag
-case object SupportsBoldFont    extends CapabilityFlag
-case object SupportsItalicFont  extends CapabilityFlag
-case object SupportsFixedFont   extends CapabilityFlag
-case object SupportsTimedInput  extends CapabilityFlag
-case object SupportsSound       extends CapabilityFlag
-case object SupportsScreenSplit extends CapabilityFlag
-case object SupportsMouse       extends CapabilityFlag
-case object SupportsMenus       extends CapabilityFlag
-case object SupportsPictures    extends CapabilityFlag
-
 class VMStateImpl extends VMState {
   import QuetzalCompression._
 
@@ -271,6 +258,8 @@ class VMStateImpl extends VMState {
   }
 
   def setCapabilityFlags(flags: List[CapabilityFlag]) {
+    import CapabilityFlag._
+
     var flags1 = byteAt(0x01)
     var flags2 = byteAt(0x10)
     flags.foreach(flag => flag match {

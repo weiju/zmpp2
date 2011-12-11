@@ -66,7 +66,7 @@ class Machine {
                   else new ModernObjectTable(state)
     this.screenModel = screenModel
     ioSystem.reset(screenModel)
-    state.setCapabilityFlags(screenModel.capabilities ++ List(SupportsUndo))
+    state.setCapabilityFlags(screenModel.capabilities ++ List(CapabilityFlag.SupportsUndo))
   }
   def version = state.header.version 
 
