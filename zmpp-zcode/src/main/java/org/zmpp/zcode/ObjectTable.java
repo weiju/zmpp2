@@ -28,6 +28,8 @@
  */
 package org.zmpp.zcode;
 
+import org.zmpp.base.Memory;
+
 /**
  * The object table is basically an updatable view into the Z-Machine's memory.
  * The concept separating into V1-V3 and V4-V8 object tables is kept from
@@ -35,12 +37,16 @@ package org.zmpp.zcode;
  */
 public abstract class ObjectTable {
     
-    protected VMState _vmState;
+    protected Memory story;
     protected int objectTableAddress;
+    // Optimization(ugly): set by derived classes. Because we access them
+    // so often, we take care of inlining these ourselves.
+    protected int objectTreeStart;
+    protected int objectEntrySize;
 
-    public ObjectTable(VMState state) {
-        _vmState = state;
-        objectTableAddress = _vmState.header().objectTable();
+    public ObjectTable(Memory story, int objectTableAddress) {
+        this.story = story;
+        this.objectTableAddress = objectTableAddress;
     }
 
     public void removeObject(int obj) {
@@ -86,37 +92,37 @@ public abstract class ObjectTable {
     protected abstract void setSibling(int obj, int newSibling);
 
     public boolean isAttributeSet(int obj, int attr) {
-        int value = _vmState.byteAt(attributeAddress(obj, attr));
+        int value = story.byteAt(attributeAddress(obj, attr));
         return (value & (0x80 >> (attr & 7))) > 0;
     }
 
     public void setAttribute(int obj, int attr) {
         if (obj > 0) { 
             int attrAddress = attributeAddress(obj, attr);
-            int value = _vmState.byteAt(attrAddress);
-            _vmState.setByteAt(attrAddress, value | (0x80 >> (attr & 7)));
+            int value = story.byteAt(attrAddress);
+            story.setByteAt(attrAddress, value | (0x80 >> (attr & 7)));
         }
     }
 
     public void clearAttribute(int obj, int attr) {
         if (obj > 0) {
             int attrAddress = attributeAddress(obj, attr);
-            int value = _vmState.byteAt(attrAddress);
-            _vmState.setByteAt(attrAddress, value & ~(0x80 >> (attr & 7)));
+            int value = story.byteAt(attrAddress);
+            story.setByteAt(attrAddress, value & ~(0x80 >> (attr & 7)));
         }
     }
 
     public int propertyTableAddress(int obj) {
-        return _vmState.shortAt(objectAddress(obj) + objectEntrySize() - 2);
+        return story.shortAt(objectAddress(obj) + objectEntrySize - 2);
     }
 
     public int propertyValue(int obj, int prop) {
         int propAddr = propertyAddress(obj, prop);
         if (propAddr == 0) return propertyDefault(prop);
         else {
-            if (propertyLength(propAddr) == 1) return _vmState.byteAt(propAddr);
+            if (propertyLength(propAddr) == 1) return story.byteAt(propAddr);
             // 2 is assumed if longer, we just write two bytes
-            else return _vmState.shortAt(propAddr);
+            else return story.shortAt(propAddr);
         }
     }
 
@@ -126,19 +132,20 @@ public abstract class ObjectTable {
         if (propAddr == 0) throw new PropertyDoesNotExistException();
         else {
             if (propertyLength(propAddr) == 1) {
-                _vmState.setByteAt(propAddr, value & 0xff);
+                story.setByteAt(propAddr, value & 0xff);
             } else {
-                _vmState.setShortAt(propAddr, value & 0xffff);
+                story.setShortAt(propAddr, value & 0xffff);
             }
         }
     }
 
-    public int propertyAddress(int obj, int prop) {
+    public final int propertyAddress(final int obj, final int prop) {
         int propAddr = propertyEntriesStart(obj);
+        int propnum, numPropSizeBytes;
         while (true) {
-            int propnum = propertyNum(propAddr);
+            propnum = propertyNum(propAddr);
             if (propnum == 0) return 0;
-            int numPropSizeBytes = numPropertySizeBytes(propAddr);
+            numPropSizeBytes = numPropertySizeBytes(propAddr);
             if (propnum == prop) return propAddr + numPropSizeBytes;
             propAddr += numPropSizeBytes + propertyLength(propAddr + numPropSizeBytes);
         }
@@ -157,18 +164,12 @@ public abstract class ObjectTable {
     }
 
     // Protected members
-    protected int objectTreeStart() {
-        return objectTableAddress + propertyDefaultTableSize();
-    }
-
     protected int objectAddress(int obj) {
-        return objectTreeStart() + (obj - 1) * objectEntrySize();
+        return objectTreeStart + (obj - 1) * objectEntrySize;
     }
 
     // abstract members
     public abstract int propertyLength(int propDataAddr);
-    protected abstract int propertyDefaultTableSize();
-    protected abstract int objectEntrySize();
     protected abstract int propertyNum(int propAddr);
     protected abstract int numPropertySizeBytes(int propAddr);
   
@@ -178,44 +179,42 @@ public abstract class ObjectTable {
     }
 
     private int propertyDefault(int prop) {
-        return _vmState.shortAt(objectTableAddress + ((prop - 1) << 1));
+        return story.shortAt(objectTableAddress + ((prop - 1) << 1));
     }
-    private int propertyEntriesStart(int obj) {
-        int propTableAddr = propertyTableAddress(obj);
-        return propTableAddr + (_vmState.byteAt(propTableAddr) << 1) + 1;
+    private int propertyEntriesStart(final int obj) {
+        final int propTableAddr = propertyTableAddress(obj);
+        return propTableAddr + (story.byteAt(propTableAddr) << 1) + 1;
     }
 }
 
 class ClassicObjectTable extends ObjectTable {
-    public ClassicObjectTable(VMState vmState) {
-        super(vmState);
+    public ClassicObjectTable(Memory story, int objectTableAddress) {
+        super(story, objectTableAddress);
+        objectTreeStart = objectTableAddress + 31 * 2;
+        objectEntrySize = 9;
     }
   
-    protected int parent(int obj) { return  _vmState.byteAt(objectAddress(obj) + 4); }
+    protected int parent(int obj) { return  story.byteAt(objectAddress(obj) + 4); }
     protected void setParent(int obj, int newParent) {
-        _vmState.setByteAt(objectAddress(obj) + 4, newParent);
+        story.setByteAt(objectAddress(obj) + 4, newParent);
     }
-    protected int sibling(int obj) { return _vmState.byteAt(objectAddress(obj) + 5); }
+    protected int sibling(int obj) { return story.byteAt(objectAddress(obj) + 5); }
     protected void setSibling(int obj, int newSibling) {
-        _vmState.setByteAt(objectAddress(obj) + 5, newSibling);
+        story.setByteAt(objectAddress(obj) + 5, newSibling);
     }
-    protected int child(int obj) { return _vmState.byteAt(objectAddress(obj) + 6); }
+    protected int child(int obj) { return story.byteAt(objectAddress(obj) + 6); }
     protected void setChild(int obj, int newChild) {
-        _vmState.setByteAt(objectAddress(obj) + 6, newChild);
+        story.setByteAt(objectAddress(obj) + 6, newChild);
     }
-
-    protected int propertyDefaultTableSize() { return 31 * 2; }
-    protected int objectEntrySize() { return 9; }
-
-    protected int propertyNum(int propAddr) {
-        return _vmState.byteAt(propAddr) - 32 * (propertyLength(propAddr + 1) - 1);
+    protected int propertyNum(final int propAddr) {
+        return story.byteAt(propAddr) - 32 * (propertyLength(propAddr + 1) - 1);
     }
-    public int propertyLength(int propDataAddr) {
+    public int propertyLength(final int propDataAddr) {
         if (propDataAddr == 0) return 0; // Note: defined in Z-Machine Standard 1.1
         else {
             // The size byte is always the byte before the property data in any
             // version, so this is consistent
-            return _vmState.byteAt(propDataAddr - 1) / 32 + 1;
+            return story.byteAt(propDataAddr - 1) / 32 + 1;
         }
     }
     protected int numPropertySizeBytes(int propAddr) { return 1; }
@@ -223,39 +222,40 @@ class ClassicObjectTable extends ObjectTable {
 
 class ModernObjectTable extends ObjectTable {
 
-    public ModernObjectTable(VMState vmState) { super(vmState); }
-
-    protected int parent(int obj) { return _vmState.shortAt(objectAddress(obj) + 6); }
-    protected void setParent(int obj, int newParent) {
-        _vmState.setShortAt(objectAddress(obj) + 6, newParent);
+    public ModernObjectTable(Memory story, int objectTableAddress) {
+        super(story, objectTableAddress);
+        objectTreeStart = objectTableAddress + 63 * 2;
+        objectEntrySize = 14;
     }
-    protected int sibling(int obj) { return _vmState.shortAt(objectAddress(obj) + 8); }
+
+    protected int parent(int obj) { return story.shortAt(objectAddress(obj) + 6); }
+    protected void setParent(int obj, int newParent) {
+        story.setShortAt(objectAddress(obj) + 6, newParent);
+    }
+    protected int sibling(int obj) { return story.shortAt(objectAddress(obj) + 8); }
     protected void setSibling(int obj, int newSibling) {
-        _vmState.setShortAt(objectAddress(obj) + 8, newSibling);
+        story.setShortAt(objectAddress(obj) + 8, newSibling);
     }
     protected int child(int obj) {
-        return _vmState.shortAt(objectAddress(obj) + 10);
+        return story.shortAt(objectAddress(obj) + 10);
     }
     protected void setChild(int obj, int newChild) {
-        _vmState.setShortAt(objectAddress(obj) + 10, newChild);
+        story.setShortAt(objectAddress(obj) + 10, newChild);
     }
-
-    protected int propertyDefaultTableSize() { return  63 * 2; }
-    protected int objectEntrySize() { return 14; }
-    protected int propertyNum(int propAddr) { return _vmState.byteAt(propAddr) & 0x3f; }
-    public int propertyLength(int propDataAddr) {
+    protected int propertyNum(final int propAddr) { return story.byteAt(propAddr) & 0x3f; }
+    public int propertyLength(final int propDataAddr) {
         if (propDataAddr == 0) return 0; // Z-Machine Standard 1.1
         else {
-            int sizeByte = _vmState.byteAt(propDataAddr - 1);
+            final int sizeByte = story.byteAt(propDataAddr - 1);
             if ((sizeByte & 0x80) == 0x80) {
-                int proplen = sizeByte & 0x3f;
+                final int proplen = sizeByte & 0x3f;
                 return (proplen == 0) ? 64 : proplen; // Standard 1.0 4.2.1.1
             } else {
                 return ((sizeByte & 0x40) == 0x40) ? 2 : 1;
             }
         }
     }
-    protected int numPropertySizeBytes(int propAddr) {
-        return ((_vmState.byteAt(propAddr) & 0x80) == 0x80) ? 2 : 1;
+    protected int numPropertySizeBytes(final int propAddr) {
+        return ((story.byteAt(propAddr) & 0x80) == 0x80) ? 2 : 1;
     }
 }

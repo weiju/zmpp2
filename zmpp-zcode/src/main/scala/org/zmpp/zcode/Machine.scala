@@ -40,13 +40,13 @@ import scala.annotation.switch
  * efficient.
  */
 class Machine {
-  val state                     = new VMStateImpl
+  private[this] val _state      = new VMStateImpl
   var ioSystem                  = new IoSystem(this)
   val readLineInfo              = new ReadLineInfo
   val randomGenerator           = new Random
   var screenModel : ScreenModel = null
 
-  var objectTable: ObjectTable  = null  
+  private[this] var objectTable: ObjectTable  = null  
   private[this] val undoSnapshots = new CircularStack[Snapshot](2)
 
   // for efficiency reasons, we cache the current decoding state here.
@@ -61,19 +61,21 @@ class Machine {
   private[this] var _iterations  = 1
 
   def init(story: Memory, screenModel: ScreenModel) {
-    state.reset(story)
-    objectTable = if (state.header.version <= 3) new ClassicObjectTable(state)
-                  else new ModernObjectTable(state)
+    _state.reset(story)
+    objectTable = if (_state.header.version <= 3)
+      new ClassicObjectTable(story, _state.header.objectTable)
+                  else new ModernObjectTable(story, _state.header.objectTable)
     this.screenModel = screenModel
     ioSystem.reset(screenModel)
-    state.setCapabilityFlags(screenModel.capabilities ++ List(CapabilityFlag.SupportsUndo))
+    _state.setCapabilityFlags(screenModel.capabilities ++ List(CapabilityFlag.SupportsUndo))
   }
-  def version = state.header.version 
+  def version = _state.header.version 
+  def state = _state
 
   def resumeWithLineInput(input: String) {
-    state.runState = ZMachineRunStates.Running
+    _state.runState = ZMachineRunStates.Running
     val parserSupport =
-      new ParserHelper(state, readLineInfo.textBuffer, readLineInfo.parseBuffer,
+      new ParserHelper(_state, readLineInfo.textBuffer, readLineInfo.parseBuffer,
                        0, false)
     parserSupport.process(input)
     if (version >= 5) {
@@ -81,7 +83,7 @@ class Machine {
     }
   }
   def resumeWithCharInput(c: Int) {
-    state.runState = ZMachineRunStates.Running
+    _state.runState = ZMachineRunStates.Running
     storeResult(c)
   }
 
@@ -91,14 +93,14 @@ class Machine {
   // Status (V1-V3)
   def statusLineObjectName: String = {
     val bufferStream = new StringBuilderOutputStream
-    printObject(state.variableValue(0x10), bufferStream)
+    printObject(_state.variableValue(0x10), bufferStream)
     bufferStream.toString
   }
   
   def statusLineScoreOrTime: String = {
-    val global2 = state.variableValue(0x11)
-    val global3 = state.variableValue(0x12)
-    if (state.header.isScoreGame) {
+    val global2 = _state.variableValue(0x11)
+    val global3 = _state.variableValue(0x12)
+    if (_state.header.isScoreGame) {
       "%d/%d".format(Types.signExtend16(global2), global3)
     } else {
       "%d:%02d".format(global2, global3)
@@ -111,52 +113,52 @@ class Machine {
   def warn(msg: String) = ioSystem.printMessage("WARNING: %s".format(msg)) 
   def fatal(msg: String) {
     ioSystem.printMessage("FATAL: %s".format(msg))
-    state.runState = VMRunStates.Halted
+    _state.runState = VMRunStates.Halted
   }
 
   def readLine(text: Int, parse: Int) = {
     ioSystem.flush
     readLineInfo.maxInputChars =
-      if (state.header.version <= 4) state.byteAt(text) - 1
-      else state.byteAt(text)
+      if (_state.header.version <= 4) _state.byteAt(text) - 1
+      else _state.byteAt(text)
     readLineInfo.textBuffer  = text
     readLineInfo.parseBuffer = parse
-    state.runState = ZMachineRunStates.ReadLine
+    _state.runState = ZMachineRunStates.ReadLine
   }
 
   def readChar = {
     ioSystem.flush
-    state.runState = ZMachineRunStates.ReadChar
+    _state.runState = ZMachineRunStates.ReadChar
   }
   // **********************************************************************
   // ***** Private methods
   // *****************************
   private def numOperands = _decodeInfo.numOperands
   private def printObject(obj: Int, outputStream: OutputStream) {
-    state.encoding.decodeZStringAtByteAddress(
+    _state.encoding.decodeZStringAtByteAddress(
       objectTable.propertyTableAddress(obj) + 1, outputStream)
   }
 
   private def makeOperandString = {
     val builder = new StringBuilder
-    var operandAddress = state.pc
+    var operandAddress = _state.pc
     for (i <- 0 until _decodeInfo.numOperands) {
       if (i > 0) builder.append(", ")
       val optype = _decodeInfo.types(i)
       if (optype == OperandTypes.LargeConstant) {
-        builder.append("$%02x".format(state.shortAt(operandAddress)))
+        builder.append("$%02x".format(_state.shortAt(operandAddress)))
         operandAddress += 2
       } else if (optype == OperandTypes.SmallConstant) {
-        builder.append("$%02x".format(state.byteAt(operandAddress)))
+        builder.append("$%02x".format(_state.byteAt(operandAddress)))
         operandAddress += 1
       } else if (optype == OperandTypes.Variable) {
-        val varnum = state.byteAt(operandAddress)
+        val varnum = _state.byteAt(operandAddress)
         val varname = if (varnum == 0) "(SP)"
                       else if (varnum <= 0x0f) "L%02x".format(varnum - 1)
                       else if (varnum >= 0x10) "G%02x".format(varnum - 0x10)
                       else "???"
-        val varvalue = if (varnum == 0) state.stackTop
-                       else state.variableValue(varnum)
+        val varvalue = if (varnum == 0) _state.stackTop
+                       else _state.variableValue(varnum)
         builder.append("%s[#$%02x]".format(varname, varvalue))
         operandAddress += 1
       }
@@ -166,24 +168,24 @@ class Machine {
 
   private def nextOperand = {
     _currentArg += 1
-    state.nextOperand(_decodeInfo.types(_currentArg - 1))
+    _state.nextOperand(_decodeInfo.types(_currentArg - 1))
   }
   private def nextSignedOperand = Types.signExtend16(nextOperand)
-  private def storeResult(result: Int) = state.setVariableValue(state.nextByte,
-                                                                result)
+  private def storeResult(result: Int) = _state.setVariableValue(_state.nextByte,
+                                                                 result)
   private def decideBranch(cond: Boolean) {
-    val branchByte0 = state.nextByte
+    val branchByte0 = _state.nextByte
     val branchOnTrue = ((branchByte0 & 0x80) == 0x80)
     val branchOffset = if ((branchByte0 & 0x40) == 0x40) branchByte0 & 0x3f
       else {
-        val branchByte1 = state.nextByte
+        val branchByte1 = _state.nextByte
         val branchOffsetVal = ((branchByte0 & 0x3f) << 8) | branchByte1
 
         // 14 bit sign extend
         if ((branchOffsetVal & 0x2000) == 0x2000) branchOffsetVal | 0xffffc000
         else branchOffsetVal
       }
-    if (branchOnTrue && cond || !branchOnTrue && !cond) state.doBranch(branchOffset)
+    if (branchOnTrue && cond || !branchOnTrue && !cond) _state.doBranch(branchOffset)
   }
   private def callWithoutReturnValue(numCallArgs: Int) {
     val packedAddr = nextOperand
@@ -192,7 +194,7 @@ class Machine {
       _callArgs(i) = nextOperand
       i += 1
     }
-    state.call(packedAddr, _callArgs, -1, numCallArgs)
+    _state.call(packedAddr, _callArgs, -1, numCallArgs)
   }
   private def callWithReturnValue(numCallArgs: Int) {
     val packedAddr = nextOperand
@@ -201,8 +203,8 @@ class Machine {
       _callArgs(i) = nextOperand
       i += 1
     }
-    val storeVar = state.nextByte
-    state.call(packedAddr, _callArgs, storeVar, numCallArgs)
+    val storeVar = _state.nextByte
+    _state.call(packedAddr, _callArgs, storeVar, numCallArgs)
   }
   private def callWithReturnValueVs2(numCallArgs: Int) {
     //printf("CALL_VS2 #ARGS = %d PC = %02x\n", numCallArgs, state.pc)
@@ -217,55 +219,55 @@ class Machine {
     }
     //println
     //printf("CALL_VS2 PC AFTER ARGS = %02x\n", state.pc)
-    val storeVar = state.nextByte
+    val storeVar = _state.nextByte
     //printf("CALL_VS2 PC AFTER STOREVAR = %02x PC = %02x\n", storeVar, state.pc)
-    state.call(packedAddr, _callArgs, storeVar, numCallArgs)
+    _state.call(packedAddr, _callArgs, storeVar, numCallArgs)
   }
 
   private def execute0Op {
     (_decodeInfo.opnum: @switch) match {
-      case 0x00 => state.returnFromRoutine(1) // rtrue
-      case 0x01 => state.returnFromRoutine(0) // rfalse
+      case 0x00 => _state.returnFromRoutine(1) // rtrue
+      case 0x01 => _state.returnFromRoutine(0) // rfalse
       case 0x02 => // print
-        state.encoding.decodeZString(ioSystem)
+        _state.encoding.decodeZString(ioSystem)
       case 0x03 => // print_ret
-        state.encoding.decodeZString(ioSystem)
+        _state.encoding.decodeZString(ioSystem)
         ioSystem.putChar('\n')
-        state.returnFromRoutine(1)
+        _state.returnFromRoutine(1)
       case 0x04 => // nop
       case 0x05 => // save V1-V4
-        if (version <= 4) state.runState = ZMachineRunStates.SaveGame
+        if (version <= 4) _state.runState = ZMachineRunStates.SaveGame
         else fatal("illegal 0OP: $05, Version >= 5")
       case 0x06 => // restore V1-V4
-        if (version <= 4) state.runState = ZMachineRunStates.RestoreGame
+        if (version <= 4) _state.runState = ZMachineRunStates.RestoreGame
         else fatal("illegal 0OP: $06, Version >= 5")
       case 0x07 => // restart
         // bit 0 of flags2 (transcript)
         // bit 1 of flags2 (fixed pitch)
-        val preserveFlags = state.byteAt(0x10) & 0x03
-        state.restoreOriginalDynamicMem
-        state.reset
+        val preserveFlags = _state.byteAt(0x10) & 0x03
+        _state.restoreOriginalDynamicMem
+        _state.reset
         // restore preserved flags
-        state.setByteAt(0x10, state.byteAt(0x10) | preserveFlags)
+        _state.setByteAt(0x10, _state.byteAt(0x10) | preserveFlags)
         screenModel.initUI
       case 0x08 => // ret_popped
-        state.returnFromRoutine(state.variableValue(0))
+        _state.returnFromRoutine(_state.variableValue(0))
       case 0x09 => // pop
         if (version < 5) {
-          state.variableValue(0)
+          _state.variableValue(0)
         } else { // V6 -> catch
-          storeResult(state.fp)
+          storeResult(_state.fp)
         }
       case 0x0a => // quit
         ioSystem.printMessage("*Game Ended*")
         ioSystem.flush
-        state.runState = VMRunStates.Halted
+        _state.runState = VMRunStates.Halted
       case 0x0b => ioSystem.putChar('\n') // new_line
       case 0x0c => // show_status
         if (version > 3) fatal("@show_status not allowed in version > 3")
         else screenModel.updateStatusLine
       case 0x0d => // verify
-        decideBranch(state.header.checksum == state.calculatedChecksum)
+        decideBranch(_state.header.checksum == _state.calculatedChecksum)
       case 0x0f => // piracy (as recommended in the spec, always branch)
         decideBranch(true)
       case _ =>
@@ -289,36 +291,36 @@ class Machine {
         storeResult(objectTable.propertyLength(nextOperand))
       case 0x05 => // inc
         val varnum = nextOperand
-        state.setVariableValue(varnum, state.variableValue(varnum) + 1)
+        _state.setVariableValue(varnum, _state.variableValue(varnum) + 1)
       case 0x06 => // dec
         val varnum = nextOperand
-        state.setVariableValue(varnum,
-                               (state.variableValue(varnum) - 1) & 0xffff)
+        _state.setVariableValue(varnum,
+                               (_state.variableValue(varnum) - 1) & 0xffff)
       case 0x07 => // print_addr
-        state.encoding.decodeZStringAtByteAddress(nextOperand,
-                                                  ioSystem)
+        _state.encoding.decodeZStringAtByteAddress(nextOperand,
+                                                   ioSystem)
       case 0x08 => // call_1s
         callWithReturnValue(0)
       case 0x09 => // remove_obj
         objectTable.removeObject(nextOperand)
       case 0x0a => // print_obj
         printObject(nextOperand, ioSystem)
-      case 0x0b => state.returnFromRoutine(nextOperand) // ret
+      case 0x0b => _state.returnFromRoutine(nextOperand) // ret
       case 0x0c => // jump
         val offset = nextSignedOperand
-        state.incrementPC(offset - 2) // address
+        _state.incrementPC(offset - 2) // address
       case 0x0d => // print_paddr
-        state.encoding.decodeZStringAtPackedAddress(nextOperand,
-                                                    ioSystem)
+        _state.encoding.decodeZStringAtPackedAddress(nextOperand,
+                                                     ioSystem)
       case 0x0e => // load
         val varnum = nextOperand
         // see Std. 1.1
-        val value = if (varnum == 0) state.stackTop
-                    else state.variableValue(varnum)
+        val value = if (varnum == 0) _state.stackTop
+                    else _state.variableValue(varnum)
         storeResult(value)
       case 0x0f => // 1-4 -> not, > 5 -> call_1n
         if (version <= 4) storeResult((~nextOperand) & 0xffff)
-        else state.call(nextOperand, _callArgs, -1, 0)
+        else _state.call(nextOperand, _callArgs, -1, 0)
       case _ =>
         fatal("illegal 1OP: $%02x".format(_decodeInfo.opnum))
     }
@@ -341,16 +343,16 @@ class Machine {
       case 0x04 => // dec_chk
         val varnum   = nextOperand
         val value    = nextSignedOperand
-        val newValue = (Types.signExtend16(state.variableValue(varnum)) - 1)
+        val newValue = (Types.signExtend16(_state.variableValue(varnum)) - 1)
           .asInstanceOf[Short]
-        state.setVariableValue(varnum, newValue)
+        _state.setVariableValue(varnum, newValue)
         decideBranch(newValue < value)
       case 0x05 => // inc_chk
         val varnum = nextOperand
         val value  = nextSignedOperand
-        val newValue = (Types.signExtend16(state.variableValue(varnum)) + 1)
+        val newValue = (Types.signExtend16(_state.variableValue(varnum)) + 1)
           .asInstanceOf[Short]
-        state.setVariableValue(varnum, newValue)
+        _state.setVariableValue(varnum, newValue)
         decideBranch(newValue > value)
       case 0x06 => // jin
         val obj1 = nextOperand
@@ -375,8 +377,8 @@ class Machine {
       case 0x0d => // store
         val varnum = nextOperand
         val value = nextOperand
-        if (varnum == 0) state.stack.pop // see Spec 1.1
-        state.setVariableValue(varnum, value)
+        if (varnum == 0) _state.stack.pop // see Spec 1.1
+        _state.setVariableValue(varnum, value)
       case 0x0e => // insert_obj
         val obj  = nextOperand
         val dest = nextOperand
@@ -388,14 +390,14 @@ class Machine {
         // note that values need to always be truncated to
         // unsigned 16 bit values !!!
         val memAddress = (array + wordIndex * 2) & 0xffff
-        storeResult(state.shortAt(memAddress))
+        storeResult(_state.shortAt(memAddress))
       case 0x10 => // loadb
         val array     = nextOperand
         val byteIndex = nextOperand
         // note that values need to always be truncated to
         // unsigned 16 bit values !!!
         val memAddress = (array + byteIndex) & 0xffff
-        storeResult(state.byteAt(memAddress))
+        storeResult(_state.byteAt(memAddress))
       case 0x11 => // get_prop
         storeResult(objectTable.propertyValue(nextOperand, nextOperand))
       case 0x12 => // get_prop_addr
@@ -448,8 +450,8 @@ class Machine {
         screenModel.setColour(foreground, background, window)
       case 0x1c => // throw
         val returnValue = nextOperand
-        state.unwindStackToFramePointer(nextOperand)
-        state.returnFromRoutine(returnValue)
+        _state.unwindStackToFramePointer(nextOperand)
+        _state.returnFromRoutine(returnValue)
       case _ =>
         fatal("illegal 2OP: $%02x".format(_decodeInfo.opnum))
     }
@@ -465,7 +467,7 @@ class Machine {
         // unsigned 16 bit values !!!
         val memAddress = (array + wordIndex * 2) & 0xffff
         val value     = nextOperand
-        state.setShortAt(memAddress, value)
+        _state.setShortAt(memAddress, value)
       case 0x02 => // storeb
         val array     = nextOperand
         val byteIndex = nextSignedOperand
@@ -473,7 +475,7 @@ class Machine {
         // note that values need to always be truncated to
         // unsigned 16 bit values !!!
         val memAddress = (array + byteIndex) & 0xffff
-        state.setByteAt(memAddress, value)
+        _state.setByteAt(memAddress, value)
       case 0x03 => // put_prop
         val obj      = nextOperand
         val property = nextOperand
@@ -507,22 +509,22 @@ class Machine {
       case 0x07 => // random
         storeResult(random(nextSignedOperand))
       case 0x08 => // push
-        state.setVariableValue(0, nextOperand)
+        _state.setVariableValue(0, nextOperand)
       case 0x09 => // pull
         if (version == 6) {
           val userStack = if (numOperands > 0) nextOperand else 0
-          if (userStack > 0) storeResult(state.popUserStack(userStack))
+          if (userStack > 0) storeResult(_state.popUserStack(userStack))
           else {
-            if (state.stackEmpty) fatal("Stack underflow !")
-            storeResult(state.variableValue(0))
+            if (_state.stackEmpty) fatal("Stack underflow !")
+            storeResult(_state.variableValue(0))
           }
         } else {
           val varnum = nextOperand
-          val value = state.variableValue(0)
+          val value = _state.variableValue(0)
           // standard 1.1: indirect access to variable 0 -> replace value in-place
-          if (varnum == 0) state.replaceStackTopWith(value)
-          else if (state.stackEmpty) fatal("Stack underflow !")
-          else state.setVariableValue(varnum, value)
+          if (varnum == 0) _state.replaceStackTopWith(value)
+          else if (_state.stackEmpty) fatal("Stack underflow !")
+          else _state.setVariableValue(varnum, value)
         }
       case 0x0a => // split_window
         if (screenModel != null) screenModel.splitWindow(nextOperand)
@@ -545,8 +547,8 @@ class Machine {
         val array     = nextOperand
         printf("get_cursor $%02x\n", array)
         val (cursorRow: Int, cursorColumn: Int) = screenModel.cursorPosition
-        state.setShortAt(array,     cursorRow)
-        state.setShortAt(array + 2, cursorColumn)
+        _state.setShortAt(array,     cursorRow)
+        _state.setShortAt(array + 2, cursorColumn)
       case 0x11 => // set_text_style
         screenModel.setTextStyle(nextOperand)
       case 0x12 => // buffer_mode
@@ -592,7 +594,7 @@ class Machine {
           fatal("user dictionaries not supported yet")
         }
         val flag = if (numOperands > 3) nextOperand else 0
-        val parserHelper = new ParserHelper(state, textBuffer, parseBuffer,
+        val parserHelper = new ParserHelper(_state, textBuffer, parseBuffer,
                                             userDictionary, flag != 0)
         parserHelper.tokenize
       case 0x1c => // encode_text
@@ -611,7 +613,7 @@ class Machine {
                    if (numOperands > 3) nextOperand else 0)
       case 0x1f => // check_arg_count
         val argNum = nextOperand
-        decideBranch(argNum <= state.numArgsCurrentRoutine)
+        decideBranch(argNum <= _state.numArgsCurrentRoutine)
       case _ =>
         fatal("illegal VAR: $%02x".format(_decodeInfo.opnum))
     }
@@ -643,12 +645,12 @@ class Machine {
       case 0x08 => // set_margins
         fatal("@set_margins not supported yet")
       case 0x09 => // save_undo
-        undoSnapshots.push(state.createSnapshot)
+        undoSnapshots.push(_state.createSnapshot)
         storeResult(1)
       case 0x0a => // restore_undo
         if (undoSnapshots.empty) storeResult(0)
         else {
-          state.readSnapshot(undoSnapshots.pop)
+          _state.readSnapshot(undoSnapshots.pop)
           storeResult(2)
         }
       case 0x0b => // print_unicode
@@ -674,8 +676,8 @@ class Machine {
         val userStack = if (_decodeInfo.numOperands > 1) nextOperand else 0
         var i = 0
         while (i < numItems) {
-          if (userStack == 0) state.variableValue(0)
-          else state.popUserStack(userStack)
+          if (userStack == 0) _state.variableValue(0)
+          else _state.popUserStack(userStack)
           i += 1
         }
       case 0x16 => // read_mouse
@@ -686,9 +688,9 @@ class Machine {
         val value = nextOperand
         val userStack = if (_decodeInfo.numOperands > 1) nextOperand else 0
         val result = if (userStack == 0) {
-          state.setVariableValue(0, value)
+          _state.setVariableValue(0, value)
           decideBranch(true)
-        } else decideBranch(state.pushUserStack(userStack, value))
+        } else decideBranch(_state.pushUserStack(userStack, value))
       case 0x19 => // put_wind_prop
         fatal("@put_wind_prop not supported yet")
       case 0x1a => // print_form
@@ -733,8 +735,8 @@ class Machine {
     var current = table
     var i = 0
     while (i < len) {
-      val currentValue = if (isWordType) state.shortAt(current)
-                         else state.byteAt(current)
+      val currentValue = if (isWordType) _state.shortAt(current)
+                         else _state.byteAt(current)
       if (currentValue == x) return current
       current += fieldLength
       i += 1
@@ -746,14 +748,14 @@ class Machine {
     val absSize = if (size < 0) -size else size
     val secondStartsInFirst = second >= first && second < first + size
     val copyForward = size < 0 || !secondStartsInFirst
-    if (second == 0) for (i <- 0 until absSize) state.setByteAt(first + i, 0)
+    if (second == 0) for (i <- 0 until absSize) _state.setByteAt(first + i, 0)
     else if (copyForward) {
       for (i <- 0 until absSize)
-        state.setByteAt(second + i, state.byteAt(first + i))
+        _state.setByteAt(second + i, _state.byteAt(first + i))
     } else {
       // copy backwards
       for (i <- (absSize - 1) to 0 by -1) {
-        state.setByteAt(second + i, state.byteAt(first + i))
+        _state.setByteAt(second + i, _state.byteAt(first + i))
       }
     }
   }
@@ -763,8 +765,8 @@ class Machine {
     var position = table
     for (row <- 0 until height) {
       for (column <- 0 until width) {
-        ioSystem.putChar(state.encoding.zsciiToUnicode(
-          state.byteAt(position).asInstanceOf[Char]), StreamIds.Screen)
+        ioSystem.putChar(_state.encoding.zsciiToUnicode(
+          _state.byteAt(position).asInstanceOf[Char]), StreamIds.Screen)
         position += 1
       }
       position += skip
@@ -772,7 +774,7 @@ class Machine {
   }
 
   private def decodeVarTypes {
-    var typeByte = state.nextByte
+    var typeByte = _state.nextByte
     var hasMoreTypes = true
     var index = 0
     var offset = 0 // offset for more than 4 parameters (call_vs2/call_vn2)
@@ -792,7 +794,7 @@ class Machine {
       // one of CALL_VN2/CALL_VS2, there is an additional type byte
       if (_decodeInfo.isCallVx2 && index == 3 && offset == 0) {
         index = 0
-        typeByte = state.nextByte
+        typeByte = _state.nextByte
         offset = 4
       } else {
         // tricky: make sure we have maximum 4/8 parameters, yet have
@@ -836,7 +838,7 @@ class Machine {
   }
 
   private def decodeInstruction {
-    val byte0        = state.nextByte
+    val byte0        = _state.nextByte
     var form         = 0
     var operandCount = 0
     var opcode    = 0
@@ -845,7 +847,7 @@ class Machine {
     if (byte0 == 0xbe) {
       form         = FormExt
       operandCount = OperandCountExtVar
-      opcode       = state.nextByte
+      opcode       = _state.nextByte
     } else {
       val formSel  = byte0 & 0xc0
       if (formSel == 0xc0) {
@@ -867,7 +869,7 @@ class Machine {
   }
 
   def doInstruction(verbose: Boolean=false) {
-    val oldpc = state.pc
+    val oldpc = _state.pc
     decodeInstruction
     decodeForm
     
@@ -895,22 +897,22 @@ class Machine {
 
   def setFontSizeInUnits(width: Int, height: Int) {
     if (version == 6) {
-      state.setByteAt(0x26, height)
-      state.setByteAt(0x27, width)
+      _state.setByteAt(0x26, height)
+      _state.setByteAt(0x27, width)
     } else if (version >= 5) {
-      state.setByteAt(0x26, width)
-      state.setByteAt(0x27, height)
+      _state.setByteAt(0x26, width)
+      _state.setByteAt(0x27, height)
     }
   }
 
   def setScreenSizeInUnits(width: Int, height: Int) {
     if (version >= 4) {
-      state.setByteAt(0x20, height)
-      state.setByteAt(0x21, width)
+      _state.setByteAt(0x20, height)
+      _state.setByteAt(0x21, width)
     }
     if (version >= 5) {
-      state.setShortAt(0x22, width)
-      state.setShortAt(0x24, height)
+      _state.setShortAt(0x22, width)
+      _state.setShortAt(0x24, height)
     }
   }
 
@@ -919,8 +921,8 @@ class Machine {
   // **********************************************************************
 
   def resumeWithSaveStream(outputStream: java.io.OutputStream) {
-    state.runState = ZMachineRunStates.Running
-    val writer = new QuetzalWriter(state)
+    _state.runState = ZMachineRunStates.Running
+    val writer = new QuetzalWriter(_state)
     val success = writer.write(outputStream)
     if (version <= 3) resumeSaveV3(success)
     else resumeSaveV4(success)
@@ -935,10 +937,10 @@ class Machine {
       val numBytes = if (numOperands > 1) nextOperand else 0
       val name: String = if (numOperands > 2) {
         val nameAddress = nextOperand
-        val nameLength = state.byteAt(nameAddress)
+        val nameLength = _state.byteAt(nameAddress)
         val nameBuilder = new StringBuilder
         for (i <- 0 until nameLength) {
-          nameBuilder.append(state.byteAt(nameAddress + 1 + i).asInstanceOf[Char])
+          nameBuilder.append(_state.byteAt(nameAddress + 1 + i).asInstanceOf[Char])
         }
         nameBuilder.toString
       } else null
@@ -950,12 +952,12 @@ class Machine {
         warn("save data area not implemented yet")
         storeResult(0)
       }
-    } else state.runState = ZMachineRunStates.SaveGame
+    } else _state.runState = ZMachineRunStates.SaveGame
   }
 
   def resumeWithRestoreStream(inputStream: java.io.InputStream) {
-    state.runState = ZMachineRunStates.Running
-    val reader = new QuetzalReader(state, this)
+    _state.runState = ZMachineRunStates.Running
+    val reader = new QuetzalReader(_state, this)
     val success = reader.read(inputStream)
     if (version <= 3) resumeRestoreV3(success)
     else resumeRestoreV4(success)
@@ -970,10 +972,10 @@ class Machine {
       val numBytes = if (numOperands > 1) nextOperand else 0
       val name: String = if (numOperands > 2) {
         val nameAddress = nextOperand
-        val nameLength = state.byteAt(nameAddress)
+        val nameLength = _state.byteAt(nameAddress)
         val nameBuilder = new StringBuilder
         for (i <- 0 until nameLength) {
-          nameBuilder.append(state.byteAt(nameAddress + 1 + i).asInstanceOf[Char])
+          nameBuilder.append(_state.byteAt(nameAddress + 1 + i).asInstanceOf[Char])
         }
         nameBuilder.toString
       } else null
@@ -985,6 +987,6 @@ class Machine {
         warn("read data area not implemented yet")
         storeResult(0)
       }
-    } else state.runState = ZMachineRunStates.RestoreGame
+    } else _state.runState = ZMachineRunStates.RestoreGame
   }
 }
