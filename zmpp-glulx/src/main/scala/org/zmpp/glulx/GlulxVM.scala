@@ -64,15 +64,13 @@ class GlulxVMState extends VMState {
   private var _memheap  : MemoryHeap = null
   private var _extMem   : Memory = null
   private var _extEnd   : Int = 0
-  private[this] var _runState = VMRunStates.Running
+  var runState = VMRunStates.Running
   var stack             : Stack = null
   // Registers
   var pc                      = 0
   var fp                      = 0
   def sp                      = stack.sp
   def sp_=(newpointer: Int)   = stack.sp_=(newpointer)
-  def runState = _runState
-  def setRunState(state: Int) = _runState = state
   def init(story: Memory) {
     _story     = story
     _header    = new GlulxStoryHeader(story)
@@ -80,7 +78,7 @@ class GlulxVMState extends VMState {
     _memheap   = new MemoryHeap(_header.endmem)
     pc         = 0
     fp         = 0
-    _runState   = VMRunStates.Running
+    runState   = VMRunStates.Running
     memsize    = header.endmem
     logger.info("VM INITIALIZED WITH EXT_START: %d END_MEM: %d".format(
                 header.extstart, header.endmem))
@@ -96,7 +94,7 @@ class GlulxVMState extends VMState {
     memsize    = header.endmem
     pc         = 0
     fp         = 0
-    _runState   = VMRunStates.Running
+    runState   = VMRunStates.Running
     
     // reset bytes in ram
     val ramsize = _header.extstart - _header.ramstart
@@ -1065,7 +1063,7 @@ class GlulxVM {
     state.sp = state.fp
     if (state.sp == 0) {
       // return from entry function -> Quit
-      state.setRunState(VMRunStates.Halted)
+      state.runState = VMRunStates.Halted
     } else {
       // we can't use GlulxVM's popInt(), because it performs checks on
       // the call frame, which is exactly what we manipulate here
@@ -1401,7 +1399,7 @@ class GlulxVM {
       case Protect =>
         _protectionStart  = getOperand(0)
         _protectionLength = getOperand(1)
-      case Quit  => state.setRunState(VMRunStates.Halted)
+      case Quit  => state.runState = VMRunStates.Halted
       case Opcodes.Random =>
         val range = getSignedOperand(0)
         //printf("Generate random number, range: %d\n", range)
@@ -1561,7 +1559,7 @@ class GlulxVM {
 
   def fatal(msg: String) {
     _glk.put_java_string(msg)
-    state.setRunState(VMRunStates.Halted)
+    state.runState = VMRunStates.Halted
   }
 }
 

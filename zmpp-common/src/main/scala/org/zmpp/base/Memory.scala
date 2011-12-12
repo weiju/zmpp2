@@ -97,6 +97,11 @@ extends Memory with Comparable[DefaultMemory] {
   def containsAddress(addr: Int): Boolean =
     addr >= address && addr < address + size
   def compareTo(other: DefaultMemory) = address - other.address
+
+  def littleEndian = {
+    // this currently does not do anything, but it should
+    this
+  }
 }
 
 object DefaultMemory {

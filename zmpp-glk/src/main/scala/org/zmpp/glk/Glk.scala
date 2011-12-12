@@ -84,7 +84,7 @@ class Glk(val eventManager: EventManager) {
   // ***********************************************************************
   // ***** glk_* Functions
   // **************************************
-  def exit(state: VMState) = state.setRunState(VMRunStates.Halted)
+  def exit(state: VMState) = state.runState = VMRunStates.Halted
   def set_interrupt_handler(state: VMState, func: Int) {
     logger.warning("glk_set_interrupt_handler() has no effect in ZMPP/Glk")
   }
