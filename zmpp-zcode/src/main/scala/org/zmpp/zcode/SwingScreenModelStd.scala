@@ -352,7 +352,6 @@ extends JPanel(new BorderLayout)
 with OutputStream with InputStream with SwingScreenModel with FocusListener {
   import ScrollPaneConstants._
   import ScreenModel._
-  import CapabilityFlag._
 
   var vm: Machine       = null
   var activeWindowId    = BottomWindow // 0 is the bottom window, 1 is the top window

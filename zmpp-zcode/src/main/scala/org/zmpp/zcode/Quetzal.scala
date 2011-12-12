@@ -30,7 +30,6 @@ package org.zmpp.zcode
 
 import scala.collection.JavaConversions._
 import java.io.{ByteArrayOutputStream, DataOutputStream, FileOutputStream, DataInputStream}
-import org.zmpp.base.IntStack
 import org.zmpp.iff.{QuetzalCompression}
 import java.util.ArrayList
 
@@ -281,7 +280,7 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
     dataIn.readByte // skip pad byte
     printf("IFhd read, restore PC = $%04x\n", restorePc)
     verifyStory(release, serial, checksum)
-    vmState.setPC(restorePc)
+    vmState.pc = restorePc
     22
   }
 
@@ -367,7 +366,7 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
       oldFP = vmState.fp
       bytesToRead -= (8 + numLocals * 2 + numEvalWords * 2)
     }
-    vmState.stack.setSp(sp)
+    vmState.stack.sp = sp
     chunkLength + 8
   }
 

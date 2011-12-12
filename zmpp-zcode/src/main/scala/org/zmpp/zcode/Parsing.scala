@@ -126,10 +126,8 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
     var result: List[Int] = Nil
     val dictionaryAddr = state.header.dictionary
     val numSeparators = state.byteAt(dictionaryAddr)
-    var i = 0
-    while (i < numSeparators) {
-      result ::= ZsciiEncoding.zsciiCodeFor(state.byteAt(dictionaryAddr + i + 1))
-      i += 1
+    for (i <- 0 until numSeparators) {
+      result ::= ZsciiEncoding.zsciiCodeFor(state.byteAt(dictionaryAddr+i+1))
     }
     result
   }
@@ -160,11 +158,7 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
     // 2. convert each token to Z-encoded string and lookup in dictionary
     tokens.map{t => printf("Token: %s\n", t.toString)}
     val numTokens = math.min(tokens.length, maxTokens)
-    var i = 0
-    while (i < numTokens) {
-      lookup(tokens(i), i)
-      i += 1
-    }
+    for (i <- 0 until numTokens) lookup(tokens(i), i)
 
     // write number of tokens in Byte 1
     state.setByteAt(parseBuffer + 1, numTokens)
@@ -269,11 +263,7 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
       while (hasMoreInput) encodeChar
       // 2. pad the remainder with 5's
       val numPadSlots = numFreeSlots
-      var i = 0
-      while (i < numPadSlots) {
-        appendChar(5)
-        i += 1
-      }
+      for (i <- 0 until numPadSlots) appendChar(5)
 
       // 3. marks the last word by setting the MSB
       // Note: This is actually the last word in the buffer,
@@ -297,11 +287,7 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
         } else {
           // pad remaining slots with 5's
           val numPadSlots = numFreeSlots
-          var i = 0
-          while (i < numPadSlots) {
-            appendChar(5)
-            i += 1
-          }
+          for (i <- 0 until numPadSlots) appendChar(5)
         }
       } else {
         if (shiftCode > 0) {

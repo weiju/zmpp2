@@ -56,8 +56,6 @@ class V6Window {
  */
 class SwingScreenModelV6 extends JComponent
 with OutputStream with InputStream with SwingScreenModel {
-  import CapabilityFlag._
-
   var vm: Machine = null
   val windows = Array.ofDim[V6Window](8)
   (0 until 7).foreach{ i => windows(i) = new V6Window }

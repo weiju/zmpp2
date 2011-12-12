@@ -1,5 +1,5 @@
 /*
- * Created on 2011/12/10
+ * Created on 2011/11/10
  * Copyright (c) 2010-2011, Wei-ju Wu.
  * All rights reserved.
  *
@@ -26,21 +26,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.zcode;
+package org.zmpp.base
 
-public interface VMState {
-    StoryHeader header();
-    ZsciiEncoding encoding();
-    int runState();
-    int pc();
-    void setPC(int pc);
-    void incrementPC(int increment);
-    void doBranch(int branchOffset);
+/**
+ * A space-saving data structure that we can use to implement undo
+ */
+class CircularStack[T](capacity: Int) {
+  private val buffer = Array.ofDim[AnyRef](capacity)
+  private var top: Int = 0
+  private var size = 0
 
-    int byteAt(int addr);
-    int shortAt(int addr);
-    int intAt(int addr);
-    void setByteAt(int addr, int value);
-    void setShortAt(int addr, int value);
-    void setIntAt(int addr, int value);
+  def empty = size == 0
+  def push(elem: T) {
+    buffer(top) = elem.asInstanceOf[AnyRef]
+    top = (top + 1) % capacity
+    size += 1
+    if (size > capacity) size = capacity
+  }
+  def pop: T = {
+    var pos = top - 1
+    if (pos < 0) pos = capacity + pos
+    val result = buffer(pos)
+    size -= 1
+    top = pos
+    result.asInstanceOf[T]
+  }
 }
