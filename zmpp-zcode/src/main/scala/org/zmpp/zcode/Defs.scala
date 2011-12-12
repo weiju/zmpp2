@@ -283,4 +283,8 @@ class VMStateImpl extends VMState {
     else if (branchOffset == 1) returnFromRoutine(1)
     else                        _pc += branchOffset - 2
   }
+
+  def storeResult(result: Int) {
+    setVariableValue(nextByte, result)
+  }
 }

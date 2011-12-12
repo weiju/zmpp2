@@ -79,12 +79,12 @@ class Machine {
                        0, false)
     parserSupport.process(input)
     if (version >= 5) {
-      storeResult(10) // store terminator
+      _state.storeResult(10) // store terminator
     }
   }
   def resumeWithCharInput(c: Int) {
     _state.runState = ZMachineRunStates.Running
-    storeResult(c)
+    _state.storeResult(c)
   }
 
   // ***********************************************************************
@@ -170,9 +170,10 @@ class Machine {
     _currentArg += 1
     _state.nextOperand(_decodeInfo.types(_currentArg - 1))
   }
-  private def nextSignedOperand = Types.signExtend16(nextOperand)
-  private def storeResult(result: Int) = _state.setVariableValue(_state.nextByte,
-                                                                 result)
+  private def nextSignedOperand = {
+    _currentArg += 1
+    Types.signExtend16(_state.nextOperand(_decodeInfo.types(_currentArg - 1)))
+  }
   private def decideBranch(cond: Boolean) {
     val branchByte0 = _state.nextByte
     val branchOnTrue = ((branchByte0 & 0x80) == 0x80)
@@ -256,7 +257,7 @@ class Machine {
         if (version < 5) {
           _state.variableValue(0)
         } else { // V6 -> catch
-          storeResult(_state.fp)
+          _state.storeResult(_state.fp)
         }
       case 0x0a => // quit
         ioSystem.printMessage("*Game Ended*")
@@ -279,16 +280,16 @@ class Machine {
       case 0x00 => decideBranch(nextOperand == 0) // jz
       case 0x01 => // get_sibling
         val sibling = objectTable.sibling(nextOperand)
-        storeResult(sibling)
+        _state.storeResult(sibling)
         decideBranch(sibling != 0)
       case 0x02 => // get_child
         val child = objectTable.child(nextOperand)
-        storeResult(child)
+        _state.storeResult(child)
         decideBranch(child != 0)
       case 0x03 => // get_parent
-        storeResult(objectTable.parent(nextOperand))
+        _state.storeResult(objectTable.parent(nextOperand))
       case 0x04 => // get_prop_len
-        storeResult(objectTable.propertyLength(nextOperand))
+        _state.storeResult(objectTable.propertyLength(nextOperand))
       case 0x05 => // inc
         val varnum = nextOperand
         _state.setVariableValue(varnum, _state.variableValue(varnum) + 1)
@@ -317,9 +318,9 @@ class Machine {
         // see Std. 1.1
         val value = if (varnum == 0) _state.stackTop
                     else _state.variableValue(varnum)
-        storeResult(value)
+        _state.storeResult(value)
       case 0x0f => // 1-4 -> not, > 5 -> call_1n
-        if (version <= 4) storeResult((~nextOperand) & 0xffff)
+        if (version <= 4) _state.storeResult((~nextOperand) & 0xffff)
         else _state.call(nextOperand, _callArgs, -1, 0)
       case _ =>
         fatal("illegal 1OP: $%02x".format(_decodeInfo.opnum))
@@ -363,9 +364,9 @@ class Machine {
         val op2 = nextOperand
         decideBranch((op1 & op2) == op2)
       case 0x08 => // or
-        storeResult(nextOperand | nextOperand)
+        _state.storeResult(nextOperand | nextOperand)
       case 0x09 => // and
-        storeResult(nextOperand & nextOperand)
+        _state.storeResult(nextOperand & nextOperand)
       case 0x0a => // test_attr
         val obj  = nextOperand
         val attr = nextOperand
@@ -390,54 +391,54 @@ class Machine {
         // note that values need to always be truncated to
         // unsigned 16 bit values !!!
         val memAddress = (array + wordIndex * 2) & 0xffff
-        storeResult(_state.shortAt(memAddress))
+        _state.storeResult(_state.shortAt(memAddress))
       case 0x10 => // loadb
         val array     = nextOperand
         val byteIndex = nextOperand
         // note that values need to always be truncated to
         // unsigned 16 bit values !!!
         val memAddress = (array + byteIndex) & 0xffff
-        storeResult(_state.byteAt(memAddress))
+        _state.storeResult(_state.byteAt(memAddress))
       case 0x11 => // get_prop
-        storeResult(objectTable.propertyValue(nextOperand, nextOperand))
+        _state.storeResult(objectTable.propertyValue(nextOperand, nextOperand))
       case 0x12 => // get_prop_addr
         val obj = nextOperand
         val property = nextOperand
         if (obj > 0) {
-          storeResult(objectTable.propertyAddress(obj, property) & 0xffff)
+          _state.storeResult(objectTable.propertyAddress(obj, property) & 0xffff)
         } else {
           warn("@get_prop_addr illegal access to object " + obj)
-          storeResult(0)
+          _state.storeResult(0)
         }
       case 0x13 => // get_next_prop
         val obj = nextOperand
         val property = nextOperand
         if (obj > 0) {
           try {
-            storeResult(objectTable.nextProperty(obj, property) & 0xffff)
+            _state.storeResult(objectTable.nextProperty(obj, property) & 0xffff)
           } catch {
             case _ => fatal("could not access property %d of object %d".format(property, obj))
           }
         } else {
           warn("@get_next_prop illegal access to object " + obj)
-          storeResult(0)
+          _state.storeResult(0)
         }
       case 0x14 => // add
-        storeResult((nextSignedOperand+nextSignedOperand).asInstanceOf[Short])
+        _state.storeResult((nextSignedOperand+nextSignedOperand).asInstanceOf[Short])
       case 0x15 => // sub
-        storeResult((nextSignedOperand-nextSignedOperand).asInstanceOf[Short])
+        _state.storeResult((nextSignedOperand-nextSignedOperand).asInstanceOf[Short])
       case 0x16 => // mul
-        storeResult(nextSignedOperand * nextSignedOperand)
+        _state.storeResult(nextSignedOperand * nextSignedOperand)
       case 0x17 => // div
         val op1 = nextSignedOperand
         val op2 = nextSignedOperand
         if (op2 == 0) fatal("@div division by zero")
-        else storeResult(op1 / op2)
+        else _state.storeResult(op1 / op2)
       case 0x18 => // mod
         val op1 = nextSignedOperand
         val op2 = nextSignedOperand
         if (op2 == 0) fatal("@mod division by zero")
-        else storeResult(op1 % op2)
+        else _state.storeResult(op1 % op2)
       case 0x19 => // call_2s
         callWithReturnValue(1)
       case 0x1a => // call_2n
@@ -507,16 +508,16 @@ class Machine {
       case 0x06 => // print_num
         ioSystem.printNum(nextSignedOperand)
       case 0x07 => // random
-        storeResult(random(nextSignedOperand))
+        _state.storeResult(random(nextSignedOperand))
       case 0x08 => // push
         _state.setVariableValue(0, nextOperand)
       case 0x09 => // pull
         if (version == 6) {
           val userStack = if (numOperands > 0) nextOperand else 0
-          if (userStack > 0) storeResult(_state.popUserStack(userStack))
+          if (userStack > 0) _state.storeResult(_state.popUserStack(userStack))
           else {
             if (_state.stackEmpty) fatal("Stack underflow !")
-            storeResult(_state.variableValue(0))
+            _state.storeResult(_state.variableValue(0))
           }
         } else {
           val varnum = nextOperand
@@ -577,10 +578,10 @@ class Machine {
         val len   = nextOperand
         val form = if (numOperands > 3) nextOperand else 0x82
         val result = scanTable(x, table, len, form)
-        storeResult(result)
+        _state.storeResult(result)
         decideBranch(result > 0)
       case 0x18 => // not (V5/V6)
-        storeResult((~nextOperand) & 0xffff)
+        _state.storeResult((~nextOperand) & 0xffff)
       case 0x19 => // call_vn
         callWithoutReturnValue(numOperands - 1)
       case 0x1a => // call_vn2
@@ -627,15 +628,15 @@ class Machine {
         val places = nextSignedOperand
         val result = if (places < 0) number >>> -places
                      else number << places
-        storeResult(result)
+        _state.storeResult(result)
       case 0x03 => // art_shift
         val number: Short = nextSignedOperand.asInstanceOf[Short]
         val places = nextSignedOperand
         val result = if (places < 0) number >> -places
                      else number << places
-        storeResult(result)
+        _state.storeResult(result)
       case 0x04 => // set_font
-        storeResult(screenModel.setFont(nextOperand))
+        _state.storeResult(screenModel.setFont(nextOperand))
       case 0x05 => // draw_picture
         fatal("@draw_picture not supported yet")
       case 0x06 => // picture_data
@@ -646,12 +647,12 @@ class Machine {
         fatal("@set_margins not supported yet")
       case 0x09 => // save_undo
         undoSnapshots.push(_state.createSnapshot)
-        storeResult(1)
+        _state.storeResult(1)
       case 0x0a => // restore_undo
-        if (undoSnapshots.empty) storeResult(0)
+        if (undoSnapshots.empty) _state.storeResult(0)
         else {
           _state.readSnapshot(undoSnapshots.pop)
-          storeResult(2)
+          _state.storeResult(2)
         }
       case 0x0b => // print_unicode
         // printing a 16 bit char code means that the Z-Machine can only
@@ -660,7 +661,7 @@ class Machine {
       case 0x0c => // check_unicode
         // we simply assume that most Java systems can process Unicode
         nextOperand
-        storeResult(3)
+        _state.storeResult(3)
       case 0x10 => // move_window
         fatal("@move_window not supported yet")
       case 0x11 => // window_size
@@ -929,7 +930,7 @@ class Machine {
   }
 
   private def resumeSaveV3(success: Boolean) = decideBranch(success)
-  private def resumeSaveV4(success: Boolean) = storeResult(if (success) 1 else 0)
+  private def resumeSaveV4(success: Boolean) = _state.storeResult(if (success) 1 else 0)
   private def saveV5 {
     if (numOperands > 0) {
       // save data-area mode
@@ -947,10 +948,10 @@ class Machine {
 
       if (table == 0 || numBytes == 0) {
         warn("save data area will fail, either table address or size is 0")
-        storeResult(0)
+        _state.storeResult(0)
       } else {
         warn("save data area not implemented yet")
-        storeResult(0)
+        _state.storeResult(0)
       }
     } else _state.runState = ZMachineRunStates.SaveGame
   }
@@ -963,7 +964,7 @@ class Machine {
     else resumeRestoreV4(success)
   }
   private def resumeRestoreV3(success: Boolean) = decideBranch(success)
-  private def resumeRestoreV4(success: Boolean) = storeResult(if (success) 1 else 0)
+  private def resumeRestoreV4(success: Boolean) = _state.storeResult(if (success) 1 else 0)
 
   private def restoreV5 {
     if (numOperands > 0) {
@@ -982,10 +983,10 @@ class Machine {
 
       if (table == 0 || numBytes == 0) {
         warn("read data area will fail, either table address or size is 0")
-        storeResult(0)
+        _state.storeResult(0)
       } else {
         warn("read data area not implemented yet")
-        storeResult(0)
+        _state.storeResult(0)
       }
     } else _state.runState = ZMachineRunStates.RestoreGame
   }
