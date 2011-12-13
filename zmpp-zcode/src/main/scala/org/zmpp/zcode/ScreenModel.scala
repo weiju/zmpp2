@@ -81,8 +81,6 @@ object TextStyles {
 case class TextStyle(style: Int, fontnum: Int,
                      foreground: Int, background: Int) {
   import TextStyles._
-  //def isRoman = !(isItalic || isBold)
-  //def isFixed = fontnum == Fonts.Fixed
   def isRoman = style == Roman
   def isReverseVideo = (style & ReverseVideo) == ReverseVideo
   def isBold = (style & Bold)  == Bold

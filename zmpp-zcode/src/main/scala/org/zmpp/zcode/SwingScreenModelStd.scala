@@ -396,14 +396,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
                           SupportsScreenSplit, SupportsMouse)
 
   import TextStyles._
-/*
-  def isRoman        = style                  == Roman
-  def isReverseVideo = (style & ReverseVideo) == ReverseVideo
-  def isBold         = (style & Bold)         == Bold
-  def isItalic       = (style & Italic)       == Italic
-  def isFixedStyle   = (style & FixedPitch)   == FixedPitch
-*/
-  private var selected      = true
+
+  private[this] var selected      = true
   def isSelected            = selected
   def select(flag: Boolean) = selected = flag
   def putChar(c: Char) {
