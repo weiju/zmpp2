@@ -68,6 +68,37 @@ object TextStyles {
   def isBold(style: Int) = (style & Bold)  == Bold
   def isItalic(style: Int) = (style & Italic) == Italic
   def isFixed(style: Int) = (style & FixedPitch) == FixedPitch
+
+  val DefaultNormal = TextStyle(false, false, false, Fonts.Normal,
+                                Colors.Default, Colors.Default)
+  val DefaultFixed = TextStyle(false, false, false, Fonts.Fixed,
+                                Colors.Default, Colors.Default)
+  val DefaultFixedBlank = StyledChar(' ', DefaultFixed)
+}
+
+/*
+ * Auxiliary structures to help building screen models.
+ */
+case class TextStyle(isItalic: Boolean, isBold: Boolean,
+                     isReverseVideo: Boolean, fontnum: Int,
+                     foreground: Int, background: Int) {
+  def isRoman = !(isItalic || isBold)
+  def isFixed = fontnum == Fonts.Fixed
+  def withStyle(style: Int) = {
+    TextStyle(TextStyles.isItalic(style),
+              TextStyles.isBold(style),
+              TextStyles.isReverseVideo(style),
+              if (TextStyles.isFixed(style)) Fonts.Fixed else fontnum,
+              foreground, background)
+  }
+  def withColor(newForeground: Int, newBackground: Int) = {
+    TextStyle(isItalic, isBold, isReverseVideo, fontnum,
+              newForeground, newBackground)
+  }
+  def withFont(newFontnum: Int) = {
+    TextStyle(isItalic, isBold, isReverseVideo, newFontnum,
+              foreground, background)
+  }
 }
 
 object WindowAttributes {
@@ -134,31 +165,6 @@ trait ScreenModelWindow {
   def cursorPosition: (Int, Int)
 }
 
-/*
- * Auxiliary structures to help building screen models.
- */
-case class TextStyle(isItalic: Boolean, isBold: Boolean,
-                     isReverseVideo: Boolean, fontnum: Int,
-                     foreground: Int, background: Int) {
-  def isRoman = !(isItalic || isBold)
-  def isFixed = fontnum == Fonts.Fixed
-  def withStyle(style: Int) = {
-    TextStyle(TextStyles.isItalic(style),
-              TextStyles.isBold(style),
-              TextStyles.isReverseVideo(style),
-              if (TextStyles.isFixed(style)) Fonts.Fixed else fontnum,
-              foreground, background)
-  }
-  def withColor(newForeground: Int, newBackground: Int) = {
-    TextStyle(isItalic, isBold, isReverseVideo, fontnum,
-              newForeground, newBackground)
-  }
-  def withFont(newFontnum: Int) = {
-    TextStyle(isItalic, isBold, isReverseVideo, newFontnum,
-              foreground, background)
-  }
-}
-
 case class StyledText(text: String, style: TextStyle) {
   def isItalic = style.isItalic
   def isBold = style.isBold
@@ -176,14 +182,6 @@ case class StyledChar(c: Char, style: TextStyle) {
   def background = style.background
 }
 
-object TextStyle {
-  val DefaultNormal = TextStyle(false, false, false, Fonts.Normal,
-                                Colors.Default, Colors.Default)
-  val DefaultFixed = TextStyle(false, false, false, Fonts.Fixed,
-                                Colors.Default, Colors.Default)
-  val DefaultFixedBlank = StyledChar(' ', DefaultFixed)
-}
-
 /*
  * While text grids are not technically "buffered" according to the
  * specification, storing them before flushing them to the screen
@@ -193,7 +191,7 @@ object TextStyle {
  * - we can store and serialize the state
  */
 class TextGridBuffer(numRows: Int, numColumns: Int) {
-  import TextStyle._
+  import TextStyles._
 
   private val grid = Array.ofDim[StyledChar](numRows, numColumns)
   fillGridWith(DefaultFixedBlank, 0)
@@ -227,7 +225,7 @@ class TextGridBuffer(numRows: Int, numColumns: Int) {
  * a style change occurs.
  */
 class TextRunBuffer {
-  import TextStyle._
+  import TextStyles._
   private[this] var currentStyle: TextStyle = DefaultNormal
   private[this] var currentText: StringBuilder = new StringBuilder
   private[this] var runBuffer = new ArrayBuffer[StyledText]()

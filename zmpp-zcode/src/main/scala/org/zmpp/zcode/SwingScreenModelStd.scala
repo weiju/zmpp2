@@ -158,7 +158,7 @@ class TextGrid extends JTextPane with ScreenModelWindow {
 
   def clear {
     println("TOPWINDOW.CLEAR()")
-    buffer.fillGridWith(TextStyle.DefaultFixedBlank, 0)
+    buffer.fillGridWith(TextStyles.DefaultFixedBlank, 0)
   }
 
   def reset {
@@ -181,7 +181,7 @@ class TextGrid extends JTextPane with ScreenModelWindow {
       col = 0
       while (col < charsPerLine) {
         val styledChar = buffer.charAt(row, col)
-        if (styledChar == TextStyle.DefaultFixedBlank) {
+        if (styledChar == TextStyles.DefaultFixedBlank) {
           screenModel.setTransparentAttributeSet(attrs)
         }
         else screenModel.setAttributeSet(attrs, styledChar)
@@ -396,12 +396,13 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
                           SupportsScreenSplit, SupportsMouse)
 
   import TextStyles._
+/*
   def isRoman        = style                  == Roman
   def isReverseVideo = (style & ReverseVideo) == ReverseVideo
   def isBold         = (style & Bold)         == Bold
   def isItalic       = (style & Italic)       == Italic
   def isFixedStyle   = (style & FixedPitch)   == FixedPitch
-
+*/
   private var selected      = true
   def isSelected            = selected
   def select(flag: Boolean) = selected = flag
@@ -529,7 +530,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     if (background != Colors.Current) currentBackground = background
     // we need to change the caret color of the bottom window, too
     println("setting caret color")
-    if (isReverseVideo) {
+    if (isReverseVideo(this.style)) {
       println("reverse")
       bottomWindow.setCaretColor(getColor(background, false))
     } else {
@@ -565,7 +566,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
 
   def styleCharacter(c: Char) = {
-    StyledChar(c, TextStyle(this.isItalic, this.isBold, this.isReverseVideo,
+    StyledChar(c, TextStyle(isItalic(style), isBold(style), isReverseVideo(style),
                Fonts.Fixed, currentForeground, currentBackground))
   }
   val Transparent = new Color(0, 0, 0, 0)
