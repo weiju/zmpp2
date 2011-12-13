@@ -566,8 +566,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
 
   def styleCharacter(c: Char) = {
-    StyledChar(c, TextStyle(isItalic(style), isBold(style), isReverseVideo(style),
-               Fonts.Fixed, currentForeground, currentBackground))
+    StyledChar(c, TextStyle(style,
+                            Fonts.Fixed, currentForeground, currentBackground))
   }
   val Transparent = new Color(0, 0, 0, 0)
 

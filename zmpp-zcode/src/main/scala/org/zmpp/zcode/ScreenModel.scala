@@ -69,9 +69,8 @@ object TextStyles {
   def isItalic(style: Int) = (style & Italic) == Italic
   def isFixed(style: Int) = (style & FixedPitch) == FixedPitch
 
-  val DefaultNormal = TextStyle(false, false, false, Fonts.Normal,
-                                Colors.Default, Colors.Default)
-  val DefaultFixed = TextStyle(false, false, false, Fonts.Fixed,
+  val DefaultNormal = TextStyle(0, Fonts.Normal, Colors.Default, Colors.Default)
+  val DefaultFixed = TextStyle(0, Fonts.Fixed,
                                 Colors.Default, Colors.Default)
   val DefaultFixedBlank = StyledChar(' ', DefaultFixed)
 }
@@ -79,25 +78,27 @@ object TextStyles {
 /*
  * Auxiliary structures to help building screen models.
  */
-case class TextStyle(isItalic: Boolean, isBold: Boolean,
-                     isReverseVideo: Boolean, fontnum: Int,
+case class TextStyle(style: Int, fontnum: Int,
                      foreground: Int, background: Int) {
-  def isRoman = !(isItalic || isBold)
-  def isFixed = fontnum == Fonts.Fixed
-  def withStyle(style: Int) = {
-    TextStyle(TextStyles.isItalic(style),
-              TextStyles.isBold(style),
-              TextStyles.isReverseVideo(style),
-              if (TextStyles.isFixed(style)) Fonts.Fixed else fontnum,
+  import TextStyles._
+  //def isRoman = !(isItalic || isBold)
+  //def isFixed = fontnum == Fonts.Fixed
+  def isRoman = style == Roman
+  def isReverseVideo = (style & ReverseVideo) == ReverseVideo
+  def isBold = (style & Bold)  == Bold
+  def isItalic = (style & Italic) == Italic
+  def isFixed = fontnum == FixedPitch
+
+  def withStyle(newStyle: Int) = {
+    TextStyle(newStyle,
+              if (TextStyles.isFixed(newStyle)) Fonts.Fixed else fontnum,
               foreground, background)
   }
   def withColor(newForeground: Int, newBackground: Int) = {
-    TextStyle(isItalic, isBold, isReverseVideo, fontnum,
-              newForeground, newBackground)
+    TextStyle(style, fontnum, newForeground, newBackground)
   }
   def withFont(newFontnum: Int) = {
-    TextStyle(isItalic, isBold, isReverseVideo, newFontnum,
-              foreground, background)
+    TextStyle(style, newFontnum, foreground, background)
   }
 }
 
