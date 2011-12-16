@@ -1,12 +1,8 @@
-ZMPP2 -- Second Generation Interactive Fiction Interpreter for Java
+# ZMPP2 - Second Generation Interactive Fiction Interpreter for Java
 
-ZMPP2 is a Z-Machine and Glulx/Glk implementation in Scala. The goal
-is to write a simple, efficient, flexible and reusable solution that
-works in many kinds of Java VM environments, such as Java SE, Android,
-Java ME and Java EE.
+ZMPP2 is a Z-Machine and Glulx/Glk implementation in Scala. The goal is to write a simple, efficient, flexible and reusable solution that works in many kinds of Java VM environments, such as Java SE, Android, Java ME and Java EE.
 
-The second revision of ZMPP reflects current knowledge and ideas about
-how I think an IF VM should look like on the Java Virtual Machine:
+The second revision of ZMPP reflects current knowledge and ideas about how I think an IF VM should look like on the Java Virtual Machine:
 
 - Thin abstraction 
 - Provide a simple, easily integratable core
@@ -21,7 +17,7 @@ how I think an IF VM should look like on the Java Virtual Machine:
   it runs within a single thread. Whether the user interface employs
   multiple threads is left to the specific UI implementation.
 
-Current features:
+###Current features:
 
 - Glulx 3.1.1 supported
 - Glk 0.7.0 almost feature complete (see known issues)
@@ -34,15 +30,15 @@ Current features:
 - file access
 - complete sound support (Ogg Vorbis, MOD, AIFF through JavaSound SPIs)
 
-Known issues:
+###Known issues:
 
 - a handful Glk functions still missing
 - no other supported Java environments yet
 - the Z-Machine core in this repository is very rudimentary, 1.x is still
   the official version for Z-Machine ZMPP
 
-Acknowledgements:
------------------
+##Acknowledgements:
+
 - The IF community for actively advancing Interactive Fiction and teaching
   me about it through your discussions. I would not be working on this
   project without you.
@@ -54,4 +50,3 @@ Acknowledgements:
 - Eliuk Blau for the support to implement the sound feature
 - Andrew Plotkin for providing lots of unit tests and clarifications
   about the specs
-
