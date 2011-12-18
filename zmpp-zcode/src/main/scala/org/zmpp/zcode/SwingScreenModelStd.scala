@@ -35,6 +35,7 @@ import java.awt.{FlowLayout,BorderLayout,GridLayout,Color,Font,Dimension,Graphic
 import java.awt.{Rectangle}
 import java.awt.event._
 import java.io.{FileOutputStream, FileInputStream}
+import scala.collection.JavaConversions._
 
 /*
  * Implementation of the standard screen model using Swing components.

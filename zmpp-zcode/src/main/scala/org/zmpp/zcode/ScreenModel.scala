@@ -28,7 +28,7 @@
  */
 package org.zmpp.zcode
 
-import scala.collection.mutable.ArrayBuffer
+import java.util.LinkedList
 
 object Fonts {
   val Normal             = 1
@@ -227,7 +227,7 @@ class TextRunBuffer {
   import TextStyles._
   private[this] var currentStyle: TextStyle = DefaultNormal
   private[this] var currentText: StringBuilder = new StringBuilder
-  private[this] var runBuffer = new ArrayBuffer[StyledText]()
+  private[this] var runBuffer = new LinkedList[StyledText]()
 
   def reset {
     clear
@@ -236,7 +236,7 @@ class TextRunBuffer {
 
   private def clear {
     currentText = new StringBuilder
-    runBuffer = new ArrayBuffer[StyledText]()
+    runBuffer = new LinkedList[StyledText]()
   }
 
   def append(char: Char) = currentText.append(char)
@@ -253,10 +253,10 @@ class TextRunBuffer {
     currentStyle = currentStyle.withFont(fontnum)
   }
   def applyCurrentStyle {
-    runBuffer.append(StyledText(currentText.toString, currentStyle))
+    runBuffer.add(StyledText(currentText.toString, currentStyle))
     currentText = new StringBuilder
   }
-  def grabRuns: ArrayBuffer[StyledText] = {
+  def grabRuns: LinkedList[StyledText] = {
     applyCurrentStyle
     val result = runBuffer
     clear
