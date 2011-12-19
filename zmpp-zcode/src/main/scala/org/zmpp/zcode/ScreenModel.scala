@@ -157,7 +157,7 @@ trait ScreenModel {
 
 trait ScreenModelWindow {
   def reset: Unit
-  def flush: Unit
+  def flush: Boolean
   def putChar(c: Char): Unit
   def clear: Unit
   def cursorPosition_=(pos: (Int, Int)): Unit

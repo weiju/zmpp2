@@ -172,7 +172,7 @@ class TextGrid extends JTextPane with ScreenModelWindow {
     clear
   }
 
-  def flush {
+  def flush: Boolean = {
     val doc = getDocument
     doc.remove(0, doc.getLength)
     var row = 0
@@ -192,6 +192,7 @@ class TextGrid extends JTextPane with ScreenModelWindow {
       doc.insertString(doc.getLength, "\n", null)
       row += 1
     }
+    true
   }
 }
 
@@ -267,12 +268,13 @@ extends JTextPane with ScreenModelWindow with KeyListener {
   def putChar(c: Char) {
     runBuffer.append(c)
   }
-  def flush {
+  def flush: Boolean = {
     val doc = getDocument
     val styledRuns = runBuffer.grabRuns
     for (styledRun <- styledRuns) {
       doc.insertString(doc.getLength, styledRun.text, attributeSetFor(styledRun.style))
     }
+    true
   }
   
   // ****** KeyListener ******
@@ -430,6 +432,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
   // input
   def readLine: Int = {
+    flush
     val maxChars = vm.readLineInfo.maxInputChars
     println("MAX_CHARS FOR READLINE: " + maxChars)
     if (vm.version <= 3) updateStatusLine
@@ -444,6 +447,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
   def readChar {
     if (vm.version <= 3) updateStatusLine
+    flush
     bottomWindow.requestCharInput
   }
 

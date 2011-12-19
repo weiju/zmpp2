@@ -45,6 +45,7 @@ trait SwingScreenModel extends ScreenModel with InputStream {
   def readChar
   def requestSaveFile
   def requestRestoreFile
+  def flush
 }
 
 class ZcodeFrame(version: Int) extends JFrame("ZMPP 2.0 Prototype")
@@ -112,6 +113,10 @@ object ExecutionControl {
     } else if (vm.state.runState == ZMachineRunStates.RestoreGame) {
       SwingUtilities.invokeAndWait(new Runnable {
         def run = screenModel.requestRestoreFile
+      })
+    } else if (vm.state.runState == ZMachineRunStates.Halted) {
+      SwingUtilities.invokeAndWait(new Runnable {
+        def run = screenModel.flush
       })
     }
   }

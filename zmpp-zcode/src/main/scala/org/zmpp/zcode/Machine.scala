@@ -115,7 +115,6 @@ class Machine {
   }
 
   def readLine(text: Int, parse: Int) = {
-    ioSystem.flush
     readLineInfo.maxInputChars =
       if (state.header.version <= 4) state.byteAt(text) - 1
       else state.byteAt(text)
@@ -125,7 +124,6 @@ class Machine {
   }
 
   def readChar = {
-    ioSystem.flush
     state.runState = ZMachineRunStates.ReadChar
   }
   // **********************************************************************
@@ -264,7 +262,6 @@ class Machine {
         }
       case 0x0a => // quit
         ioSystem.printMessage("*Game Ended*")
-        ioSystem.flush
         state.runState = VMRunStates.Halted
       case 0x0b => ioSystem.putChar('\n') // new_line
       case 0x0c => // show_status
