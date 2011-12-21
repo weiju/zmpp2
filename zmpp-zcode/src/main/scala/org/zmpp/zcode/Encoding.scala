@@ -28,13 +28,21 @@
  */
 package org.zmpp.zcode
 
+import org.zmpp.base.Memory
+
 /*
  * String decoding/encoding functionality is found here.
  */
-abstract class Alphabet {
+trait Alphabet {
+  def name: String
+  def lookup(zchar: Int): Char
+  def charCodeFor(c: Char): Int
+  def contains(c: Char): Boolean
+}
+
+abstract class AbstractAlphabet extends Alphabet {
   def table: String
   def lookup(zchar: Int): Char = table(zchar - 6)
-  def name: String
 
   def charCodeFor(c: Char): Int = {
     var i = 0
@@ -46,21 +54,41 @@ abstract class Alphabet {
   }
   def contains(c: Char) = table.filter{tableChar => c == tableChar}.length > 0
 }
-object Alphabet0 extends Alphabet {
+object Alphabet0 extends AbstractAlphabet {
   val table = "abcdefghijklmnopqrstuvwxyz"
   def name = "A0"
 }
-object Alphabet1 extends Alphabet {
+object Alphabet1 extends AbstractAlphabet {
   val table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   def name = "A1"
 }
-object Alphabet2 extends Alphabet {
+object Alphabet2 extends AbstractAlphabet {
   val table = " \n0123456789.,!?+#'\"/\\-:()"
   def name = "A2"
 }
-object Alphabet2_V1 extends Alphabet {
+object Alphabet2_V1 extends AbstractAlphabet {
   val table = " 0123456789.,!?+#'\"/\\<-:()"
   def name = "A2"
+}
+
+class CustomAlphabet(val name: String, memory: Memory, address: Int) extends Alphabet {
+  def lookup(zchar: Int): Char = memory.byteAt(address + zchar - 6).asInstanceOf[Char]
+  def charCodeFor(c: Char): Int = {
+    var i = 0
+    while (i < 26) {
+      if (memory.byteAt(i) == c) return i + 6
+      i += 1
+    }
+    throw new IllegalArgumentException("Character '%c' not found".format(c))
+  }
+  def contains(c: Char): Boolean = {
+    var i = 0
+    while (i < 26) {
+      if (memory.byteAt(i) == c) return true
+      i += 1
+    }
+    false
+  }
 }
 
 trait AccentTable {
@@ -101,9 +129,9 @@ class ZsciiEncoding(_state: VMState) {
 
   import ZsciiEncoding._
 
-  private def A0 = Alphabet0
-  private def A1 = Alphabet1
-  private def A2 = if (_state.header.version == 1) Alphabet2_V1 else Alphabet2
+  private[this] var A0: Alphabet = null
+  private[this] var A1: Alphabet = null
+  private[this] var A2: Alphabet = null
 
   // processing state: abbreviations and multi-character sequences
   var currentAlphabet: Alphabet      = A0
@@ -115,7 +143,27 @@ class ZsciiEncoding(_state: VMState) {
   var shiftLock                      = false
   var accentTable                    = DefaultAccentTable
 
-  def reset {
+  // called when the state object has changed
+  def resetVMState {
+    A0 = Alphabet0
+    A1 = Alphabet1
+    A2 = if (_state.header.version == 1) Alphabet2_V1 else Alphabet2   
+    if (_state.header.version >= 5) {
+      if (_state.header.alphabetTable > 0) {
+        println("USING CUSTOM ALPHABET TABLE")
+        A0 = new CustomAlphabet("CA0", _state.story, _state.header.alphabetTable)
+        A1 = new CustomAlphabet("CA1", _state.story, _state.header.alphabetTable + 26)
+        A2 = new CustomAlphabet("CA2", _state.story, _state.header.alphabetTable + 52)
+      }
+      if (_state.header.customAccentTable > 0) {
+        println("USING CUSTOM ACCENT TABLE")
+      }
+    }
+    resetEncodingState
+  }
+
+  // called to reset encoding
+  def resetEncodingState {
     currentAlphabet = A0
     lastAlphabet    = A0
     decode10bit     = false
@@ -203,6 +251,7 @@ class ZsciiEncoding(_state: VMState) {
       }
     }
     else if (zchar == 0) stream.putChar(' ')
+    else if (zchar == 7 && currentAlphabet == A2) stream.putChar('\n')
     else if (isV1Newline(zchar)) stream.putChar('\n')
     else if (isShiftCharacter(zchar)) handleShift(zchar)
     else if (isAbbreviationCharacter(zchar)) {
@@ -215,7 +264,8 @@ class ZsciiEncoding(_state: VMState) {
     }
     else if (zchar > 5) {
       stream.putChar(currentAlphabet.lookup(zchar))
-      //printf("decoded ZCHAR '%c'\n", currentAlphabet.lookup(zchar))
+      //printf("decoded ZCHAR '%c' (zchar=%d, Alphabet='%s')\n",
+      //       currentAlphabet.lookup(zchar), zchar, currentAlphabet.name)
     }
     // always reset the alphabet if not shift
     if (!shiftLock && !isShiftCharacter(zchar)) unshiftAlphabet
@@ -227,7 +277,7 @@ class ZsciiEncoding(_state: VMState) {
     var numBytesDecoded = 0
     var currentWord = _state.shortAt(addr)
     var endofText   = false
-    reset
+    resetEncodingState
     while (!endofText) {
       numBytesDecoded += 2
       //printf("CURRENT WORD: %02x (Alphabet: %s)\n", currentWord,

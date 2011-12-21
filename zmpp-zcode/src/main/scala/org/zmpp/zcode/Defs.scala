@@ -100,6 +100,11 @@ class StoryHeader(story: Memory) {
   def standardRevision_=(revision: Int) = story.setShortAt(0x32, revision)
   def alphabetTable       = story.shortAt(0x34)
   def headerExtTable      = story.shortAt(0x36)
+  def customAccentTable   = {
+    val extTable = headerExtTable
+    if (extTable > 0 && story.shortAt(extTable) >= 3) story.shortAt(extTable + 6)
+    else 0
+  }
   
   def unpackRoutineAddress(addr: Int) = {
     version match {
@@ -211,6 +216,7 @@ class Snapshot(val compressedDiff: Array[Byte], val stackValues: Array[Int],
                val pc: Int, val fp: Int)
 
 trait VMState {
+  def story: Memory
   def header: StoryHeader
   def encoding: ZsciiEncoding
   def runState: Int
@@ -228,8 +234,8 @@ trait VMState {
 class VMStateImpl extends VMState {
   import QuetzalCompression._
 
-  private var _story : Memory = null
-  private val _stack = new Stack
+  private[this] var _story : Memory = null
+  private[this] val _stack = new Stack
 
   var header     : StoryHeader   = null
   val encoding = new ZsciiEncoding(this)
@@ -239,11 +245,11 @@ class VMStateImpl extends VMState {
   // restart, undo snapshots and saving
   var originalDynamicMem: Array[Byte] = null
 
-  var pc       = 0
-  var fp       = 0 // frame pointer
-  def sp       = _stack.sp
-  def stack    = _stack
-
+  var pc        = 0
+  var fp        = 0 // frame pointer
+  def sp        = _stack.sp
+  def stack     = _stack
+  def story     = _story
   def storyData = _story.buffer
 
   def reset {
@@ -257,7 +263,7 @@ class VMStateImpl extends VMState {
       // V6 does function call to main routine
       call(header.startPC, null, -1, 0)
     }
-    encoding.reset
+    encoding.resetVMState
     // set interpreter information
     setByteAt(0x1e, 0x06)
     setByteAt(0x1f, '6'.asInstanceOf[Int])
