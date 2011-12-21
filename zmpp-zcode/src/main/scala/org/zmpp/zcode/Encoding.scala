@@ -117,6 +117,14 @@ object DefaultAccentTable extends AccentTable {
   }
 }
 
+class CustomAccentTable(memory: Memory, address: Int) extends AccentTable {
+  val numWords = memory.shortAt(address)
+
+  def apply(index: Int) = {
+    if (index < numWords) memory.shortAt(address + (index + 1) * 2).asInstanceOf[Char] else '?'
+  }
+}
+
 object ZsciiEncoding {
   val NullChar = 0  
   def zsciiCodeFor(c: Int) = c
