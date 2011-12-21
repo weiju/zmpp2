@@ -140,6 +140,7 @@ class ZsciiEncoding(_state: VMState) {
   private[this] var A0: Alphabet = null
   private[this] var A1: Alphabet = null
   private[this] var A2: Alphabet = null
+  private[this] var accentTable: AccentTable = DefaultAccentTable
 
   // processing state: abbreviations and multi-character sequences
   var currentAlphabet: Alphabet      = A0
@@ -149,7 +150,6 @@ class ZsciiEncoding(_state: VMState) {
   var decode10bitStage               = 0
   var decode10bitFirst               = 0
   var shiftLock                      = false
-  var accentTable                    = DefaultAccentTable
 
   // called when the state object has changed
   def resetVMState {
@@ -158,13 +158,12 @@ class ZsciiEncoding(_state: VMState) {
     A2 = if (_state.header.version == 1) Alphabet2_V1 else Alphabet2   
     if (_state.header.version >= 5) {
       if (_state.header.alphabetTable > 0) {
-        println("USING CUSTOM ALPHABET TABLE")
         A0 = new CustomAlphabet("CA0", _state.story, _state.header.alphabetTable)
         A1 = new CustomAlphabet("CA1", _state.story, _state.header.alphabetTable + 26)
         A2 = new CustomAlphabet("CA2", _state.story, _state.header.alphabetTable + 52)
       }
       if (_state.header.customAccentTable > 0) {
-        println("USING CUSTOM ACCENT TABLE")
+        accentTable = new CustomAccentTable(_state.story, _state.header.customAccentTable)
       }
     }
     resetEncodingState
