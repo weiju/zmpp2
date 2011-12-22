@@ -97,14 +97,16 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
   // TODO: if userDictionary is != 0, use the UserDictionary
   private val dictionary       = new DefaultDictionary(state)
 
-  private def storeInputToTextBuffer(inputString: String) {
+  private def storeInputToTextBuffer(input: String) {
+    val inputString = input.toLowerCase
     val offset = textBufferOffset
     val lengthWithoutTerminator = inputString.length - 1
     val terminateChar = inputString.charAt(inputString.length - 1)
 
+    // convert to ZSCII and store in text buffer on the fly
     for (i <- 0 until lengthWithoutTerminator) {
       state.setByteAt(textBuffer + offset + i,
-                      inputString.charAt(i) & 0xff)
+                      state.encoding.unicodeToZSCII(inputString.charAt(i)))
     }
     // write termination information
     if (storyVersion >= 5) {
@@ -204,7 +206,7 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
 
   def process(input: String) {
     val version = storyVersion
-    storeInputToTextBuffer(input.toLowerCase)
+    storeInputToTextBuffer(input)
     if (version < 5 || version >= 5 && parseBuffer > 0) {
       tokenize
     }
@@ -277,7 +279,7 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
       // can be a shifted character or non-shifted
       val zsciiChar = nextChar
       val shiftCode = state.encoding.shiftCodeFor(zsciiChar)
-      if (shiftCode == -1) {        
+      if (shiftCode == -1) {
         // 10-bit character
         if (numFreeSlots >= 4) {
           appendChar(5)                        // shift to A2

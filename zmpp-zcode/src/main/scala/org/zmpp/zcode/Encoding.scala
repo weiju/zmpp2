@@ -76,7 +76,7 @@ class CustomAlphabet(val name: String, memory: Memory, address: Int) extends Alp
   def charCodeFor(c: Char): Int = {
     var i = 0
     while (i < 26) {
-      if (memory.byteAt(i) == c) return i + 6
+      if (memory.byteAt(address + i) == c) return i + 6
       i += 1
     }
     throw new IllegalArgumentException("Character '%c' not found".format(c))
@@ -84,7 +84,7 @@ class CustomAlphabet(val name: String, memory: Memory, address: Int) extends Alp
   def contains(c: Char): Boolean = {
     var i = 0
     while (i < 26) {
-      if (memory.byteAt(i) == c) return true
+      if (memory.byteAt(address + i) == c) return true
       i += 1
     }
     false
@@ -93,6 +93,8 @@ class CustomAlphabet(val name: String, memory: Memory, address: Int) extends Alp
 
 trait AccentTable {
   def apply(index: Int): Char
+  // returns the index of the specified character or -1 if not found
+  def indexOf(c: Char): Int
 }
 
 object DefaultAccentTable extends AccentTable {
@@ -115,13 +117,31 @@ object DefaultAccentTable extends AccentTable {
   def apply(index: Int) = {
     if (index < StandardAccents.length) StandardAccents(index) else '?'
   }
+  def indexOf(c: Char): Int = {
+    var i = 0
+    while (i < StandardAccents.length) {
+      if (StandardAccents(i) == c) return i
+      i += 1
+    }
+    -1
+  }
 }
 
 class CustomAccentTable(memory: Memory, address: Int) extends AccentTable {
   val numWords = memory.shortAt(address)
 
   def apply(index: Int) = {
-    if (index < numWords) memory.shortAt(address + (index + 1) * 2).asInstanceOf[Char] else '?'
+    if (index < numWords)
+      memory.shortAt(address + (index + 1) * 2).asInstanceOf[Char]
+    else '?'
+  }
+  def indexOf(c: Char): Int = {
+    var i = 0
+    while (i < numWords) {
+      if (memory.shortAt(address + (i + 1) * 2) == c) return i
+      i += 1
+    }
+    -1
   }
 }
 
@@ -130,7 +150,7 @@ object ZsciiEncoding {
   def zsciiCodeFor(c: Int) = c
   val AccentStart = 155
   val AccentEnd   = 251
-  def isAccent(c: Char) = c >= AccentStart && c <= AccentEnd
+  def isZSCIIAccent(c: Char) = c >= AccentStart && c <= AccentEnd
 }
 
 class ZsciiEncoding(_state: VMState) {
@@ -156,6 +176,8 @@ class ZsciiEncoding(_state: VMState) {
     A0 = Alphabet0
     A1 = Alphabet1
     A2 = if (_state.header.version == 1) Alphabet2_V1 else Alphabet2   
+    accentTable = DefaultAccentTable
+
     if (_state.header.version >= 5) {
       if (_state.header.alphabetTable > 0) {
         A0 = new CustomAlphabet("CA0", _state.story, _state.header.alphabetTable)
@@ -175,7 +197,6 @@ class ZsciiEncoding(_state: VMState) {
     lastAlphabet    = A0
     decode10bit     = false
     shiftLock       = false
-    accentTable     = DefaultAccentTable
   }
 
   def isShiftCharacter(zchar: Int) = {
@@ -220,8 +241,13 @@ class ZsciiEncoding(_state: VMState) {
     (_state.header.version == 2 && zchar == 1)
   }
   def zsciiToUnicode(zsciiChar: Char) = {
-    if (isAccent(zsciiChar)) accentTable(zsciiChar - AccentStart)
+    if (isZSCIIAccent(zsciiChar)) accentTable(zsciiChar - AccentStart)
     else zsciiChar
+  }
+  def unicodeToZSCII(c: Char) = {
+    val accentIndex = accentTable.indexOf(c)
+    if (accentIndex >= 0) AccentStart + accentIndex
+    else c & 0xff
   }
 
   def decodeZchar(zchar: Int, stream: OutputStream) {

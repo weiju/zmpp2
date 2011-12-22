@@ -72,10 +72,10 @@ class Machine {
 
   def resumeWithLineInput(input: String) {
     state.runState = ZMachineRunStates.Running
-    val parserSupport =
+    val parserHelper =
       new ParserHelper(state, readLineInfo.textBuffer, readLineInfo.parseBuffer,
                        0, false)
-    parserSupport.process(input)
+    parserHelper.process(input)
     if (version >= 5) {
       storeResult(10) // store terminator
     }

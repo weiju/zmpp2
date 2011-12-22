@@ -150,7 +150,6 @@ class IoSystem(machine: Machine) extends OutputStream {
       printError("Can't set current output stream to id: %d " +
                  "(Only 1-4 are allowed)".format(streamId))
     } else {
-      printf("SELECT OUTPUTSTREAM %d: %b\n", streamId, flag)
       outputStreams(streamId).select(flag)
     }
   }

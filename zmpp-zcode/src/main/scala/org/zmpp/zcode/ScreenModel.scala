@@ -196,7 +196,7 @@ class TextGridBuffer(numRows: Int, numColumns: Int) {
   fillGridWith(DefaultFixedBlank, 0)
 
   def fillGridWith(styledChar: StyledChar, startRow: Int=0) {
-    printf("fillGridWith, c = '%c', startRow = %d\n", styledChar.c, startRow)
+    //printf("fillGridWith, c = '%c', startRow = %d\n", styledChar.c, startRow)
     var row = startRow
     var col = 0
     while (row < numRows) {
