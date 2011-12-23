@@ -279,8 +279,42 @@ extends JTextPane with ScreenModelWindow with KeyListener {
   
   // ****** KeyListener ******
   def keyPressed(event: KeyEvent) {
+    import KeyEvent._
     if (isCharInputMode) {
-      screenModel.resumeWithCharInput(event.getKeyChar)
+      val keyChar = event.getKeyChar
+      if (keyChar != CHAR_UNDEFINED) {
+        screenModel.resumeWithCharInput(keyChar)
+      } else {
+        val keyCode = event.getKeyCode
+        keyCode match {
+          case VK_UP      => screenModel.resumeWithCharInput(129)
+          case VK_DOWN    => screenModel.resumeWithCharInput(130)
+          case VK_LEFT    => screenModel.resumeWithCharInput(131)
+          case VK_RIGHT   => screenModel.resumeWithCharInput(132)
+          case VK_F1      => screenModel.resumeWithCharInput(133)
+          case VK_F2      => screenModel.resumeWithCharInput(134)
+          case VK_F3      => screenModel.resumeWithCharInput(135)
+          case VK_F4      => screenModel.resumeWithCharInput(136)
+          case VK_F5      => screenModel.resumeWithCharInput(137)
+          case VK_F6      => screenModel.resumeWithCharInput(138)
+          case VK_F7      => screenModel.resumeWithCharInput(139)
+          case VK_F8      => screenModel.resumeWithCharInput(140)
+          case VK_F9      => screenModel.resumeWithCharInput(141)
+          case VK_F10     => screenModel.resumeWithCharInput(142)
+          case VK_F11     => screenModel.resumeWithCharInput(143)
+          case VK_F12     => screenModel.resumeWithCharInput(144)
+          case VK_NUMPAD0 => screenModel.resumeWithCharInput(145)
+          case VK_NUMPAD1 => screenModel.resumeWithCharInput(146)
+          case VK_NUMPAD2 => screenModel.resumeWithCharInput(147)
+          case VK_NUMPAD3 => screenModel.resumeWithCharInput(148)
+          case VK_NUMPAD4 => screenModel.resumeWithCharInput(149)
+          case VK_NUMPAD5 => screenModel.resumeWithCharInput(150)
+          case VK_NUMPAD6 => screenModel.resumeWithCharInput(151)
+          case VK_NUMPAD7 => screenModel.resumeWithCharInput(152)
+          case VK_NUMPAD8 => screenModel.resumeWithCharInput(153)
+          case VK_NUMPAD9 => screenModel.resumeWithCharInput(154)
+        }
+      }
     } else if (isLineInputMode) {
       val doc = getDocument
       val caretPos = getCaret.getDot
