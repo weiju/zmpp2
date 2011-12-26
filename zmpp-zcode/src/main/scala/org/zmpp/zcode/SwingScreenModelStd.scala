@@ -144,17 +144,13 @@ class TextGrid extends JTextPane with ScreenModelWindow {
       val line = _cursorPos._1
 
       // new style
-      buffer.putChar(styleCharacter(c), line - 1, col -1)
+      buffer(line - 1, col - 1) = screenModel.styleCharacter(c)
       if (col < charsPerLine) _cursorPos = (line, col + 1)
     }
   }
   private def moveCursorToNextLine {
     val nextLine = math.min(numLines, _cursorPos._1 + 1)
     _cursorPos = (nextLine, 0)
-  }
-
-  private def styleCharacter(c: Char): StyledChar = {
-    screenModel.styleCharacter(c)
   }
 
   def clear {
@@ -181,12 +177,15 @@ class TextGrid extends JTextPane with ScreenModelWindow {
     while (row < totalLines) {
       col = 0
       while (col < charsPerLine) {
-        val styledChar = buffer.charAt(row, col)
+        val styledChar = buffer(row, col)
         if (styledChar == TextStyles.DefaultFixedBlank) {
           screenModel.setTransparentAttributeSet(attrs)
         }
         else screenModel.setAttributeSet(attrs, styledChar)
-        doc.insertString(doc.getLength, styledChar.c.toString, attrs)
+        doc.insertString(
+          doc.getLength,
+          ((styledChar >>> 16) & 0xffff).asInstanceOf[Char].toString,
+          attrs)
         col += 1
       }
       doc.insertString(doc.getLength, "\n", null)
@@ -599,9 +598,11 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
 
   def styleCharacter(c: Char) = {
-    StyledChar(c, TextStyles.makeStyle(style,
-                                       Fonts.Fixed,
-                                       currentForeground, currentBackground))
+    TextStyles.styleChar(c,
+                         TextStyles.makeStyle(style,
+                                              Fonts.Fixed,
+                                              currentForeground,
+                                              currentBackground))
   }
   val Transparent = new Color(0, 0, 0, 0)
 
@@ -609,15 +610,25 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     StyleConstants.setBackground(attrs, Transparent)
   }
 
-  def setAttributeSet(attrs: MutableAttributeSet, styledChar: StyledChar) = {
-    StyleConstants.setBold(attrs,   styledChar.isBold)
-    StyleConstants.setItalic(attrs, styledChar.isItalic)
-    if (styledChar.isReverseVideo) {
-      StyleConstants.setBackground(attrs, getColor(styledChar.foreground, true))
-      StyleConstants.setForeground(attrs, getColor(styledChar.background, false))
+  def setAttributeSet(attrs: MutableAttributeSet, styledChar: Int) = {
+    StyleConstants.setBold(attrs,
+                           TextStyles.isBold(styledChar))
+    StyleConstants.setItalic(attrs,
+                             TextStyles.isItalic(styledChar))
+    if (TextStyles.isReverseVideo(styledChar)) {
+      StyleConstants.setBackground(
+        attrs,
+        getColor(TextStyles.foregroundColor(styledChar), true))
+      StyleConstants.setForeground(
+        attrs,
+        getColor(TextStyles.backgroundColor(styledChar), false))
     } else {
-      StyleConstants.setForeground(attrs, getColor(styledChar.foreground, true))
-      StyleConstants.setBackground(attrs, getColor(styledChar.background, false))
+      StyleConstants.setForeground(
+        attrs,
+        getColor(TextStyles.foregroundColor(styledChar), true))
+      StyleConstants.setBackground(
+        attrs,
+        getColor(TextStyles.backgroundColor(styledChar), false))
     }
   }
 

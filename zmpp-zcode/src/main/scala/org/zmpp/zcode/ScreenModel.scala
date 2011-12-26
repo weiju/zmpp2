@@ -74,7 +74,7 @@ object TextStyles {
 
   val DefaultNormal = makeStyle(0, Fonts.Normal, Colors.Default, Colors.Default)
   val DefaultFixed  = makeStyle(0, Fonts.Fixed,  Colors.Default, Colors.Default)
-  val DefaultFixedBlank = StyledChar(' ', DefaultFixed)
+  val DefaultFixedBlank = styleChar(' ', DefaultFixed)
 
   /*
    * encode style, font number and colors into a 16 bit value
@@ -85,7 +85,6 @@ object TextStyles {
     ((foreground & 0x0f) << 12) | ((background & 0x0f) << 8) |
     ((fontnum & 0x07) << 4) | (styleMask & 0x0f)
   }
-
   def fontNumber(style: Int) = (style >>>  4) & 0x07
   def foregroundColor(style: Int) = (style >>>  12) & 0x0f
   def backgroundColor(style: Int) = (style >>>  8) & 0x0f
@@ -98,6 +97,9 @@ object TextStyles {
   }
   def withFont(style: Int, fontnum: Int): Int = {
     (style & 0x00f0) | ((fontnum & 0x07) << 4)
+  }
+  def styleChar(c: Char, style: Int) = {
+    ((c & 0xffff) << 16) | (style & 0xffff)
   }
 }
 
@@ -173,14 +175,6 @@ case class StyledText(text: String, style: Int) {
   def foreground = TextStyles.foregroundColor(style)
   def background = TextStyles.backgroundColor(style)
 }
-case class StyledChar(c: Char, style: Int) {
-  def isItalic = TextStyles.isItalic(style)
-  def isBold = TextStyles.isBold(style)
-  def isReverseVideo = TextStyles.isReverseVideo(style)
-  def isFixed = TextStyles.isFixed(style)
-  def foreground = TextStyles.foregroundColor(style)
-  def background = TextStyles.backgroundColor(style)
-}
 
 /*
  * While text grids are not technically "buffered" according to the
@@ -189,14 +183,18 @@ case class StyledChar(c: Char, style: Int) {
  * - Game responsiveness appears to be much better when the top window is buffered
  * - Output can be easily clipped
  * - we can store and serialize the state
+ * The grid buffer is represented as an array of 32bit values which
+ * are basically the characters in the upper 16 bits and the style
+ * in the lower. With this strategy, we can avoid creation of objects
+ * and performance penalties due to garbage collection.
  */
 class TextGridBuffer(numRows: Int, numColumns: Int) {
   import TextStyles._
 
-  private val grid = Array.ofDim[StyledChar](numRows, numColumns)
+  private val grid = Array.ofDim[Int](numRows, numColumns)
   fillGridWith(DefaultFixedBlank, 0)
 
-  def fillGridWith(styledChar: StyledChar, startRow: Int=0) {
+  def fillGridWith(styledChar: Int, startRow: Int=0) {
     //printf("fillGridWith, c = '%c', startRow = %d\n", styledChar.c, startRow)
     var row = startRow
     var col = 0
@@ -210,12 +208,12 @@ class TextGridBuffer(numRows: Int, numColumns: Int) {
     }
   }
 
-  def putChar(c: StyledChar, row: Int, column: Int) {
+  def update(row: Int, column: Int, c: Int) {
     if (row >= 0 && row < numRows && column >= 0 && column < numColumns) {
       grid(row)(column) = c
     }
   }
-  def charAt(row: Int, column: Int) = grid(row)(column)
+  def apply(row: Int, column: Int) = grid(row)(column)
 }
 
 /**
