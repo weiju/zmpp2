@@ -19,10 +19,15 @@ The second revision of ZMPP reflects current knowledge and ideas about how I thi
 
 ###Current features:
 
-- Glulx 3.1.1 supported
-- Glk 0.7.0 almost feature complete (see known issues)
+- Glulx 3.1.1, Glk 0.7.0 almost feature complete (see known issues)
+- Z-Machine Standard 1.1
 - run as applet or application (Java SE)
 - runs a number of games already
+- saves games in Quetzal format
+- supports Blorb format
+
+<b>Glulx/Swing:</b>
+
 - supports graphics
 - multiple undo
 - styles
@@ -30,12 +35,22 @@ The second revision of ZMPP reflects current knowledge and ideas about how I thi
 - file access
 - complete sound support (Ogg Vorbis, MOD, AIFF through JavaSound SPIs)
 
+<b>Z-Machine:</b>
+
+- supports all versions except V6
+- multiple undo
+- colors
+- accented characters
+- user-defined alphabets, accent tables
+
 ###Known issues:
 
-- a handful Glk functions still missing
-- no other supported Java environments yet
-- the Z-Machine core in this repository is very rudimentary, 1.x is still
-  the official version for Z-Machine ZMPP
+- Glk support incomplete
+- Z-Machine
+  - V6 support incomplete
+  - user dictionaries
+  - timed input
+  - sound support
 
 ##Acknowledgements:
 
