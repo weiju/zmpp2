@@ -237,7 +237,7 @@ extends JTextPane with ScreenModelWindow with KeyListener {
   def setFont(fontnum: Int) = runBuffer.setFont(fontnum)
   def setColor(foreground: Int, background: Int) = runBuffer.setColor(foreground, background)
 
-  private def attributeSetFor(style: TextStyle) = {
+  private def attributeSetFor(style: Int) = {
     val attrs = getInputAttributes
     screenModel.attributeSetFor(attrs, style)
     attrs
@@ -599,8 +599,9 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
 
   def styleCharacter(c: Char) = {
-    StyledChar(c, TextStyle(style,
-                            Fonts.Fixed, currentForeground, currentBackground))
+    StyledChar(c, TextStyles.makeStyle(style,
+                                       Fonts.Fixed,
+                                       currentForeground, currentBackground))
   }
   val Transparent = new Color(0, 0, 0, 0)
 
@@ -620,15 +621,15 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     }
   }
 
-  def attributeSetFor(attrs: MutableAttributeSet, style: TextStyle) = {
-    StyleConstants.setBold(attrs,   style.isBold)
-    StyleConstants.setItalic(attrs, style.isItalic)
-    if (style.isReverseVideo) {
-      StyleConstants.setBackground(attrs, getColor(style.foreground, true))
-      StyleConstants.setForeground(attrs, getColor(style.background, false))
+  def attributeSetFor(attrs: MutableAttributeSet, style: Int) = {
+    StyleConstants.setBold(attrs,   TextStyles.isBold(style))
+    StyleConstants.setItalic(attrs, TextStyles.isItalic(style))
+    if (TextStyles.isReverseVideo(style)) {
+      StyleConstants.setBackground(attrs, getColor(TextStyles.foregroundColor(style), true))
+      StyleConstants.setForeground(attrs, getColor(TextStyles.backgroundColor(style), false))
     } else {
-      StyleConstants.setForeground(attrs, getColor(style.foreground, true))
-      StyleConstants.setBackground(attrs, getColor(style.background, false))
+      StyleConstants.setForeground(attrs, getColor(TextStyles.foregroundColor(style), true))
+      StyleConstants.setBackground(attrs, getColor(TextStyles.backgroundColor(style), false))
     }
     if (currentFont == Fonts.Normal) {
       // TODO

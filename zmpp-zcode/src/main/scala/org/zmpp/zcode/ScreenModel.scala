@@ -72,9 +72,8 @@ object TextStyles {
   def isItalic(style: Int) = (style & Italic) == Italic
   def isFixed(style: Int) = (style & FixedPitch) == FixedPitch
 
-  val DefaultNormal = TextStyle(0, Fonts.Normal, Colors.Default, Colors.Default)
-  val DefaultFixed = TextStyle(0, Fonts.Fixed,
-                               Colors.Default, Colors.Default)
+  val DefaultNormal = makeStyle(0, Fonts.Normal, Colors.Default, Colors.Default)
+  val DefaultFixed  = makeStyle(0, Fonts.Fixed,  Colors.Default, Colors.Default)
   val DefaultFixedBlank = StyledChar(' ', DefaultFixed)
 
   /*
@@ -90,32 +89,15 @@ object TextStyles {
   def fontNumber(style: Int) = (style >>>  4) & 0x07
   def foregroundColor(style: Int) = (style >>>  12) & 0x0f
   def backgroundColor(style: Int) = (style >>>  8) & 0x0f
-}
-
-/*
- * Auxiliary structures to help building screen models.
- * A style could theoretically be encoded in 16 bit, a styled character
- * requires 16 + 16 = 32 bit
- */
-case class TextStyle(style: Int, fontnum: Int,
-                     foreground: Int, background: Int) {
-  import TextStyles._
-  def isRoman = style == Roman
-  def isReverseVideo = (style & ReverseVideo) == ReverseVideo
-  def isBold = (style & Bold)  == Bold
-  def isItalic = (style & Italic) == Italic
-  def isFixed = fontnum == FixedPitch
-
-  def withStyle(newStyle: Int) = {
-    TextStyle(newStyle,
-              if (TextStyles.isFixed(newStyle)) Fonts.Fixed else fontnum,
-              foreground, background)
+  def withStyle(style: Int, styleMask: Int): Int = {
+    (style & 0xfff0) | styleMask
   }
-  def withColor(newForeground: Int, newBackground: Int) = {
-    TextStyle(style, fontnum, newForeground, newBackground)
+  def withColors(style: Int, foreground: Int, background: Int) = {
+    (style & 0x00ff) | ((foreground & 0x0f) << 12) |
+    ((background & 0x0f) << 8)
   }
-  def withFont(newFontnum: Int) = {
-    TextStyle(style, newFontnum, foreground, background)
+  def withFont(style: Int, fontnum: Int): Int = {
+    (style & 0x00f0) | ((fontnum & 0x07) << 4)
   }
 }
 
@@ -183,21 +165,21 @@ trait ScreenModelWindow {
   def cursorPosition: (Int, Int)
 }
 
-case class StyledText(text: String, style: TextStyle) {
-  def isItalic = style.isItalic
-  def isBold = style.isBold
-  def isReverseVideo = style.isReverseVideo
-  def isFixed = style.isFixed
-  def foreground = style.foreground
-  def background = style.background
+case class StyledText(text: String, style: Int) {
+  def isItalic = TextStyles.isItalic(style)
+  def isBold = TextStyles.isBold(style)
+  def isReverseVideo = TextStyles.isReverseVideo(style)
+  def isFixed = TextStyles.isFixed(style)
+  def foreground = TextStyles.foregroundColor(style)
+  def background = TextStyles.backgroundColor(style)
 }
-case class StyledChar(c: Char, style: TextStyle) {
-  def isItalic = style.isItalic
-  def isBold = style.isBold
-  def isReverseVideo = style.isReverseVideo
-  def isFixed = style.isFixed
-  def foreground = style.foreground
-  def background = style.background
+case class StyledChar(c: Char, style: Int) {
+  def isItalic = TextStyles.isItalic(style)
+  def isBold = TextStyles.isBold(style)
+  def isReverseVideo = TextStyles.isReverseVideo(style)
+  def isFixed = TextStyles.isFixed(style)
+  def foreground = TextStyles.foregroundColor(style)
+  def background = TextStyles.backgroundColor(style)
 }
 
 /*
@@ -244,7 +226,7 @@ class TextGridBuffer(numRows: Int, numColumns: Int) {
  */
 class TextRunBuffer {
   import TextStyles._
-  private[this] var currentStyle: TextStyle = DefaultNormal
+  private[this] var currentStyle = DefaultNormal
   private[this] var currentText: StringBuilder = new StringBuilder
   private[this] var runBuffer = new LinkedList[StyledText]()
 
@@ -259,17 +241,17 @@ class TextRunBuffer {
   }
 
   def append(char: Char) = currentText.append(char)
-  def setStyle(style: Int) {
+  def setStyle(styleMask: Int) {
     applyCurrentStyle
-    currentStyle = currentStyle.withStyle(style)
+    currentStyle = TextStyles.withStyle(currentStyle, styleMask)
   }
   def setColor(foreground: Int, background: Int) {
     applyCurrentStyle
-    currentStyle = currentStyle.withColor(foreground, background)
+    currentStyle = TextStyles.withColors(currentStyle, foreground, background)
   }
   def setFont(fontnum: Int) {
     applyCurrentStyle
-    currentStyle = currentStyle.withFont(fontnum)
+    currentStyle = TextStyles.withFont(currentStyle, fontnum)
   }
   def applyCurrentStyle {
     runBuffer.add(StyledText(currentText.toString, currentStyle))
