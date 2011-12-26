@@ -128,11 +128,11 @@ class IoSystem(machine: Machine) extends OutputStream {
   import StreamIds._
 
   // entry 0 is null
-  private val outputStreams = new Array[OutputStream](5)
-  private val inputStreams  = new Array[InputStream](2)
-  private val NullOut = new NullOutputStream
-  private var _currentInputStreamId     = Keyboard
-  private var _screenModel: ScreenModel = null
+  private[this] val outputStreams = new Array[OutputStream](5)
+  private[this] val inputStreams  = new Array[InputStream](2)
+  private[this] val NullOut = new NullOutputStream
+  private[this] var _currentInputStreamId     = Keyboard
+  private[this] var _screenModel: ScreenModel = null
 
   def reset(screenModel: ScreenModel) {
     outputStreams(0)          = NullOut
@@ -172,9 +172,21 @@ class IoSystem(machine: Machine) extends OutputStream {
   def putChar(c: Char) {
     // if stream 3 is selected, only write to that one
     if (outputStreams(Memory).isSelected) outputStreams(Memory).putChar(c)
-    else outputStreams.filter{s => s.isSelected}.map{s => s.putChar(c)}
+    else {
+      var i = 0
+      while (i < outputStreams.length) {
+        if (outputStreams(i).isSelected) outputStreams(i).putChar(c)
+        i += 1
+      }
+    }
   }
-  def flush = outputStreams.filter{s => s.isSelected}.map{s => s.flush}
+  def flush {
+    var i = 0
+    while (i < outputStreams.length) {
+      if (outputStreams(i).isSelected) outputStreams(i).flush
+      i += 1
+    }
+  }
   def select(flag: Boolean) { }
   def isSelected = true
 

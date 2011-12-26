@@ -41,7 +41,8 @@ trait Alphabet {
 }
 
 abstract class AbstractAlphabet extends Alphabet {
-  def table: String
+  // representation as array is more efficient than string
+  def table: Array[Char]
   def lookup(zchar: Int): Char = table(zchar - 6)
 
   def charCodeFor(c: Char): Int = {
@@ -55,19 +56,27 @@ abstract class AbstractAlphabet extends Alphabet {
   def contains(c: Char) = table.filter{tableChar => c == tableChar}.length > 0
 }
 object Alphabet0 extends AbstractAlphabet {
-  val table = "abcdefghijklmnopqrstuvwxyz"
+  val table = Array('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
+                    'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+                    'w', 'x', 'y', 'z')
   def name = "A0"
 }
 object Alphabet1 extends AbstractAlphabet {
-  val table = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  val table = Array('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
+                    'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+                    'W', 'X', 'Y', 'Z')
   def name = "A1"
 }
 object Alphabet2 extends AbstractAlphabet {
-  val table = " \n0123456789.,!?+#'\"/\\-:()"
+  val table = Array(' ', '\n', '0', '1', '2', '3', '4', '5', '6', '7', '8',
+                    '9', '.', ',', '!', '?', '_', '#', '\'', '"', '/', '\\',
+                    '-', ':', '(', ')')
   def name = "A2"
 }
 object Alphabet2_V1 extends AbstractAlphabet {
-  val table = " 0123456789.,!?+#'\"/\\<-:()"
+  val table = Array(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                    '.', ',', '!', '?', '_', '#', '\'', '"', '/', '\\', '<',
+                    '-', ':', '(', ')')
   def name = "A2"
 }
 
