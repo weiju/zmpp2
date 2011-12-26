@@ -30,6 +30,7 @@ package org.zmpp.zcode
 
 import java.util.LinkedList
 
+// could be encoded in 3 bit
 object Fonts {
   val Normal             = 1
   val Picture            = 2
@@ -37,6 +38,7 @@ object Fonts {
   val Fixed              = 4
 }
 
+// could be encoded in 4 bit
 object Colors {
   val Current            = 0
   val Default            = 1
@@ -56,6 +58,7 @@ object Colors {
   val UnderCursor        = -1
 }
 
+// could be encoded in 4 bit
 object TextStyles {
   val Roman              = 0
   val ReverseVideo       = 1
@@ -63,7 +66,7 @@ object TextStyles {
   val Italic             = 4
   val FixedPitch         = 8
 
-  def isRoman(style: Int) = style == Roman
+  def isRoman(style: Int) = (style & 0x0f) == Roman
   def isReverseVideo(style: Int) = (style & ReverseVideo) == ReverseVideo
   def isBold(style: Int) = (style & Bold)  == Bold
   def isItalic(style: Int) = (style & Italic) == Italic
@@ -71,12 +74,28 @@ object TextStyles {
 
   val DefaultNormal = TextStyle(0, Fonts.Normal, Colors.Default, Colors.Default)
   val DefaultFixed = TextStyle(0, Fonts.Fixed,
-                                Colors.Default, Colors.Default)
+                               Colors.Default, Colors.Default)
   val DefaultFixedBlank = StyledChar(' ', DefaultFixed)
+
+  /*
+   * encode style, font number and colors into a 16 bit value
+   * mask: ffffbbbb  0fffssss
+   */
+  def makeStyle(styleMask: Int, fontnum: Int, foreground: Int,
+                background: Int): Int = {
+    ((foreground & 0x0f) << 12) | ((background & 0x0f) << 8) |
+    ((fontnum & 0x07) << 4) | (styleMask & 0x0f)
+  }
+
+  def fontNumber(style: Int) = (style >>>  4) & 0x07
+  def foregroundColor(style: Int) = (style >>>  12) & 0x0f
+  def backgroundColor(style: Int) = (style >>>  8) & 0x0f
 }
 
 /*
  * Auxiliary structures to help building screen models.
+ * A style could theoretically be encoded in 16 bit, a styled character
+ * requires 16 + 16 = 32 bit
  */
 case class TextStyle(style: Int, fontnum: Int,
                      foreground: Int, background: Int) {

@@ -44,9 +44,15 @@ class MockVMState(storyVersion: Int, dataBytes: Array[Byte]) extends VMState wit
   var encoding: ZsciiEncoding = null
   var runState = 0
   var pc = 0
-
+  def story = this
   def byteAt(addr: Int) = dataBytes(addr)
-  def shortAt(addr: Int) = throw new UnsupportedOperationException()
+  def shortAt(addr: Int) = {
+    if (addr == 0x34) 0
+    else if (addr == 0x36) 0
+    else {
+      throw new UnsupportedOperationException
+    }
+  }
   def intAt(addr: Int) = throw new UnsupportedOperationException()
   def setByteAt(addr: Int, value: Int) {}
   def setShortAt(addr: Int, value: Int) {}
@@ -75,20 +81,24 @@ with BeforeAndAfterEach {
 
   "Encoding" should "have a defined initial state" in {
     val encoding = new ZsciiEncoding(new MockVMState(5, null))
+    encoding.resetVMState
     encoding.currentAlphabet should be (Alphabet0)
   }
   it should "move to alphabet 1 on shift 4" in {
     val encoding = new ZsciiEncoding(new MockVMState(5, null))
+    encoding.resetVMState
     encoding.decodeZchar(4, out)
     encoding.currentAlphabet should be (Alphabet1)
   }
   it should "move to alphabet 2 on shift 5" in {
     val encoding = new ZsciiEncoding(new MockVMState(5, null))
+    encoding.resetVMState
     encoding.decodeZchar(5, out)
     encoding.currentAlphabet should be (Alphabet2)
   }
   it should "fall back to alphabet 0 on shift 4 after a character was decoded" in {
     val encoding = new ZsciiEncoding(new MockVMState(5, null))
+    encoding.resetVMState
     encoding.decodeZchar(4, out)
     encoding.decodeZchar(6, out)
     out.charsWritten should be ("A")
@@ -96,6 +106,7 @@ with BeforeAndAfterEach {
   }
   it should "fall back to alphabet 0 on shift 5 after a character was decoded" in {
     val encoding = new ZsciiEncoding(new MockVMState(5, null))
+    encoding.resetVMState
     encoding.decodeZchar(5, out)
     encoding.decodeZchar(8, out)
     out.charsWritten should be ("0")
@@ -107,6 +118,7 @@ with BeforeAndAfterEach {
   // **********************************************************************
   it should "fall back to alphabet 0 on shift 2 after a character was decoded" in {
     val encoding = new ZsciiEncoding(new MockVMState(2, null))
+    encoding.resetVMState
     encoding.decodeZchar(2, out)
     encoding.decodeZchar(6, out)
     out.charsWritten should be ("A")
@@ -114,6 +126,7 @@ with BeforeAndAfterEach {
   }
   it should "switch to alphabet 2 after receiving two shift-2's in a row and fallback to alphabet 1" in {
     val encoding = new ZsciiEncoding(new MockVMState(2, null))
+    encoding.resetVMState
     encoding.decodeZchar(2, out)
     encoding.decodeZchar(2, out)
     encoding.currentAlphabet should be (Alphabet2)
@@ -123,6 +136,7 @@ with BeforeAndAfterEach {
   }
   it should "fall back to alphabet 0 on shift 3 after a character was decoded" in {
     val encoding = new ZsciiEncoding(new MockVMState(1, null))
+    encoding.resetVMState
     encoding.decodeZchar(3, out)
     encoding.decodeZchar(8, out)
     out.charsWritten should be ("1")
@@ -130,6 +144,7 @@ with BeforeAndAfterEach {
   }
   it should "not fall back on shift 4 after a character was decoded in V1/V2" in {
     val encoding = new ZsciiEncoding(new MockVMState(1, null))
+    encoding.resetVMState
     encoding.decodeZchar(4, out)
     encoding.decodeZchar(6, out)
     out.charsWritten should be ("A")
@@ -137,6 +152,7 @@ with BeforeAndAfterEach {
   }
   it should "not fall back on shift 5 after a character was decoded in V2" in {
     val encoding = new ZsciiEncoding(new MockVMState(2, null))
+    encoding.resetVMState
     encoding.decodeZchar(5, out)
     encoding.decodeZchar(8, out)
     out.charsWritten should be ("0")
@@ -144,6 +160,7 @@ with BeforeAndAfterEach {
   }
   it should "not fall back on shift 5 after a character was decoded in V1" in {
     val encoding = new ZsciiEncoding(new MockVMState(1, null))
+    encoding.resetVMState
     encoding.decodeZchar(5, out)
     encoding.decodeZchar(8, out)
     out.charsWritten should be ("1")
@@ -151,6 +168,7 @@ with BeforeAndAfterEach {
   }
   it should "reset a shift lock when a shift character comes after a lock-4" in {    
     val encoding = new ZsciiEncoding(new MockVMState(1, null))
+    encoding.resetVMState
     encoding.decodeZchar(4, out)
     encoding.decodeZchar(2, out)
     encoding.decodeZchar(10, out)
@@ -158,6 +176,7 @@ with BeforeAndAfterEach {
   }
   it should "reset a shift lock when a shift character comes after a lock-5" in {    
     val encoding = new ZsciiEncoding(new MockVMState(2, null))
+    encoding.resetVMState
     encoding.decodeZchar(5, out)
     encoding.decodeZchar(3, out)
     encoding.decodeZchar(10, out)
@@ -165,9 +184,10 @@ with BeforeAndAfterEach {
   }
   it should "reset its state properly after invoking reset" in {
     val encoding = new ZsciiEncoding(new MockVMState(2, null))
+    encoding.resetVMState
     encoding.decodeZchar(2, out)
     encoding.decodeZchar(5, out)
-    encoding.reset
+    encoding.resetEncodingState
     encoding.currentAlphabet should be (Alphabet0)
     encoding.lastAlphabet should be (Alphabet0)
     encoding.shiftLock should be (false)
