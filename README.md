@@ -58,8 +58,8 @@ The second revision of ZMPP reflects current knowledge and ideas about how I thi
   me about it through your discussions. I would not be working on this
   project without you.
 - Eric Forgeot and Fredrik Ramsberg for providing tons of advice and
-  teaching me Inform and Z-Machine details
-- Ruben Ortega for showing me the Kindle version of ZMPP, which inspired
+  teaching me how internationalization works in Inform and Z-Machine
+- Ruben Ortega for showing me his Kindle version of ZMPP, which inspired
   me to start a Glulx core within ZMPP
 - Carlos Sanchez for lots of testing and advice for Superglus support
 - Eliuk Blau for the support to implement the sound feature
