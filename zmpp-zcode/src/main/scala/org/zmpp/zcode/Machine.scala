@@ -542,7 +542,7 @@ class Machine {
         else warn("@set_window, platformIO not set")
       case 0x10 => // get_cursor
         val array     = nextOperand
-        printf("get_cursor $%02x\n", array)
+        //printf("get_cursor $%02x\n", array)
         val (cursorRow: Int, cursorColumn: Int) = screenModel.cursorPosition
         state.setShortAt(array,     cursorRow)
         state.setShortAt(array + 2, cursorColumn)
@@ -560,7 +560,7 @@ class Machine {
         val volumeRepeats =
           if (numOperands > 2) nextOperand else 0x01a0
         val routine = if (numOperands > 3) nextOperand else 0
-        printf("TODO: @sound_effect not connected yet\n")
+        //printf("TODO: @sound_effect not connected yet\n")
       case 0x16 => // readchar
         val inp = if (numOperands > 0) nextOperand else 1
         if (version >= 4) {

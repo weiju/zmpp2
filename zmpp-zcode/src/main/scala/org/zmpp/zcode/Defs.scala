@@ -293,8 +293,8 @@ class VMStateImpl extends VMState {
   private def calculateChecksum = {
     var currentByteAddress = 0x40
     var checksum = 0
-    printf("CALC checksum, file size: %d, stored file size: %d\n",
-           _story.size, header.fileLength)
+    //printf("CALC checksum, file size: %d, stored file size: %d\n",
+    //       _story.size, header.fileLength)
     while (currentByteAddress < header.fileLength) {
       checksum += byteAt(currentByteAddress)
       currentByteAddress += 1

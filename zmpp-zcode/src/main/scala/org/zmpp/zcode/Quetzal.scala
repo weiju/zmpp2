@@ -53,7 +53,7 @@ case class StackFrame(pc: Int, storeVariable: Int,
     out.writeChar(evalStackWords.length)
     for (i <- 0 until locals.length) out.writeChar(locals(i) & 0xff)
     for (i <- 0 until evalStackWords.length) out.writeChar(evalStackWords(i) & 0xff)
-
+/*
     printf("pc = $%04x, flags = $%02x storeVar = %d, argByte = $%02x, # eval stack = %d, locals = [",
            pc, flags & 0xff, storeVariable, argByte & 0xff, evalStackWords.length)
     for (i <- 0 until locals.length) {
@@ -65,7 +65,7 @@ case class StackFrame(pc: Int, storeVariable: Int,
       if (i > 0) printf(", ")
       printf("%d", evalStackWords(i))
     }
-    printf("]\n")
+    printf("]\n") */
   }
 
   // basically 2^n - 1 for n > 0
@@ -107,7 +107,7 @@ class QuetzalWriter(vmState: VMStateImpl) {
       dataBytes(5) = ((formSize >>> 16) & 0xff).asInstanceOf[Byte]
       dataBytes(6) = ((formSize >>> 8) & 0xff).asInstanceOf[Byte]
       dataBytes(7) = (formSize & 0xff).asInstanceOf[Byte]
-      printf("# form bytes = %d\n", formSize)
+      //printf("# form bytes = %d\n", formSize)
       try {
         outputStream.write(dataBytes)
         outputStream.flush
@@ -140,14 +140,14 @@ class QuetzalWriter(vmState: VMStateImpl) {
     val compressed = compressDiffBytes(vmState.storyData, vmState.originalDynamicMem,
                                        vmState.header.staticStart)
     out.writeBytes("CMem")
-    printf("CMem: compressed data len = %d\n", compressed.length)
+    //printf("CMem: compressed data len = %d\n", compressed.length)
     out.writeInt(compressed.length)
     out.write(compressed)
     val datalen = if ((compressed.length % 2) == 1) {
       out.writeByte(0)
       compressed.length + 1
     } else compressed.length
-    printf("CMem size = %d\n", datalen + 8)
+    //printf("CMem size = %d\n", datalen + 8)
     datalen + 8
   }
 
@@ -162,7 +162,7 @@ class QuetzalWriter(vmState: VMStateImpl) {
     for (i <- stackFrames.size - 1 to 0 by - 1) {
       stackFrames.get(i).write(out)
     }
-    printf("Stks size = %d\n", numStackFrameBytes + 8)
+    //printf("Stks size = %d\n", numStackFrameBytes + 8)
     numStackFrameBytes + 8
   }
 
@@ -176,19 +176,19 @@ class QuetzalWriter(vmState: VMStateImpl) {
     var currentSp = vmState.sp // top of the stack of the current processed frame
     while ((currentFp & 0xffff) != 0xffff) {
       val numLocals = vmState.stack.valueAt(currentFp + NumLocals)
-
+/*
       printf("CURRENT FP IS: %d, RET PC = $%04x OLDFP = %d, STOREVAR = %d, # args = %d, # locals: %d\n",
              currentFp, vmState.stack.value32At(currentFp + ReturnPC),
              vmState.stack.valueAt(currentFp + OldFP),
              vmState.stack.valueAt(currentFp + StoreVar),
              vmState.stack.valueAt(currentFp + NumArgs),
-             numLocals)
+             numLocals) */
       val locals = new Array[Int](numLocals)
       for (i <- 0 until numLocals) locals(i) = vmState.stack.valueAt(currentFp + Locals + i)
 
       val evalStackWordsStart = currentFp + NumInfoWords + numLocals
       val numEvalStackWords = currentSp - evalStackWordsStart
-      printf("# eval stack words: %d\n", numEvalStackWords)
+      //printf("# eval stack words: %d\n", numEvalStackWords)
 
       val evalStackWords = new Array[Int](numEvalStackWords)
       for (i <- 0 until numEvalStackWords) {
@@ -226,7 +226,7 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
         val formInt = dataIn.readInt
         if (formInt == IdFORM) {
           val numBytes = dataIn.readInt
-          println("valid file, # bytes to read: " + numBytes)
+          //println("valid file, # bytes to read: " + numBytes)
           val iffType = dataIn.readInt
           if (iffType == IdIFZS) {
             var numBytesRead = 4
@@ -254,17 +254,14 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
     val chunkType = dataIn.readInt
     chunkType match {
       case IdIFhd =>
-        println("IFhd recognized")
         readIFhdChunk(dataIn)
       case IdCMem =>
-        println("CMem recognized")
         readCMemChunk(dataIn)
       case IdStks =>
-        println("Stks recognized")
         readStksChunk(dataIn)
       case _ =>
-        println("unknown tag")
-        464 // debug
+        machine.fatal("error in save file: unknown tag")
+        464 // some value so we don't end up looping forever
     }
   }
 
@@ -278,7 +275,7 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
     val pcLo = dataIn.readChar.asInstanceOf[Int]
     val restorePc = (pcHi << 16) | pcLo
     dataIn.readByte // skip pad byte
-    printf("IFhd read, restore PC = $%04x\n", restorePc)
+    //printf("IFhd read, restore PC = $%04x\n", restorePc)
     verifyStory(release, serial, checksum)
     vmState.pc = restorePc
     22

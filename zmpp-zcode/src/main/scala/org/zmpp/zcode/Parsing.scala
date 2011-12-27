@@ -158,7 +158,7 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
     // now tokens contains the tokenized list in the correct order
     tokens = tokens.reverse
     // 2. convert each token to Z-encoded string and lookup in dictionary
-    tokens.map{t => printf("Token: %s\n", t.toString)}
+    //tokens.map{t => printf("Token: %s\n", t.toString)}
     val numTokens = math.min(tokens.length, maxTokens)
     for (i <- 0 until numTokens) lookup(tokens(i), i)
 
