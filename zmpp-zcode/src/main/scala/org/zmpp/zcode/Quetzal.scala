@@ -257,11 +257,17 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
         readIFhdChunk(dataIn)
       case IdCMem =>
         readCMemChunk(dataIn)
+      case IdUMem =>
+        machine.fatal("UMem chunk not supported")
+        val chunkLength = dataIn.readInt
+        dataIn.skipBytes(chunkLength)
+        chunkLength
       case IdStks =>
         readStksChunk(dataIn)
-      case _ =>
-        machine.fatal("error in save file: unknown tag")
-        464 // some value so we don't end up looping forever
+      case _ => // skip
+        val chunkLength = dataIn.readInt
+        dataIn.skipBytes(chunkLength)
+        chunkLength
     }
   }
 
@@ -310,7 +316,10 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
                         vmState.header.staticStart)
     
     if ((chunkLength % 2) == 0) chunkLength + 8
-    else chunkLength + 8 + 1
+    else {
+      dataIn.skipBytes(1) // skip pad byte
+      chunkLength + 8 + 1
+    }
   }
 
   private def readUMemChunk(dataIn: DataInputStream): Int = {
