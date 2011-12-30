@@ -154,7 +154,7 @@ class TextGrid extends JTextPane with ScreenModelWindow {
   }
 
   def clear {
-    println("TOPWINDOW.CLEAR()")
+    //println("TOPWINDOW.CLEAR()")
     buffer.fillGridWith(TextStyles.DefaultFixedBlank, 0)
   }
 
@@ -164,7 +164,7 @@ class TextGrid extends JTextPane with ScreenModelWindow {
     charsPerLine  = currentSize.width / fontMetrics.charWidth('0')
     totalLines    = currentSize.height / fontMetrics.getHeight
     buffer = new TextGridBuffer(totalLines, charsPerLine)
-    printf("SCREEN SIZE: %d LINES %d COLS\n", totalLines, charsPerLine)
+    //printf("SCREEN SIZE: %d LINES %d COLS\n", totalLines, charsPerLine)
     clear
   }
 
@@ -253,7 +253,7 @@ extends JTextPane with ScreenModelWindow with KeyListener {
     // TODO: also take into account the background color
     val clearScreenBuilder = new StringBuilder()
     runBuffer.reset
-    println("Bottom Window has " + numRows + " rows.")
+    //println("Bottom Window has " + numRows + " rows.")
     (1 to numRows).foreach(_ => clearScreenBuilder.append('\n'))
     setText(clearScreenBuilder.toString)
     setBackground(screenModel.backgroundColor)
@@ -327,7 +327,7 @@ extends JTextPane with ScreenModelWindow with KeyListener {
         event.consume
         val input = doc.getText(inputStart, doc.getLength - inputStart)
         doc.insertString(doc.getLength, "\n", null)
-        println("Input was: " + input)
+        //println("Input was: " + input)
         screenModel.resumeWithLineInput(input + "\n")          
         inputMode = TextInputMode.InputNone
       } else if (event.getKeyCode == KeyEvent.VK_BACK_SPACE ||
@@ -471,7 +471,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def readLine: Int = {
     flush
     val maxChars = vm.readLineInfo.maxInputChars
-    println("MAX_CHARS FOR READLINE: " + maxChars)
+    //println("MAX_CHARS FOR READLINE: " + maxChars)
     if (vm.version <= 3) updateStatusLine
     scrollPane.getViewport.scrollRectToVisible(bottomRectangle)
     bottomWindow.requestLineInput(maxChars)
@@ -489,12 +489,12 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
 
   def resumeWithLineInput(input: String) {
-    println("RESUME WITH " + input)
+    //println("RESUME WITH " + input)
     vm.resumeWithLineInput(input)
     ExecutionControl.executeTurn(vm, this)
   }
   def resumeWithCharInput(keyCode: Int) {
-    println("RESUME WITH " + keyCode)
+    //println("RESUME WITH " + keyCode)
     vm.resumeWithCharInput(keyCode)
     ExecutionControl.executeTurn(vm, this)
   }
@@ -503,12 +503,12 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def keyboardStream     = this
   def screenModel        = this
   def splitWindow(lines: Int) {
-    println("@split_window, lines = " + lines)
+    //println("@split_window, lines = " + lines)
     topWindow.windowSize = lines
     if (vm.version == 3) topWindow.clear
   }
   def setWindow(windowId: Int) {
-    println("@set_window, window id = " + windowId)
+    //println("@set_window, window id = " + windowId)
     if (windowId == BottomWindow || windowId == TopWindow) {
       activeWindowId = windowId
     } else {
@@ -520,17 +520,17 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def cursorPosition: (Int, Int) = activeWindow.cursorPosition
 
   def setCursorPosition(line: Int, column: Int) {
-    printf("@set_cursor, line = %d, col = %d, active window: %d\n", line, column, activeWindowId)
+    //printf("@set_cursor, line = %d, col = %d, active window: %d\n", line, column, activeWindowId)
     activeWindow.cursorPosition = (line, column)
   }
 
   def bufferMode(flag: Int) {
-    println("@buffer_mode, flag = " + flag)
+    //println("@buffer_mode, flag = " + flag)
     bottomWindow.useBufferMode = (flag != 0)
   }
   def eraseWindow(windowId: Int) {
     // TODO: polymorphism might make this prettier and shorter
-    println("@erase_window, win = " + windowId)
+    //println("@erase_window, win = " + windowId)
     if (windowId == -1) {
       topWindow.windowSize = 0
       topWindow.clear
@@ -660,7 +660,6 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   }
 
   def initUI {
-    println("INITIALIZE THE UI !!!")
     topWindow.setFont(fixedFont)
     bottomWindow.setFont(stdFont)
     topWindow.reset

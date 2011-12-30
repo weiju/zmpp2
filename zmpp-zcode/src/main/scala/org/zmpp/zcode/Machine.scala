@@ -537,7 +537,8 @@ class Machine {
         screenModel.eraseLine(nextOperand)
       case 0x0f => // set_cursor
         val line   = nextOperand
-        val column = nextOperand
+        // column parameter is optional !
+        val column = if (numOperands > 1) nextOperand else 1
         if (screenModel != null) screenModel.setCursorPosition(line, column)
         else warn("@set_window, platformIO not set")
       case 0x10 => // get_cursor
