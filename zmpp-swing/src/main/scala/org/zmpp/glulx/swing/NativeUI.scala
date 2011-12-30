@@ -462,7 +462,6 @@ trait SwingGlkScreenUI extends GlkScreenUI {
 }
 
 class GlkFrameUI extends JFrame with SwingGlkScreenUI {
+  setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
   def getClientSize = getContentPane.getSize
 }
-
-
