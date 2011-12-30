@@ -252,6 +252,7 @@ extends JTextPane with ScreenModelWindow with KeyListener {
     // TODO: we might want to incorporate the run buffer here
     // TODO: also take into account the background color
     val clearScreenBuilder = new StringBuilder()
+    runBuffer.reset
     println("Bottom Window has " + numRows + " rows.")
     (1 to numRows).foreach(_ => clearScreenBuilder.append('\n'))
     setText(clearScreenBuilder.toString)
@@ -281,11 +282,14 @@ extends JTextPane with ScreenModelWindow with KeyListener {
     import KeyEvent._
     if (isCharInputMode) {
       val keyChar = event.getKeyChar
-      if (keyChar != CHAR_UNDEFINED) {
+      if (keyChar == VK_ENTER) {
+        screenModel.resumeWithCharInput(13)
+      } else if (keyChar != CHAR_UNDEFINED) {
         screenModel.resumeWithCharInput(keyChar)
       } else {
         val keyCode = event.getKeyCode
         keyCode match {
+          case VK_ENTER   => screenModel.resumeWithCharInput(13)
           case VK_UP      => screenModel.resumeWithCharInput(129)
           case VK_DOWN    => screenModel.resumeWithCharInput(130)
           case VK_LEFT    => screenModel.resumeWithCharInput(131)
@@ -516,7 +520,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def cursorPosition: (Int, Int) = activeWindow.cursorPosition
 
   def setCursorPosition(line: Int, column: Int) {
-    println("@set_cursor, line = " + line + " col = " + column)
+    printf("@set_cursor, line = %d, col = %d, active window: %d\n", line, column, activeWindowId)
     activeWindow.cursorPosition = (line, column)
   }
 
