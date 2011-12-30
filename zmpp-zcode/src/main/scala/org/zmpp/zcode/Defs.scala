@@ -132,6 +132,18 @@ class StoryHeader(story: Memory) {
   }
   
   def isScoreGame = if (version < 3) true else (flags1 & 0x02) == 0
+
+  // Yeah, "Beyond Zork" is weird
+  def isBeyondZork = {
+    isRevision(47, "870915") ||
+    isRevision(49, "870917") ||
+    isRevision(51, "870923") || 
+    isRevision(57, "871221")
+  }
+
+  private def isRevision(release: Int, serial: String) = {
+    releaseNumber == release && serial == new String(serialNumber)
+  }
 }
 
 // cheap stack implementation. This stack holds int's, but the only int
@@ -265,8 +277,16 @@ class VMStateImpl extends VMState {
     }
     encoding.resetVMState
     // set interpreter information
-    setByteAt(0x1e, 0x06)
-    setByteAt(0x1f, '6'.asInstanceOf[Int])
+    if (header.isBeyondZork) {
+      // interpreter number set to 1 to indicate DECSystem-20
+      // This has strong impact on Beyond Zork's output, which
+      // becomes much more legible when set to DEC
+      setByteAt(0x1e, 0x01)
+      setByteAt(0x1f, '5'.asInstanceOf[Int])
+    } else {
+      setByteAt(0x1e, 0x04)
+      setByteAt(0x1f, 6)
+    }
     setShortAt(0x32, 0x0101)    
   }
 
