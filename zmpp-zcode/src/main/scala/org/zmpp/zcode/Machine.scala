@@ -597,7 +597,15 @@ class Machine {
         val from      = nextOperand
         val codedText = nextOperand
         printf("@encode_text, zscii = $%04x, len = %d, from = %d, codedText = $%04x\n", zsciiText, length, from, codedText)
-        fatal("@encode_text not supported yet (TODO)")
+        val encoder = new Encoder(state)
+        val token = new Token(zsciiText + from, zsciiText + from + length)
+        encoder.encode(token)
+        printf("ENCODED in %d bytes.\n", encoder.tokenBytes.length)
+        var i = 0
+        while (i < encoder.tokenBytes.length) {
+          state.setByteAt(codedText + i, encoder.tokenBytes(i) & 0xff)
+          i += 1
+        }
       case 0x1d => // copy_table
         val first  = nextOperand
         val second = nextOperand

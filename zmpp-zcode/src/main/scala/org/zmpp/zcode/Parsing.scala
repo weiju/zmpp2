@@ -58,7 +58,6 @@ abstract class Dictionary(state: VMState, dictionaryAddress: Int) {
 
 class UserDictionary(state: VMState, dictionaryAddress: Int)
 extends Dictionary(state, dictionaryAddress) {
-  printf("created USER DICT AT $%04x\n", dictionaryAddress)
   def lookup(tokenBytes: Array[Byte]): Int = {
     val n = math.abs(numEntries)
     println("# ENTRIES IN USER DICT: " + n)
@@ -69,6 +68,7 @@ extends Dictionary(state, dictionaryAddress) {
       if (tokenMatch(tokenBytes, entryAddress) == 0) return entryAddress
       i += 1
     }
+    println("NOT FOUND IN USER DICT !")
     0
   }
 }
@@ -101,26 +101,116 @@ class Token(val start: Int, val end: Int) {
   }
 }
 
+class Encoder(state: VMState) {
+
+  private[this] val numEntryBytes    = if (state.header.version <= 3) 4 else 6
+  private[this] val maxEntryChars    = if (state.header.version <= 3) 6 else 9
+
+  val tokenBytes       = new Array[Byte](numEntryBytes)
+  private[this] val tokenBuffer      = new DefaultMemory(tokenBytes)
+
+  private[this] var inputOffset  = 0
+  private[this] var writePos     = 0
+  private[this] var token: Token = null
+  
+  // value of the current 3-character word that the encoder
+  private[this] var currentWord  = 0
+  // the current slot in currentWord
+  private[this] var currentSlot  = 0
+
+  private def reset(token: Token) {
+    inputOffset = 0
+    writePos    = 0
+    currentWord = 0
+    currentSlot = 0
+    this.token  = token
+  }
+
+  private def nextChar = {
+    val c = state.byteAt(token.start + inputOffset)
+    inputOffset += 1
+    c.asInstanceOf[Char]
+  }
+
+  private def hasMoreInput = {
+    inputOffset < token.length && inputOffset < maxEntryChars
+  }
+
+  private def appendChar(charCode: Int) {
+    val shiftWidth = (2 - currentSlot) * 5
+    currentWord |= (charCode & 0x1f) << shiftWidth
+    currentSlot += 1
+
+    if (currentWordDone && !atLastWord) {
+      tokenBuffer.setShortAt(writePos, currentWord & 0xffff)
+      writePos    += 2
+      currentWord = 0
+      currentSlot = 0
+    }
+  }
+
+  private def currentWordDone = currentSlot > 2
+  private def atLastWord = writePos >= numEntryBytes
+
+  def encode(token: Token) {
+    reset(token)
+    // 1. process all characters of the token
+    while (hasMoreInput) encodeChar
+    // 2. pad the remainder with 5's
+    val numPadSlots = numFreeSlots
+    for (i <- 0 until numPadSlots) appendChar(5)
+
+    // 3. marks the last word by setting the MSB
+    // Note: This is actually the last word in the buffer,
+    // would we need to actually mark the last 16 bit word
+    // in a very short word ?
+    val lastWord = tokenBuffer.shortAt(numEntryBytes - 2)
+    tokenBuffer.setShortAt(numEntryBytes - 2, lastWord | 0x8000)
+  }
+
+  private def encodeChar {
+    // can be a shifted character or non-shifted
+    val zsciiChar = nextChar
+    val shiftCode = state.encoding.shiftCodeFor(zsciiChar)
+    if (shiftCode == -1) {
+      // 10-bit character
+      if (numFreeSlots >= 4) {
+        appendChar(5)                        // shift to A2
+        appendChar(6)                        // escape to 10 bit
+        appendChar((zsciiChar >>> 5) & 0x1f) // hi 5 bit
+        appendChar(zsciiChar & 0x1f)         // low 5 bit
+      } else {
+        // pad remaining slots with 5's
+        val numPadSlots = numFreeSlots
+        for (i <- 0 until numPadSlots) appendChar(5)
+      }
+    } else {
+      if (shiftCode > 0) {
+        appendChar(shiftCode)
+      }
+      appendChar(state.encoding.charCodeFor(zsciiChar))
+    }
+  }
+
+  private def numFreeSlots = {
+    ((numEntryBytes - writePos) / 2) * 3 + (3 - currentSlot)
+  }
+}
+
 /**
  * This class processes the input that is read from an input stream.
  */
 class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
                    userDictionary: Int, flag: Boolean) {
-  printf("CREATE PARSER HELPER, USER DICT: $%04x, FLAG: %b\n",
-         userDictionary, flag)
   private val storyVersion     = state.header.version
   private val textBufferOffset = if (storyVersion < 5) 1 else 2
-  private val numEntryBytes    = if (storyVersion <= 3) 4 else 6
-  private val maxEntryChars    = if (storyVersion <= 3) 6 else 9
-
-  private val tokenBytes       = new Array[Byte](numEntryBytes)
-  private val tokenBuffer      = new DefaultMemory(tokenBytes)
 
   private val dictionary = if (userDictionary == 0) {
     new DefaultDictionary(state)
   } else {
     new UserDictionary(state, userDictionary)
   }
+  private[this] val encoder = new Encoder(state)
 
   private def storeInputToTextBuffer(input: String) {
     val inputString = input.toLowerCase
@@ -238,96 +328,15 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
   }
   
   def lookup(token: Token, tokenNum: Int) = {
-    new Encoder(token, tokenBuffer).encode
+    encoder.encode(token)
     // tokenBytes now contains the dictionary-encoded token
-    val lookupAddress = dictionary.lookup(tokenBytes)
+    val lookupAddress = dictionary.lookup(encoder.tokenBytes)
     if (!flag || flag && lookupAddress > 0) {
       val address = parseBuffer + 2 + tokenNum * 4
       //printf("($%02x) Token found at: %02x, %d, %02x\n", address, lookupAddress, token.length, token.start)
       state.setShortAt(address, lookupAddress)
       state.setByteAt(address + 2, token.length)
       state.setByteAt(address + 3, token.start - textBuffer)
-    }
-  }
-
-  // Encoder class. For now, this is embedded and therefore can get
-  // maxEntryChars and numEntryBytes from ParserHelper
-  class Encoder(token: Token, tokenBuffer: Memory) {
-    var inputOffset = 0
-    var writePos = 0
-  
-    // value of the current 3-character word that the encoder
-    var currentWord  = 0
-    // the current slot in currentWord
-    var currentSlot  = 0
-
-    private def nextChar = {
-      val c = state.byteAt(token.start + inputOffset)
-      inputOffset += 1
-      c.asInstanceOf[Char]
-    }
-
-    private def hasMoreInput = {
-      inputOffset < token.length && inputOffset < maxEntryChars
-    }
-
-    private def appendChar(charCode: Int) {
-      val shiftWidth = (2 - currentSlot) * 5
-      currentWord |= (charCode & 0x1f) << shiftWidth
-      currentSlot += 1
-
-      if (currentWordDone && !atLastWord) {
-        tokenBuffer.setShortAt(writePos, currentWord & 0xffff)
-        writePos    += 2
-        currentWord = 0
-        currentSlot = 0
-      }
-    }
-
-    private def currentWordDone = currentSlot > 2
-    private def atLastWord = writePos >= numEntryBytes
-
-    def encode {
-      // 1. process all characters of the token
-      while (hasMoreInput) encodeChar
-      // 2. pad the remainder with 5's
-      val numPadSlots = numFreeSlots
-      for (i <- 0 until numPadSlots) appendChar(5)
-
-      // 3. marks the last word by setting the MSB
-      // Note: This is actually the last word in the buffer,
-      // would we need to actually mark the last 16 bit word
-      // in a very short word ?
-      val lastWord = tokenBuffer.shortAt(numEntryBytes - 2)
-      tokenBuffer.setShortAt(numEntryBytes - 2, lastWord | 0x8000)
-    }
-
-    private def encodeChar {
-      // can be a shifted character or non-shifted
-      val zsciiChar = nextChar
-      val shiftCode = state.encoding.shiftCodeFor(zsciiChar)
-      if (shiftCode == -1) {
-        // 10-bit character
-        if (numFreeSlots >= 4) {
-          appendChar(5)                        // shift to A2
-          appendChar(6)                        // escape to 10 bit
-          appendChar((zsciiChar >>> 5) & 0x1f) // hi 5 bit
-          appendChar(zsciiChar & 0x1f)         // low 5 bit
-        } else {
-          // pad remaining slots with 5's
-          val numPadSlots = numFreeSlots
-          for (i <- 0 until numPadSlots) appendChar(5)
-        }
-      } else {
-        if (shiftCode > 0) {
-          appendChar(shiftCode)
-        }
-        appendChar(state.encoding.charCodeFor(zsciiChar))
-      }
-    }
-
-    private def numFreeSlots = {
-      ((numEntryBytes - writePos) / 2) * 3 + (3 - currentSlot)
     }
   }
 }
