@@ -135,9 +135,12 @@ class TextGrid extends JTextPane with ScreenModelWindow {
   def cursorPosition = _cursorPos
   def cursorPosition_=(pos: (Int, Int)) = {
     // TODO: check boundaries, if outside set to column 1 of current line
+    //printf("@set_cursor -> (%d, %d)\n", pos._1, pos._2)
     _cursorPos = pos
   }
   def putChar(c: Char) {
+    //printf("TopWindow.putChar at pos: (%d, %d): '%c'\n",
+    //       _cursorPos._1, _cursorPos._2, c)
     if (c == '\n') moveCursorToNextLine
     else {
       val col  = _cursorPos._2
@@ -509,12 +512,12 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def keyboardStream     = this
   def screenModel        = this
   def splitWindow(lines: Int) {
-    println("@split_window, lines = " + lines)
+    //println("@split_window, lines = " + lines)
     topWindow.windowSize = lines
     if (vm.version == 3) topWindow.clear
   }
   def setWindow(windowId: Int) {
-    println("@set_window, window id = " + windowId)
+    //println("@set_window, window id = " + windowId)
     if (windowId == BottomWindow || windowId == TopWindow) {
       activeWindowId = windowId
     } else {
@@ -526,17 +529,17 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def cursorPosition: (Int, Int) = activeWindow.cursorPosition
 
   def setCursorPosition(line: Int, column: Int) {
-    printf("@set_cursor, line = %d, col = %d, active window: %d\n", line, column, activeWindowId)
+    //printf("@set_cursor, line = %d, col = %d, active window: %d\n", line, column, activeWindowId)
     activeWindow.cursorPosition = (line, column)
   }
 
   def bufferMode(flag: Int) {
-    println("@buffer_mode, flag = " + flag)
+    //println("@buffer_mode, flag = " + flag)
     bottomWindow.useBufferMode = (flag != 0)
   }
   def eraseWindow(windowId: Int) {
     // TODO: polymorphism might make this prettier and shorter
-    println("@erase_window, win = " + windowId)
+    //println("@erase_window, win = " + windowId)
     if (windowId == -1) {
       topWindow.windowSize = 0
       topWindow.clear
@@ -554,7 +557,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     printf("@erase_line %d not implemented yet (TODO)\n", value)
   }
   def setTextStyle(aStyle: Int) {
-    printf("@set_style: %d\n", aStyle)
+    //printf("@set_style: %d\n", aStyle)
     bottomWindow.setStyle(aStyle)
     style = aStyle
   }
@@ -563,8 +566,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   // The method is called "setColour" only to express that it
   // implements the Z-instruction
   def setColour(foreground: Int, background: Int, window: Int) {
-    printf("setColour(), foreground = %d, background = %d\n",
-           foreground, background)
+    //printf("setColour(), foreground = %d, background = %d\n",
+    //       foreground, background)
     bottomWindow.setColor(foreground, background)
 
     // Make sure that we don't end up in an infinite loop
@@ -574,10 +577,10 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     // we need to change the caret color of the bottom window, too
     //println("setting caret color")
     if (isReverseVideo(this.style)) {
-      println("reverse")
+      //println("reverse")
       bottomWindow.setCaretColor(getColor(background, false))
     } else {
-      println("normal video")
+      //println("normal video")
       val color = getColor(foreground, true)
       //println("color will be: " + color)
       bottomWindow.setCaretColor(color)
@@ -647,7 +650,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     StyleConstants.setBold(attrs,   TextStyles.isBold(style))
     StyleConstants.setItalic(attrs, TextStyles.isItalic(style))
     if (TextStyles.isReverseVideo(style)) {
-      println("BOTTOM RUN - REVERSE VIDEO")
+      //println("BOTTOM RUN - REVERSE VIDEO")
       StyleConstants.setBackground(attrs,
                                    getColor(TextStyles.foregroundColor(style),
                                             true))
@@ -655,9 +658,10 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
                                    getColor(TextStyles.backgroundColor(style),
                                             false))
     } else {
+/*
       printf("BOTTOM RUN - REGULAR VIDEO FG = %d, BG = %d\n",
              TextStyles.foregroundColor(style),
-             TextStyles.backgroundColor(style))
+             TextStyles.backgroundColor(style))*/
       StyleConstants.setForeground(attrs,
                                    getColor(TextStyles.foregroundColor(style),
                                             true))

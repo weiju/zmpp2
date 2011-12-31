@@ -760,13 +760,23 @@ class Machine {
 
   private def printTable(table: Int, width: Int, height: Int,
                          skip: Int) {
+    //printf("@PRINT_TABLE, w = %d, h = %d, skip = %d\n",
+    //       width, height, skip)
     var position = table
-    for (row <- 0 until height) {
-      for (column <- 0 until width) {
+    var row = 0
+    var col = 0
+    val cursorPos = screenModel.cursorPosition
+
+    while (row < height) {
+      col = 0
+      while (col < width) {
         ioSystem.putChar(state.encoding.zsciiToUnicode(
           state.byteAt(position).asInstanceOf[Char]), StreamIds.Screen)
         position += 1
+        col += 1
       }
+      row += 1
+      screenModel.setCursorPosition(cursorPos._1 + row, cursorPos._2)
       position += skip
     }
   }
