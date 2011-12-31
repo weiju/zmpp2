@@ -41,19 +41,40 @@ abstract class Dictionary(state: VMState, dictionaryAddress: Int) {
   }
   def numEntries =
     Types.signExtend16(state.shortAt(dictionaryAddress + numSeparators + 2))
+
+  def tokenMatch(tokenBytes: Array[Byte], entryAddress: Int): Int = {
+    var i = 0
+    while (i < tokenBytes.length) {
+      val tokenByte = tokenBytes(i) & 0xff
+      val c = state.byteAt(entryAddress + i)
+      if (tokenByte != c) return tokenByte - c
+      i += 1
+    }
+    0
+  }
+
+  def lookup(tokenBytes: Array[Byte]): Int
+}
+
+class UserDictionary(state: VMState, dictionaryAddress: Int)
+extends Dictionary(state, dictionaryAddress) {
+  printf("created USER DICT AT $%04x\n", dictionaryAddress)
+  def lookup(tokenBytes: Array[Byte]): Int = {
+    val n = math.abs(numEntries)
+    println("# ENTRIES IN USER DICT: " + n)
+    var i = 0
+    // only linear search supported
+    while (i < n) {
+      val entryAddress = entryAddressAt(i)
+      if (tokenMatch(tokenBytes, entryAddress) == 0) return entryAddress
+      i += 1
+    }
+    0
+  }
 }
 
 class DefaultDictionary(state: VMState)
 extends Dictionary(state, state.header.dictionary) {
-
-  def tokenMatch(tokenBytes: Array[Byte], entryAddress: Int): Int = {
-    for (i <- 0 until tokenBytes.length) {
-      val tokenByte = tokenBytes(i) & 0xff
-      val c = state.byteAt(entryAddress + i)
-      if (tokenByte != c) return tokenByte - c
-    }
-    0
-  }
 
   def lookup(tokenBytes: Array[Byte]) = {
     lookupBinary(tokenBytes, 0,  numEntries - 1)
@@ -85,7 +106,8 @@ class Token(val start: Int, val end: Int) {
  */
 class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
                    userDictionary: Int, flag: Boolean) {
-
+  printf("CREATE PARSER HELPER, USER DICT: $%04x, FLAG: %b\n",
+         userDictionary, flag)
   private val storyVersion     = state.header.version
   private val textBufferOffset = if (storyVersion < 5) 1 else 2
   private val numEntryBytes    = if (storyVersion <= 3) 4 else 6
@@ -94,8 +116,11 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
   private val tokenBytes       = new Array[Byte](numEntryBytes)
   private val tokenBuffer      = new DefaultMemory(tokenBytes)
 
-  // TODO: if userDictionary is != 0, use the UserDictionary
-  private val dictionary       = new DefaultDictionary(state)
+  private val dictionary = if (userDictionary == 0) {
+    new DefaultDictionary(state)
+  } else {
+    new UserDictionary(state, userDictionary)
+  }
 
   private def storeInputToTextBuffer(input: String) {
     val inputString = input.toLowerCase
@@ -216,11 +241,13 @@ class ParserHelper(state: VMState, textBuffer: Int, parseBuffer: Int,
     new Encoder(token, tokenBuffer).encode
     // tokenBytes now contains the dictionary-encoded token
     val lookupAddress = dictionary.lookup(tokenBytes)
-    val address = parseBuffer + 2 + tokenNum * 4
-    //printf("($%02x) Token found at: %02x, %d, %02x\n", address, lookupAddress, token.length, token.start)
-    state.setShortAt(address, lookupAddress)
-    state.setByteAt(address + 2, token.length)
-    state.setByteAt(address + 3, token.start - textBuffer)
+    if (!flag || flag && lookupAddress > 0) {
+      val address = parseBuffer + 2 + tokenNum * 4
+      //printf("($%02x) Token found at: %02x, %d, %02x\n", address, lookupAddress, token.length, token.start)
+      state.setShortAt(address, lookupAddress)
+      state.setByteAt(address + 2, token.length)
+      state.setByteAt(address + 3, token.start - textBuffer)
+    }
   }
 
   // Encoder class. For now, this is embedded and therefore can get

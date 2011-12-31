@@ -586,16 +586,17 @@ class Machine {
       case 0x1b => // tokenise
         val textBuffer = nextOperand
         val parseBuffer = nextOperand
-        val userDictionary =
-          if (numOperands > 2) nextOperand else 0
-        if (userDictionary != 0) {
-          fatal("user dictionaries not supported yet")
-        }
+        val userDictionary = if (numOperands > 2) nextOperand else 0
         val flag = if (numOperands > 3) nextOperand else 0
         val parserHelper = new ParserHelper(state, textBuffer, parseBuffer,
                                             userDictionary, flag != 0)
         parserHelper.tokenize
       case 0x1c => // encode_text
+        val zsciiText = nextOperand
+        val length    = nextOperand
+        val from      = nextOperand
+        val codedText = nextOperand
+        printf("@encode_text, zscii = $%04x, len = %d, from = %d, codedText = $%04x\n", zsciiText, length, from, codedText)
         fatal("@encode_text not supported yet (TODO)")
       case 0x1d => // copy_table
         val first  = nextOperand
