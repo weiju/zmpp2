@@ -233,7 +233,7 @@ class TextRunBuffer {
     currentStyle = DefaultNormal
   }
 
-  private def clear {
+  def clear {
     currentText = new StringBuilder
     runBuffer = new LinkedList[StyledText]()
   }

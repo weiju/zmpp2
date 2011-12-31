@@ -249,10 +249,9 @@ extends JTextPane with ScreenModelWindow with KeyListener {
   }
 
   def clear {
-    // TODO: we might want to incorporate the run buffer here
-    // TODO: also take into account the background color
     val clearScreenBuilder = new StringBuilder()
-    runBuffer.reset
+    // preserve the current style when doing a clear !
+    runBuffer.clear
     //println("Bottom Window has " + numRows + " rows.")
     (1 to numRows).foreach(_ => clearScreenBuilder.append('\n'))
     setText(clearScreenBuilder.toString)
@@ -361,7 +360,7 @@ extends JTextPane with ScreenModelWindow with KeyListener {
   // input
   // has to be called in UI event thread
   def requestLineInput(maxChars: Int) {
-    println("requestLineInput")
+    //println("requestLineInput")
     requestFocusInWindow
     getCaret.setVisible(true)
     setCaretToEnd
@@ -428,6 +427,13 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     remove(statusBar)
     if (vm.version <= 3) {
       add(statusBar, BorderLayout.NORTH)
+    }
+    if (vm.state.header.isBeyondZork) {
+      // Beyond Zork only works well with White on Black !!!
+      DefaultBackground = Colors.Black
+      DefaultForeground = Colors.White
+      ForegroundColors.setDefault(DefaultForeground)
+      BackgroundColors.setDefault(DefaultBackground)
     }
   }
 
@@ -503,12 +509,12 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def keyboardStream     = this
   def screenModel        = this
   def splitWindow(lines: Int) {
-    //println("@split_window, lines = " + lines)
+    println("@split_window, lines = " + lines)
     topWindow.windowSize = lines
     if (vm.version == 3) topWindow.clear
   }
   def setWindow(windowId: Int) {
-    //println("@set_window, window id = " + windowId)
+    println("@set_window, window id = " + windowId)
     if (windowId == BottomWindow || windowId == TopWindow) {
       activeWindowId = windowId
     } else {
@@ -520,17 +526,17 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   def cursorPosition: (Int, Int) = activeWindow.cursorPosition
 
   def setCursorPosition(line: Int, column: Int) {
-    //printf("@set_cursor, line = %d, col = %d, active window: %d\n", line, column, activeWindowId)
+    printf("@set_cursor, line = %d, col = %d, active window: %d\n", line, column, activeWindowId)
     activeWindow.cursorPosition = (line, column)
   }
 
   def bufferMode(flag: Int) {
-    //println("@buffer_mode, flag = " + flag)
+    println("@buffer_mode, flag = " + flag)
     bottomWindow.useBufferMode = (flag != 0)
   }
   def eraseWindow(windowId: Int) {
     // TODO: polymorphism might make this prettier and shorter
-    //println("@erase_window, win = " + windowId)
+    println("@erase_window, win = " + windowId)
     if (windowId == -1) {
       topWindow.windowSize = 0
       topWindow.clear
@@ -548,6 +554,7 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     printf("@erase_line %d not implemented yet (TODO)\n", value)
   }
   def setTextStyle(aStyle: Int) {
+    printf("@set_style: %d\n", aStyle)
     bottomWindow.setStyle(aStyle)
     style = aStyle
   }
@@ -556,8 +563,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   // The method is called "setColour" only to express that it
   // implements the Z-instruction
   def setColour(foreground: Int, background: Int, window: Int) {
-    printf("setColour(), foreground = %d, background = %d, window = %d\n",
-           foreground, background, window)
+    printf("setColour(), foreground = %d, background = %d\n",
+           foreground, background)
     bottomWindow.setColor(foreground, background)
 
     // Make sure that we don't end up in an infinite loop
@@ -565,23 +572,23 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     if (foreground != Colors.Current) currentForeground = foreground
     if (background != Colors.Current) currentBackground = background
     // we need to change the caret color of the bottom window, too
-    println("setting caret color")
+    //println("setting caret color")
     if (isReverseVideo(this.style)) {
       println("reverse")
       bottomWindow.setCaretColor(getColor(background, false))
     } else {
       println("normal video")
       val color = getColor(foreground, true)
-      println("color will be: " + color)
+      //println("color will be: " + color)
       bottomWindow.setCaretColor(color)
     }
-    println("exiting setColour")
+    //println("exiting setColour")
   }
 
   private def getColor(colorId: Int, isForeground: Boolean): Color = {
     colorId match {
       case Colors.Current =>
-        if (isForeground) getColor(currentForeground, true) else getColor(currentBackground, true)
+        if (isForeground) getColor(currentForeground, true) else getColor(currentBackground, false)
       case _ =>
         if (isForeground) ForegroundColors(colorId) else BackgroundColors(colorId)
     }
@@ -640,11 +647,23 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     StyleConstants.setBold(attrs,   TextStyles.isBold(style))
     StyleConstants.setItalic(attrs, TextStyles.isItalic(style))
     if (TextStyles.isReverseVideo(style)) {
-      StyleConstants.setBackground(attrs, getColor(TextStyles.foregroundColor(style), true))
-      StyleConstants.setForeground(attrs, getColor(TextStyles.backgroundColor(style), false))
+      println("BOTTOM RUN - REVERSE VIDEO")
+      StyleConstants.setBackground(attrs,
+                                   getColor(TextStyles.foregroundColor(style),
+                                            true))
+      StyleConstants.setForeground(attrs,
+                                   getColor(TextStyles.backgroundColor(style),
+                                            false))
     } else {
-      StyleConstants.setForeground(attrs, getColor(TextStyles.foregroundColor(style), true))
-      StyleConstants.setBackground(attrs, getColor(TextStyles.backgroundColor(style), false))
+      printf("BOTTOM RUN - REGULAR VIDEO FG = %d, BG = %d\n",
+             TextStyles.foregroundColor(style),
+             TextStyles.backgroundColor(style))
+      StyleConstants.setForeground(attrs,
+                                   getColor(TextStyles.foregroundColor(style),
+                                            true))
+      StyleConstants.setBackground(attrs,
+                                   getColor(TextStyles.backgroundColor(style),
+                                            false))
     }
     if (currentFont == Fonts.Normal) {
       // TODO
