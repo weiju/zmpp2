@@ -60,7 +60,6 @@ class UserDictionary(state: VMState, dictionaryAddress: Int)
 extends Dictionary(state, dictionaryAddress) {
   def lookup(tokenBytes: Array[Byte]): Int = {
     val n = math.abs(numEntries)
-    println("# ENTRIES IN USER DICT: " + n)
     var i = 0
     // only linear search supported
     while (i < n) {
@@ -68,7 +67,6 @@ extends Dictionary(state, dictionaryAddress) {
       if (tokenMatch(tokenBytes, entryAddress) == 0) return entryAddress
       i += 1
     }
-    println("NOT FOUND IN USER DICT !")
     0
   }
 }
@@ -152,7 +150,7 @@ class Encoder(state: VMState) {
   private def currentWordDone = currentSlot > 2
   private def atLastWord = writePos >= numEntryBytes
 
-  def encode(token: Token) {
+  def encode(token: Token) = {
     reset(token)
     // 1. process all characters of the token
     while (hasMoreInput) encodeChar
@@ -166,6 +164,7 @@ class Encoder(state: VMState) {
     // in a very short word ?
     val lastWord = tokenBuffer.shortAt(numEntryBytes - 2)
     tokenBuffer.setShortAt(numEntryBytes - 2, lastWord | 0x8000)
+    tokenBytes
   }
 
   private def encodeChar {

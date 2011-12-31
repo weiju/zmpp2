@@ -35,33 +35,6 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
 import org.zmpp.base.Memory
 
-class MockVMState(storyVersion: Int, dataBytes: Array[Byte]) extends VMState with Memory {
-  def buffer: Array[Byte] = null
-  def size: Int = 0
-  val header = new StoryHeader(this) {
-    override def version = storyVersion
-  }
-  var encoding: ZsciiEncoding = null
-  var runState = 0
-  var pc = 0
-  def story = this
-  def byteAt(addr: Int) = dataBytes(addr)
-  def shortAt(addr: Int) = {
-    if (addr == 0x34) 0
-    else if (addr == 0x36) 0
-    else {
-      throw new UnsupportedOperationException
-    }
-  }
-  def intAt(addr: Int) = throw new UnsupportedOperationException()
-  def setByteAt(addr: Int, value: Int) {}
-  def setShortAt(addr: Int, value: Int) {}
-  def setIntAt(addr: Int, value: Int) {}
-  def copyBytesTo(dest: Array[Byte], srcOffest: Int, numBytes: Int) {}
-  def copyBytesTo(dstOffset: Int, srcOffest: Int, numBytes: Int) {}
-  def copyBytesFrom(src: Array[Byte], srcOffset: Int, destOffset: Int, numBytes: Int) {}
-}
-
 class MockOutputStream extends OutputStream {
   val buffer = new StringBuilder
   def charsWritten = buffer.toString
