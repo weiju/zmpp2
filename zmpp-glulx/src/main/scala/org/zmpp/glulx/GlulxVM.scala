@@ -719,21 +719,21 @@ class GlulxVM {
   }
   
   private def readOperand(addressMode : Int) = {
-    addressMode match {
-      case AddressModes.ConstZero        => 0
-      case AddressModes.ConstByte        => state.nextByte
-      case AddressModes.ConstShort       => state.nextShort
-      case AddressModes.ConstInt         => state.nextInt
-      case AddressModes.Address00_FF     => state.nextByte
-      case AddressModes.Address0000_FFFF => state.nextShort
-      case AddressModes.AddressAny       => state.nextInt
-      case AddressModes.Stack            => 0
-      case AddressModes.Local00_FF       => state.nextByte
-      case AddressModes.Local0000_FFFF   => state.nextShort
-      case AddressModes.LocalAny         => state.nextInt
-      case AddressModes.Ram00_FF         => state.nextByte
-      case AddressModes.Ram0000_FFFF     => state.nextShort
-      case AddressModes.RamAny           => state.nextInt
+    (addressMode: @switch) match {
+      case 0  => 0               // ConstZero
+      case 1  => state.nextByte  // ConstByte
+      case 2  => state.nextShort // ConstShort
+      case 3  => state.nextInt   // ConstInt
+      case 5  => state.nextByte  // Address00_FF
+      case 6  => state.nextShort // Address0000_FFFF
+      case 7  => state.nextInt   // AddressAny
+      case 8  => 0               // Stack
+      case 9  => state.nextByte  // Local00_FF
+      case 10 => state.nextShort // Local0000_FFFF
+      case 11 => state.nextInt   // LocalAny
+      case 13 => state.nextByte  // Ram00_FF
+      case 14 => state.nextShort // Ram0000_FFFF
+      case 15 => state.nextInt   // RamAny
       case _ =>
         throw new IllegalArgumentException("unsupported address mode: " +
                                            addressMode)
@@ -762,23 +762,23 @@ class GlulxVM {
   }
   
   private def getOperand(pos : Int) :Int = {
-    _operands(pos).addressMode match {
-      case AddressModes.ConstZero       => 0
-      case AddressModes.ConstByte       => Types.signExtend8(_operands(pos).value)
-      case AddressModes.ConstShort      => Types.signExtend16(_operands(pos).value)
-      case AddressModes.ConstInt        => _operands(pos).value
-      case AddressModes.AddressAny      => state.memIntAt(_operands(pos).value)
-      case AddressModes.Stack           => state.popInt
-      case AddressModes.Local00_FF      =>
+    (_operands(pos).addressMode: @switch) match {
+      case 0  => 0 // ConstZero
+      case 1  => Types.signExtend8(_operands(pos).value) // ConstByte
+      case 2  => Types.signExtend16(_operands(pos).value) // ConstShort
+      case 3  => _operands(pos).value // ConstInt
+      case 7  => state.memIntAt(_operands(pos).value) // AddressAny
+      case 8  => state.popInt // Stack
+      case 9  => // Local00_FF
         state.getLocalAtAddress(_operands(pos).value)
-      case AddressModes.Local0000_FFFF  =>
+      case 10  => // Local0000_FFFF
         state.getLocalAtAddress(_operands(pos).value)
-      case AddressModes.LocalAny        =>
+      case 11 => // LocalAny
         state.getLocalAtAddress(_operands(pos).value)
-      case AddressModes.Ram00_FF        => state.ramIntAt(_operands(pos).value)
-      case AddressModes.Ram0000_FFFF    => state.ramIntAt(_operands(pos).value)
-      case AddressModes.RamAny          => state.ramIntAt(_operands(pos).value)
-      case _         =>
+      case 13 => state.ramIntAt(_operands(pos).value)
+      case 14 => state.ramIntAt(_operands(pos).value)
+      case 15 => state.ramIntAt(_operands(pos).value)
+      case _ =>
         throw new IllegalStateException("unsupported operand type: " +
           _operands(pos).addressMode)
     }
@@ -794,29 +794,29 @@ class GlulxVM {
   // only for copyb/copys
   // Only used by copyb.
   private def getOperand8(pos : Int) :Int = {
-    _operands(pos).addressMode match {
-      case AddressModes.ConstZero        => 0
-      case AddressModes.ConstByte        => Types.signExtend8(_operands(pos).value)
-      case AddressModes.ConstShort       => Types.signExtend16(_operands(pos).value)
-      case AddressModes.ConstInt         => _operands(pos).value
-      case AddressModes.Address00_FF     =>
+    (_operands(pos).addressMode: @switch) match {
+      case 0  => 0 // ConstZero
+      case 1  => Types.signExtend8(_operands(pos).value) // ConstByte
+      case 2  => Types.signExtend16(_operands(pos).value) // ConstShort
+      case 3  => _operands(pos).value // ConstInt
+      case 5  => // Address00_FF
         state.memByteAt(_operands(pos).value)
-      case AddressModes.Address0000_FFFF =>
+      case 6  => // Address0000_FFFF
         state.memByteAt(_operands(pos).value)
-      case AddressModes.AddressAny       =>
+      case 7  => // AddressAny
         state.memByteAt(_operands(pos).value)
-      case AddressModes.Stack            => state.popInt
-      case AddressModes.Local00_FF       =>
+      case 8  => state.popInt // Stack
+      case 9  => // Local00_FF 
         state.getLocalByteAtAddress(_operands(pos).value)
-      case AddressModes.Local0000_FFFF   =>
+      case 10 => // Local0000_FFFF
         state.getLocalByteAtAddress(_operands(pos).value)
-      case AddressModes.LocalAny         =>
+      case 11 => // LocalAny
         state.getLocalByteAtAddress(_operands(pos).value)
-      case AddressModes.Ram00_FF         =>
+      case 13 => // Ram00_FF
         state.ramByteAt(_operands(pos).value)
-      case AddressModes.Ram0000_FFFF     =>
+      case 14 => // Ram0000_FFFF
         state.ramByteAt(_operands(pos).value)
-      case AddressModes.RamAny           =>
+      case 15 => // RamAny
         state.ramByteAt(_operands(pos).value)
       case _         =>
         throw new IllegalStateException("unsupported operand type: " +
@@ -826,29 +826,29 @@ class GlulxVM {
   
   // Only used by copys.
   private def getOperand16(pos : Int) :Int = {
-    _operands(pos).addressMode match {
-      case AddressModes.ConstZero        => 0
-      case AddressModes.ConstByte        => Types.signExtend8(_operands(pos).value)
-      case AddressModes.ConstShort       => Types.signExtend16(_operands(pos).value)
-      case AddressModes.ConstInt         => _operands(pos).value
-      case AddressModes.Address00_FF     =>
+    (_operands(pos).addressMode: @switch) match {
+      case 0  => 0 // ConstZero
+      case 1  => Types.signExtend8(_operands(pos).value) // ConstByte
+      case 2  => Types.signExtend16(_operands(pos).value) // ConstShort
+      case 3  => _operands(pos).value // ConstInt
+      case 5  => // Address00_FF
         state.memShortAt(_operands(pos).value)
-      case AddressModes.Address0000_FFFF =>
+      case 6  => // Address0000_FFFF
         state.memShortAt(_operands(pos).value)
-      case AddressModes.AddressAny       =>
+      case 7  => // AddressAny
         state.memShortAt(_operands(pos).value)
-      case AddressModes.Stack            => state.popInt
-      case AddressModes.Local00_FF       =>
+      case 8  => state.popInt // Stack
+      case 9  => // Local00_FF
         state.getLocalShortAtAddress(_operands(pos).value)
-      case AddressModes.Local0000_FFFF   =>
+      case 10 => // Local0000_FFFF
         state.getLocalShortAtAddress(_operands(pos).value)
-      case AddressModes.LocalAny         =>
+      case 11 => // LocalAny
         state.getLocalShortAtAddress(_operands(pos).value)
-      case AddressModes.Ram00_FF         =>
+      case 13 => // Ram00_FF
         state.ramShortAt(_operands(pos).value)
-      case AddressModes.Ram0000_FFFF     =>
+      case 14 => // Ram0000_FFFF
         state.ramShortAt(_operands(pos).value)
-      case AddressModes.RamAny           =>
+      case 15 => // RamAny
         state.ramShortAt(_operands(pos).value)
       case _         =>
         throw new IllegalStateException("unsupported operand type: " +
