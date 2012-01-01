@@ -644,9 +644,11 @@ class GlulxVM {
   }
 
   private def setLocalDescriptorsToCallFrame(numDescriptors : Int) = {
-    for (i <- 0 until numDescriptors) {
+    var i = 0
+    while (i < numDescriptors) {
       state.pushByte(_localDescriptors(i).localType)
       state.pushByte(_localDescriptors(i).localCount)
+      i += 1
     }
     // Ensure a size dividable by 4 (the size of an int)
     var localDescriptorSize = numDescriptors * Types.SizeShort
@@ -677,15 +679,21 @@ class GlulxVM {
       } else if (ltype == Types.IntType &&
                  ((state.sp & 0x03) != 0)) {
         numPadBytes = Types.SizeInt - (state.sp & 0x03)
-        for (i <- 0 until numPadBytes) {
+        var j = 0
+        while (j < numPadBytes) {
           state.pushByte(0)
+          j += 1
         }
       }
       // push numlocals locals of size ltype on the stack, we do this
       // by incrementing the stackpointer, which does not do any initialization
       // to the variables
       val blocksize = numlocals * ltype
-      for (i <- 0 until blocksize) state.pushByte(0)
+      var j = 0
+      while (j < blocksize) {
+        state.pushByte(0)
+        j += 1
+      }
       localSectionSize += blocksize + numPadBytes
     }
     localSectionSize
