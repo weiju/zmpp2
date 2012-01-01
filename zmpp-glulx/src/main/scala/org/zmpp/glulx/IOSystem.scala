@@ -28,6 +28,7 @@
  */
 package org.zmpp.glulx
 
+import scala.annotation.switch
 import org.zmpp.base.Memory
 import org.zmpp.glk.Glk
 import java.util.logging._
@@ -278,7 +279,7 @@ abstract class IOSystem(vm: GlulxVM, val rock: Int) {
   private def handleLeaf(nodeType: Int, nodeAddr: Int,
                          inBetween: Boolean,
                          currentStreamByte: Int, currentStreamBit: Int): StreamStrState = {
-    nodeType match {
+    (nodeType: @switch) match {
       case 0x02 => // C character
         handleChar8(vm.memByteAt(nodeAddr + 1).asInstanceOf[Char],
                     inBetween, currentStreamByte, currentStreamBit)

@@ -969,12 +969,19 @@ class GlulxVM {
     
     if (funtype == 0xc0) { // stack-arg type
       // push arguments backwards, then the number of arguments
-      for (i <- 0 until _numArguments)
+      var i = 0
+      while (i < _numArguments) {
         state.pushInt(_arguments(_numArguments - i - 1))
+        i += 1
+      }
       state.pushInt(_numArguments)
     } else if (funtype == 0xc1) { // local-arg type
       // Copy arguments on the stack backwards to the locals
-      for (i <- 0 until _numArguments) state.setLocal(i, _arguments(i))
+      var i = 0
+      while (i < _numArguments) {
+        state.setLocal(i, _arguments(i))
+        i += 1
+      }
     } else {
       throw new IllegalArgumentException(
         "unsupported function type: %02x".format(funtype))
@@ -1014,8 +1021,10 @@ class GlulxVM {
   // called by @tailcall
   private def tailCall(funaddr: Int, numArgs: Int) {
     _numArguments = numArgs
-    for (i <- 0 until _numArguments) {
+    var i = 0
+    while (i < _numArguments) {
       _arguments(i) = state.popInt
+      i += 1
     }
     state.sp = state.fp
     prepareCall(funaddr, null)
@@ -1025,7 +1034,11 @@ class GlulxVM {
    * Implements @callf, @callfi, @callfii, @callfiii.
    */
   private def doCallf(funaddr: Int, storeLocation: Operand, args: Int*) {
-    for (i <- 0 until args.length) _arguments(i) = args(i)
+    var i = 0
+    while (i < args.length) {
+      _arguments(i) = args(i)
+      i += 1
+    }
     _numArguments = args.length
     prepareCall(funaddr, storeLocation)
   }
@@ -1036,7 +1049,11 @@ class GlulxVM {
    */
   def callWithArgs(destType: Int, destAddr: Int, pcVal: Int, fpVal: Int,
                    funaddr: Int, args: Array[Int]) {
-    for (i <- 0 until args.length) _arguments(i) = args(i)
+    var i = 0
+    while (i < args.length) {
+      _arguments(i) = args(i)
+      i += 1
+    }
     _numArguments = args.length
     state.pushCallStub(destType, destAddr, pcVal, fpVal)
     state.fp = state.sp
@@ -1044,7 +1061,11 @@ class GlulxVM {
   }
   def callWithArgs(destType: Int, destAddr: Int, pcVal: Int, fpVal: Int,
                    funaddr: Int, args: Int*) {
-    for (i <- 0 until args.length) _arguments(i) = args(i)
+    var i = 0
+    while (i < args.length) {
+      _arguments(i) = args(i)
+      i += 1
+    }
     _numArguments = args.length
     state.pushCallStub(destType, destAddr, pcVal, fpVal)
     state.fp = state.sp
@@ -1052,13 +1073,21 @@ class GlulxVM {
   }
 
   def callWithArgsNoCallStub(funaddr: Int, args: Array[Int]) {
-    for (i <- 0 until args.length) _arguments(i) = args(i)
+    var i = 0
+    while (i < args.length) {
+      _arguments(i) = args(i)
+      i += 1
+    }
     _numArguments = args.length
     state.fp = state.sp
     callFunction(funaddr)
   }
   def callWithArgsNoCallStub(funaddr: Int, args: Int*) {
-    for (i <- 0 until args.length) _arguments(i) = args(i)
+    var i = 0
+    while (i < args.length) {
+      _arguments(i) = args(i)
+      i += 1
+    }
     _numArguments = args.length
     state.fp = state.sp
     callFunction(funaddr)

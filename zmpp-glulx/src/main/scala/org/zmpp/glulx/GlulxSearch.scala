@@ -28,9 +28,10 @@
  */
 package org.zmpp.glulx
 
-/****************************************************************************
- **** Glulx Search Package
- ****************************************************************************/
+//****************************************************************************
+// **** Glulx Search Package
+// ****************************************************************************
+
 abstract class GlulxSearch(state: GlulxVMState, keySize: Int, options: Int) {
   val keyIndirect       = (options & 0x01) == 0x01
   val zeroKeyTerminates = (options & 0x02) == 0x02
