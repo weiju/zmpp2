@@ -58,13 +58,13 @@ object GlulxVMState {
  */
 class GlulxVMState extends VMState {
   val logger = Logger.getLogger("glulx")
-  private var _story    : Memory = null
-  private var _header   : GlulxStoryHeader = null
+  private[this] var _story    : Memory = null
+  private[this] var _header   : GlulxStoryHeader = null
   
   // Memory setup
-  private var _memheap  : MemoryHeap = null
-  private var _extMem   : Memory = null
-  private var _extEnd   : Int = 0
+  private[this] var _memheap  : MemoryHeap = null
+  private[this] var _extMem   : Memory = null
+  private[this] var _extEnd   : Int = 0
   var runState = VMRunStates.Running
   var stack             : Stack = null
   // Registers
@@ -551,33 +551,33 @@ class GlulxVM {
   // Note: This is mainly an optimization to avoid reading the state over and
   // over again, we might fall back to just reading from memory and pass the
   // state.
-  private val _localDescriptors =
+  private[this] val _localDescriptors =
     new Array[LocalDescriptor](GlulxVM.MaxLocalDescriptors)
   
   // quick and easy access to the current instruction's values, so we
   // do not need to read them over and over
-  private val _operands           = new Array[Operand](GlulxVM.MaxOperands)
-  private var _opcodeNum          = 0
-  private var _opcodeNumSize      = 0
+  private[this] val _operands           = new Array[Operand](GlulxVM.MaxOperands)
+  private[this] var _opcodeNum          = 0
+  private[this] var _opcodeNumSize      = 0
   
   // function arguments - we avoid creating them over and over
   // we are using these when we setup a normal function call and
   // we also use them in accelerated functions
-  private val _arguments          = new Array[Int](GlulxVM.MaxArguments)
-  private var _numArguments       = 0
+  private[this] val _arguments          = new Array[Int](GlulxVM.MaxArguments)
+  private[this] var _numArguments       = 0
   
   // VM state
-  private var _glk        : Glk         = null
-  private var _glkDispatch: GlkDispatch = null
-  private val _random                   = new Random
+  private[this] var _glk        : Glk         = null
+  private[this] var _glkDispatch: GlkDispatch = null
+  private[this] val _random                   = new Random
 
-  private var _undoSnapshots: List[Snapshot] = Nil
-  private val _accelSystem              = new AccelSystem(this)
+  private[this] var _undoSnapshots: List[Snapshot] = Nil
+  private[this] val _accelSystem              = new AccelSystem(this)
   
   // The original state of writable memory after loading
-  private var _originalRam: Array[Byte] = null
-  private var _protectionStart  = 0
-  private var _protectionLength = 0
+  private[this] var _originalRam: Array[Byte] = null
+  private[this] var _protectionStart  = 0
+  private[this] var _protectionLength = 0
 
   // IO Systems
   def eventManager = _glk.eventManager
