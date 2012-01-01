@@ -859,27 +859,27 @@ class GlulxVM {
   // ***** Storing
   // *********************************
   private def storeAtOperand(operand: Operand, value : Int) {
-    operand.addressMode match {
-      case AddressModes.ConstZero        => // throw result away
-      case AddressModes.Local00_FF       =>
-        state.setLocalAtAddress(operand.value, value)
-      case AddressModes.Local0000_FFFF   =>
-        state.setLocalAtAddress(operand.value, value)
-      case AddressModes.LocalAny         =>
-        state.setLocalAtAddress(operand.value, value)
-      case AddressModes.Ram00_FF         =>
-        state.setRamIntAt(operand.value, value)
-      case AddressModes.Ram0000_FFFF     =>
-        state.setRamIntAt(operand.value, value)
-      case AddressModes.RamAny           =>
-        state.setRamIntAt(operand.value, value)
-      case AddressModes.Address00_FF     =>
+    (operand.addressMode: @switch) match {
+      case 0  => // ConstZero, throw result away
+      case 5  => // Address00_FF
         state.setMemIntAt(operand.value, value)
-      case AddressModes.Address0000_FFFF =>
+      case 6  => // Address0000_FFFF
         state.setMemIntAt(operand.value, value)
-      case AddressModes.AddressAny       =>
+      case 7  => // AddressAny
         state.setMemIntAt(operand.value, value)
-      case AddressModes.Stack            => state.pushInt(value)
+      case 8  => state.pushInt(value) // Stack
+      case 9  => // Local00_FF
+        state.setLocalAtAddress(operand.value, value)
+      case 10 => // Local0000_FFFF
+        state.setLocalAtAddress(operand.value, value)
+      case 11 => // LocalAny
+        state.setLocalAtAddress(operand.value, value)
+      case 13 => // Ram00_FF
+        state.setRamIntAt(operand.value, value)
+      case 14 => // Ram0000_FFFF
+        state.setRamIntAt(operand.value, value)
+      case 15 => // RamAny
+        state.setRamIntAt(operand.value, value)
       case _ =>
         throw new IllegalArgumentException(
           "unsupported address mode for store: " + operand.addressMode)
@@ -891,27 +891,27 @@ class GlulxVM {
 
   // Only used by copyb.
   private def storeAtOperand8(pos : Int, value : Int) {
-    _operands(pos).addressMode match {
-      case AddressModes.ConstZero        => // throw result away
-      case AddressModes.Local00_FF       =>
-        state.setLocalByteAtAddress(_operands(pos).value, value)
-      case AddressModes.Local0000_FFFF   =>
-        state.setLocalByteAtAddress(_operands(pos).value, value)
-      case AddressModes.LocalAny         =>
-        state.setLocalByteAtAddress(_operands(pos).value, value)
-      case AddressModes.Ram00_FF         =>
-        state.setRamByteAt(_operands(pos).value, value)
-      case AddressModes.Ram0000_FFFF     =>
-        state.setRamByteAt(_operands(pos).value, value)
-      case AddressModes.RamAny           =>
-        state.setRamByteAt(_operands(pos).value, value)
-      case AddressModes.Address00_FF     =>
+    (_operands(pos).addressMode: @switch) match {
+      case 0  => // ConstZero, throw result away
+      case 5  => // Address00_FF
         state.setMemByteAt(_operands(pos).value, value)
-      case AddressModes.Address0000_FFFF =>
+      case 6  => // Address0000_FFFF
         state.setMemByteAt(_operands(pos).value, value)
-      case AddressModes.AddressAny       =>
+      case 7  => // AddressAny
         state.setMemByteAt(_operands(pos).value, value)
-      case AddressModes.Stack            => state.pushInt(value)
+      case 8  => state.pushInt(value) // Stack
+      case 9  => // Local00_FF
+        state.setLocalByteAtAddress(_operands(pos).value, value)
+      case 10 => // Local0000_FFFF
+        state.setLocalByteAtAddress(_operands(pos).value, value)
+      case 11 => // LocalAny
+        state.setLocalByteAtAddress(_operands(pos).value, value)
+      case 13 => // Ram00_FF
+        state.setRamByteAt(_operands(pos).value, value)
+      case 14 => // Ram0000_FFFF
+        state.setRamByteAt(_operands(pos).value, value)
+      case 15 => // RamAny
+        state.setRamByteAt(_operands(pos).value, value)
       case _ =>
         throw new IllegalArgumentException(
           "unsupported address mode for store: " + _operands(pos).addressMode)
@@ -920,27 +920,27 @@ class GlulxVM {
 
   // Only used by copys, 16-bit values
   private def storeAtOperand16(pos : Int, value : Int) {
-    _operands(pos).addressMode match {
-      case AddressModes.ConstZero        => // throw result away
-      case AddressModes.Local00_FF       =>
-        state.setLocalShortAtAddress(_operands(pos).value, value)
-      case AddressModes.Local0000_FFFF   =>
-        state.setLocalShortAtAddress(_operands(pos).value, value)
-      case AddressModes.LocalAny         =>
-        state.setLocalShortAtAddress(_operands(pos).value, value)
-      case AddressModes.Ram00_FF         =>
-        state.setRamShortAt(_operands(pos).value, value)
-      case AddressModes.Ram0000_FFFF     =>
-        state.setRamShortAt(_operands(pos).value, value)
-      case AddressModes.RamAny           =>
-        state.setRamShortAt(_operands(pos).value, value)
-      case AddressModes.Address00_FF     =>
+    (_operands(pos).addressMode: @switch) match {
+      case 0  => // ConstZero, throw result away
+      case 5  => // Address00_FF
         state.setMemShortAt(_operands(pos).value, value)
-      case AddressModes.Address0000_FFFF =>
+      case 6  => // Address0000_FFFF
         state.setMemShortAt(_operands(pos).value, value)
-      case AddressModes.AddressAny       =>
+      case 7  => // AddressAny
         state.setMemShortAt(_operands(pos).value, value)
-      case AddressModes.Stack            => state.pushInt(value)
+      case 8  => state.pushInt(value) // Stack
+      case 9  => // Local00_FF
+        state.setLocalShortAtAddress(_operands(pos).value, value)
+      case 10 => // Local0000_FFFF
+        state.setLocalShortAtAddress(_operands(pos).value, value)
+      case 11 => // LocalAny
+        state.setLocalShortAtAddress(_operands(pos).value, value)
+      case 13 => // Ram00_FF
+        state.setRamShortAt(_operands(pos).value, value)
+      case 14 => // Ram0000_FFFF
+        state.setRamShortAt(_operands(pos).value, value)
+      case 15 => // RamAny
+        state.setRamShortAt(_operands(pos).value, value)
       case _ =>
         throw new IllegalArgumentException(
           "unsupported address mode for store: " + _operands(pos).addressMode)
