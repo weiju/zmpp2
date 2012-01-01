@@ -3,22 +3,21 @@ Z-machine implementation
 Known issues:
 
 Missing:
-01. @encode_text
 
 ext:
 
-02. @draw_picture
-03. @picture_data
-04. @erase_picture
-05. @set_margins
-06. @move_window
-07. @window_size
-08. @window_style
-09. @get_wind_prop
-10. @scroll_window
-11. @read_mouse
-12. @mouse_window
-13. @put_wind_prop
-14. @print_form
-15. @make_menu
+01. @draw_picture
+02. @picture_data
+03. @erase_picture
+04. @set_margins
+05. @move_window
+06. @window_size
+07. @window_style
+08. @get_wind_prop
+09. @scroll_window
+10. @read_mouse
+11. @mouse_window
+12. @put_wind_prop
+13. @print_form
+14. @make_menu
 
