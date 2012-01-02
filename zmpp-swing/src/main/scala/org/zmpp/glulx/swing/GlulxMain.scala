@@ -41,7 +41,7 @@ import org.zmpp.glk.GlkScreenUI
 import org.zmpp.glk.GlkWindowUI
 
 object Glulx {
-  private var _vm : GlulxVM = null
+  private[this] var _vm : GlulxVM = null
   def readFileData(file: File) = {
     val filebytes = new Array[Byte](file.length.toInt)
     var fileIs : FileInputStream = null

@@ -128,9 +128,9 @@ class Hyperlink(val id: Int) {
 
 trait SwingGlkScreenUI extends GlkScreenUI {
   val logger = Logger.getLogger("glk.ui")
-  private val _windowUIs = new HashMap[Int, SwingGlkWindowUI]
-  private val TextGridExtraMargin = 3
-  private val TextBufferExtraMargin = 3
+  private[this] val _windowUIs = new HashMap[Int, SwingGlkWindowUI]
+  private[this] val TextGridExtraMargin = 3
+  private[this] val TextBufferExtraMargin = 3
   var fixedFont = getDefaultFixedFont
   var standardFont = getDefaultNormalFont
   

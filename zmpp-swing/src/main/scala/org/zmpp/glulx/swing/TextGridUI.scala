@@ -61,9 +61,9 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   StyleConstants.setFontFamily(attrs, screenUI.fixedFont.getFamily)
   StyleConstants.setFontSize(attrs,   screenUI.fixedFont.getSize)  
 
-  private var waitForMouse  = false
-  private var _cursorx = 0
-  private var _cursory = 0
+  private[this] var waitForMouse  = false
+  private[this] var _cursorx = 0
+  private[this] var _cursory = 0
   
   protected def numCols =
     (getWidth - SwingTextGridUI.MarginLeft - SwingTextGridUI.MarginRight) /

@@ -46,10 +46,10 @@ import org.zmpp.glk._
 class SwingGraphicsUI(screenUI: SwingGlkScreenUI, glkWindow: GlkWindow)
 extends JComponent with SwingGlkWindowUI {
   val logger = Logger.getLogger("glk.ui")
-  private var _backgroundColor = 0xffffffff
-  private var waitForMouse  = false
-  var buffer: BufferedImage = null
-  var offscreenG2d: Graphics2D = null
+  private[this] var _backgroundColor = 0xffffffff
+  private[this] var waitForMouse  = false
+  private[this] var buffer: BufferedImage = null
+  private[this] var offscreenG2d: Graphics2D = null
 
   addMouseListener(this)
   addMouseMotionListener(this)

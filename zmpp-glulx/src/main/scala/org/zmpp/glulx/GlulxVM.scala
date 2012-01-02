@@ -316,25 +316,25 @@ class GlulxVMState extends VMState {
   }
 
   private def setValueInStack(index: Int, vartype: Int, value: Int) {
-    vartype match {
-      case Types.ByteType  =>
+    (vartype: @switch) match {
+      case 1 => // Types.ByteType
         stack.setByte(index, value)
-      case Types.ShortType =>
+      case 2 => // Types.ShortType
         stack.setShort(index, value)
-      case Types.IntType   =>
+      case 4 => // Types.IntType
         stack.setInt(index, value)
-      case _                =>
+      case _ =>
         throw new IllegalStateException("unknown local type: " + vartype)
     }
   }
   
   def storeResult(destType: Int, destAddress: Int, value: Int) {
-    destType match {
-      case DestTypes.DoNotStore    => // do nothing
-      case DestTypes.Memory        => setMemIntAt(destAddress, value)
-      case DestTypes.Ram           => setRamIntAt(destAddress, value)
-      case DestTypes.LocalVariable => setLocalAtAddress(destAddress, value)
-      case DestTypes.Stack         => pushInt(value)
+    (destType: @switch) match {
+      case 0 => // DestTypes.DoNotStore, do nothing
+      case 1 => setMemIntAt(destAddress, value) // DestTypes.Memory
+      case 2 => setLocalAtAddress(destAddress, value) // DestTypes.LocalVariable
+      case 3 => pushInt(value) // DestTypes.Stack
+      case 4 => setRamIntAt(destAddress, value) // DestTypes.Ram
       case _ => 
         throw new IllegalArgumentException(
           "unsupported dest type for store: " + destType)
@@ -666,7 +666,8 @@ class GlulxVM {
     var localSectionSize = 0
     // we subtract 1 from numDescriptors, because we do not include the
     // terminator
-    for (i <- 0 until numDescriptors - 1) {
+    var i = 0
+    while (i < numDescriptors - 1) {
       val numlocals = _localDescriptors(i).localCount
       val ltype     = _localDescriptors(i).localType
       if (!Types.isValidType(ltype)) {
@@ -697,6 +698,7 @@ class GlulxVM {
         j += 1
       }
       localSectionSize += blocksize + numPadBytes
+      i += 1
     }
     localSectionSize
   }
@@ -1123,15 +1125,15 @@ class GlulxVM {
   }
   def handleStringCallStub(destType: Int, destAddr: Int, pcValue: Int,
                            fpValue: Int) {
-    destType match {
-      case DestTypes.ResumePrintCompressed =>
+    (destType: @switch) match {
+      case 10 => // DestTypes.ResumePrintCompressed
         currentIOSystem.streamStr(StreamStrState.resumeAt(pcValue, destAddr))
-      case DestTypes.ResumePrintCString    =>
-        currentIOSystem.streamStr(StreamStrState.resumeCStringAt(pcValue))
-      case DestTypes.ResumePrintUnicode    =>
-        currentIOSystem.streamStr(StreamStrState.resumeUniStringAt(pcValue))
-      case DestTypes.ResumePrintDecimal    =>
+      case 12 => // DestTypes.ResumePrintDecimal
         currentIOSystem.streamNum(pcValue, destAddr)
+      case 13 => // DestTypes.ResumePrintCString
+        currentIOSystem.streamStr(StreamStrState.resumeCStringAt(pcValue))
+      case 14 => // DestTypes.ResumePrintUnicode
+        currentIOSystem.streamStr(StreamStrState.resumeUniStringAt(pcValue))
       case _ => // do nothing
         throw new UnsupportedOperationException(
           "Encountered call stub type: %d".format(destType))
@@ -1489,7 +1491,7 @@ class GlulxVM {
       case 0x149 => // setiosys
         val iosys = getOperand(0)
         val rock  = getOperand(1)
-        currentIOSystem = iosys match {
+        currentIOSystem = (iosys: @switch) match {
           case 0  => new NullIOSystem(this, rock)
           case 1  => new FilterIOSystem(this, rock)
           case 2  => new GlkIOSystem(this, _glk, rock)
