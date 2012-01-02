@@ -75,5 +75,23 @@ class StackSpec extends FlatSpec with ShouldMatchers {
     stack.popInt should equal (32767)
     stack.empty  should be (true)
   }
+  it should "set and get a byte" in {
+    val stack = new Stack(10)
+    stack.setByte(3, 0xba)
+    stack.getByte(3) should be (0xba)
+    stack.sp should be (0)
+  }
+  it should "set and get a short" in {
+    val stack = new Stack(10)
+    stack.setShort(4, 0xcafe)
+    stack.getShort(4) should be (0xcafe)
+    stack.sp should be (0)
+  }
+  it should "set and get a int" in {
+    val stack = new Stack(10)
+    stack.setInt(4, 0xdeadbeef)
+    stack.getInt(4) should be (0xdeadbeef)
+    stack.sp should be (0)
+  }
 }
 

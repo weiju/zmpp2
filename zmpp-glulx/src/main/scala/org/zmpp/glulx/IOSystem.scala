@@ -123,8 +123,10 @@ abstract class IOSystem(vm: GlulxVM, val rock: Int) {
    */
   def streamNum(num: Int, pos: Int) {
     val numberString = "%d".format(num)
-    for (i <- pos until numberString.length) {
+    var i = pos
+    while (i < numberString.length) {
       streamChar(numberString.charAt(i))
+      i += 1
     }
     if (pos > 0) {
       val fpVal    = vm.state.stack.popInt

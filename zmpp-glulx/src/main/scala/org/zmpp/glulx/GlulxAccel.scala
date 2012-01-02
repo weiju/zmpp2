@@ -124,8 +124,11 @@ abstract class AccelFunc(val _state: GlulxVMState, val _glk: Glk,
     val inlist = _state.memIntAt(prop + 4)
     if (inlist == 0) return 0
     val inlistlen = _state.memShortAt(prop + 2)
-    for (j <- 0 until inlistlen) {
+
+    var j = 0
+    while (j < inlistlen) {
       if (_state.memIntAt(inlist + 4 * j) == cla) return 1
+      j += 1
     }
     0
   }
