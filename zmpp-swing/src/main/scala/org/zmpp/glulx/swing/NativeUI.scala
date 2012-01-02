@@ -129,6 +129,7 @@ class Hyperlink(val id: Int) {
 trait SwingGlkScreenUI extends GlkScreenUI {
   val logger = Logger.getLogger("glk.ui")
   private[this] val _windowUIs = new HashMap[Int, SwingGlkWindowUI]
+  private[this] val _imageCache = new HashMap[Int, BufferedImage]
   private[this] val TextGridExtraMargin = 3
   private[this] val TextBufferExtraMargin = 3
   var fixedFont = getDefaultFixedFont
@@ -422,13 +423,16 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   def getGraphics: java.awt.Graphics
   def getClientSize: java.awt.Dimension
   
-  // TODO: Cache images
   def getImage(resnum: Int): BufferedImage = {
     //logger.info("getImage(%d)".format(resnum))
     val resourceInfo = blorbData.pictureResource(resnum)
     if (resourceInfo != null) {
-      val inputStream = blorbData.pictureInputStream(resnum)
-      ImageIO.read(inputStream)
+      // many games use the same images over and over, cache them
+      if (!_imageCache.contains(resnum)) {
+        val inputStream = blorbData.pictureInputStream(resnum)
+        _imageCache += resnum -> ImageIO.read(inputStream)
+      }
+      _imageCache(resnum)
     } else {
       logger.warning("IMAGE NUM NOT FOUND: %d".format(resnum))
       null
