@@ -65,6 +65,7 @@ class GlulxVMState extends VMState {
   private[this] var _memheap  : MemoryHeap = null
   private[this] var _extMem   : Memory = null
   private[this] var _extEnd   : Int = 0
+  private[this] var _extstart : Int = 0 // cached, because accessed frequently
   var runState = VMRunStates.Running
   var stack             : Stack = null
   // Registers
@@ -76,20 +77,21 @@ class GlulxVMState extends VMState {
     _story     = story
     _header    = new GlulxStoryHeader(story)
     stack      = new Stack(_header.stacksize)
+    _extstart  = _header.extstart
     _memheap   = new MemoryHeap(_header.endmem)
     pc         = 0
     fp         = 0
     runState   = VMRunStates.Running
     memsize    = header.endmem
     logger.info("VM INITIALIZED WITH EXT_START: %d END_MEM: %d".format(
-                header.extstart, header.endmem))
+                _extstart, header.endmem))
   }
   def restart(originalRam: Array[Byte],
               protectionStart: Int, protectionLength: Int) {
     logger.info("@restart (start: %02x, # bytes: %02x)".format(
                 protectionStart, protectionLength))
     logger.info("HEAP ACTIVE: %b EXT_START: $%02x EXT_END: $%02x".format(
-                _memheap.active, _header.extstart, _extEnd))
+                _memheap.active, _extstart, _extEnd))
     stack      = new Stack(_header.stacksize)
     _memheap   = new MemoryHeap(_header.endmem)
     memsize    = header.endmem
@@ -98,7 +100,7 @@ class GlulxVMState extends VMState {
     runState   = VMRunStates.Running
     
     // reset bytes in ram
-    val ramsize = _header.extstart - _header.ramstart
+    val ramsize = _extstart - _header.ramstart
     protectedMemRestore(originalRam, 0, _header.ramstart, ramsize,
                         protectionStart, protectionLength)
   }
@@ -121,19 +123,19 @@ class GlulxVMState extends VMState {
   }
 
   private def _setExtendedMem(size: Int) {
-    val currentExtSize = if (_extMem == null) 0 else _extEnd - header.extstart
+    val currentExtSize = if (_extMem == null) 0 else _extEnd - _extstart
     // note: we actually do not need to "shrink" extended memory, we only
     // need to extend it
     if (currentExtSize != size) {
       if (size > currentExtSize) {
         val extbytes = new Array[Byte](size)
         if (_extMem != null) {
-          _extMem.copyBytesTo(extbytes, header.extstart, currentExtSize)
+          _extMem.copyBytesTo(extbytes, _extstart, currentExtSize)
         }
-        _extMem = new DefaultMemory(extbytes, header.extstart)
+        _extMem = new DefaultMemory(extbytes, _extstart)
       }
     }
-    _extEnd = header.extstart + size
+    _extEnd = _extstart + size
   }
 
   def story        = _story
@@ -141,9 +143,9 @@ class GlulxVMState extends VMState {
   def heapIsActive = _memheap.active
   def ramSize      = memsize - header.ramstart
 
-  private def inStoryMem(addr: Int) = addr < header.extstart
+  private def inStoryMem(addr: Int) = addr < _extstart
   private def inExtMem(addr: Int) =
-    addr >= header.extstart && addr < _extEnd
+    addr >= _extstart && addr < _extEnd
   private def fitsInStoryMem(addr: Int, size: Int) = {
     inStoryMem(addr) && inStoryMem(addr + size - 1)
   }
@@ -285,7 +287,7 @@ class GlulxVMState extends VMState {
     for (i <- 0 until numBytes) setMemByteAt(addr + i, 0)
   }
   def memsize   = if (_memheap.active) _memheap.maxAddress else _extEnd
-  def memsize_=(newSize: Int) = _setExtendedMem(newSize - header.extstart)
+  def memsize_=(newSize: Int) = _setExtendedMem(newSize - _extstart)
   def heapStart = if (_memheap.active) _extEnd else 0
 
   // Pushes a call stub, given an operand
@@ -492,7 +494,7 @@ class GlulxVMState extends VMState {
   // *************************************************************
   def readSnapshot(snapshot: Snapshot, protectionStart: Int,
                    protectionLength: Int) {
-    val ramsize = header.extstart - header.ramstart
+    val ramsize = _extstart - header.ramstart
     protectedMemRestore(snapshot.ram, 0, _header.ramstart, ramsize,
                         protectionStart, protectionLength)
     stack.initFromByteArray(snapshot.stack)
@@ -513,7 +515,7 @@ class GlulxVMState extends VMState {
   }
 
   def cloneRam = {
-    val ramsize = header.extstart - header.ramstart
+    val ramsize = _extstart - header.ramstart
     logger.info("Copying %d Bytes of RAM to preserve initial data".format(ramsize))
     val ram = new Array[Byte](ramsize)
     _story.copyBytesTo(ram, header.ramstart, ramsize)
@@ -746,8 +748,8 @@ class GlulxVM {
     val nbytesNumOperands = numOperands / 2 + numOperands % 2
     state.pc += nbytesNumOperands // adjust pc to the start of operand data
     var numRead = 0
-
-    for (i <- 0 to nbytesNumOperands - 1) {
+    var i = 0
+    while (i < nbytesNumOperands) {
       val byteVal = state.memByteAt(addrModeOffset + i)
       _operands(numRead).addressMode = byteVal & 0x0f
       _operands(numRead).value = readOperand(_operands(numRead).addressMode)
@@ -758,6 +760,7 @@ class GlulxVM {
         _operands(numRead).value = readOperand(_operands(numRead).addressMode)
         numRead += 1
       }
+      i += 1
     }
   }
   
@@ -1262,8 +1265,10 @@ class GlulxVM {
         // will use them and store them according to the function type
         val funaddr = getOperand(0)
         _numArguments = getOperand(1)
-        for (i <- 0 until _numArguments) {
+        var i = 0
+        while (i < _numArguments) {
           _arguments(i) = state.popInt
+          i += 1
         }
         prepareCall(funaddr, _operands(2))
       case 0x31  => // return
@@ -1371,8 +1376,10 @@ class GlulxVM {
       case 0x54  => // stkcopy
         val numElems = getOperand(0)
         val copyStart = state.sp - Types.SizeInt * numElems
-        for (i <- 0 until numElems) {
+        var i = 0
+        while (i < numElems) {
           state.pushInt(state.getIntInStack(copyStart + i * Types.SizeInt))
+          i += 1
         }
       case 0x70  => //streamchar
         currentIOSystem.streamChar((getOperand(0) & 0xff).asInstanceOf[Char])
@@ -1461,8 +1468,10 @@ class GlulxVM {
         val glkId = getOperand(0)
         val numArgs = getOperand(1)
         val args = new Array[Int](numArgs)
-        for (i <- 0 until numArgs) {
+        var i = 0
+        while (i < numArgs) {
           args(i) = state.popInt
+          i += 1
         }
         val glkResult = _glkDispatch.dispatch(glkId, args)
         //printf("GLK result = #$%02x\n", glkResult)
