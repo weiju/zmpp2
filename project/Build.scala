@@ -29,7 +29,7 @@ object Zmpp2 extends Build {
                                 file("zmpp-zcode")) settings (appSettings: _*) dependsOn(common)
   lazy val zmpp_tads3 = Project("zmpp-tads3", file("zmpp-tads3")) settings(testDependencies :_*) dependsOn(common)
   lazy val glulx = Project("zmpp-glulx", file("zmpp-glulx")) settings(testDependencies: _*) dependsOn(common, glk)
-  lazy val glk = Project("zmpp-glk", file("zmpp-glk")) dependsOn(common)
+  lazy val glk = Project("zmpp-glk", file("zmpp-glk")) settings(testDependencies: _*) dependsOn(common)
   lazy val common = Project("zmpp-common", file("zmpp-common")) settings(testDependencies :_*)
 
   def testDependencies = libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "1.6.1" % "test", "junit" % "junit" % "4.9" % "test")
