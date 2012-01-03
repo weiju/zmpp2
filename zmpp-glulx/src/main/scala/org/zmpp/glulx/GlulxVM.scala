@@ -43,11 +43,6 @@ import org.zmpp.glk._
 // ****
 // ***************************************************************************
 
-object GlulxVMState {
-  val OffsetLocalsPos     = 4
-  val OffsetLocalsFormat  = 8
-}
-
 /**
  * GlulxVMState captures the internal state of the Glulx system:
  * - story memory
@@ -154,7 +149,7 @@ class GlulxVMState extends VMState {
 
   // Stack interface
   def empty     = stack.empty
-  def localsPos = stack.getInt(fp + GlulxVMState.OffsetLocalsPos)
+  def localsPos = stack.getInt(fp + Stack.OffsetLocalsPos)
   def frameLen  = stack.getInt(fp)
 
   def pushByte(value : Int)  = stack.pushByte(value)
@@ -203,12 +198,18 @@ class GlulxVMState extends VMState {
   def stackRoll(numValues: Int, numRotatePlaces: Int) {
     if (numRotatePlaces == 0) return
     val tmparr = new Array[Int](numValues)
-    for (i <- 0 until numValues) {
+    var i = 0
+    while (i < numValues) {
       var pos = ((numValues - 1 - i) + numRotatePlaces) % numValues
       if (pos < 0) pos = numValues + pos
       tmparr(pos) = stack.popInt
+      i += 1
     }
-    for (i <- 0 until numValues) stack.pushInt(tmparr(i))
+    i = 0
+    while (i < numValues) {
+      stack.pushInt(tmparr(i))
+      i += 1
+    }
   }
 
   // Memory interface
@@ -397,7 +398,7 @@ class GlulxVMState extends VMState {
   // *************************************************************
 
   private def localFrameIndex(localNum: Int) : Int = {
-    var descriptorPos    = fp + GlulxVMState.OffsetLocalsFormat
+    var descriptorPos    = fp + Stack.OffsetLocalsFormat
     var currentLocalPos  = localsPos
     var localRangeStart    = 0
     var hasMoreDescriptors = true
@@ -423,7 +424,7 @@ class GlulxVMState extends VMState {
   }
 
   private def localType(localNum: Int) : Int = {
-    var descriptorPos = fp + GlulxVMState.OffsetLocalsFormat
+    var descriptorPos = fp + Stack.OffsetLocalsFormat
     var localRangeStart    = 0
     var hasMoreDescriptors = true
 
@@ -968,7 +969,7 @@ class GlulxVM {
 
     // now that we know the size of the local descriptors section, we set
     // the position of locals
-    state.setIntInStack(state.fp + GlulxVMState.OffsetLocalsPos,
+    state.setIntInStack(state.fp + Stack.OffsetLocalsPos,
                          localDescriptorSize + 8)
     val localSectionSize = setLocalsToCallFrame(numDescriptors)
     

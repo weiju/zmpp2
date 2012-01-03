@@ -28,9 +28,13 @@
  */
 package org.zmpp.glulx
 
+object Stack {
+  val OffsetLocalsPos     = 4
+  val OffsetLocalsFormat  = 8
+}
+
 /**
- * A simple byte stack based on a ByteBuffer which wraps a byte array.
- * We use the ByteBuffer to do the conversions for us.
+ * A simple stack based on a byte array.
  */
 class Stack(size : Int) {
   private[this] val _stackArray = new Array[Byte](size)
