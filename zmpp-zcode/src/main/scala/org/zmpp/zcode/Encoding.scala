@@ -1,6 +1,6 @@
 /*
  * Created on 2010/05/13
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2012, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -137,17 +137,17 @@ object DefaultAccentTable extends AccentTable {
 }
 
 class CustomAccentTable(memory: Memory, address: Int) extends AccentTable {
-  val numWords = memory.shortAt(address)
+  val numWords = memory.byteAt(address)
 
   def apply(index: Int) = {
     if (index < numWords)
-      memory.shortAt(address + (index + 1) * 2).asInstanceOf[Char]
+      memory.shortAt(address + 1 + index * 2).asInstanceOf[Char]
     else '?'
   }
   def indexOf(c: Char): Int = {
     var i = 0
     while (i < numWords) {
-      if (memory.shortAt(address + (i + 1) * 2) == c) return i
+      if (memory.shortAt(address + 1 + i * 2) == c) return i
       i += 1
     }
     -1

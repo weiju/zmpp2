@@ -1,6 +1,6 @@
 /*
  * Created on 2011/10/05
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2012, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,6 @@ import org.scalatest.matchers.ShouldMatchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
-import org.zmpp.base.Memory
 
 @RunWith(classOf[JUnitRunner])
 class EncoderSpec extends FlatSpec with ShouldMatchers {
