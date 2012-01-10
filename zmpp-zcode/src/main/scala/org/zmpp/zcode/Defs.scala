@@ -257,6 +257,7 @@ class VMStateImpl extends VMState {
   // restart, undo snapshots and saving
   var originalDynamicMem: Array[Byte] = null
 
+  var thrownAwayValue = 0
   var pc        = 0
   var fp        = 0 // frame pointer
   def sp        = _stack.sp
@@ -385,8 +386,10 @@ class VMStateImpl extends VMState {
       _stack.setValueAt(fp + FrameOffset.Locals + (varnum - 1), value)
     } else if (varnum >= 16 && varnum <= 255) { // global
       _story.setShortAt(header.globalVars + ((varnum - 0x10) << 1), value)
+    } else {
+      // => throw away varnums < 0
+      thrownAwayValue = value
     }
-    // => throw away varnums < 0
   }
 
   def nextOperand(operandType: Int) = {
@@ -565,6 +568,13 @@ class ReadLineInfo {
   var textBuffer: Int    = 0
   var parseBuffer: Int   = 0
   var maxInputChars: Int = 0
+  var routine: Int = 0
+  var time: Int = 0
+}
+
+class ReadCharInfo {
+  var routine: Int = 0
+  var time: Int = 0
 }
 
 object Oc2Op extends Enumeration {

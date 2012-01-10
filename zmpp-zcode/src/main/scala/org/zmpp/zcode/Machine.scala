@@ -43,6 +43,7 @@ class Machine {
   val state                     = new VMStateImpl
   var ioSystem                  = new IoSystem(this)
   val readLineInfo              = new ReadLineInfo
+  val readCharInfo              = new ReadCharInfo
   val randomGenerator           = new Random
   var screenModel : ScreenModel = null
 
@@ -77,7 +78,8 @@ class Machine {
                        0, false)
     parserHelper.process(input)
     if (version >= 5) {
-      storeResult(10) // store terminator
+      if (input.length == 0) storeResult(0) // timed input cancelled
+      else storeResult(10) // store terminator
     }
   }
   def resumeWithCharInput(c: Int) {
@@ -114,17 +116,29 @@ class Machine {
     state.runState = VMRunStates.Halted
   }
 
-  def readLine(text: Int, parse: Int) = {
+  def readLine(text: Int, parse: Int, time: Int, routine: Int) = {
     readLineInfo.maxInputChars =
       if (state.header.version <= 4) state.byteAt(text) - 1
       else state.byteAt(text)
     readLineInfo.textBuffer  = text
     readLineInfo.parseBuffer = parse
+    readLineInfo.time = time
+    readLineInfo.routine = routine
+    if (time > 0 && routine > 0) {
+      printf("Timed line input, time: %d/10 s, routine = $%04x\n",
+             time, routine)
+    }
     state.runState = ZMachineRunStates.ReadLine
   }
 
-  def readChar = {
+  def readChar(time: Int, routine: Int) = {
     state.runState = ZMachineRunStates.ReadChar
+    readCharInfo.time = time
+    readCharInfo.routine = routine
+    if (time > 0 && routine > 0) {
+      printf("Timed char input, time: %d/10 s, routine = $%04x\n",
+             time, routine)
+    }
   }
   // **********************************************************************
   // ***** Private methods
@@ -188,6 +202,9 @@ class Machine {
         else branchOffsetVal
       }
     if (branchOnTrue && cond || !branchOnTrue && !cond) doBranch(branchOffset)
+  }
+  def callInterrupt(packedAddr: Int) {
+    state.call(packedAddr, _callArgs, -1, 0)
   }
   private def callWithoutReturnValue(numCallArgs: Int) {
     val packedAddr = nextOperand
@@ -494,11 +511,13 @@ class Machine {
         val textBuffer = nextOperand
         val parseBuffer = if (numOperands > 1) nextOperand
                           else 0
+        var time = 0
+        var routine = 0
         if (version >= 4) {
-          val time = if (numOperands > 2) nextOperand else 0
-          val routine = if (numOperands > 3) nextOperand else 0
+          if (numOperands > 2) time = nextOperand
+          if (numOperands > 3) routine = nextOperand
         }
-        val terminator = readLine(textBuffer, parseBuffer)
+        val terminator = readLine(textBuffer, parseBuffer, time, routine)
       case 0x05 => // print_char
         ioSystem.putChar(nextOperand.asInstanceOf[Char])
       case 0x06 => // print_num
@@ -563,12 +582,15 @@ class Machine {
         val routine = if (numOperands > 3) nextOperand else 0
         //printf("TODO: @sound_effect not connected yet\n")
       case 0x16 => // readchar
+        // first parameter: never used, always 1
         val inp = if (numOperands > 0) nextOperand else 1
+        var time = 0
+        var routine = 0
         if (version >= 4) {
-          val time = if (numOperands > 1) nextOperand else 0
-          val routine = if (numOperands > 2) nextOperand else 0
+          if (numOperands > 1) time = nextOperand
+          if (numOperands > 2) routine = nextOperand
         }
-        readChar
+        readChar(time, routine)
       case 0x17 => // scan_table
         val x     = nextOperand
         val table = nextOperand
