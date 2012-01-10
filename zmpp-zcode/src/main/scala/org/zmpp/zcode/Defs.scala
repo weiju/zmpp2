@@ -565,16 +565,17 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
 }
 
 class ReadLineInfo {
-  var textBuffer: Int    = 0
-  var parseBuffer: Int   = 0
-  var maxInputChars: Int = 0
-  var routine: Int = 0
-  var time: Int = 0
+  var textBuffer        = 0
+  var parseBuffer       = 0
+  var maxInputChars     = 0
+  var numLeftOverChars  = 0
+  var routine           = 0
+  var time              = 0
 }
 
 class ReadCharInfo {
-  var routine: Int = 0
-  var time: Int = 0
+  var routine = 0
+  var time    = 0
 }
 
 object Oc2Op extends Enumeration {

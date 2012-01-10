@@ -120,6 +120,11 @@ class Machine {
     readLineInfo.maxInputChars =
       if (state.header.version <= 4) state.byteAt(text) - 1
       else state.byteAt(text)
+    readLineInfo.numLeftOverChars =
+      if (state.header.version >= 5 && state.byteAt(text + 1) > 0) {
+        state.byteAt(text + 1)
+      } else 0
+
     readLineInfo.textBuffer  = text
     readLineInfo.parseBuffer = parse
     readLineInfo.time        = time

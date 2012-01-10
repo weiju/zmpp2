@@ -259,12 +259,13 @@ extends JTextPane with ScreenModelWindow with KeyListener {
     (1 to numRows).foreach(_ => clearScreenBuilder.append('\n'))
     setText(clearScreenBuilder.toString)
     setBackground(screenModel.backgroundColor)
-    setCaretToEnd
+    setCaretToEnd(0)
   }
 
-  def setCaretToEnd {
+  def setCaretToEnd(numLeftOverChars: Int) {
     inputStart    = getDocument.getLength
     setCaretPosition(inputStart)
+    inputStart -= numLeftOverChars
   }
 
   def putChar(c: Char) {
@@ -362,11 +363,11 @@ extends JTextPane with ScreenModelWindow with KeyListener {
 
   // input
   // has to be called in UI event thread
-  def requestLineInput(maxChars: Int) {
+  def requestLineInput(maxChars: Int, numLeftOverChars: Int) {
     //println("requestLineInput")
     requestFocusInWindow
     getCaret.setVisible(true)
-    setCaretToEnd
+    setCaretToEnd(numLeftOverChars)
     maxInputChars = maxChars
     inputMode     = TextInputMode.ReadLine
   }
@@ -508,7 +509,9 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     SwingUtilities.invokeAndWait(new Runnable {
       def run = {
         _flush
-        if (bottomWindow.isLineInputMode) bottomWindow.setCaretToEnd
+        if (bottomWindow.isLineInputMode) {
+          bottomWindow.setCaretToEnd(vm.readLineInfo.numLeftOverChars)
+        }
       }
     })
   }
@@ -525,7 +528,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     //println("MAX_CHARS FOR READLINE: " + maxChars)
     if (vm.version <= 3) updateStatusLine
     scrollPane.getViewport.scrollRectToVisible(bottomRectangle)
-    bottomWindow.requestLineInput(maxChars)
+    bottomWindow.requestLineInput(maxChars,
+                                  vm.readLineInfo.numLeftOverChars)
     if (vm.version >= 4 && vm.readLineInfo.routine > 0 &&
         vm.readLineInfo.time > 0) {
       interruptTask = new InterruptTask(vm, this,
