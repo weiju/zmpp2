@@ -79,6 +79,8 @@ with OutputStream with InputStream with SwingScreenModel {
     //println("@put_char: '%c'".format(c))
   }
   def flush { }
+  def flushInterruptOutput { }
+  def cancelInput { }
 
   // InputStream
   def readLine: Int = {

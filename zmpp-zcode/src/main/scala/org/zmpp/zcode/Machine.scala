@@ -122,23 +122,15 @@ class Machine {
       else state.byteAt(text)
     readLineInfo.textBuffer  = text
     readLineInfo.parseBuffer = parse
-    readLineInfo.time = time
-    readLineInfo.routine = routine
-    if (time > 0 && routine > 0) {
-      printf("Timed line input, time: %d/10 s, routine = $%04x\n",
-             time, routine)
-    }
-    state.runState = ZMachineRunStates.ReadLine
+    readLineInfo.time        = time
+    readLineInfo.routine     = routine
+    state.runState           = ZMachineRunStates.ReadLine
   }
 
   def readChar(time: Int, routine: Int) = {
-    state.runState = ZMachineRunStates.ReadChar
-    readCharInfo.time = time
+    readCharInfo.time    = time
     readCharInfo.routine = routine
-    if (time > 0 && routine > 0) {
-      printf("Timed char input, time: %d/10 s, routine = $%04x\n",
-             time, routine)
-    }
+    state.runState       = ZMachineRunStates.ReadChar
   }
   // **********************************************************************
   // ***** Private methods

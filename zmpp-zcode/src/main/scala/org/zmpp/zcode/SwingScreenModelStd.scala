@@ -37,6 +37,7 @@ import java.awt.event._
 import java.io.{FileOutputStream, FileInputStream}
 import scala.collection.JavaConversions._
 
+import java.util.concurrent.{Executors, TimeUnit}
 /*
  * Implementation of the standard screen model using Swing components.
  */
@@ -170,7 +171,6 @@ class TextGrid extends JTextPane with ScreenModelWindow {
     //printf("SCREEN SIZE: %d LINES %d COLS\n", totalLines, charsPerLine)
     clear
   }
-
   def flush: Boolean = {
     val doc = getDocument
     doc.remove(0, doc.getLength)
@@ -262,7 +262,7 @@ extends JTextPane with ScreenModelWindow with KeyListener {
     setCaretToEnd
   }
 
-  private def setCaretToEnd {
+  def setCaretToEnd {
     inputStart    = getDocument.getLength
     setCaretPosition(inputStart)
   }
@@ -384,6 +384,37 @@ extends JTextPane with ScreenModelWindow with KeyListener {
   }
 }
 
+class InterruptTask(vm: Machine, screenModel: ScreenModel,
+                    time: Int, routine: Int) {
+  private[this] val scheduler = Executors.newScheduledThreadPool(1)
+
+  val runner = new Runnable {
+    def run {
+      val oldfp = vm.state.fp
+      vm.callInterrupt(routine)
+      while (vm.state.fp != oldfp) {
+        vm.doInstruction(false)
+      }
+      screenModel.flushInterruptOutput
+
+      if (vm.state.thrownAwayValue == 1) {
+        scheduler.shutdown
+        screenModel.cancelInput
+      }
+    }
+  }
+  def shutdown = scheduler.shutdown
+
+  def start {
+    val future = scheduler.scheduleAtFixedRate(runner, 0,
+                                               time * 100,
+                                               TimeUnit.MILLISECONDS)
+  }
+  def await {
+    scheduler.awaitTermination(50, TimeUnit.SECONDS)
+  }
+}
+
 /*
  * Standard screen model for all versions except 6.
  */
@@ -409,6 +440,9 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
   val bottomWindow = new TextBuffer(this)
   val scrollPane   = new JScrollPane(bottomWindow, VERTICAL_SCROLLBAR_NEVER,
                                      HORIZONTAL_SCROLLBAR_NEVER)
+
+  // for timed input
+  private[this] var interruptTask: InterruptTask = null
 
   ForegroundColors.setDefault(DefaultForeground)
   BackgroundColors.setDefault(DefaultBackground)
@@ -470,6 +504,14 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
       })
     }
   }
+  def flushInterruptOutput {
+    SwingUtilities.invokeAndWait(new Runnable {
+      def run = {
+        _flush
+        if (bottomWindow.isLineInputMode) bottomWindow.setCaretToEnd
+      }
+    })
+  }
 
   def updateStatusLine {
     val objectName  = vm.statusLineObjectName
@@ -484,6 +526,13 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     if (vm.version <= 3) updateStatusLine
     scrollPane.getViewport.scrollRectToVisible(bottomRectangle)
     bottomWindow.requestLineInput(maxChars)
+    if (vm.version >= 4 && vm.readLineInfo.routine > 0 &&
+        vm.readLineInfo.time > 0) {
+      interruptTask = new InterruptTask(vm, this,
+                                        vm.readLineInfo.time,
+                                        vm.readLineInfo.routine)
+      interruptTask.start
+    }
     0
   }
   private def bottomRectangle: Rectangle = {
@@ -495,15 +544,46 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     if (vm.version <= 3) updateStatusLine
     flush
     bottomWindow.requestCharInput
+    if (vm.version >= 4 && vm.readCharInfo.routine > 0 &&
+        vm.readCharInfo.time > 0) {
+      interruptTask = new InterruptTask(vm, this,
+                                        vm.readCharInfo.time,
+                                        vm.readCharInfo.routine)
+      interruptTask.start
+    }
+  }
+
+  def cancelInput {
+    // when this is called, the scheduler is guaranteed to not
+    // execute any more interrupts
+    if (interruptTask != null) {
+      interruptTask = null
+    }
+
+    if (vm.state.runState == ZMachineRunStates.ReadChar) {
+      vm.resumeWithCharInput(0)
+    } else if (vm.state.runState == ZMachineRunStates.ReadLine) {
+      vm.resumeWithLineInput("")
+    }
+    ExecutionControl.executeTurn(vm, this)
   }
 
   def resumeWithLineInput(input: String) {
-    //println("RESUME WITH " + input)
+    if (interruptTask != null) {
+      interruptTask.shutdown
+      interruptTask.await
+      interruptTask = null
+    }
     vm.resumeWithLineInput(input)
     ExecutionControl.executeTurn(vm, this)
   }
   def resumeWithCharInput(keyCode: Int) {
     //println("RESUME WITH " + keyCode)
+    if (interruptTask != null) {
+      interruptTask.shutdown
+      interruptTask.await
+      interruptTask = null
+    }
     vm.resumeWithCharInput(keyCode)
     ExecutionControl.executeTurn(vm, this)
   }

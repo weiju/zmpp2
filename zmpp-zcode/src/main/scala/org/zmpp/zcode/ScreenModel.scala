@@ -148,6 +148,10 @@ trait ScreenModel {
   def connect(vm: Machine)
   def initUI // set sizes etc.
 
+  def flushInterruptOutput
+  // cancel an input request, because the timed input tells us so
+  def cancelInput
+
   def bufferMode(flag: Int)
   def eraseWindow(windowId: Int)
   def eraseLine(value: Int)
