@@ -530,13 +530,8 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     scrollPane.getViewport.scrollRectToVisible(bottomRectangle)
     bottomWindow.requestLineInput(maxChars,
                                   vm.readLineInfo.numLeftOverChars)
-    if (vm.version >= 4 && vm.readLineInfo.routine > 0 &&
-        vm.readLineInfo.time > 0) {
-      interruptTask = new InterruptTask(vm, this,
-                                        vm.readLineInfo.time,
-                                        vm.readLineInfo.routine)
-      interruptTask.start
-    }
+    startInterruptTaskIfNeeded(vm.readLineInfo.routine,
+                               vm.readLineInfo.time)
     0
   }
   private def bottomRectangle: Rectangle = {
@@ -548,11 +543,11 @@ with OutputStream with InputStream with SwingScreenModel with FocusListener {
     if (vm.version <= 3) updateStatusLine
     flush
     bottomWindow.requestCharInput
-    if (vm.version >= 4 && vm.readCharInfo.routine > 0 &&
-        vm.readCharInfo.time > 0) {
-      interruptTask = new InterruptTask(vm, this,
-                                        vm.readCharInfo.time,
-                                        vm.readCharInfo.routine)
+    startInterruptTaskIfNeeded(vm.readCharInfo.routine, vm.readCharInfo.time)
+  }
+  private def startInterruptTaskIfNeeded(routine: Int, time: Int) {
+    if (vm.version >= 4 && routine > 0 && time > 0) {
+      interruptTask = new InterruptTask(vm, this, time, routine)
       interruptTask.start
     }
   }
