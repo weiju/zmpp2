@@ -256,8 +256,11 @@ class TextRunBuffer {
     currentStyle = TextStyles.withFont(currentStyle, fontnum)
   }
   def applyCurrentStyle {
-    runBuffer.add(StyledText(currentText.toString, currentStyle))
-    currentText = new StringBuilder
+    if (currentText.length > 0) {
+      // don't create empty runs
+      runBuffer.add(StyledText(currentText.toString, currentStyle))
+      currentText = new StringBuilder
+    }
   }
   def grabRuns: LinkedList[StyledText] = {
     applyCurrentStyle
