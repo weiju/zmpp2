@@ -41,15 +41,14 @@ The second revision of ZMPP reflects current knowledge and ideas about how I thi
 - multiple undo
 - colors
 - accented characters
-- user-defined alphabets, accent tables
+- user-defined alphabets, accent tables, user dictionaries
+- timed input
 
 ###Known issues:
 
 - Glk support incomplete
 - Z-Machine
   - V6 support incomplete
-  - user dictionaries
-  - timed input
   - sound support
 
 ##Acknowledgements:
