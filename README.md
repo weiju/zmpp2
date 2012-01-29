@@ -1,6 +1,6 @@
-# ZMPP2 - Second Generation Interactive Fiction Interpreter for Java
+# ZMPP2 - Second Generation Interactive Fiction Interpreter for Java and Android
 
-ZMPP2 is a Z-Machine and Glulx/Glk implementation in Scala. The goal is to write a simple, efficient, flexible and reusable solution that works in many kinds of Java VM environments, such as Java SE, Android, Java ME and Java EE.
+ZMPP2 is a Z-Machine and Glulx/Glk implementation in Scala. The goal is to write a simple, efficient, flexible and reusable solution that works in many kinds of Java VM environments, such as Java SE, Android and Java EE.
 
 The second revision of ZMPP reflects current knowledge and ideas about how I think an IF VM should look like on the Java Virtual Machine:
 

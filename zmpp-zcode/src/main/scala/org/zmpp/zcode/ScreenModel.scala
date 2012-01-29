@@ -96,7 +96,7 @@ object TextStyles {
     ((background & 0x0f) << 8)
   }
   def withFont(style: Int, fontnum: Int): Int = {
-    (style & 0x00f0) | ((fontnum & 0x07) << 4)
+    (style & 0xff0f) | ((fontnum & 0x07) << 4)
   }
   def styleChar(c: Char, style: Int) = {
     ((c & 0xffff) << 16) | (style & 0xffff)

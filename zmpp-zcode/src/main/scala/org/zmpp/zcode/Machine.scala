@@ -84,7 +84,7 @@ class Machine {
   }
   def resumeWithCharInput(c: Int) {
     state.runState = ZMachineRunStates.Running
-    storeResult(c)
+    storeResult(state.encoding.unicodeToZSCII(c.asInstanceOf[Char]))
   }
 
   // ***********************************************************************
