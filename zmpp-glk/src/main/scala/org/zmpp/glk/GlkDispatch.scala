@@ -28,6 +28,7 @@
  */
 package org.zmpp.glk
 
+import scala.annotation.switch
 import java.util.logging._
 import org.zmpp.base._
 
@@ -35,8 +36,9 @@ class GlkDispatch(_state: VMState, glk: Glk) {
   val dispatchLogger = Logger.getLogger("glk.dispatch")
 
   def dispatch(id: Int, args: Array[Int]) : Int = {
-    val selector = FunctionSelector(id)
+    import FunctionSelector._
 /*
+    val selector = FunctionSelector(id)
     val builder = new StringBuilder
     builder.append("(")
     for (i <- 0 until args.length) {
@@ -46,110 +48,109 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     builder.append(")")
     dispatchLogger.info("@@%s%s".format(selector.toString, builder.toString))
 */
-    import FunctionSelector._
-    selector match {
-      case Exit                     => _exit(args)
-      case SetInterruptHandler      => _set_interrupt_handler(args)
-      case Tick                     => _tick(args)
-      case Gestalt                  => _gestalt(args)
-      case GestaltExt               => _gestalt_ext(args)
-      case WindowIterate            => _window_iterate(args)
-      case WindowGetRock            => _window_get_rock(args)
-      case WindowGetRoot            => _window_get_root(args)
-      case WindowOpen               => _window_open(args)
-      case WindowClose              => _window_close(args)
-      case WindowGetSize            => _window_get_size(args)
-      case WindowSetArrangement     => _window_set_arrangement(args)
-      case WindowGetArrangement     => _window_get_arrangement(args)
-      case WindowGetType            => _window_get_type(args)
-      case WindowGetParent          => _window_get_parent(args)
-      case WindowClear              => _window_clear(args)
-      case WindowMoveCursor         => _window_move_cursor(args)
-      case WindowGetStream          => _window_get_stream(args)
-      case WindowSetEchoStream      => _window_set_echo_stream(args)
-      case WindowGetEchoStream      => _window_get_echo_stream(args)
-      case SetWindow                => _set_window(args)
-      case WindowGetSibling         => _window_get_sibling(args)
-      case StreamIterate            => _stream_iterate(args)
-      case StreamGetRock            => _stream_get_rock(args)
-      case StreamOpenFile           => _stream_open_file(args)
-      case StreamOpenMemory         => _stream_open_memory(args)
-      case StreamClose              => _stream_close(args)
-      case StreamSetPosition        => _stream_set_position(args)
-      case StreamGetPosition        => _stream_get_position(args)
-      case StreamSetCurrent         => _stream_set_current(args)
-      case StreamGetCurrent         => _stream_get_current(args)
-      case FileRefCreateTemp        => _fileref_create_temp(args)
-      case FileRefCreateByName      => _fileref_create_by_name(args)
-      case FileRefCreateByPrompt    => _fileref_create_by_prompt(args)
-      case FileRefDestroy           => _fileref_destroy(args)
-      case FileRefIterate           => _fileref_iterate(args)
-      case FileRefGetRock           => _fileref_get_rock(args)
-      case FileRefDeleteFile        => _fileref_delete_file(args)
-      case FileRefDoesFileExist     => _fileref_does_file_exist(args)
-      case FileRefCreateFromFileRef => _fileref_create_from_fileref(args)
-      case PutChar                  => _put_char(args)
-      case PutCharStream            => _put_char_stream(args)
-      case PutString                => _put_string(args)
-      case PutStringStream          => _put_string_stream(args)
-      case PutBuffer                => _put_buffer(args)
-      case PutBufferStream          => _put_buffer_stream(args)
-      case SetStyle                 => _set_style(args)
-      case SetStyleStream           => _set_style_stream(args)
-      case GetCharStream            => _get_char_stream(args)
-      case GetLineStream            => _get_line_stream(args)
-      case GetBufferStream          => _get_buffer_stream(args)
-      case CharToLower              => _char_to_lower(args)
-      case CharToUpper              => _char_to_upper(args)
-      case StyleHintSet             => _stylehint_set(args)
-      case StyleHintClear           => _stylehint_clear(args)
-      case StyleDistinguish         => _style_distinguish(args)
-      case StyleMeasure             => _style_measure(args)
-      case Select                   => _select(args)
-      case SelectPoll               => _select_poll(args)
-      case RequestLineEvent         => _request_line_event(args)
-      case CancelLineEvent          => _cancel_line_event(args)
-      case RequestCharEvent         => _request_char_event(args)
-      case CancelCharEvent          => _cancel_char_event(args)
-      case RequestMouseEvent        => _request_mouse_event(args)
-      case CancelMouseEvent         => _cancel_mouse_event(args)
-      case RequestTimerEvents       => _request_timer_events(args)
-      case ImageGetInfo             => _image_get_info(args)
-      case ImageDraw                => _image_draw(args)
-      case ImageDrawScaled          => _image_draw_scaled(args)
-      case WindowFlowBreak          => _window_flow_break(args)
-      case WindowEraseRect          => _window_erase_rect(args)
-      case WindowFillRect           => _window_fill_rect(args)
-      case WindowSetBackgroundColor => _window_set_background_color(args)
-      case SChannelIterate          => _schannel_iterate(args)
-      case SChannelGetRock          => _schannel_get_rock(args)
-      case SChannelCreate           => _schannel_create(args)
-      case SChannelDestroy          => _schannel_destroy(args)
-      case SChannelPlay             => _schannel_play(args)
-      case SChannelPlayExt          => _schannel_play_ext(args)
-      case SChannelStop             => _schannel_stop(args)
-      case SChannelSetVolume        => _schannel_set_volume(args)
-      case SoundLoadHint            => _sound_load_hint(args)
-      case SetHyperlink             => _set_hyperlink(args)
-      case SetHyperlinkStream       => _set_hyperlink_stream(args)
-      case RequestHyperlinkEvent    => _request_hyperlink_event(args)
-      case CancelHyperlinkEvent     => _cancel_hyperlink_event(args)
-      case BufferToLowerCaseUni     => _buffer_to_lower_case_uni(args)
-      case BufferToUpperCaseUni     => _buffer_to_upper_case_uni(args)
-      case BufferToTitleCaseUni     => _buffer_to_title_case_uni(args)
-      case PutCharUni               => _put_char_uni(args)
-      case PutStringUni             => _put_string_uni(args)      
-      case PutBufferUni             => _put_buffer_uni(args)
-      case PutCharStreamUni         => _put_char_stream_uni(args)
-      case PutStringStreamUni       => _put_string_stream_uni(args)
-      case PutBufferStreamUni       => _put_buffer_stream_uni(args)
-      case GetCharStreamUni         => _get_char_stream_uni(args)
-      case GetBufferStreamUni       => _get_buffer_stream_uni(args)
-      case GetLineStreamUni         => _get_line_stream_uni(args)
-      case StreamOpenFileUni        => _stream_open_file_uni(args)      
-      case StreamOpenMemoryUni      => _stream_open_memory_uni(args)
-      case RequestCharEventUni      => _request_char_event_uni(args)
-      case RequestLineEventUni      => _request_line_event_uni(args)
+    (id: @switch) match {
+      case 0x01  => _exit(args)                   // glk_exit
+      case 0x02  => _set_interrupt_handler(args)  // glk_set_interrupt_handler
+      case 0x03  => _tick(args)                   // glk_tick
+      case 0x04  => _gestalt(args)                // glk_gestalt
+      case 0x05  => _gestalt_ext(args)            // glk_gestalt_ext
+      case 0x20  => _window_iterate(args)         // glk_window_iterate
+      case 0x21  => _window_get_rock(args)        // glk_window_get_rock
+      case 0x22  => _window_get_root(args)        // glk_window_get_root
+      case 0x23  => _window_open(args)            // glk_window_open
+      case 0x24  => _window_close(args)           // glk_window_close
+      case 0x25  => _window_get_size(args)        // glk_window_get_size
+      case 0x26  => _window_set_arrangement(args) // glk_window_set_arrangement
+      case 0x27  => _window_get_arrangement(args) // glk_window_get_arranngement
+      case 0x28  => _window_get_type(args)        // glk_window_get_type
+      case 0x29  => _window_get_parent(args)      // glk_window_get_parent
+      case 0x2a  => _window_clear(args)           // glk_window_clear
+      case 0x2b  => _window_move_cursor(args)     // glk_window_move_cursor
+      case 0x2c  => _window_get_stream(args)      // glk_window_get_stream
+      case 0x2d  => _window_set_echo_stream(args) // glk_window_set_echo_stream
+      case 0x2e  => _window_get_echo_stream(args) // glk_window_get_echo_stream
+      case 0x2f  => _set_window(args)             // glk_set_window
+      case 0x30  => _window_get_sibling(args)     // glk_window_get_sibling
+      case 0x40  => _stream_iterate(args)         // glk_stream_iterate
+      case 0x41  => _stream_get_rock(args)        // glk_stream_get_rock
+      case 0x42  => _stream_open_file(args)       // glk_stream_open_file
+      case 0x43  => _stream_open_memory(args)     // glk_stream_open_memory
+      case 0x44  => _stream_close(args)           // glk_stream_close
+      case 0x45  => _stream_set_position(args)    // glk_stream_set_position
+      case 0x46  => _stream_get_position(args)    // glk_stream_get_position
+      case 0x47  => _stream_set_current(args)     // glk_stream_set_current
+      case 0x48  => _stream_get_current(args)     // glk_stream_get_current
+      case 0x60  => _fileref_create_temp(args)    // glk_fileref_create_temp
+      case 0x61  => _fileref_create_by_name(args) // glk_fileref_create_by_name
+      case 0x62  => _fileref_create_by_prompt(args) // glk_fileref_create_by_prompt
+      case 0x63  => _fileref_destroy(args)        // glk_fileref_destroy
+      case 0x64  => _fileref_iterate(args)        // glk_fileref_iterate
+      case 0x65  => _fileref_get_rock(args)       // glk_fileref_get_rock
+      case 0x66  => _fileref_delete_file(args)    // glk_fileref_delete_file
+      case 0x67  => _fileref_does_file_exist(args) // glk_fileref_does_file_exist
+      case 0x68  => _fileref_create_from_fileref(args) // glk_fileref_create_from_fileref
+      case 0x80  => _put_char(args)               // glk_put_char
+      case 0x81  => _put_char_stream(args)        // glk_put_char_stream
+      case 0x82  => _put_string(args)             // glk_put_string
+      case 0x83  => _put_string_stream(args)      // glk_put_string_stream
+      case 0x84  => _put_buffer(args)             // glk_put_buffer
+      case 0x85  => _put_buffer_stream(args)      // glk_put_buffer_stream
+      case 0x86  => _set_style(args)              // glk_set_style
+      case 0x87  => _set_style_stream(args)       // glk_set_style_stream
+      case 0x90  => _get_char_stream(args)        // glk_get_char_stream
+      case 0x91  => _get_line_stream(args)        // glk_get_line_stream
+      case 0x92  => _get_buffer_stream(args)      // glk_get_buffer_stream
+      case 0xa0  => _char_to_lower(args)          // glk_char_to_lower
+      case 0xa1  => _char_to_upper(args)          // glk_char_to_upper
+      case 0xb0  => _stylehint_set(args)          // glk_stylehint_set
+      case 0xb1  => _stylehint_clear(args)        // glk_stylehint_clear
+      case 0xb2  => _style_distinguish(args)      // glk_style_distinguish
+      case 0xb3  => _style_measure(args)          // glk_style_measure
+      case 0xc0  => _select(args)                 // glk_select
+      case 0xc1  => _select_poll(args)            // glk_select_poll
+      case 0xd0  => _request_line_event(args)     // glk_request_line_event
+      case 0xd1  => _cancel_line_event(args)      // glk_cancel_line_event
+      case 0xd2  => _request_char_event(args)     // glk_request_char_event
+      case 0xd3  => _cancel_char_event(args)      // glk_cancel_char_event
+      case 0xd4  => _request_mouse_event(args)    // glk_request_mouse_event
+      case 0xd5  => _cancel_mouse_event(args)     // glk_cancel_mouse_event
+      case 0xd6  => _request_timer_events(args)   // glk_request_timer_events
+      case 0xe0  => _image_get_info(args)         // glk_image_get_info
+      case 0xe1  => _image_draw(args)             // glk_image_draw
+      case 0xe2  => _image_draw_scaled(args)      // glk_image_draw_scaled
+      case 0xe8  => _window_flow_break(args)      // glk_window_flow_break
+      case 0xe9  => _window_erase_rect(args)      // glk_window_erase_rect
+      case 0xea  => _window_fill_rect(args)       // glk_window_fill_rect
+      case 0xeb  => _window_set_background_color(args) // glk_window_set_background_color
+      case 0xf0  => _schannel_iterate(args)       // glk_schannel_iterate
+      case 0xf1  => _schannel_get_rock(args)      // glk_schannel_get_rock
+      case 0xf2  => _schannel_create(args)        // glk_schannel_create
+      case 0xf3  => _schannel_destroy(args)       // glk_destroy
+      case 0xf8  => _schannel_play(args)          // glk_schannel_play
+      case 0xf9  => _schannel_play_ext(args)      // glk_schannel_play_ext
+      case 0xfa  => _schannel_stop(args)          // glk_schannel_stop
+      case 0xfb  => _schannel_set_volume(args)    // glk_schannel_set_volume
+      case 0xfc  => _sound_load_hint(args)        // glk_sound_load_hint
+      case 0x100 => _set_hyperlink(args)          // glk_set_hyperlink
+      case 0x101 => _set_hyperlink_stream(args)   // glk_set_hyperlink_stream
+      case 0x102 => _request_hyperlink_event(args) // glk_request_hyperlink_event
+      case 0x103 => _cancel_hyperlink_event(args) // glk_cancel_hyperlink_event
+      case 0x120 => _buffer_to_lower_case_uni(args) // glk_buffer_to_lower_case_uni
+      case 0x121 => _buffer_to_upper_case_uni(args) // glk_buffer_to_upper_case_uni
+      case 0x122 => _buffer_to_title_case_uni(args) // glk_buffer_to_title_case_uni
+      case 0x128 => _put_char_uni(args)           // glk_put_char_uni
+      case 0x129 => _put_string_uni(args)         // glk_put_string_uni
+      case 0x12a => _put_buffer_uni(args)         // glk_put_buffer_uni
+      case 0x12b => _put_char_stream_uni(args)    // glk_put_char_stream_uni
+      case 0x12c => _put_string_stream_uni(args)  // glk_put_string_stream_uni
+      case 0x12d => _put_buffer_stream_uni(args)  // glk_put_buffer_stream_uni
+      case 0x130 => _get_char_stream_uni(args)    // glk_get_char_stream_uni
+      case 0x131 => _get_buffer_stream_uni(args)  // glk_get_buffer_stream_uni
+      case 0x132 => _get_line_stream_uni(args)    // glk_get_line_stream_uni
+      case 0x138 => _stream_open_file_uni(args)   // glk_stream_open_file_uni
+      case 0x139 => _stream_open_memory_uni(args) // glk_stream_open_memory_uni
+      case 0x140 => _request_char_event_uni(args) // glk_request_char_event_uni
+      case 0x141 => _request_line_event_uni(args) // glk_request_line_event_uni
       case _ =>
         throw new IllegalArgumentException("unknown GLK id: $%02x".format(id))
     }

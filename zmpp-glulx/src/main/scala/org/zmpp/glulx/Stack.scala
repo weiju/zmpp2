@@ -28,68 +28,92 @@
  */
 package org.zmpp.glulx
 
-import java.util.logging._
-import java.nio.ByteBuffer
+object Stack {
+  val OffsetLocalsPos     = 4
+  val OffsetLocalsFormat  = 8
+}
 
 /**
- * A simple byte stack based on a ByteBuffer which wraps a byte array.
- * We use the ByteBuffer to do the conversions for us.
+ * A simple stack based on a byte array.
  */
 class Stack(size : Int) {
-  val logger = Logger.getLogger("glulx")
+  private[this] val _stackArray = new Array[Byte](size)
+  private[this] var _sp = 0
+  def sp = _sp
+  def sp_=(newSP: Int) {
+    _sp = newSP
+  }
 
-  val _stackArray = new Array[Byte](size)
-  val _stack = ByteBuffer.wrap(_stackArray)
+  def empty = _sp == 0
 
-  def empty = sp == 0
-  var sp = 0
-  
   // 8 bit values
   def pushByte(value : Int) {
-    _stack.put(sp, value.asInstanceOf[Byte])
-    sp += 1
+    _stackArray(_sp) = value.asInstanceOf[Byte]
+    _sp += 1
   }
-  def topByte : Int = _stack.get(sp - 1).asInstanceOf[Int] & 0xff
+  def topByte : Int = {
+    (_stackArray(_sp - 1) & 0xff).asInstanceOf[Int]
+  }
   def popByte : Int = {
-    sp -= 1
-    _stack.get(sp).asInstanceOf[Int] & 0xff
+    _sp -= 1
+    (_stackArray(_sp) & 0xff).asInstanceOf[Int]
   }
   
   // 16 bit values
   def pushShort(value : Int) {
-    _stack.putChar(sp, value.asInstanceOf[Char])
-    sp += 2
+    _stackArray(_sp) = ((value >>> 8) & 0xff).asInstanceOf[Byte]
+    _stackArray(_sp + 1) = (value & 0xff).asInstanceOf[Byte]
+    _sp += 2
   }
-  def topShort : Int = _stack.getChar(sp - 2)
+  def topShort : Int = {
+    ((_stackArray(_sp - 2) & 0xff) << 8) | (_stackArray(_sp - 1) & 0xff) 
+  }
   def popShort : Int = {
-    sp -= 2
-    _stack.getChar(sp)
+    _sp -= 2
+    ((_stackArray(_sp) & 0xff) << 8) | (_stackArray(_sp + 1) & 0xff) 
   }
 
   // 32 bit values
   def pushInt(value : Int) {
-    _stack.putInt(sp, value)
-    sp += 4
+    _stackArray(_sp) = ((value >>> 24) & 0xff).asInstanceOf[Byte]
+    _stackArray(_sp + 1) = ((value >>> 16) & 0xff).asInstanceOf[Byte]
+    _stackArray(_sp + 2) = ((value >>> 8) & 0xff).asInstanceOf[Byte]
+    _stackArray(_sp + 3) = (value & 0xff).asInstanceOf[Byte]
+    _sp += 4
   }
-  def topInt : Int = _stack.getInt(sp - 4)
+  def topInt : Int = {
+    ((_stackArray(_sp - 4) & 0xff) << 24) | ((_stackArray(_sp - 3) & 0xff) << 16) |
+    ((_stackArray(_sp - 2) & 0xff) << 8) | (_stackArray(_sp - 1) & 0xff)
+  }
   def popInt : Int = {
-    sp -= 4
-    _stack.getInt(sp)
+    _sp -= 4
+    ((_stackArray(_sp) & 0xff) << 24) | ((_stackArray(_sp + 1) & 0xff) << 16) |
+    ((_stackArray(_sp + 2) & 0xff) << 8) | (_stackArray(_sp + 3) & 0xff)
   }
   // to access values at any position within the stack
-  def setInt(addr : Int, value : Int) {
-    _stack.putInt(addr, value)
-  }
-  def getInt(addr : Int) = _stack.getInt(addr)
-  // TODO: Test cases for byte and short
   def setByte(addr : Int, value : Int) {
-    _stack.put(addr, (value & 0xff).asInstanceOf[Byte])
+    _stackArray(addr) = (value & 0xff).asInstanceOf[Byte]
   }
-  def getByte(addr : Int) = _stack.get(addr) & 0xff
+  def getByte(addr : Int) = _stackArray(addr) & 0xff
+
   def setShort(addr : Int, value : Int) {
-    _stack.putChar(addr, (value & 0xff).asInstanceOf[Char])
+    _stackArray(addr) = ((value >>> 8) & 0xff).asInstanceOf[Byte]
+    _stackArray(addr + 1) = (value & 0xff).asInstanceOf[Byte]
   }
-  def getShort(addr : Int) = _stack.getChar(addr)
+  def getShort(addr : Int) = {
+    ((_stackArray(addr) & 0xff) << 8) | (_stackArray(addr + 1) & 0xff)
+  }
+
+  def setInt(addr : Int, value : Int) {
+    _stackArray(addr) = ((value >>> 24) & 0xff).asInstanceOf[Byte]
+    _stackArray(addr + 1) = ((value >>> 16) & 0xff).asInstanceOf[Byte]
+    _stackArray(addr + 2) = ((value >>> 8) & 0xff).asInstanceOf[Byte]
+    _stackArray(addr + 3) = (value & 0xff).asInstanceOf[Byte]
+  }
+  def getInt(addr : Int) = {
+    ((_stackArray(addr) & 0xff) << 24) | ((_stackArray(addr + 1) & 0xff) << 16) |
+    ((_stackArray(addr + 2) & 0xff) << 8) | (_stackArray(addr + 3) & 0xff)
+  }
 
   def toStringFromTo(start: Int, end : Int) = {
     val builder = new StringBuilder
@@ -102,13 +126,13 @@ class Stack(size : Int) {
     builder.toString
   }
 
-  def toStringFrom(start: Int) = toStringFromTo(start, sp)
-  
+  def toStringFrom(start: Int) = toStringFromTo(start, _sp)
+
   def toStringAsIntFrom(start: Int) = {
     val builder = new StringBuilder
-    builder.append("(Stack [" + start + "-" + sp + ")) = [")
+    builder.append("(Stack [" + start + "-" + _sp + ")) = [")
     var i = start
-    while (i < sp) {
+    while (i < _sp) {
       if (i > start) builder.append(", ")
       val intValue = (_stackArray(i) << 24) | (_stackArray(i + 1) << 16) |
                      (_stackArray(i + 2) << 8) | _stackArray(i + 3)
@@ -119,18 +143,17 @@ class Stack(size : Int) {
     builder.toString
   }
   
-  override def toString = toStringFromTo(0, sp)
+  override def toString = toStringFromTo(0, _sp)
 
   def cloneValues = {
-    val values = new Array[Byte](sp)
-    System.arraycopy(_stackArray, 0, values, 0, sp)
+    val values = new Array[Byte](_sp)
+    System.arraycopy(_stackArray, 0, values, 0, _sp)
     values
   }
   
   def initFromByteArray(array: Array[Byte]) {
-    logger.info("INITFROMBYTEARRAY, ARRAY SIZE: %d".format(array.length))
-    sp = array.length
-    System.arraycopy(array, 0, _stackArray, 0, sp)
+    _sp = array.length
+    System.arraycopy(array, 0, _stackArray, 0, _sp)
   }
 }
 

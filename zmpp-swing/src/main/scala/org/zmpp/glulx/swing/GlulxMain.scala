@@ -41,7 +41,7 @@ import org.zmpp.glk.GlkScreenUI
 import org.zmpp.glk.GlkWindowUI
 
 object Glulx {
-  private var _vm : GlulxVM = null
+  private[this] var _vm : GlulxVM = null
   def readFileData(file: File) = {
     val filebytes = new Array[Byte](file.length.toInt)
     var fileIs : FileInputStream = null
@@ -61,13 +61,13 @@ object Glulx {
   }
   
   def readUlxFile(file : File) = {
-    val story = new DefaultMemory(readFileData(file))
+    val story = new DefaultMemory0(readFileData(file))
     _vm = new GlulxVM
     _vm.init(story, null)
     _vm
   }
   def readGblorbFile(file: File) = {
-    val iffdata = new DefaultMemory(readFileData(file))
+    val iffdata = new DefaultMemory0(readFileData(file))
     val formchunk = new DefaultFormChunk(iffdata)
     val blorbData = new BlorbData(formchunk)
     val story = formchunk.chunkDataForId("GLUL")
@@ -82,9 +82,12 @@ object ExecutionControl {
   var iterations = 1
 
   def _executeTurn(vm: GlulxVM) {
+    val startTime = System.currentTimeMillis
     while (vm.runState == VMRunStates.Running) {
       vm.doInstruction
     }
+    val elapsed = System.currentTimeMillis - startTime
+    printf("Executed turn in %d ms.\n", elapsed.asInstanceOf[Int])
   }
 
   def executeTurn(vm: GlulxVM) {

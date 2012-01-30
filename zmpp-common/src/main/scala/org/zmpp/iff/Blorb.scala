@@ -69,10 +69,10 @@ object BlorbData {
   val IFRS = 0x49465253
   val ZCOD = 0x5a434f44
 
-  private val BufferSize = 1024
-  private val HeaderSize = 52
-  private var chunkId = 0
-  private var chunklen = 0
+  private[this] val BufferSize = 1024
+  private[this] val HeaderSize = 52
+  private[this] var chunkId = 0
+  private[this] var chunklen = 0
 
   // Checking for valid Blorb files
   def isIffFile(dataBytes: Array[Byte]) = intAt(dataBytes, 0) == FORM

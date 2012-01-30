@@ -220,5 +220,5 @@ object GlkWindowBorderStyle {
   }
 }
 
-class GlkDimension(val width: Int, val height: Int)
+class GlkDimension(var width: Int, var height: Int)
 class GlkIterateResult(val id: Int, val rock: Int)

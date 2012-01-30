@@ -28,6 +28,7 @@
  */
 package org.zmpp.glulx
 
+import scala.annotation.switch
 import java.util.logging._
 import scala.collection.mutable.HashMap
 import org.zmpp.glk.Glk
@@ -123,8 +124,11 @@ abstract class AccelFunc(val _state: GlulxVMState, val _glk: Glk,
     val inlist = _state.memIntAt(prop + 4)
     if (inlist == 0) return 0
     val inlistlen = _state.memShortAt(prop + 2)
-    for (j <- 0 until inlistlen) {
+
+    var j = 0
+    while (j < inlistlen) {
       if (_state.memIntAt(inlist + 4 * j) == cla) return 1
+      j += 1
     }
     0
   }
@@ -251,17 +255,19 @@ class AccelSystem(vm: GlulxVM) {
   private val _accelFunctions = new HashMap[Int, AccelFunc]
   var glk: Glk = null
 
-  private def accelFuncFor(funcnum: Int): AccelFunc = funcnum match {
-    case 1 => new Func1ZRegion(vm.state, glk, _accelParams)
-    case 2 => new Func2CPTab(vm.state, glk, _accelParams)
-    case 3 => new Func3RAPr(vm.state, glk, _accelParams)
-    case 4 => new Func4RLPr(vm.state, glk, _accelParams)
-    case 5 => new Func5OCCl(vm.state, glk, _accelParams)
-    case 6 => new Func6RVPr(vm.state, glk, _accelParams)
-    case 7 => new Func7OPPr(vm.state, glk, _accelParams)
-    case _ =>
-      logger.warning("Unsupported Function number: %d".format(funcnum))
-      null
+  private def accelFuncFor(funcnum: Int): AccelFunc = {
+    (funcnum: @switch) match {
+      case 1 => new Func1ZRegion(vm.state, glk, _accelParams)
+      case 2 => new Func2CPTab(vm.state, glk, _accelParams)
+      case 3 => new Func3RAPr(vm.state, glk, _accelParams)
+      case 4 => new Func4RLPr(vm.state, glk, _accelParams)
+      case 5 => new Func5OCCl(vm.state, glk, _accelParams)
+      case 6 => new Func6RVPr(vm.state, glk, _accelParams)
+      case 7 => new Func7OPPr(vm.state, glk, _accelParams)
+      case _ =>
+        logger.warning("Unsupported Function number: %d".format(funcnum))
+        null
+    }
   }
   private def accelFuncForCallAddress(callAddress: Int) = {
     _accelFunctions(callAddress)
@@ -287,4 +293,3 @@ class AccelSystem(vm: GlulxVM) {
     vm.popCallStub(retval)
   }
 }
-

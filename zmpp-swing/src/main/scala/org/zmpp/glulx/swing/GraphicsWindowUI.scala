@@ -46,10 +46,10 @@ import org.zmpp.glk._
 class SwingGraphicsUI(screenUI: SwingGlkScreenUI, glkWindow: GlkWindow)
 extends JComponent with SwingGlkWindowUI {
   val logger = Logger.getLogger("glk.ui")
-  private var _backgroundColor = 0xffffffff
-  private var waitForMouse  = false
-  var buffer: BufferedImage = null
-  var offscreenG2d: Graphics2D = null
+  private[this] var _backgroundColor = 0xffffffff
+  private[this] var waitForMouse  = false
+  private[this] var buffer: BufferedImage = null
+  private[this] var offscreenG2d: Graphics2D = null
 
   addMouseListener(this)
   addMouseMotionListener(this)
@@ -96,7 +96,7 @@ extends JComponent with SwingGlkWindowUI {
   override def eraseRect(left: Int, top: Int, width: Int, height: Int) {
     if (SwingUtilities.isEventDispatchThread) _eraseRect(left, top, width, height)
     else {
-      SwingUtilities.invokeAndWait(new Runnable {
+      SwingUtilities.invokeLater(new Runnable {
         def run = _eraseRect(left, top, width, height)
       })
     }
@@ -112,7 +112,7 @@ extends JComponent with SwingGlkWindowUI {
     if (SwingUtilities.isEventDispatchThread) _fillRect(color, left, top, width,
                                                         height)
     else {
-      SwingUtilities.invokeAndWait(new Runnable {
+      SwingUtilities.invokeLater(new Runnable {
         def run = _fillRect(color, left, top, width, height)
       })
     }
@@ -134,7 +134,7 @@ extends JComponent with SwingGlkWindowUI {
     if (SwingUtilities.isEventDispatchThread) _drawScaledImage(resnum, posx, posy,
                                                                width, height)
     else {
-      SwingUtilities.invokeAndWait(new Runnable {
+      SwingUtilities.invokeLater(new Runnable {
         def run = _drawScaledImage(resnum, posx, posy, width, height)
       })
     }
@@ -148,7 +148,7 @@ extends JComponent with SwingGlkWindowUI {
   override def drawImage(resnum: Int, posx: Int, posy: Int) {
     if (SwingUtilities.isEventDispatchThread) _drawImage(resnum, posx, posy)
     else {
-      SwingUtilities.invokeAndWait(new Runnable {
+      SwingUtilities.invokeLater(new Runnable {
         def run = _drawImage(resnum, posx, posy)
       })
     }

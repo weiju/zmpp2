@@ -99,7 +99,8 @@ extends Memory with Comparable[DefaultMemory] {
   def compareTo(other: DefaultMemory) = address - other.address
 
   def littleEndian = {
-    // this currently does not do anything, but it should
+    // this currently does not do anything, but it should. The TADS interpreter
+    // uses this. Instead, there should be a specialized Little Endian Memory class.
     this
   }
 }

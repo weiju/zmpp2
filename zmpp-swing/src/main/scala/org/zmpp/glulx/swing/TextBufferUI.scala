@@ -51,7 +51,7 @@ object SwingTextBufferUI {
  
 class SwingTextBufferUI(screenUI: SwingGlkScreenUI, glkWindow: GlkUIWindow)
 extends SwingTextWindowUI(screenUI, glkWindow) {
-  var buffer = new StringBuilder
+  private[this] var buffer = new StringBuilder
   setMargin(new java.awt.Insets(SwingTextBufferUI.MarginTop,
                                 SwingTextBufferUI.MarginLeft,
                                 SwingTextBufferUI.MarginBottom,
