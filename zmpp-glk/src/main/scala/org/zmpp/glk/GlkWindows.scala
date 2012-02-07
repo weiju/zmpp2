@@ -50,7 +50,6 @@ trait GlkWindowUI {
   def fillRect(color: Int, left: Int, top: Int, width: Int, height: Int)
   def drawScaledImage(resnum: Int, posx: Int, posy: Int, width: Int, height: Int)
   def drawImage(resnum: Int, posx: Int, posy: Int)
-  def flush
   def clear
   def setBackgroundColor(color: Int)
   def setHyperlink(linkval: Int)

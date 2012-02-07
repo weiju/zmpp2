@@ -129,10 +129,10 @@ abstract class IOSystem(vm: GlulxVM, val rock: Int) {
       i += 1
     }
     if (pos > 0) {
-      val fpVal    = vm.state.stack.popInt
-      val pcVal    = vm.state.stack.popInt
-      val destAddr = vm.state.stack.popInt
-      val destType = vm.state.stack.popInt
+      val fpVal    = vm.state.popInt
+      val pcVal    = vm.state.popInt
+      val destAddr = vm.state.popInt
+      val destType = vm.state.popInt
       if (destType == DestTypes.ResumeExecuteFunction) {
         vm.state.pc = pcVal
         vm.state.fp = fpVal
@@ -151,10 +151,10 @@ abstract class IOSystem(vm: GlulxVM, val rock: Int) {
 
   private def popCallStubIfNecessary(inBetween: Boolean, state: StreamStrState) = {
     if (inBetween && state == StreamStrState.Finished) {
-      val fpVal    = vm.state.stack.popInt
-      val pcVal    = vm.state.stack.popInt
-      val destAddr = vm.state.stack.popInt
-      val destType = vm.state.stack.popInt
+      val fpVal    = vm.state.popInt
+      val pcVal    = vm.state.popInt
+      val destAddr = vm.state.popInt
+      val destType = vm.state.popInt
       if (destType == DestTypes.ResumeExecuteFunction) {
         vm.state.pc = pcVal
         vm.state.fp = fpVal
@@ -466,10 +466,10 @@ extends IOSystem(vm, functionAddr) {
     }
     
     if (pos >= numberString.length) {
-      val fpVal    = vm.state.stack.popInt
-      val pcVal    = vm.state.stack.popInt
-      val destAddr = vm.state.stack.popInt
-      val destType = vm.state.stack.popInt
+      val fpVal    = vm.state.popInt
+      val pcVal    = vm.state.popInt
+      val destAddr = vm.state.popInt
+      val destType = vm.state.popInt
       if (destType == DestTypes.ResumeExecuteFunction) {
         vm.state.pc = pcVal
         vm.state.fp = fpVal

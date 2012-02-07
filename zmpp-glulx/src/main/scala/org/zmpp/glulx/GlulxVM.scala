@@ -62,7 +62,7 @@ class GlulxVMState extends VMState {
   private[this] var _extEnd   : Int = 0
   private[this] var _extstart : Int = 0 // cached, because accessed frequently
   var runState = VMRunStates.Running
-  var stack             : Stack = null
+  private[this] var stack     : Stack = null
   // Registers
   var pc                      = 0
   var fp                      = 0
@@ -148,9 +148,11 @@ class GlulxVMState extends VMState {
     _memheap.memblockAt(addr) != null
 
   // Stack interface
-  def empty     = stack.empty
-  def localsPos = stack.getInt(fp + Stack.OffsetLocalsPos)
-  def frameLen  = stack.getInt(fp)
+  def empty            = stack.empty
+  def localsPos        = stack.getInt(fp + Stack.OffsetLocalsPos)
+  def frameLen         = stack.getInt(fp)
+  def cloneStackValues = stack.cloneValues
+  def initStackFromByteArray(arr: Array[Byte]) = stack.initFromByteArray(arr)
 
   def pushByte(value : Int)  = stack.pushByte(value)
   def topByte : Int          = stack.topByte
@@ -168,6 +170,7 @@ class GlulxVMState extends VMState {
   }
   def pushInt(value : Int)   = stack.pushInt(value)
   def topInt : Int           = stack.topInt
+  def popIntUnchecked        = stack.popInt
   def popInt : Int           = {
     if (sp <= fp + frameLen)
       throw new IllegalStateException("POP INT - STACK UNDERFLOW !!")
@@ -1038,17 +1041,33 @@ class GlulxVM {
 
   /**
    * Implements @callf, @callfi, @callfii, @callfiii.
+   * Originally these 4 functions were a single one, with a vararg parameter.
+   * Replaced with direct implementations to avoid autoboxing and the resulting
+   * expensive GC.
    */
-  private def doCallf(funaddr: Int, storeLocation: Operand, args: Int*) {
-    var i = 0
-    while (i < args.length) {
-      _arguments(i) = args(i)
-      i += 1
-    }
-    _numArguments = args.length
+  private def doCallf0(funaddr: Int, storeLocation: Operand) {
+    _numArguments = 0
     prepareCall(funaddr, storeLocation)
   }
-  
+  private def doCallf1(funaddr: Int, storeLocation: Operand, arg: Int) {
+    _arguments(0) = arg
+    _numArguments = 1
+    prepareCall(funaddr, storeLocation)
+  }
+  private def doCallf2(funaddr: Int, storeLocation: Operand, arg0: Int, arg1: Int) {
+    _arguments(0) = arg0
+    _arguments(1) = arg1
+    _numArguments = 2
+    prepareCall(funaddr, storeLocation)
+  }
+  private def doCallf3(funaddr: Int, storeLocation: Operand, arg0: Int, arg1: Int, arg2: Int) {
+    _arguments(0) = arg0
+    _arguments(1) = arg1
+    _arguments(2) = arg2
+    _numArguments = 3
+    prepareCall(funaddr, storeLocation)
+  }
+
   /**
    * Perform a call given an int array as arguments, this method is called
    * by the I/O system.
@@ -1111,10 +1130,10 @@ class GlulxVM {
     } else {
       // we can't use GlulxVM's popInt(), because it performs checks on
       // the call frame, which is exactly what we manipulate here
-      val fpValue  = state.stack.popInt
-      val pcValue  = state.stack.popInt
-      val destAddr = state.stack.popInt
-      val destType = state.stack.popInt
+      val fpValue  = state.popIntUnchecked
+      val pcValue  = state.popIntUnchecked
+      val destAddr = state.popIntUnchecked
+      val destType = state.popIntUnchecked
       if (DestTypes.isStringDestType(destType)) {
         handleStringCallStub(destType, destAddr, pcValue, fpValue)
       } else { // regular behaviour
@@ -1520,14 +1539,14 @@ class GlulxVM {
                                       getOperand(4), getOperand(5))
         storeAtOperand(6, search.search)
       case 0x160 => // callf
-        doCallf(getOperand(0), _operands(1))
+        doCallf0(getOperand(0), _operands(1))
       case 0x161 => // callfi
-        doCallf(getOperand(0), _operands(2), getOperand(1))
+        doCallf1(getOperand(0), _operands(2), getOperand(1))
       case 0x162 => // callfii
-        doCallf(getOperand(0), _operands(3), getOperand(1), getOperand(2))
+        doCallf2(getOperand(0), _operands(3), getOperand(1), getOperand(2))
       case 0x163 => // callfiii
-        doCallf(getOperand(0), _operands(4), getOperand(1), getOperand(2),
-                getOperand(3))
+        doCallf3(getOperand(0), _operands(4), getOperand(1), getOperand(2),
+                 getOperand(3))
       case 0x170 => // mzero
         state.mzero(getOperand(0), getOperand(1))
       case 0x171 => // mcopy
@@ -1642,5 +1661,3 @@ class GlulxVM {
     state.runState = VMRunStates.Halted
   }
 }
-
-

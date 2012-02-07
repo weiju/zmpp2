@@ -118,7 +118,7 @@ class SaveGameLoader(glk: Glk, streamId: Int, vmState: GlulxVMState,
     logger.info("Uncompressed memory, SIZE = %d".format(stackSize))
     val stackValues = new Array[Byte](stackSize)
     stksChunk.memory.copyBytesTo(stackValues, stksChunk.dataStart, stackSize)
-    vmState.stack.initFromByteArray(stackValues)
+    vmState.initStackFromByteArray(stackValues)
   }
 
   private def readMAllChunk(mallChunk: Chunk) {
@@ -216,7 +216,7 @@ class SaveGameWriter(glk: Glk, streamId: Int, vmState: GlulxVMState,
 
   private def writeStksChunk {
     vmState.pushCallStub(storeLocation)
-    val stackValues = vmState.stack.cloneValues
+    val stackValues = vmState.cloneStackValues
     val stackSize   = stackValues.length 
     writeByteArray("Stks".getBytes)
     writeInt(stackSize)
