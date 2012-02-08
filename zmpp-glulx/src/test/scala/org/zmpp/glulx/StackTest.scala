@@ -32,66 +32,85 @@ import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+import org.scalatest.BeforeAndAfterEach
 
 import java.io._
+import org.zmpp.base._
 
 @RunWith(classOf[JUnitRunner])
-class StackSpec extends FlatSpec with ShouldMatchers {
+class StackSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
-  "Stack" should "be initialized" in {
-    val stack = new Stack(10)
-    stack.empty should be (true)
+  val DummyMem = Array[Byte](0x47, 0x6c, 0x75, 0x6c, 0x00, 0x03, 0x01, 0x01,
+                             0x00, 0x00, 0x00, 0x00, // RAMSTART
+                             0x00, 0x00, 0x00, 0x00, // EXTSTART
+                             0x00, 0x00, 0x00, 0x00, // ENDMEM
+                             0x00, 0x00, 0x00, 0xff.asInstanceOf[Byte], // STACKSIZE
+                             0x00, 0x00, 0x00, 0x00, // STARTFUNC
+                             0x00, 0x00, 0x00, 0x00, // Decoding table
+                             0x00, 0x00, 0x00, 0x00 // Checksum
+                            )
+
+  var story: Memory = null
+  var vmstate = new GlulxVMState
+
+  override def beforeEach {
+    story = new DefaultMemory(DummyMem)
+    vmstate.init(story)
+  }
+
+  "GlulxVM stack" should "be initialized" in {
+    vmstate.stackEmpty should be (true)
   }
   it should "push and pop a byte" in {
-    val stack = new Stack(10)
-    stack.pushByte(1)
-    stack.empty   should be (false)
-    stack.topByte should be (1)
-    stack.empty   should be (false)
-    stack.popByte should be (1)
-    stack.empty   should be (true)
+    vmstate.pushInt(0) // artificial frame len
+    vmstate.pushByte(1)
+    vmstate.sp should be (5)
+    vmstate.topByte should be (1)
+    vmstate.popByte should be (1)
+    vmstate.sp should be (4)
 
-    stack.pushByte(255)
-    stack.topByte should be (255)
-    stack.popByte should be (255)
+    vmstate.pushByte(255)
+    vmstate.topByte should be (255)
+    vmstate.popByte should be (255)
   }
   it should "push and pop short" in {
-    val stack = new Stack(10)
-    stack.pushShort(32767)
-    stack.topShort should be (32767)
-    stack.pushShort(65535)
-    stack.topShort should be (65535)
-    stack.popShort should be (65535)
-    stack.popShort should be (32767)
-    stack.empty    should be (true)
+    vmstate.pushInt(0) // artificial frame len
+
+    vmstate.pushShort(32767)
+    vmstate.topShort should be (32767)
+    vmstate.pushShort(65535)
+
+    vmstate.topShort should be (65535)
+    vmstate.popShort should be (65535)
+    vmstate.popShort should be (32767)
+    vmstate.sp should be (4)
   }
   it should "push and pop int" in {
-    val stack = new Stack(10)
-    stack.pushInt(32767)
-    stack.topInt should equal (32767)
-    stack.pushInt(-42)
-    stack.topInt should equal (-42)
-    stack.popInt should equal (-42)
-    stack.popInt should equal (32767)
-    stack.empty  should be (true)
+    vmstate.pushInt(0) // artificial frame len
+
+    vmstate.pushInt(32767)
+    vmstate.topInt should equal (32767)
+    vmstate.pushInt(-42)
+    vmstate.topInt should equal (-42)
+    vmstate.popInt should equal (-42)
+    vmstate.popInt should equal (32767)
+
+    vmstate.sp should be (4)
   }
   it should "set and get a byte" in {
-    val stack = new Stack(10)
-    stack.setByte(3, 0xba)
-    stack.getByte(3) should be (0xba)
-    stack.sp should be (0)
+    vmstate.setByteInStack(3, 0xba)
+    vmstate.getByteInStack(3) should be (0xba)
+    vmstate.sp should be (0)
   }
   it should "set and get a short" in {
-    val stack = new Stack(10)
-    stack.setShort(4, 0xcafe)
-    stack.getShort(4) should be (0xcafe)
-    stack.sp should be (0)
+    vmstate.setShortInStack(4, 0xcafe)
+    vmstate.getShortInStack(4) should be (0xcafe)
+    vmstate.sp should be (0)
   }
   it should "set and get a int" in {
-    val stack = new Stack(10)
-    stack.setInt(4, 0xdeadbeef)
-    stack.getInt(4) should be (0xdeadbeef)
-    stack.sp should be (0)
+    vmstate.setIntInStack(4, 0xdeadbeef)
+    vmstate.getIntInStack(4) should be (0xdeadbeef)
+    vmstate.sp should be (0)
   }
 }
 
