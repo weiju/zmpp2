@@ -109,11 +109,11 @@ class GlulxVM {
     _localDescriptors(i) = new LocalDescriptor
   for (i <- 0 to GlulxVM.MaxOperands - 1) _operands(i) = new Operand
   
-  def init(aStory: Memory, aBlorbData: BlorbData) {
+  def init(storyBytes: Array[Byte], aBlorbData: BlorbData) {
     blorbData = aBlorbData
     _glk = new Glk(new EventManager(state))
     _glkDispatch = new GlkDispatch(state, _glk)
-    state.init(aStory)
+    state.init(storyBytes)
     currentDecodingTable = state.header.decodingTable
     _accelSystem.glk      = _glk
     if (_originalRam == null) _originalRam = state.cloneRam

@@ -53,7 +53,8 @@ object Stack {
  */
 class GlulxVMState extends VMState {
   val logger = Logger.getLogger("glulx")
-  private[this] var _story    : Memory = null
+  //private[this] var _story    : Memory = null
+  private[this] var _storyBytes: Array[Byte] = null
   private[this] var _header   : GlulxStoryHeader = null
   
   // Memory setup
@@ -68,21 +69,26 @@ class GlulxVMState extends VMState {
   private[this] var _sp = 0
 
   // Registers
-  var pc                      = 0
-  var fp                      = 0
-  def sp = _sp
-  def sp_=(newSP: Int) { _sp = newSP }
+  private[this] var _pc = 0
+  private[this] var _fp = 0
 
-  def init(story: Memory) {
-    _story     = story
-    _header    = new GlulxStoryHeader(story)
+  def pc = _pc
+  def pc_=(newpc: Int) { _pc = newpc }
+  def fp = _fp
+  def fp_=(newfp: Int) { _fp = newfp }
+  def sp = _sp
+  def sp_=(newsp: Int) { _sp = newsp }
+
+  def init(storyBytes: Array[Byte]) {
+    _storyBytes = storyBytes
+    _header     = new GlulxStoryHeader(storyBytes)
     initStack
-    _extstart  = _header.extstart
-    _memheap   = new MemoryHeap(_header.endmem)
-    pc         = 0
-    fp         = 0
-    runState   = VMRunStates.Running
-    memsize    = header.endmem
+    _extstart   = _header.extstart
+    _memheap    = new MemoryHeap(_header.endmem)
+    _pc         = 0
+    _fp         = 0
+    runState    = VMRunStates.Running
+    memsize     = header.endmem
     logger.info("VM INITIALIZED WITH EXT_START: %d END_MEM: %d".format(
                 _extstart, header.endmem))
   }
@@ -102,8 +108,8 @@ class GlulxVMState extends VMState {
     initStack
     _memheap   = new MemoryHeap(_header.endmem)
     memsize    = header.endmem
-    pc         = 0
-    fp         = 0
+    _pc        = 0
+    _fp        = 0
     runState   = VMRunStates.Running
     
     // reset bytes in ram
@@ -121,11 +127,13 @@ class GlulxVMState extends VMState {
         val destAddress = destOffset + i
         if (destAddress < protectionStart ||
             destAddress >= protectionStart + protectionLength) {
-          _story.setByteAt(destAddress, memarray(i))
+          //_story.setByteAt(destAddress, memarray(i))
+          _storyBytes(destAddress) = memarray(i).asInstanceOf[Byte]
         }
       }
     } else {
-      _story.copyBytesFrom(memarray, srcOffset, destOffset, numBytes)
+      //_story.copyBytesFrom(memarray, srcOffset, destOffset, numBytes)
+      System.arraycopy(memarray, srcOffset, _storyBytes, destOffset, numBytes)
     }
   }
 
@@ -145,14 +153,12 @@ class GlulxVMState extends VMState {
     _extEnd = _extstart + size
   }
 
-  def story        = _story
   def header       = _header
   def heapIsActive = _memheap.active
   def ramSize      = memsize - header.ramstart
 
   private def inStoryMem(addr: Int) = addr < _extstart
-  private def inExtMem(addr: Int) =
-    addr >= _extstart && addr < _extEnd
+  private def inExtMem(addr: Int)   = addr >= _extstart && addr < _extEnd
   private def fitsInStoryMem(addr: Int, size: Int) = {
     inStoryMem(addr) && inStoryMem(addr + size - 1)
   }
@@ -161,8 +167,8 @@ class GlulxVMState extends VMState {
 
   // Stack interface
   def stackEmpty       = _sp == 0
-  def localsPos        = getIntInStack(fp + Stack.OffsetLocalsPos)
-  def frameLen         = getIntInStack(fp)
+  def localsPos        = getIntInStack(_fp + Stack.OffsetLocalsPos)
+  def frameLen         = getIntInStack(_fp)
 
   private def stackToStringFromTo(start: Int, end : Int) = {
     val builder = new StringBuilder
@@ -193,7 +199,7 @@ class GlulxVMState extends VMState {
   }
   def topByte : Int = (_stackArray(_sp - 1) & 0xff).asInstanceOf[Int]
   def popByte : Int = {
-    if (sp <= fp + frameLen)
+    if (_sp <= _fp + frameLen)
       throw new IllegalStateException("POP BYTE - STACK UNDERFLOW !!")
     _sp -= 1
     (_stackArray(_sp) & 0xff).asInstanceOf[Int]
@@ -207,7 +213,7 @@ class GlulxVMState extends VMState {
     ((_stackArray(_sp - 2) & 0xff) << 8) | (_stackArray(_sp - 1) & 0xff) 
   }
   def popShort : Int = {
-    if (sp <= fp + frameLen)
+    if (_sp <= _fp + frameLen)
       throw new IllegalStateException("POP SHORT - STACK UNDERFLOW !!")
     _sp -= 2
     ((_stackArray(_sp) & 0xff) << 8) | (_stackArray(_sp + 1) & 0xff) 
@@ -229,7 +235,7 @@ class GlulxVMState extends VMState {
     ((_stackArray(_sp + 2) & 0xff) << 8) | (_stackArray(_sp + 3) & 0xff)
   }
   def popInt : Int = {
-    if (sp <= fp + frameLen)
+    if (_sp <= _fp + frameLen)
       throw new IllegalStateException("POP INT - STACK UNDERFLOW !!")
     _sp -= 4
     ((_stackArray(_sp) & 0xff) << 24) | ((_stackArray(_sp + 1) & 0xff) << 16) |
@@ -259,7 +265,7 @@ class GlulxVMState extends VMState {
   def getByteInStack(addr: Int) = {
     _stackArray(addr) & 0xff
   }
-  def numStackValuesInCallFrame = (sp - (fp + frameLen)) / 4
+  def numStackValuesInCallFrame = (_sp - (_fp + frameLen)) / 4
   
   // special stack functions
   def stackSwap {
@@ -274,7 +280,7 @@ class GlulxVMState extends VMState {
     if (numStackValuesInCallFrame <= i) {
       throw new IllegalStateException("STACK PEEK - NOT ENOUGH STACK VALUES")
     }
-    getIntInStack(sp - (4 * (i + 1)))
+    getIntInStack(_sp - (4 * (i + 1)))
   }
   def stackRoll(numValues: Int, numRotatePlaces: Int) {
     if (numRotatePlaces == 0) return
@@ -292,10 +298,12 @@ class GlulxVMState extends VMState {
       i += 1
     }
   }
+  // **********************************************************************
+  // ***** MEMORY INTERFACE
+  // **********************************************************************
 
-  // Memory interface
   def memByteAt    (addr: Int) : Int = {
-    if      (inStoryMem(addr)) _story.byteAt(addr)
+    if (addr < _extstart) (_storyBytes(addr) & 0xff) // inStoryMem(), manually inlined
     else if (inExtMem(addr))   _extMem.byteAt(addr)
     else                       _memheap.byteAt(addr)
   }
@@ -304,13 +312,14 @@ class GlulxVMState extends VMState {
       logger.warning("SETTING BYTE VALUE IN ROM %02x = %d !".format(addr,
                                                                     value))
     }
-    if      (inStoryMem(addr)) _story.setByteAt(addr, value)
+    if (addr < _extstart) _storyBytes(addr) = (value & 0xff).asInstanceOf[Byte]
     else if (inExtMem(addr))   _extMem.setByteAt(addr, value)
     else                       _memheap.setByteAt(addr, value)
   }
   def memShortAt   (addr: Int) : Int = {
-    if      (inStoryMem(addr)) _story.shortAt(addr)
-    else if (inExtMem(addr))   _extMem.shortAt(addr)
+    if (addr < _extstart) {
+      ((_storyBytes(addr) & 0xff) << 8) | (_storyBytes(addr + 1) & 0xff)
+    } else if (inExtMem(addr))   _extMem.shortAt(addr)
     else                       _memheap.shortAt(addr)
   }
   def setMemShortAt(addr: Int, value: Int) {
@@ -318,13 +327,17 @@ class GlulxVMState extends VMState {
       logger.warning("SETTING SHORT VALUE IN ROM %02x = %d !".format(addr,
                                                                      value))
     }
-    if      (inStoryMem(addr)) _story.setShortAt(addr, value)
-    else if (inExtMem(addr))   _extMem.setShortAt(addr, value) 
+    if (addr < _extstart) {
+      _storyBytes(addr)     = ((value >>> 8) & 0xff).asInstanceOf[Byte]
+      _storyBytes(addr + 1) = (value & 0xff).asInstanceOf[Byte]
+    } else if (inExtMem(addr))   _extMem.setShortAt(addr, value) 
     else                       _memheap.setShortAt(addr, value)
   }
   def memIntAt     (addr: Int) : Int = {
-    if      (inStoryMem(addr)) _story.intAt(addr)
-    else if (inExtMem(addr))   _extMem.intAt(addr)
+    if (addr < _extstart) {
+      ((_storyBytes(addr) & 0xff) << 24) | ((_storyBytes(addr + 1) & 0xff) << 16) |
+      ((_storyBytes(addr + 2) & 0xff) << 8) | (_storyBytes(addr + 3) & 0xff)    
+    } else if (inExtMem(addr))   _extMem.intAt(addr)
     else                       _memheap.intAt(addr)
   }
   def setMemIntAt  (addr: Int, value: Int) {
@@ -332,8 +345,12 @@ class GlulxVMState extends VMState {
       logger.warning("SETTING INT VALUE IN ROM %02x = %d !".format(addr,
                                                                    value))
     }
-    if      (inStoryMem(addr)) _story.setIntAt(addr, value)
-    else if (inExtMem(addr))   _extMem.setIntAt(addr, value)
+    if (addr < _extstart) {
+      _storyBytes(addr)     = ((value >>> 24) & 0xff).asInstanceOf[Byte]
+      _storyBytes(addr + 1) = ((value >>> 16) & 0xff).asInstanceOf[Byte]
+      _storyBytes(addr + 2) = ((value >>> 8) & 0xff).asInstanceOf[Byte]
+      _storyBytes(addr + 3) = (value & 0xff).asInstanceOf[Byte]
+    } else if (inExtMem(addr))   _extMem.setIntAt(addr, value)
     else                       _memheap.setIntAt(addr, value)
   }
 
@@ -355,7 +372,8 @@ class GlulxVMState extends VMState {
   def mcopy(numBytes: Int, srcAddr: Int, destAddr: Int) {
     if (fitsInStoryMem(srcAddr, numBytes) &&
         fitsInStoryMem(destAddr, numBytes)) {
-      _story.copyBytesTo(destAddr, srcAddr, numBytes)
+      //_story.copyBytesTo(destAddr, srcAddr, numBytes)
+      System.arraycopy(_storyBytes, srcAddr, _storyBytes, destAddr, numBytes)
     }
     else if (fitsOnHeap(srcAddr, numBytes) && fitsOnHeap(destAddr, numBytes)) {
       _memheap.copyBytesTo(destAddr, srcAddr, numBytes)
@@ -372,13 +390,17 @@ class GlulxVMState extends VMState {
   def memsize_=(newSize: Int) = _setExtendedMem(newSize - _extstart)
   def heapStart = if (_memheap.active) _extEnd else 0
 
+  // **********************************************************************
+  // ***** FUNCTION CALLS
+  // **********************************************************************
+
   // Pushes a call stub, given an operand
   def pushCallStub(storeLocation : Operand) {
     pushCallStub(DestTypes.fromAddressMode(storeLocation.addressMode),
-                 storeLocation.value, pc, fp)
+                 storeLocation.value, _pc, _fp)
   }
   def pushCallStub(destType: Int, destAddr: Int) {
-    pushCallStub(destType, destAddr, pc, fp)
+    pushCallStub(destType, destAddr, _pc, _fp)
   }
 
   // generic call stub pushing, can take other values for pc and fp
@@ -390,8 +412,8 @@ class GlulxVMState extends VMState {
   }
   
   def popCallStubThrow(retval: Int) {
-    fp           = popInt
-    pc           = popInt
+    _fp          = popInt
+    _pc          = popInt
     val destAddr = popInt
     val destType = popInt
     storeResult(destType, destAddr, retval)
@@ -450,28 +472,28 @@ class GlulxVMState extends VMState {
    * letting them to write to locals that do not exist.
    */
   def setLocalAtAddress(destAddr: Int, value: Int) {
-    setIntInStack(fp + localsPos + destAddr, value)
+    setIntInStack(_fp + localsPos + destAddr, value)
   }
   /**
    * Analogous to setLocalAtAddress(), this returns an int-sized value
    * and does not check the format, as the Glulx specification requests.
    */
   def getLocalAtAddress(localAddr : Int): Int = {
-    getIntInStack(fp + localsPos + localAddr)
+    getIntInStack(_fp + localsPos + localAddr)
   }
   
   // For copyb/copys
   def getLocalByteAtAddress(localAddr : Int): Int = {
-    getByteInStack(fp + localsPos + localAddr)
+    getByteInStack(_fp + localsPos + localAddr)
   }
   def getLocalShortAtAddress(localAddr : Int): Int = {
-    getShortInStack(fp + localsPos + localAddr)
+    getShortInStack(_fp + localsPos + localAddr)
   }
   def setLocalByteAtAddress(destAddr: Int, value: Int) {
-    setByteInStack(fp + localsPos + destAddr, value)
+    setByteInStack(_fp + localsPos + destAddr, value)
   }
   def setLocalShortAtAddress(destAddr: Int, value: Int) {
-    setShortInStack(fp + localsPos + destAddr, value)
+    setShortInStack(_fp + localsPos + destAddr, value)
   }
 
   // ***********************************************************************
@@ -479,7 +501,7 @@ class GlulxVMState extends VMState {
   // *************************************************************
 
   private def localFrameIndex(localNum: Int) : Int = {
-    var descriptorPos    = fp + Stack.OffsetLocalsFormat
+    var descriptorPos    = _fp + Stack.OffsetLocalsFormat
     var currentLocalPos  = localsPos
     var localRangeStart    = 0
     var hasMoreDescriptors = true
@@ -505,7 +527,7 @@ class GlulxVMState extends VMState {
   }
 
   private def localType(localNum: Int) : Int = {
-    var descriptorPos = fp + Stack.OffsetLocalsFormat
+    var descriptorPos = _fp + Stack.OffsetLocalsFormat
     var localRangeStart    = 0
     var hasMoreDescriptors = true
 
@@ -530,7 +552,7 @@ class GlulxVMState extends VMState {
     if (ltype != 0) {
       val lindex = localFrameIndex(localNum)
       // Note: Only set a local if it exists !!!
-      setValueInStack(fp + lindex, ltype, value)
+      setValueInStack(_fp + lindex, ltype, value)
     }
   }
 
@@ -539,14 +561,14 @@ class GlulxVMState extends VMState {
 
   override def toString = {
     val builder = new StringBuilder
-    builder.append("pc = $%02x stackframe = $%02x\n".format(pc, fp))
-    builder.append(stackToStringFrom(fp))
+    builder.append("pc = $%02x stackframe = $%02x\n".format(_pc, _fp))
+    builder.append(stackToStringFrom(_fp))
     builder.toString
   }
   
   def stackValuesAsString = {
     val builder = new StringBuilder
-    val stackStart = fp + frameLen
+    val stackStart = _fp + frameLen
     val numElems = numStackValuesInCallFrame
     builder.append("[")
     for (i <- 0 until numElems) {
@@ -559,16 +581,16 @@ class GlulxVMState extends VMState {
   
   // Reading data at the PC
   def nextByte: Int  = {
-    pc += 1
-    memByteAt(pc - 1)
+    _pc += 1
+    memByteAt(_pc - 1)
   }
   def nextShort: Int = {
-    pc += 2
-    memShortAt(pc - 2)
+    _pc += 2
+    memShortAt(_pc - 2)
   }
   def nextInt: Int   = {
-    pc += 4
-    memIntAt(pc - 4)
+    _pc += 4
+    memIntAt(_pc - 4)
   }
 
   // ***********************************************************************
@@ -586,8 +608,8 @@ class GlulxVMState extends VMState {
   
   def createSnapshot(storeLocation: Operand): Snapshot = {
     val ram         = cloneRam
-    logger.info("CREATE_SNAPSHOT, PC = $%02x FP = %d SP: %d".format(pc,
-                                                                    fp, sp))
+    logger.info("CREATE_SNAPSHOT, PC = $%02x FP = %d SP: %d".format(_pc,
+                                                                    _fp, _sp))
     pushCallStub(storeLocation)
     val stackValues = cloneStackValues
     val extmem: Array[Byte] = null
@@ -600,7 +622,8 @@ class GlulxVMState extends VMState {
     val ramsize = _extstart - header.ramstart
     logger.info("Copying %d Bytes of RAM to preserve initial data".format(ramsize))
     val ram = new Array[Byte](ramsize)
-    _story.copyBytesTo(ram, header.ramstart, ramsize)
+    //_story.copyBytesTo(ram, header.ramstart, ramsize)
+    System.arraycopy(_storyBytes, header.ramstart, ram, 0, ramsize)
     ram
   }  
 }

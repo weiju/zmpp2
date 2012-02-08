@@ -48,13 +48,11 @@ class GlulxVMStateSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
                              0x00, 0x00, 0x00, 0x00, // Decoding table
                              0x00, 0x00, 0x00, 0x00 // Checksum
                             )
-  var story: Memory = null
   var vmstate = new GlulxVMState
 
   override def beforeEach {
-    story = new DefaultMemory(DummyMem)
     // push artificial call frame
-    vmstate.init(story)
+    vmstate.init(DummyMem)
     vmstate.pushInt(12)
     vmstate.pushInt(12)
     vmstate.pushInt(0)

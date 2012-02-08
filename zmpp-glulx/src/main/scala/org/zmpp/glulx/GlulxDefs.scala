@@ -458,16 +458,21 @@ object Opcodes {
   }
 }
 
-class GlulxStoryHeader(mem : Memory) {
-  def isGlulx       = mem.intAt(0) == 0x476c756c // 'Glul'
-  def version       = mem.intAt(4)
-  def ramstart      = mem.intAt(8)
-  def extstart      = mem.intAt(12)
-  def endmem        = mem.intAt(16)
-  def stacksize     = mem.intAt(20)
-  def startfunc     = mem.intAt(24)
-  def decodingTable = mem.intAt(28)
-  def checksum      = mem.intAt(32)
+class GlulxStoryHeader(data : Array[Byte]) {
+  def isGlulx       = intAt(0) == 0x476c756c // 'Glul'
+  def version       = intAt(4)
+  def ramstart      = intAt(8)
+  def extstart      = intAt(12)
+  def endmem        = intAt(16)
+  def stacksize     = intAt(20)
+  def startfunc     = intAt(24)
+  def decodingTable = intAt(28)
+  def checksum      = intAt(32)
+
+  private def intAt(addr: Int): Int = {
+    ((data(addr) & 0xff) << 24) | ((data(addr + 1) & 0xff) << 16) |
+    ((data(addr + 2) & 0xff) << 8) | (data(addr + 3) & 0xff)    
+  }
 }
 
 class Operand(var addressMode: Int, var value: Int) {
