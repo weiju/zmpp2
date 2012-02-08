@@ -148,9 +148,9 @@ class GlkPairWindow(id: Int) extends GlkWindow(id, 0, 0) {
 abstract class GlkUIWindow(id: Int, size: Int, rock: Int)
 extends GlkWindow(id, size, rock) {
   val logger = Logger.getLogger("glk.ui")
-  private var _style = 0
-  private var _writeCount = 0
-  private var _buffer = new StringBuilder
+  private[this] var _style = 0
+  private[this] var _writeCount = 0
+  private[this] var _buffer = new StringBuilder
   def styleHints: StyleHints
 
   var echoStream: GlkStream = null
