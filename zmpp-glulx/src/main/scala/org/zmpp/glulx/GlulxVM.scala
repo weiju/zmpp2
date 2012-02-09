@@ -54,12 +54,13 @@ object GlulxVM {
  */
 class GlulxVM {
   val logger = Logger.getLogger("glulx")
-  var iterations = 1
+  private[this] var iterations = 1
 
   // State is public for subsystems to access. This is the only data
   // that is needed to be serializaed between turns. All other data
   // is scratch data which is only valid during one turn.
-  val state = new GlulxVMState
+  private[this] val _state = new GlulxVMState
+  def state = _state
 
   // Cached currrent frame state. This is used in setting up the current
   // function and is only supposed to be used at that time. When returning
@@ -100,25 +101,25 @@ class GlulxVM {
   var blorbData : BlorbData = null
   var currentDecodingTable = 0
   var currentIOSystem: IOSystem  = new NullIOSystem(this, 0)
-  def memIntAt(addr: Int): Int   = state.memIntAt(addr)
-  def memByteAt(addr: Int): Int  = state.memByteAt(addr)
-  def memShortAt(addr: Int): Int = state.memShortAt(addr)
+  def memIntAt(addr: Int): Int   = _state.memIntAt(addr)
+  def memByteAt(addr: Int): Int  = _state.memByteAt(addr)
+  def memShortAt(addr: Int): Int = _state.memShortAt(addr)
 
   // initialization
-  for (i <- 0 to GlulxVM.MaxLocalDescriptors - 1)
+  for (i <- 0 until GlulxVM.MaxLocalDescriptors)
     _localDescriptors(i) = new LocalDescriptor
-  for (i <- 0 to GlulxVM.MaxOperands - 1) _operands(i) = new Operand
+  for (i <- 0 until GlulxVM.MaxOperands) _operands(i) = new Operand
   
   def init(storyBytes: Array[Byte], aBlorbData: BlorbData) {
     blorbData = aBlorbData
-    _glk = new Glk(new EventManager(state))
-    _glkDispatch = new GlkDispatch(state, _glk)
-    state.init(storyBytes)
-    currentDecodingTable = state.header.decodingTable
+    _glk = new Glk(new EventManager(_state))
+    _glkDispatch = new GlkDispatch(_state, _glk)
+    _state.init(storyBytes)
+    currentDecodingTable  = _state.header.decodingTable
     _accelSystem.glk      = _glk
-    if (_originalRam == null) _originalRam = state.cloneRam
+    if (_originalRam == null) _originalRam = _state.cloneRam
 
-    prepareCall(state.header.startfunc, null)
+    prepareCall(_state.header.startfunc, null)
   }
 
   def screenUI = _glk.screenUI
@@ -127,28 +128,27 @@ class GlulxVM {
   def nativeSoundSystem_=(soundSystem: NativeSoundSystem) = _glk.nativeSoundSystem = soundSystem
 
   
-  def runState   = state.runState
-  def header     = state.header
+  def runState   = _state.runState
+  def header     = _state.header
   
   private def restart {
-    state.restart(_originalRam, _protectionStart, _protectionLength)
+    _state.restart(_originalRam, _protectionStart, _protectionLength)
     //_protectionStart  = 0
     //_protectionLength = 0
     //_undoSnapshots = Nil
 
-    prepareCall(state.header.startfunc, null)
+    prepareCall(_state.header.startfunc, null)
   }
 
-  private def printState = println(state.toString)
+  private def printState = println(_state.toString)
   
   private def readLocalDescriptors(addr : Int) = {
     var currentAddr = addr
     var descIndex = 0
     var hasMoreDescriptors = true
     while (hasMoreDescriptors) {
-      _localDescriptors(descIndex).localType  = state.memByteAt(currentAddr)
-      _localDescriptors(descIndex).localCount =
-        state.memByteAt(currentAddr + 1)
+      _localDescriptors(descIndex).localType  = _state.memByteAt(currentAddr)
+      _localDescriptors(descIndex).localCount = _state.memByteAt(currentAddr + 1)
 
       hasMoreDescriptors = !(_localDescriptors(descIndex).localType == 0 &&
                              _localDescriptors(descIndex).localCount == 0)
@@ -162,14 +162,14 @@ class GlulxVM {
   private def setLocalDescriptorsToCallFrame(numDescriptors : Int) = {
     var i = 0
     while (i < numDescriptors) {
-      state.pushByte(_localDescriptors(i).localType)
-      state.pushByte(_localDescriptors(i).localCount)
+      _state.pushByte(_localDescriptors(i).localType)
+      _state.pushByte(_localDescriptors(i).localCount)
       i += 1
     }
     // Ensure a size dividable by 4 (the size of an int)
     var localDescriptorSize = numDescriptors * Types.SizeShort
     if ((localDescriptorSize % Types.SizeInt) != 0) {
-      state.pushShort(0)
+      _state.pushShort(0)
       localDescriptorSize += Types.SizeShort
     }
     localDescriptorSize
@@ -190,15 +190,15 @@ class GlulxVM {
       // Padding: For short, pad to even address, for int, pad to multiple
       // of 4
       var numPadBytes = 0
-      if (ltype == Types.ShortType && ((state.sp & 0x01) == 1)) {
-        state.pushByte(0)
+      if (ltype == Types.ShortType && ((_state.sp & 0x01) == 1)) {
+        _state.pushByte(0)
         numPadBytes = 1
       } else if (ltype == Types.IntType &&
-                 ((state.sp & 0x03) != 0)) {
-        numPadBytes = Types.SizeInt - (state.sp & 0x03)
+                 ((_state.sp & 0x03) != 0)) {
+        numPadBytes = Types.SizeInt - (_state.sp & 0x03)
         var j = 0
         while (j < numPadBytes) {
-          state.pushByte(0)
+          _state.pushByte(0)
           j += 1
         }
       }
@@ -208,7 +208,7 @@ class GlulxVM {
       val blocksize = numlocals * ltype
       var j = 0
       while (j < blocksize) {
-        state.pushByte(0)
+        _state.pushByte(0)
         j += 1
       }
       localSectionSize += blocksize + numPadBytes
@@ -220,38 +220,38 @@ class GlulxVM {
   private def decodeOpcodeNum {
     // look at the two highest bits: 11 means 4 bytes, 10 means 2 bytes
     // else one byte
-    val b0 = state.memByteAt(state.pc) & 0xff
+    val b0 = _state.memByteAt(_state.pc) & 0xff
     val bitpattern = b0 & 0xc0
 
     if (bitpattern == 0xc0) {
-      _opcodeNum = state.memIntAt(state.pc) - 0xc0000000
+      _opcodeNum = _state.memIntAt(_state.pc) - 0xc0000000
       _opcodeNumSize = Types.SizeInt
     } else if (bitpattern == 0x80) {
-      _opcodeNum = (state.memShortAt(state.pc) & 0xffff) - 0x8000
+      _opcodeNum = (_state.memShortAt(_state.pc) & 0xffff) - 0x8000
       _opcodeNumSize = Types.SizeShort
     } else {
       _opcodeNum = b0
       _opcodeNumSize = Types.SizeByte
     }
-    state.pc += _opcodeNumSize
+    _state.pc += _opcodeNumSize
   }
   
   private def readOperand(addressMode : Int) = {
     (addressMode: @switch) match {
       case 0  => 0               // ConstZero
-      case 1  => state.nextByte  // ConstByte
-      case 2  => state.nextShort // ConstShort
-      case 3  => state.nextInt   // ConstInt
-      case 5  => state.nextByte  // Address00_FF
-      case 6  => state.nextShort // Address0000_FFFF
-      case 7  => state.nextInt   // AddressAny
+      case 1  => _state.nextByte  // ConstByte
+      case 2  => _state.nextShort // ConstShort
+      case 3  => _state.nextInt   // ConstInt
+      case 5  => _state.nextByte  // Address00_FF
+      case 6  => _state.nextShort // Address0000_FFFF
+      case 7  => _state.nextInt   // AddressAny
       case 8  => 0               // Stack
-      case 9  => state.nextByte  // Local00_FF
-      case 10 => state.nextShort // Local0000_FFFF
-      case 11 => state.nextInt   // LocalAny
-      case 13 => state.nextByte  // Ram00_FF
-      case 14 => state.nextShort // Ram0000_FFFF
-      case 15 => state.nextInt   // RamAny
+      case 9  => _state.nextByte  // Local00_FF
+      case 10 => _state.nextShort // Local0000_FFFF
+      case 11 => _state.nextInt   // LocalAny
+      case 13 => _state.nextByte  // Ram00_FF
+      case 14 => _state.nextShort // Ram0000_FFFF
+      case 15 => _state.nextInt   // RamAny
       case _ =>
         throw new IllegalArgumentException("unsupported address mode: " +
                                            addressMode)
@@ -259,14 +259,14 @@ class GlulxVM {
   }
 
   private def readOperands {
-    val addrModeOffset = state.pc
+    val addrModeOffset = _state.pc
     val numOperands = Opcodes.numOperands(_opcodeNum)
     val nbytesNumOperands = numOperands / 2 + numOperands % 2
-    state.pc += nbytesNumOperands // adjust pc to the start of operand data
+    _state.pc += nbytesNumOperands // adjust pc to the start of operand data
     var numRead = 0
     var i = 0
     while (i < nbytesNumOperands) {
-      val byteVal = state.memByteAt(addrModeOffset + i)
+      val byteVal = _state.memByteAt(addrModeOffset + i)
       _operands(numRead).addressMode = byteVal & 0x0f
       _operands(numRead).value = readOperand(_operands(numRead).addressMode)
 
@@ -286,17 +286,17 @@ class GlulxVM {
       case 1  => Types.signExtend8(_operands(pos).value) // ConstByte
       case 2  => Types.signExtend16(_operands(pos).value) // ConstShort
       case 3  => _operands(pos).value // ConstInt
-      case 7  => state.memIntAt(_operands(pos).value) // AddressAny
-      case 8  => state.popInt // Stack
+      case 7  => _state.memIntAt(_operands(pos).value) // AddressAny
+      case 8  => _state.popInt // Stack
       case 9  => // Local00_FF
-        state.getLocalAtAddress(_operands(pos).value)
+        _state.getLocalAtAddress(_operands(pos).value)
       case 10  => // Local0000_FFFF
-        state.getLocalAtAddress(_operands(pos).value)
+        _state.getLocalAtAddress(_operands(pos).value)
       case 11 => // LocalAny
-        state.getLocalAtAddress(_operands(pos).value)
-      case 13 => state.ramIntAt(_operands(pos).value)
-      case 14 => state.ramIntAt(_operands(pos).value)
-      case 15 => state.ramIntAt(_operands(pos).value)
+        _state.getLocalAtAddress(_operands(pos).value)
+      case 13 => _state.ramIntAt(_operands(pos).value)
+      case 14 => _state.ramIntAt(_operands(pos).value)
+      case 15 => _state.ramIntAt(_operands(pos).value)
       case _ =>
         throw new IllegalStateException("unsupported operand type: " +
           _operands(pos).addressMode)
@@ -319,24 +319,24 @@ class GlulxVM {
       case 2  => Types.signExtend16(_operands(pos).value) // ConstShort
       case 3  => _operands(pos).value // ConstInt
       case 5  => // Address00_FF
-        state.memByteAt(_operands(pos).value)
+        _state.memByteAt(_operands(pos).value)
       case 6  => // Address0000_FFFF
-        state.memByteAt(_operands(pos).value)
+        _state.memByteAt(_operands(pos).value)
       case 7  => // AddressAny
-        state.memByteAt(_operands(pos).value)
-      case 8  => state.popInt // Stack
+        _state.memByteAt(_operands(pos).value)
+      case 8  => _state.popInt // Stack
       case 9  => // Local00_FF 
-        state.getLocalByteAtAddress(_operands(pos).value)
+        _state.getLocalByteAtAddress(_operands(pos).value)
       case 10 => // Local0000_FFFF
-        state.getLocalByteAtAddress(_operands(pos).value)
+        _state.getLocalByteAtAddress(_operands(pos).value)
       case 11 => // LocalAny
-        state.getLocalByteAtAddress(_operands(pos).value)
+        _state.getLocalByteAtAddress(_operands(pos).value)
       case 13 => // Ram00_FF
-        state.ramByteAt(_operands(pos).value)
+        _state.ramByteAt(_operands(pos).value)
       case 14 => // Ram0000_FFFF
-        state.ramByteAt(_operands(pos).value)
+        _state.ramByteAt(_operands(pos).value)
       case 15 => // RamAny
-        state.ramByteAt(_operands(pos).value)
+        _state.ramByteAt(_operands(pos).value)
       case _         =>
         throw new IllegalStateException("unsupported operand type: " +
           _operands(pos).addressMode)
@@ -351,24 +351,24 @@ class GlulxVM {
       case 2  => Types.signExtend16(_operands(pos).value) // ConstShort
       case 3  => _operands(pos).value // ConstInt
       case 5  => // Address00_FF
-        state.memShortAt(_operands(pos).value)
+        _state.memShortAt(_operands(pos).value)
       case 6  => // Address0000_FFFF
-        state.memShortAt(_operands(pos).value)
+        _state.memShortAt(_operands(pos).value)
       case 7  => // AddressAny
-        state.memShortAt(_operands(pos).value)
-      case 8  => state.popInt // Stack
+        _state.memShortAt(_operands(pos).value)
+      case 8  => _state.popInt // Stack
       case 9  => // Local00_FF
-        state.getLocalShortAtAddress(_operands(pos).value)
+        _state.getLocalShortAtAddress(_operands(pos).value)
       case 10 => // Local0000_FFFF
-        state.getLocalShortAtAddress(_operands(pos).value)
+        _state.getLocalShortAtAddress(_operands(pos).value)
       case 11 => // LocalAny
-        state.getLocalShortAtAddress(_operands(pos).value)
+        _state.getLocalShortAtAddress(_operands(pos).value)
       case 13 => // Ram00_FF
-        state.ramShortAt(_operands(pos).value)
+        _state.ramShortAt(_operands(pos).value)
       case 14 => // Ram0000_FFFF
-        state.ramShortAt(_operands(pos).value)
+        _state.ramShortAt(_operands(pos).value)
       case 15 => // RamAny
-        state.ramShortAt(_operands(pos).value)
+        _state.ramShortAt(_operands(pos).value)
       case _         =>
         throw new IllegalStateException("unsupported operand type: " +
           _operands(pos).addressMode)
@@ -381,24 +381,24 @@ class GlulxVM {
     (operand.addressMode: @switch) match {
       case 0  => // ConstZero, throw result away
       case 5  => // Address00_FF
-        state.setMemIntAt(operand.value, value)
+        _state.setMemIntAt(operand.value, value)
       case 6  => // Address0000_FFFF
-        state.setMemIntAt(operand.value, value)
+        _state.setMemIntAt(operand.value, value)
       case 7  => // AddressAny
-        state.setMemIntAt(operand.value, value)
-      case 8  => state.pushInt(value) // Stack
+        _state.setMemIntAt(operand.value, value)
+      case 8  => _state.pushInt(value) // Stack
       case 9  => // Local00_FF
-        state.setLocalAtAddress(operand.value, value)
+        _state.setLocalAtAddress(operand.value, value)
       case 10 => // Local0000_FFFF
-        state.setLocalAtAddress(operand.value, value)
+        _state.setLocalAtAddress(operand.value, value)
       case 11 => // LocalAny
-        state.setLocalAtAddress(operand.value, value)
+        _state.setLocalAtAddress(operand.value, value)
       case 13 => // Ram00_FF
-        state.setRamIntAt(operand.value, value)
+        _state.setRamIntAt(operand.value, value)
       case 14 => // Ram0000_FFFF
-        state.setRamIntAt(operand.value, value)
+        _state.setRamIntAt(operand.value, value)
       case 15 => // RamAny
-        state.setRamIntAt(operand.value, value)
+        _state.setRamIntAt(operand.value, value)
       case _ =>
         throw new IllegalArgumentException(
           "unsupported address mode for store: " + operand.addressMode)
@@ -413,24 +413,24 @@ class GlulxVM {
     (_operands(pos).addressMode: @switch) match {
       case 0  => // ConstZero, throw result away
       case 5  => // Address00_FF
-        state.setMemByteAt(_operands(pos).value, value)
+        _state.setMemByteAt(_operands(pos).value, value)
       case 6  => // Address0000_FFFF
-        state.setMemByteAt(_operands(pos).value, value)
+        _state.setMemByteAt(_operands(pos).value, value)
       case 7  => // AddressAny
-        state.setMemByteAt(_operands(pos).value, value)
-      case 8  => state.pushInt(value) // Stack
+        _state.setMemByteAt(_operands(pos).value, value)
+      case 8  => _state.pushInt(value) // Stack
       case 9  => // Local00_FF
-        state.setLocalByteAtAddress(_operands(pos).value, value)
+        _state.setLocalByteAtAddress(_operands(pos).value, value)
       case 10 => // Local0000_FFFF
-        state.setLocalByteAtAddress(_operands(pos).value, value)
+        _state.setLocalByteAtAddress(_operands(pos).value, value)
       case 11 => // LocalAny
-        state.setLocalByteAtAddress(_operands(pos).value, value)
+        _state.setLocalByteAtAddress(_operands(pos).value, value)
       case 13 => // Ram00_FF
-        state.setRamByteAt(_operands(pos).value, value)
+        _state.setRamByteAt(_operands(pos).value, value)
       case 14 => // Ram0000_FFFF
-        state.setRamByteAt(_operands(pos).value, value)
+        _state.setRamByteAt(_operands(pos).value, value)
       case 15 => // RamAny
-        state.setRamByteAt(_operands(pos).value, value)
+        _state.setRamByteAt(_operands(pos).value, value)
       case _ =>
         throw new IllegalArgumentException(
           "unsupported address mode for store: " + _operands(pos).addressMode)
@@ -442,24 +442,24 @@ class GlulxVM {
     (_operands(pos).addressMode: @switch) match {
       case 0  => // ConstZero, throw result away
       case 5  => // Address00_FF
-        state.setMemShortAt(_operands(pos).value, value)
+        _state.setMemShortAt(_operands(pos).value, value)
       case 6  => // Address0000_FFFF
-        state.setMemShortAt(_operands(pos).value, value)
+        _state.setMemShortAt(_operands(pos).value, value)
       case 7  => // AddressAny
-        state.setMemShortAt(_operands(pos).value, value)
-      case 8  => state.pushInt(value) // Stack
+        _state.setMemShortAt(_operands(pos).value, value)
+      case 8  => _state.pushInt(value) // Stack
       case 9  => // Local00_FF
-        state.setLocalShortAtAddress(_operands(pos).value, value)
+        _state.setLocalShortAtAddress(_operands(pos).value, value)
       case 10 => // Local0000_FFFF
-        state.setLocalShortAtAddress(_operands(pos).value, value)
+        _state.setLocalShortAtAddress(_operands(pos).value, value)
       case 11 => // LocalAny
-        state.setLocalShortAtAddress(_operands(pos).value, value)
+        _state.setLocalShortAtAddress(_operands(pos).value, value)
       case 13 => // Ram00_FF
-        state.setRamShortAt(_operands(pos).value, value)
+        _state.setRamShortAt(_operands(pos).value, value)
       case 14 => // Ram0000_FFFF
-        state.setRamShortAt(_operands(pos).value, value)
+        _state.setRamShortAt(_operands(pos).value, value)
       case 15 => // RamAny
-        state.setRamShortAt(_operands(pos).value, value)
+        _state.setRamShortAt(_operands(pos).value, value)
       case _ =>
         throw new IllegalArgumentException(
           "unsupported address mode for store: " + _operands(pos).addressMode)
@@ -473,16 +473,16 @@ class GlulxVM {
   // this does *NOT* push a call stub
   private def callFunction(funaddr : Int) {
     // create call frame (might have to be pushed to the state class)
-    state.pushInt(0) // call frame size
-    state.pushInt(0) // locals position
+    _state.pushInt(0) // call frame size
+    _state.pushInt(0) // locals position
 
-    val funtype = state.memByteAt(funaddr) & 0xff
+    val funtype = _state.memByteAt(funaddr) & 0xff
     val numDescriptors = readLocalDescriptors(funaddr + 1)
     val localDescriptorSize = setLocalDescriptorsToCallFrame(numDescriptors)
 
     // now that we know the size of the local descriptors section, we set
     // the position of locals
-    state.setIntInStack(state.fp + Stack.OffsetLocalsPos,
+    _state.setIntInStack(_state.fp + Stack.OffsetLocalsPos,
                          localDescriptorSize + 8)
     val localSectionSize = setLocalsToCallFrame(numDescriptors)
     
@@ -490,15 +490,15 @@ class GlulxVM {
       // push arguments backwards, then the number of arguments
       var i = 0
       while (i < _numArguments) {
-        state.pushInt(_arguments(_numArguments - i - 1))
+        _state.pushInt(_arguments(_numArguments - i - 1))
         i += 1
       }
-      state.pushInt(_numArguments)
+      _state.pushInt(_numArguments)
     } else if (funtype == 0xc1) { // local-arg type
       // Copy arguments on the stack backwards to the locals
       var i = 0
       while (i < _numArguments) {
-        state.setLocal(i, _arguments(i))
+        _state.setLocal(i, _arguments(i))
         i += 1
       }
     } else {
@@ -507,23 +507,23 @@ class GlulxVM {
     }
 
     // set frame len
-    state.setIntInStack(state.fp, state.localsPos + localSectionSize)
+    _state.setIntInStack(_state.fp, _state.localsPos + localSectionSize)
     // jump to the code
-    state.pc = funaddr + 1 + GlulxVM.SizeLocalDescriptor * numDescriptors
+    _state.pc = funaddr + 1 + GlulxVM.SizeLocalDescriptor * numDescriptors
   }
-  
+
   // normal function call, called by the VM itself
   private def prepareCall(funaddr : Int, storeLocation : Operand) {
     if (storeLocation != null) {
-      state.pushCallStub(storeLocation)
-      state.fp = state.sp
+      _state.pushCallStub(storeLocation)
+      _state.fp = _state.sp
     }
     if (_accelSystem.isAccelerated(funaddr)) {
       // 4 dummy ints on the stack to trick the check
-      state.pushInt(0)
-      state.pushInt(0)
-      state.pushInt(0)
-      state.pushInt(0)
+      _state.pushInt(0)
+      _state.pushInt(0)
+      _state.pushInt(0)
+      _state.pushInt(0)
       _accelSystem.call(funaddr, _arguments, _numArguments)
     } else {
       callFunction(funaddr)
@@ -532,8 +532,8 @@ class GlulxVM {
   
   // generic function call, called by string decoding
   def prepareCall(funaddr : Int, destType: Int, destAddr: Int) {
-    state.pushCallStub(destType, destAddr)
-    state.fp = state.sp
+    _state.pushCallStub(destType, destAddr)
+    _state.fp = _state.sp
     callFunction(funaddr)
   }
   
@@ -542,10 +542,10 @@ class GlulxVM {
     _numArguments = numArgs
     var i = 0
     while (i < _numArguments) {
-      _arguments(i) = state.popInt
+      _arguments(i) = _state.popInt
       i += 1
     }
-    state.sp = state.fp
+    _state.sp = _state.fp
     prepareCall(funaddr, null)
   }
 
@@ -590,8 +590,8 @@ class GlulxVM {
       i += 1
     }
     _numArguments = args.length
-    state.pushCallStub(destType, destAddr, pcVal, fpVal)
-    state.fp = state.sp
+    _state.pushCallStub(destType, destAddr, pcVal, fpVal)
+    _state.fp = _state.sp
     callFunction(funaddr)
   }
   def callWithArgs(destType: Int, destAddr: Int, pcVal: Int, fpVal: Int,
@@ -602,8 +602,8 @@ class GlulxVM {
       i += 1
     }
     _numArguments = args.length
-    state.pushCallStub(destType, destAddr, pcVal, fpVal)
-    state.fp = state.sp
+    _state.pushCallStub(destType, destAddr, pcVal, fpVal)
+    _state.fp = _state.sp
     callFunction(funaddr)
   }
 
@@ -614,7 +614,7 @@ class GlulxVM {
       i += 1
     }
     _numArguments = args.length
-    state.fp = state.sp
+    _state.fp = _state.sp
     callFunction(funaddr)
   }
   def callWithArgsNoCallStub(funaddr: Int, args: Int*) {
@@ -624,32 +624,32 @@ class GlulxVM {
       i += 1
     }
     _numArguments = args.length
-    state.fp = state.sp
+    _state.fp = _state.sp
     callFunction(funaddr)
   }
 
   // Returns from a function
   def popCallStub(retval: Int) {
-    if (state.sp < state.fp + 12) {
+    if (_state.sp < _state.fp + 12) {
       throw new IllegalStateException("popCallStub(), stack is too small !!")
     }
-    state.sp = state.fp
-    if (state.sp == 0) {
+    _state.sp = _state.fp
+    if (_state.sp == 0) {
       // return from entry function -> Quit
-      state.runState = VMRunStates.Halted
+      _state.runState = VMRunStates.Halted
     } else {
       // we can't use GlulxVM's popInt(), because it performs checks on
       // the call frame, which is exactly what we manipulate here
-      val fpValue  = state.popIntUnchecked
-      val pcValue  = state.popIntUnchecked
-      val destAddr = state.popIntUnchecked
-      val destType = state.popIntUnchecked
+      val fpValue  = _state.popIntUnchecked
+      val pcValue  = _state.popIntUnchecked
+      val destAddr = _state.popIntUnchecked
+      val destType = _state.popIntUnchecked
       if (DestTypes.isStringDestType(destType)) {
         handleStringCallStub(destType, destAddr, pcValue, fpValue)
       } else { // regular behaviour
-        state.fp = fpValue
-        state.pc = pcValue
-        state.storeResult(destType, destAddr, retval)
+        _state.fp = fpValue
+        _state.pc = pcValue
+        _state.storeResult(destType, destAddr, retval)
       }
     }
   }
@@ -678,7 +678,7 @@ class GlulxVM {
   // *********************************
   private def doBranch(offset: Int) {
     if (offset == 0 || offset == 1) popCallStub(offset)
-    else state.pc += offset - 2
+    else _state.pc += offset - 2
   }
 
   // ***********************************************************************
@@ -799,7 +799,7 @@ class GlulxVM {
         _numArguments = getOperand(1)
         var i = 0
         while (i < _numArguments) {
-          _arguments(i) = state.popInt
+          _arguments(i) = _state.popInt
           i += 1
         }
         prepareCall(funaddr, _operands(2))
@@ -810,26 +810,26 @@ class GlulxVM {
         if (_operands(0).addressMode == AddressModes.Stack ||
             _operands(1).addressMode == AddressModes.Stack) {
           val branchOffset = getOperand(1)
-          state.pushCallStub(_operands(0))
-          storeAtOperand(0, state.sp) // catch token
+          _state.pushCallStub(_operands(0))
+          storeAtOperand(0, _state.sp) // catch token
           doBranch(branchOffset)
         } else {
-          state.pushCallStub(_operands(0))
-          storeAtOperand(0, state.sp) // catch token
+          _state.pushCallStub(_operands(0))
+          storeAtOperand(0, _state.sp) // catch token
           doBranch(getOperand(1))
         }
       case 0x33  => // throw
         val storeVal   = getOperand(0)
         val catchToken = getOperand(1)
         logger.info("@throw %d %d CURRENT SP = %d".format(storeVal, catchToken,
-                                                          state.sp))
-        if (state.sp < catchToken)
+                                                          _state.sp))
+        if (_state.sp < catchToken)
           throw new IllegalStateException("@throw: catch token > current SP !!!")
-        state.sp = catchToken
-        logger.info("@throw, SP is now: %d\n".format(state.sp))
-        state.popCallStubThrow(storeVal)
+        _state.sp = catchToken
+        logger.info("@throw, SP is now: %d\n".format(_state.sp))
+        _state.popCallStubThrow(storeVal)
         logger.info("@throw, after popCallStub SP is now: %d\n"
-                    .format(state.sp))
+                    .format(_state.sp))
       case 0x34  => // tailcall
         tailCall(getOperand(0), getOperand(1))
       case 0x40  => // copy
@@ -845,15 +845,15 @@ class GlulxVM {
       case 0x48  => // aload
         val arr   = getOperand(0)
         val index = getSignedOperand(1)
-        storeAtOperand(2, state.memIntAt(arr + index * 4))
+        storeAtOperand(2, _state.memIntAt(arr + index * 4))
       case 0x49  => // aloads
         val arr = getOperand(0)
         val index = getSignedOperand(1)
-        storeAtOperand(2, state.memShortAt(arr + index * 2))
+        storeAtOperand(2, _state.memShortAt(arr + index * 2))
       case 0x4a  => // aloadb
         val arr    = getOperand(0)
         val index  = getSignedOperand(1)
-        storeAtOperand(2, state.memByteAt(arr + index))
+        storeAtOperand(2, _state.memByteAt(arr + index))
       case 0x4b  => // aloadbit
         val addr      = getOperand(0)
         val bitOffset = getSignedOperand(1)
@@ -866,20 +866,20 @@ class GlulxVM {
         }
         val mask = 1 << bitnum
         val test =
-          if ((state.memByteAt(memAddr) & mask) == mask) 1 else 0
+          if ((_state.memByteAt(memAddr) & mask) == mask) 1 else 0
         storeAtOperand(2, test)
       case 0x4c  => // astore
         val arr = getOperand(0)
         val index = getSignedOperand(1)
-        state.setMemIntAt(arr + index * 4, getOperand(2))
+        _state.setMemIntAt(arr + index * 4, getOperand(2))
       case 0x4d  => // astores
         val arr = getOperand(0)
         val index = getSignedOperand(1)
-        state.setMemShortAt(arr + index * 2, getOperand(2))
+        _state.setMemShortAt(arr + index * 2, getOperand(2))
       case 0x4e  => // astoreb
         val arr   = getOperand(0)
         val index = getSignedOperand(1)
-        state.setMemByteAt(arr + index, getOperand(2))
+        _state.setMemByteAt(arr + index, getOperand(2))
       case 0x4f  => // astorebit
         val addr      = getOperand(0)
         val bitOffset = getSignedOperand(1)
@@ -891,26 +891,26 @@ class GlulxVM {
           bitnum += 8
         }
         if (getOperand(2) == 0) { // clear
-          state.setMemByteAt(memAddr,
-              state.memByteAt(memAddr) & (~(1 << bitnum) & 0xff))
+          _state.setMemByteAt(memAddr,
+                              _state.memByteAt(memAddr) & (~(1 << bitnum) & 0xff))
         } else { // set
-          state.setMemByteAt(memAddr,
-              state.memByteAt(memAddr) | ((1 << bitnum) & 0xff))
+          _state.setMemByteAt(memAddr,
+              _state.memByteAt(memAddr) | ((1 << bitnum) & 0xff))
         }
       case 0x50  => // stkcount
-        storeAtOperand(0, state.numStackValuesInCallFrame)
+        storeAtOperand(0, _state.numStackValuesInCallFrame)
       case 0x51  => // stkpeek
-        storeAtOperand(1, state.stackPeek(getOperand(0)))
+        storeAtOperand(1, _state.stackPeek(getOperand(0)))
       case 0x52  => // stkswap
-        state.stackSwap
+        _state.stackSwap
       case 0x53  => // stkroll
-        state.stackRoll(getOperand(0), getSignedOperand(1))
+        _state.stackRoll(getOperand(0), getSignedOperand(1))
       case 0x54  => // stkcopy
         val numElems = getOperand(0)
-        val copyStart = state.sp - Types.SizeInt * numElems
+        val copyStart = _state.sp - Types.SizeInt * numElems
         var i = 0
         while (i < numElems) {
-          state.pushInt(state.getIntInStack(copyStart + i * Types.SizeInt))
+          _state.pushInt(_state.getIntInStack(copyStart + i * Types.SizeInt))
           i += 1
         }
       case 0x70  => //streamchar
@@ -925,26 +925,26 @@ class GlulxVM {
         val selector = getOperand(0)
         val arg      = getOperand(1)
         if (selector == GlulxGestalt.MAllocHeap) {
-          storeAtOperand(2, state.heapStart)
+          storeAtOperand(2, _state.heapStart)
         } else {
           storeAtOperand(2, GlulxGestalt.gestalt(selector, arg))
         }
       case 0x101 => // debugtrap
         fatal("[** ERROR, VM HALTED WITH CODE %d **]".format(getOperand(0)))
       case 0x102 => // getmemsize
-        storeAtOperand(0, state.memsize)
+        storeAtOperand(0, _state.memsize)
       case 0x103 => // setmemsize
         val newSize = getOperand(0)
         logger.info("@setmemsize %d\n".format(newSize))
         if (newSize < header.endmem) fatal("@setmemsize: size must be >= ENDMEM")
         if (newSize % 256 != 0) fatal("@setmemsize: size must be multiple of 256")
-        if (state.heapIsActive)
+        if (_state.heapIsActive)
           fatal("@setmemsize: can not set while heap is active")
-        state.memsize = newSize
+        _state.memsize = newSize
         // Result is 0 for success, 1 for fail
         0
       case 0x104 => // jumpabs
-        state.pc = getOperand(0)
+        _state.pc = getOperand(0)
       case 0x110 => // random
         val range = getSignedOperand(0)
         if (range < 0) {
@@ -960,39 +960,39 @@ class GlulxVM {
         if (seed == 0) _random.setSeed(seed)
         else _random.setSeed(System.currentTimeMillis)
       case 0x120 => // quit
-        state.runState = VMRunStates.Halted
+        _state.runState = VMRunStates.Halted
       case 0x121 => // verify
-        storeAtOperand(0, state.verify)
+        storeAtOperand(0, _state.verify)
       case 0x122 => // restart
         restart
       case 0x123 => // save
         val streamId = getOperand(0)
-        val writer = new SaveGameWriter(_glk, streamId, state, _operands(1))
+        val writer = new SaveGameWriter(_glk, streamId, _state, _operands(1))
         val result = writer.writeGameFile
         if (result) storeAtOperand(1, 0)
         else storeAtOperand(1, 1)
       case 0x124 => // restore
         val streamId = getOperand(0)
-        val loader = new SaveGameLoader(_glk, streamId, state, _originalRam)
+        val loader = new SaveGameLoader(_glk, streamId, _state, _originalRam)
         if (loader.loadGame) {
-          state.popCallStubThrow(-1)
+          _state.popCallStubThrow(-1)
         } else storeAtOperand(1, 1) // fail for now
       case 0x125 => // saveundo
-        _undoSnapshots ::= state.createSnapshot(_operands(0))
+        _undoSnapshots ::= _state.createSnapshot(_operands(0))
         storeAtOperand(0, 0) // Always say SUCCEED
       case 0x126 => // restoreundo
         if (_undoSnapshots != Nil) {
-          state.readSnapshot(_undoSnapshots.head, _protectionStart,
-                             _protectionLength)
+          _state.readSnapshot(_undoSnapshots.head, _protectionStart,
+                              _protectionLength)
           _undoSnapshots = _undoSnapshots.tail
-          state.popCallStubThrow(-1)
+          _state.popCallStubThrow(-1)
         } else {
           storeAtOperand(0, 1) // fail
         }
         logger.info(
-          "RESTORED WITH PC: %02x AND FP: %d SP: %d".format(state.pc,
-                                                            state.fp,
-                                                            state.sp))
+          "RESTORED WITH PC: %02x AND FP: %d SP: %d".format(_state.pc,
+                                                            _state.fp,
+                                                            _state.sp))
       case 0x127 => // protect
         _protectionStart  = getOperand(0)
         _protectionLength = getOperand(1)
@@ -1002,7 +1002,7 @@ class GlulxVM {
         val args = new Array[Int](numArgs)
         var i = 0
         while (i < numArgs) {
-          args(i) = state.popInt
+          args(i) = _state.popInt
           i += 1
         }
         val glkResult = _glkDispatch.dispatch(glkId, args)
@@ -1031,20 +1031,20 @@ class GlulxVM {
               "IO system[%d] not supported".format(iosys))
         }
       case 0x150 => // linearsearch
-        val search = new LinearSearch(state, getOperand(0), getOperand(1),
+        val search = new LinearSearch(_state, getOperand(0), getOperand(1),
                                       getOperand(2), getOperand(3),
                                       getOperand(4), getOperand(5),
                                       getOperand(6))
         storeAtOperand(7, search.search)
       case 0x151 => // binarysearch
-        val search = new BinarySearch(state, getOperand(0), getOperand(1),
+        val search = new BinarySearch(_state, getOperand(0), getOperand(1),
                                       getOperand(2), getOperand(3),
                                       getOperand(4), getOperand(5),
                                       getOperand(6))
         val result = search.search
         storeAtOperand(7, result)
       case 0x152 => // linkedsearch
-        val search = new LinkedSearch(state, getOperand(0), getOperand(1),
+        val search = new LinkedSearch(_state, getOperand(0), getOperand(1),
                                       getOperand(2), getOperand(3),
                                       getOperand(4), getOperand(5))
         storeAtOperand(6, search.search)
@@ -1058,13 +1058,13 @@ class GlulxVM {
         doCallf3(getOperand(0), _operands(4), getOperand(1), getOperand(2),
                  getOperand(3))
       case 0x170 => // mzero
-        state.mzero(getOperand(0), getOperand(1))
+        _state.mzero(getOperand(0), getOperand(1))
       case 0x171 => // mcopy
-        state.mcopy(getOperand(0), getOperand(1), getOperand(2))
+        _state.mcopy(getOperand(0), getOperand(1), getOperand(2))
       case 0x178 => // malloc
-        storeAtOperand(1, state.malloc(getOperand(0)))
+        storeAtOperand(1, _state.malloc(getOperand(0)))
       case 0x179 => // mfree
-        state.mfree(getOperand(0))
+        _state.mfree(getOperand(0))
       case 0x180  => // accelfunc
         _accelSystem.setFunction(getOperand(0), getOperand(1))
       case 0x181  => // accelparam
@@ -1144,7 +1144,7 @@ class GlulxVM {
 
   // decode instruction at current pc
   def doInstruction {
-    val pc = state.pc
+    //val pc = _state.pc
     decodeOpcodeNum
     readOperands
 
@@ -1154,10 +1154,10 @@ class GlulxVM {
     builder.append("%04d: $%04x - @%s".format(iterations, pc, Opcodes.name(_opcodeNum)))
     val numOperands = Opcodes.numOperands(_opcodeNum)
     for (i <- 0 until numOperands) {
-      builder.append(" %s".format(_operands(i).toString(state)))
+      builder.append(" %s".format(_operands(i).toString(_state)))
     }
-    builder.append(" {FP = %d SP = %d} ".format(state.fp, state.sp))
-    builder.append(" " + state.stackValuesAsString)
+    builder.append(" {FP = %d SP = %d} ".format(_state.fp, _state.sp))
+    builder.append(" " + _state.stackValuesAsString)
     logger.info(builder.toString)
     */
     // Debugging end
@@ -1168,6 +1168,6 @@ class GlulxVM {
 
   def fatal(msg: String) {
     _glk.put_java_string(msg)
-    state.runState = VMRunStates.Halted
+    _state.runState = VMRunStates.Halted
   }
 }
