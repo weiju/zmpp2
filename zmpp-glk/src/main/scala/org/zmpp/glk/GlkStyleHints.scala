@@ -214,10 +214,15 @@ class StyleHints {
   reset
 
   def reset {
-    for (styleNum <- 0 until StyleType.Num) {
-      for (hintNum <- 0 until StyleHintType.Num) {
+    var styleNum = 0
+    var hintNum = 0
+    while (styleNum < StyleType.Num) {
+      hintNum = 0
+      while (hintNum < StyleHintType.Num) {
         reset(styleNum, hintNum)
+        hintNum += 1
       }
+      styleNum += 1
     }
   }
   def get(styleNum: Int, hintNum: Int): Int = {
@@ -242,8 +247,10 @@ class StyleHints {
     else if (style1 < 0 || style2 < 0 ||
              style1 >= StyleType.Num || style2 >= StyleType.Num) false
     else {
-      for (hintNum <- 0 until StyleHintType.Num) {
+      var hintNum = 0
+      while (hintNum < StyleHintType.Num) {
         if (_hints(style1)(hintNum) != _hints(style2)(hintNum)) return true
+        hintNum += 1
       }
       false
     }

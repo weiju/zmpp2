@@ -106,10 +106,16 @@ class GlulxVM {
   def memShortAt(addr: Int): Int = _state.memShortAt(addr)
 
   // initialization
-  for (i <- 0 until GlulxVM.MaxLocalDescriptors)
+  var i = 0
+  while (i < GlulxVM.MaxLocalDescriptors) {
     _localDescriptors(i) = new LocalDescriptor
-  for (i <- 0 until GlulxVM.MaxOperands) _operands(i) = new Operand
-  
+    i += 1
+  }
+  i = 0
+  while (i < GlulxVM.MaxOperands) {
+    _operands(i) = new Operand
+    i += 1
+  }
   def init(storyBytes: Array[Byte], aBlorbData: BlorbData) {
     blorbData = aBlorbData
     _glk = new Glk(new EventManager(_state))

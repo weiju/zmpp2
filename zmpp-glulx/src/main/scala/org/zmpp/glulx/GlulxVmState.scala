@@ -123,13 +123,15 @@ class GlulxVMState extends VMState {
                                   protectionStart: Int,
                                   protectionLength: Int) {
     if (protectionLength > 0) {
-      for (i <- 0 until numBytes) {
+      var i = 0
+      while (i < numBytes) {
         val destAddress = destOffset + i
         if (destAddress < protectionStart ||
             destAddress >= protectionStart + protectionLength) {
           //_story.setByteAt(destAddress, memarray(i))
           _storyBytes(destAddress) = memarray(i).asInstanceOf[Byte]
         }
+        i += 1
       }
     } else {
       //_story.copyBytesFrom(memarray, srcOffset, destOffset, numBytes)
@@ -173,9 +175,11 @@ class GlulxVMState extends VMState {
   private def stackToStringFromTo(start: Int, end : Int) = {
     val builder = new StringBuilder
     builder.append("(Stack [" + start + "-" + end + ")) = [")
-    for (i <- start until end) {
+    var i = start
+    while (i < end) {
       if (i > start) builder.append(", ")
       builder.append("%02x".format(_stackArray(i)))
+      i += 1
     }
     builder.append("]")
     builder.toString
@@ -378,13 +382,19 @@ class GlulxVMState extends VMState {
     else if (fitsOnHeap(srcAddr, numBytes) && fitsOnHeap(destAddr, numBytes)) {
       _memheap.copyBytesTo(destAddr, srcAddr, numBytes)
     } else {
-      for (i <- 0 until numBytes) {
+      var i = 0
+      while (i < numBytes) {
         setMemByteAt(destAddr + i, memByteAt(srcAddr + i))
+        i += 1
       }
     }
   }
   def mzero(numBytes: Int, addr: Int) {
-    for (i <- 0 until numBytes) setMemByteAt(addr + i, 0)
+    var i = 0
+    while (i < numBytes) {
+      setMemByteAt(addr + i, 0)
+      i += 1
+    }
   }
   def memsize   = if (_memheap.active) _memheap.maxAddress else _extEnd
   def memsize_=(newSize: Int) = _setExtendedMem(newSize - _extstart)
@@ -571,9 +581,11 @@ class GlulxVMState extends VMState {
     val stackStart = _fp + frameLen
     val numElems = numStackValuesInCallFrame
     builder.append("[")
-    for (i <- 0 until numElems) {
+    var i = 0
+    while (i < numElems) {
       if (i > 0) builder.append(", ")
       builder.append("#$%02x".format(getIntInStack(stackStart + (i * 4))))
+      i += 1
     }
     builder.append("]")
     builder.toString

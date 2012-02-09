@@ -110,7 +110,13 @@ class GlkIOSystem {
   def putChar(c: Char)   = _currentStream.putChar(c)
   def putCharUni(c: Int) = _currentStream.putCharUni(c)
   // For convenient output (debugging etc.)
-  def putJavaString(str: String) = for (c <- str) putCharUni(c)
+  def putJavaString(str: String) = {
+    var i = 0
+    while (i < str.length) {
+      putCharUni(str.charAt(i))
+      i += 1
+    }
+  }
   def setHyperlink(linkval: Int) = _currentStream.setHyperlink(linkval)
   def setHyperlinkStream(streamId: Int, linkval: Int) {
     streamWithId(streamId).setHyperlink(linkval)

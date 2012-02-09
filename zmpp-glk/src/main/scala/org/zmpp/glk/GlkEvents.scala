@@ -110,10 +110,12 @@ class LineInputEvent(val windowId: Int, input: String) extends GlkEvent {
   def process(eventManager: EventManager, state: VMState) {
     val lineRequest = eventManager.lineRequestForWindow(windowId)
     val buffer = lineRequest.buffer
-    for (i <- 0 until input.length) {
+    var i = 0
+    while (i < input.length) {
       if (lineRequest.useUnicode) {
         state.setMemIntAt(buffer + i * 4, input.charAt(i))
       } else state.setMemByteAt(buffer + i, input.charAt(i))
+      i += 1
     }
     eventManager.removeLineInputRequestInWindow(windowId)
     eventManager.setEventAndResume(eventType, windowId, input.length, 0)
@@ -393,8 +395,10 @@ class EventManager(_state: VMState) {
       val inputLength = if (incompleteInput == null) 0
                         else incompleteInput.length
       val buffer = lineRequest.buffer
-      for (i <- 0 until inputLength) {
+      var i = 0
+      while (i < inputLength) {
         _state.setMemByteAt(buffer + i, incompleteInput.charAt(i))
+        i += 1
       }
       setEventStruct(eventPtr, GlkEventType.LineInput, winId, inputLength, 0)
     }

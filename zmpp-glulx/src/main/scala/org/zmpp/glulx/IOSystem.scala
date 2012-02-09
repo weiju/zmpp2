@@ -309,8 +309,10 @@ abstract class IOSystem(vm: GlulxVM, val rock: Int) {
         val ref = vm.memIntAt(nodeAddr + 1)
         val argCount = vm.memIntAt(nodeAddr + 5)
         val args = new Array[Int](argCount)
-        for (i <- 0 until argCount) {
+        var i = 0
+        while (i < argCount) {
           args(i) = vm.memIntAt(nodeAddr + 9 + i * 4)
+          i += 1
         }
         handleIndirectReferenceWithArgs(ref, args,
                                         inBetween,
@@ -320,8 +322,10 @@ abstract class IOSystem(vm: GlulxVM, val rock: Int) {
         val refptr = vm.memIntAt(nodeAddr + 1)
         val argCount = vm.memIntAt(nodeAddr + 5)
         val args = new Array[Int](argCount)
-        for (i <- 0 until argCount) {
+        var i = 0
+        while (i < argCount) {
           args(i) = vm.memIntAt(nodeAddr + 9 + i * 4)
+          i += 1
         }
         handleIndirectReferenceWithArgs(vm.memIntAt(refptr), args,
                                         inBetween,

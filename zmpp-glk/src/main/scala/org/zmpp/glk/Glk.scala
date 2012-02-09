@@ -125,10 +125,12 @@ class Glk(val eventManager: EventManager) {
   def char_to_upper(c: Char): Char = Character.toUpperCase(c)
   
   def bufferToJavaString(state: VMState, buf: Int, numchars: Int): String = {
-    val builder = new StringBuffer
-    for (i <- 0 until numchars) {
+    val builder = new java.lang.StringBuilder
+    var i = 0
+    while (i < numchars) {
       val addr = buf + i * 4
       builder.appendCodePoint(state.memIntAt(addr))
+      i += 1
     }
     builder.toString
   }
@@ -139,9 +141,11 @@ class Glk(val eventManager: EventManager) {
     logger.info("buffer_to_lower_case_uni, buf = %02x, len = %d " +
                 "numchars = %d numResultChars = %d".format(
                 buf, len, numchars, lowerCased.length))
-    for (i <- 0 until numResultChars) {
+    var i = 0
+    while (i < numResultChars) {
       val addr = buf + i * 4
       state.setMemIntAt(addr, lowerCased.charAt(i).asInstanceOf[Int])
+      i += 1
     }
     lowerCased.length
   }
@@ -152,9 +156,11 @@ class Glk(val eventManager: EventManager) {
     logger.info("buffer_to_upper_case_uni, buf = %02x, len = %d " + 
                 "numchars = %d numResultChars = %d".format(
                 buf, len, numchars, upperCased.length))
-    for (i <- 0 until numResultChars) {
+    var i = 0
+    while (i < numResultChars) {
       val addr = buf + i * 4
       state.setMemIntAt(addr, upperCased.charAt(i).asInstanceOf[Int])
+      i += 1
     }
     upperCased.length
   }
@@ -163,9 +169,11 @@ class Glk(val eventManager: EventManager) {
     // TODO: Apply 32-bit code point for the first character
     state.setMemIntAt(buf, Character.toUpperCase(state.memIntAt(buf).toChar))
     if (lowerrest != 0) {
-      for (i <- 1 until numchars) {
+      var i = 1
+      while (i < numchars) {
         val addr = buf + i * 4
         state.setMemIntAt(addr, Character.toLowerCase(state.memIntAt(addr).toChar))
+        i += 1
       }
     }
     numchars
@@ -173,10 +181,18 @@ class Glk(val eventManager: EventManager) {
 
   // Printing
   def put_buffer(state: VMState, buf: Int, len: Int) {
-    for (i <- 0 until len) put_char(state.memByteAt(buf + i).toChar)
+    var i = 0
+    while (i < len) {
+      put_char(state.memByteAt(buf + i).toChar)
+      i += 1
+    }
   }
   def put_buffer_uni(state: VMState, buf: Int, len: Int) {
-    for (i <- 0 until len) put_char_uni(state.memIntAt(buf + i * 4))
+    var i = 0
+    while (i < len) {
+      put_char_uni(state.memIntAt(buf + i * 4))
+      i += 1
+    }
   }
   def put_char(c: Char) = ioSystem.putChar(c)
   def put_char_uni(c: Int) = ioSystem.putCharUni(c)
@@ -348,12 +364,18 @@ class Glk(val eventManager: EventManager) {
   }
   
   def put_buffer_stream(state: VMState, streamId: Int, buf: Int, len: Int) {
-    for (i <- 0 until len)
+    var i = 0
+    while (i < len) {
       put_char_stream(streamId, state.memByteAt(buf + i).toChar)
+      i += 1
+    }
   }
   def put_buffer_stream_uni(state: VMState, streamId: Int, buf: Int, len: Int) {
-    for (i <- 0 until len)
+    var i = 0
+    while (i < len) {
       put_char_stream_uni(streamId, state.memIntAt(buf + i * 4))
+      i += 1
+    }
   }
   def put_char_stream(streamId: Int, c: Char) = ioSystem.putChar(streamId, c)
   def put_char_stream_uni(streamId: Int, c: Int)  =
