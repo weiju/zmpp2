@@ -28,6 +28,8 @@
  */
 package org.zmpp.glulx
 
+import scala.annotation.switch
+
 //****************************************************************************
 // **** Glulx Search Package
 // ****************************************************************************
@@ -40,7 +42,7 @@ abstract class GlulxSearch(state: GlulxVMState, keySize: Int, options: Int) {
   def search: Int
 
   protected def truncateKey(aKey: Int) = {
-    keySize match {
+    (keySize: @switch) match {
       case 1 => aKey & 0xff
       case 2 => aKey & 0xffff
       case _ => aKey
@@ -57,7 +59,7 @@ extends GlulxSearch(state, keySize, options) {
 
   def keyAt(index: Int) = {
     val addr = keyAddress(index)
-    keySize match {
+    (keySize: @switch) match {
       case 1 => state.memByteAt(keyAddress(index))
       case 2 => state.memShortAt(keyAddress(index))
       case 4 => state.memIntAt(keyAddress(index))
@@ -180,7 +182,7 @@ class LinkedSearch(state: GlulxVMState, key: Int, keySize: Int, start: Int,
   extends GlulxSearch(state, keySize, options) {
 
   def keyAtAddress(addr: Int) = {
-    keySize match {
+    (keySize: @switch) match {
       case 1 => state.memByteAt(addr)
       case 2 => state.memShortAt(addr)
       case 4 => state.memIntAt(addr)
@@ -230,4 +232,3 @@ class LinkedSearch(state: GlulxVMState, key: Int, keySize: Int, start: Int,
     0
   }
 }
-
