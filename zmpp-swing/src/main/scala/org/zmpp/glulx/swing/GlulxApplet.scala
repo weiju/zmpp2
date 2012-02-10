@@ -58,15 +58,16 @@ class GlulxApplet extends JApplet with SwingGlkScreenUI {
         in.close
       }
       if (url.getFile.endsWith("ulx")) {
-        val story = new DefaultMemory(bytes)
-        _vm.init(story, null) 
+        _vm.init(bytes, null) 
       } else {
         // BLORB
         val iffdata = new DefaultMemory(bytes)
         val formchunk = new DefaultFormChunk(iffdata)
         val blorbData = new BlorbData(formchunk)
         val story = formchunk.chunkDataForId("GLUL")
-        _vm.init(story, blorbData) 
+        val storyBytes = new Array[Byte](story.size)
+        story.copyBytesTo(storyBytes, 0, story.size)
+        _vm.init(storyBytes, blorbData)
       }
     } else {
       logger.severe("NOT INITIALIZED (CONTENTLENGTH UNKNOWN)")

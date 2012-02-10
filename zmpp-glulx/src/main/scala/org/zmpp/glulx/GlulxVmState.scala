@@ -94,7 +94,6 @@ class GlulxVMState extends VMState {
   }
 
   private def initStack {
-    //stack      = new Stack(_header.stacksize)
     _stackArray = new Array[Byte](_header.stacksize)
     _sp         = 0
   }

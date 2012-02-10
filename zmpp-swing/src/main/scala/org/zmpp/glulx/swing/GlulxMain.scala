@@ -61,9 +61,9 @@ object Glulx {
   }
   
   def readUlxFile(file : File) = {
-    val story = new DefaultMemory0(readFileData(file))
+    val storyBytes = readFileData(file)
     _vm = new GlulxVM
-    _vm.init(story, null)
+    _vm.init(storyBytes, null)
     _vm
   }
   def readGblorbFile(file: File) = {
@@ -72,8 +72,9 @@ object Glulx {
     val blorbData = new BlorbData(formchunk)
     val story = formchunk.chunkDataForId("GLUL")
     _vm = new GlulxVM
-    _vm.init(story, blorbData)
-    
+    val storyBytes = new Array[Byte](story.size)
+    story.copyBytesTo(storyBytes, 0, story.size)
+    _vm.init(storyBytes, blorbData)
     _vm
   }
 }
