@@ -228,10 +228,10 @@ class GlkDispatch(_state: VMState, glk: Glk) {
     returnIterateResult(glk.fileref_iterate(args(0)), args(1))
   }
   private def _gestalt(args: Array[Int]): Int = {
-    glk.gestalt(GestaltSelector(args(0)), args(1))
+    glk.gestalt(args(0), args(1))
   }
   private def _gestalt_ext(args: Array[Int]): Int = {
-    glk.gestalt_ext(_state, GestaltSelector(args(0)), args(1), args(2), args(3))
+    glk.gestalt_ext(_state, args(0), args(1), args(2), args(3))
   }
   private def _get_buffer_stream(args: Array[Int]): Int = {
     glk.get_buffer_stream(_state, args(0), args(1), args(2))

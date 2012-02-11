@@ -88,10 +88,10 @@ class Glk(val eventManager: EventManager) {
   def set_interrupt_handler(state: VMState, func: Int) {
     logger.warning("glk_set_interrupt_handler() has no effect in ZMPP/Glk")
   }
-  def gestalt(selector: GestaltSelector.Value, arg: Int) : Int = {
+  def gestalt(selector: Int, arg: Int) : Int = {
     gestalt_ext(null, selector, arg, 0, 0)
   }
-  def gestalt_ext(state: VMState, selector: GestaltSelector.Value, arg: Int,
+  def gestalt_ext(state: VMState, selector: Int, arg: Int,
                   arrPtr: Int, arrlen: Int): Int = {
     import GestaltSelector._
     val  result = selector match {
@@ -227,10 +227,10 @@ class Glk(val eventManager: EventManager) {
   }
 
   def stylehint_set(wintype: Int, style: Int, hint: Int, value: Int) {
-    windowSystem.setStyleHint(GlkWindowType(wintype), style, hint, value)
+    windowSystem.setStyleHint(wintype, style, hint, value)
   }
   def stylehint_clear(wintype: Int, style: Int, hint: Int) {
-    windowSystem.clearStyleHint(GlkWindowType(wintype), style, hint)
+    windowSystem.clearStyleHint(wintype, style, hint)
   }
 
   // file references

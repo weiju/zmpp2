@@ -118,7 +118,7 @@ class GlkPairWindow(id: Int) extends GlkWindow(id, 0, 0) {
   var keyWindow    : GlkWindow = null// key window child
   var outputStream = NilStream
   var method       = 0
-  def wintype      = GlkWindowType.PairWindow.id
+  def wintype      = GlkWindowType.PairWindow
   def typeName     = "Pair"
   def isTextBuffer = false
   def isTextGrid   = false
@@ -201,7 +201,7 @@ extends GlkWindow(id, size, rock) {
 class GlkGraphicsUIWindow(id: Int, size: Int, rock: Int)
 extends GlkWindow(id, size, rock) {
   var outputStream = NilStream
-  def wintype      = GlkWindowType.Graphics.id
+  def wintype      = GlkWindowType.Graphics
   def styleHints   = null
   def typeName     = "Graphics"
   override def isGraphics = true
@@ -248,7 +248,7 @@ class GlkWindowSystem {
       else remain.head 
     }
   }
-  def clearStyleHint(wintype: GlkWindowType.Value, styleNum: Int, hintNum: Int) {
+  def clearStyleHint(wintype: Int, styleNum: Int, hintNum: Int) {
     wintype match {
       case GlkWindowType.TextBuffer =>
         _textbufferStyleHints.reset(styleNum, hintNum)
@@ -260,7 +260,7 @@ class GlkWindowSystem {
       case _ => // do nothing
     }
   }
-  def setStyleHint(wintype: GlkWindowType.Value, styleNum: Int, hintNum: Int,
+  def setStyleHint(wintype: Int, styleNum: Int, hintNum: Int,
                    value: Int) {
     wintype match {
       case GlkWindowType.TextBuffer =>
@@ -311,7 +311,7 @@ class GlkWindowSystem {
     val win = windowWithId(winId)
     if (win != null) win.ui.clear
   }
-  def createWindow(wintype: GlkWindowType.Value, size: Int, rock: Int) = {
+  def createWindow(wintype: Int, size: Int, rock: Int) = {
     logger.info("createWindow type: %s size: %d rock: %d".format(wintype, size,
                                                                  rock))
     val id = nextId
@@ -320,7 +320,7 @@ class GlkWindowSystem {
     val newWindow: GlkWindow = wintype match {
       case TextBuffer =>
         val window = new GlkUIWindow(id, size, rock) {
-          def wintype = GlkWindowType.TextBuffer.id
+          def wintype = GlkWindowType.TextBuffer
           def styleHints = _textbufferStyleHints
           def typeName = "TextBuffer"
           def isTextBuffer = true
@@ -330,7 +330,7 @@ class GlkWindowSystem {
         window
       case TextGrid   =>
         val window = new GlkUIWindow(id, size, rock) {
-          def wintype = GlkWindowType.TextGrid.id
+          def wintype = GlkWindowType.TextGrid
           def styleHints   = _textgridStyleHints
           def typeName     = "TextGrid"
           def isTextBuffer = false
@@ -398,7 +398,7 @@ class GlkWindowSystem {
     windowWithId(winId).ui.moveCursor(xpos, ypos)
   }
   def open(split: Int, method: Int, size: Int, wintype: Int, rock: Int): Int = {
-    val newWindow = createWindow(GlkWindowType(wintype), size, rock)
+    val newWindow = createWindow(wintype, size, rock)
     logger.info("open(), split: %d method: %d, size: %d, wintype: %d, rock: %d, ID = %d".format(split, method, size, wintype, rock, newWindow.id))
     if (split > 0) {
       splitWindow(windowWithId(split), newWindow, method)

@@ -133,43 +133,51 @@ object FunctionSelector extends Enumeration {
   val RequestLineEventUni      = Value(0x141, "glk_request_line_event_uni")
 }
 
-object GestaltSelector extends Enumeration {
-  val Version              = Value("Version")
-  val CharInput            = Value("CharInput")
-  val LineInput            = Value("LineInput")
-  val CharOutput           = Value("CharOutput")
-  val MouseInput           = Value("MouseInput")
-  val Timer                = Value("Timer")
-  val Graphics             = Value("Graphics")
-  val DrawImage            = Value("DrawImage")
-  val Sound                = Value("Sound")
-  val SoundVolume          = Value("SoundVolume")
-  val SoundNotify          = Value("SoundNotify")
-  val Hyperlinks           = Value("Hyperlinks")
-  val HyperlinkInput       = Value("HyperlinkInput")
-  val SoundMusic           = Value("SoundMusic")
-  val GraphicsTransparency = Value("GraphicsTransparency")
-  val Unicode              = Value("Unicode")
+object GestaltSelector {
+  val Version              = 0
+  val CharInput            = 1
+  val LineInput            = 2
+  val CharOutput           = 3
+  val MouseInput           = 4
+  val Timer                = 5
+  val Graphics             = 6
+  val DrawImage            = 7
+  val Sound                = 8
+  val SoundVolume          = 9
+  val SoundNotify          = 10
+  val Hyperlinks           = 11
+  val HyperlinkInput       = 12
+  val SoundMusic           = 13
+  val GraphicsTransparency = 14
+  val Unicode              = 15
+/*
+  val Names = Array("Version", "CharInput", "LineInput", "CharOutput",
+                    "MouseInput", "Timer", "Graphics", "DrawImage",
+                    "Sound", "SoundVolume", "SoundNotify", "Hyperlinks",
+                    "HyperlinkInput", "SoundMusic", "GraphicsTransparency",
+                    "Unicode")*/
 }
 
 /**
  * The available window types.
  */
-object GlkWindowType extends Enumeration {
-  val All        = Value("All")
-  val PairWindow = Value("Pair")
-  val Blank      = Value("Blank")
-  val TextBuffer = Value("TextBuffer")
-  val TextGrid   = Value("TextGrid")
-  val Graphics   = Value("Graphics")
+object GlkWindowType {
+  val All        = 0
+  val PairWindow = 1
+  val Blank      = 2
+  val TextBuffer = 3
+  val TextGrid   = 4
+  val Graphics   = 5
+  //val Names = ("All", "Pair", "Blank", "TextBuffer", "TextGrid", "Graphics")
 }
 
-object ImageAlign extends Enumeration {
-  val InlineUp     = Value(0x01, "InlineUp")
-  val InlineDown   = Value(0x02, "InlineDown")
-  val InlineCenter = Value(0x03, "InlineCenter")
-  val MarginLeft   = Value(0x04, "MarginLeft")
-  val MarginRight  = Value(0x05, "MarginRight")
+object ImageAlign {
+  val InlineUp     = 0x01
+  val InlineDown   = 0x02
+  val InlineCenter = 0x03
+  val MarginLeft   = 0x04
+  val MarginRight  = 0x05
+  //val Names = ("???", "InlineUp", "InlineDown", "InlineCenter", "MarginLeft", "MarginRight")
 }
 
 /**

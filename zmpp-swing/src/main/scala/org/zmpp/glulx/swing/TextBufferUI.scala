@@ -163,7 +163,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   def _drawImage(resnum: Int, alignId: Int) {
     _flush
     if (alignId > 0 && alignId <= 5) {
-      val align = ImageAlign(alignId)
+      // TODO: Align
     } else {
       logger.warning("INVALID ALIGNMENT ID: %d".format(alignId))
     }
