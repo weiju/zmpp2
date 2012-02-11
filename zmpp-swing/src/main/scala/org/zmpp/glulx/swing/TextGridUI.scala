@@ -82,11 +82,16 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     val text = new StringBuilder
     val nrows = numRows
     val ncols = numCols
-    for (i <- 0 until nrows) {
-      for (j <- 0 until ncols) {
+    var i = 0
+    var j = 0
+    while (i < nrows) {
+      j = 0
+      while (j < ncols) {
         text.append(" ")
+        j += 1
       }
       text.append("\n")
+      i += 1
     }
     style = StyleType.Normal
     setText("")

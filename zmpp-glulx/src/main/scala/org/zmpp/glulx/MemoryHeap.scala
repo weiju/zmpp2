@@ -31,7 +31,6 @@ package org.zmpp.glulx
 import java.util.logging._
 import java.util.List
 import java.util.ArrayList
-import java.util.Collections
 
 import org.zmpp.base._
 
