@@ -249,10 +249,13 @@ object AccelSystem {
   val MaxAccelParams = 9
 }
 
+case class AccelFuncEntry(callAddress: Int, func: AccelFunc)
+
 class AccelSystem(vm: GlulxVM) {
   private val logger = Logger.getLogger("glulx.accel")
-  private val _accelParams = new Array[Int](AccelSystem.MaxAccelParams)
-  private val _accelFunctions = new HashMap[Int, AccelFunc]
+  private[this] val _accelParams = new Array[Int](AccelSystem.MaxAccelParams)
+  private[this] val _accelFunctions    = new Array[AccelFuncEntry](100)
+  private[this] var _numAccelFuncs = 0
   var glk: Glk = null
 
   private def accelFuncFor(funcnum: Int): AccelFunc = {
@@ -269,26 +272,56 @@ class AccelSystem(vm: GlulxVM) {
         null
     }
   }
-  private def accelFuncForCallAddress(callAddress: Int) = {
-    _accelFunctions(callAddress)
+  private def accelFuncForCallAddress(callAddress: Int): AccelFunc = {
+    var i = 0
+    while (i < _numAccelFuncs) {
+      if (_accelFunctions(i).callAddress == callAddress) return _accelFunctions(i).func
+      i += 1
+    }
+    null
+  }
+
+  private def removeFuncForCallAddress(callAddress: Int) = {
+    var i = 0
+    var found = false
+    while (!found && i < _numAccelFuncs) {
+      if (_accelFunctions(i).callAddress == callAddress) {
+        found = true
+      } else i += 1
+    }
+    // now shift everything from i to the left to fill the gap
+    // TODO
+    while (i < _numAccelFuncs - 1) {
+      _accelFunctions(i) = _accelFunctions(i + 1)
+      i += 1
+    }
+    _numAccelFuncs -= 1
+  }
+  private def addFuncForCallAddress(callAddress: Int, func: AccelFunc) = {
+    _accelFunctions(_numAccelFuncs) = AccelFuncEntry(callAddress, func)
+    _numAccelFuncs += 1
   }
 
   def setParameter(index: Int, value: Int) = {
     if (index >= 0 && index <= 8) _accelParams(index) = value
   }
+
   def setFunction(accelFuncNum: Int, callAddress: Int) {
     //logger.info("accelfunc #$%02x #$%02x".format(accelFuncNum, callAddress))
-    if (accelFuncNum == 0) {
-      _accelFunctions.remove(callAddress)
-    } else {
+    if (accelFuncNum == 0) removeFuncForCallAddress(callAddress)
+    else {
       val accelFunc = accelFuncFor(accelFuncNum)
-      if (accelFunc != null) _accelFunctions(callAddress) = accelFuncFor(accelFuncNum)
+      if (accelFunc != null) addFuncForCallAddress(callAddress, accelFunc)
     }
   }
-  def isAccelerated(callAddress: Int) = _accelFunctions.contains(callAddress)
+
+  def isAccelerated(callAddress: Int) = {
+    _numAccelFuncs > 0 && accelFuncForCallAddress(callAddress) != null
+  }
+
   def call(callAddress: Int, args: Array[Int], numArgs: Int) = {
     //logger.info("Function address $%02x is accelerated - REPLACE (TODO)")
-    val func = _accelFunctions(callAddress)
+    val func = accelFuncForCallAddress(callAddress)
     val retval = func.call(args, numArgs)
     vm.popCallStub(retval)
   }
