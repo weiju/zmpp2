@@ -36,8 +36,8 @@ class GlkDispatch(_state: VMState, glk: Glk) {
   val dispatchLogger = Logger.getLogger("glk.dispatch")
 
   def dispatch(id: Int, args: Array[Int]) : Int = {
-    import FunctionSelector._
 /*
+    import FunctionSelector._
     val selector = FunctionSelector(id)
     val builder = new StringBuilder
     builder.append("(")

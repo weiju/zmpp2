@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 package org.zmpp.glk
-
+/*
 object FunctionSelector extends Enumeration {
   val Exit                     = Value(0x01,  "glk_exit")
   val SetInterruptHandler      = Value(0x02,  "glk_set_interrupt_handler")
@@ -132,7 +132,7 @@ object FunctionSelector extends Enumeration {
   val RequestCharEventUni      = Value(0x140, "glk_request_char_event_uni")
   val RequestLineEventUni      = Value(0x141, "glk_request_line_event_uni")
 }
-
+*/
 object GestaltSelector {
   val Version              = 0
   val CharInput            = 1
