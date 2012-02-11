@@ -34,12 +34,25 @@ import scala.annotation.switch
 // **** Glulx Search Package
 // ****************************************************************************
 
-abstract class GlulxSearch(state: GlulxVMState, keySize: Int, options: Int) {
-  val keyIndirect       = (options & 0x01) == 0x01
-  val zeroKeyTerminates = (options & 0x02) == 0x02
-  val returnIndex       = (options & 0x04) == 0x04
+abstract class GlulxSearch(state: GlulxVMState) {
 
-  def search: Int
+  var key: Int        = 0
+  var keyOffset: Int  = 0
+  var keySize: Int    = 0
+
+  var keyIndirect       = false
+  var zeroKeyTerminates = false
+  var returnIndex       = false
+
+  def init(key: Int, keyOffset: Int, keySize: Int, options: Int) {
+    this.key       = key
+    this.keyOffset = keyOffset
+    this.keySize   = keySize
+
+    keyIndirect       = (options & 0x01) == 0x01
+    zeroKeyTerminates = (options & 0x02) == 0x02
+    returnIndex       = (options & 0x04) == 0x04
+  }
 
   protected def truncateKey(aKey: Int) = {
     (keySize: @switch) match {
@@ -50,9 +63,17 @@ abstract class GlulxSearch(state: GlulxVMState, keySize: Int, options: Int) {
   }
 }
 
-abstract class GlulxArraySearch(state: GlulxVMState, keySize: Int, start: Int,
-                                structSize: Int, keyOffset: Int, options: Int)
-extends GlulxSearch(state, keySize, options) {
+abstract class GlulxArraySearch(state: GlulxVMState) extends GlulxSearch(state) {
+
+  var start: Int      = 0
+  var structSize: Int = 0
+
+  def init(key: Int, keySize: Int, start: Int,
+           structSize: Int, keyOffset: Int, options: Int) {
+    super.init(key, keyOffset, keySize, options)
+    this.start      = start
+    this.structSize = structSize
+  }
 
   def structAddress(index: Int) = start + (index * structSize)
   def keyAddress(index: Int) = structAddress(index) + keyOffset
@@ -80,10 +101,8 @@ extends GlulxSearch(state, keySize, options) {
   }
 }
 
-class LinearSearch(state: GlulxVMState, key: Int, keySize: Int, start: Int,
-                   structSize: Int, numStructs: Int, keyOffset: Int,
-                   options: Int)
-extends GlulxArraySearch(state, keySize, start, structSize, keyOffset, options) {
+class LinearSearch(state: GlulxVMState) extends GlulxArraySearch(state) {
+
   private def keyEqualsAtIndex(compareIndex: Int): Boolean = {
     if (keyIndirect) {
       val addr0 = key
@@ -117,7 +136,10 @@ extends GlulxArraySearch(state, keySize, start, structSize, keyOffset, options) 
     } else keyAt(compareIndex) == 0
   }
 
-  def search: Int = {
+  def apply(key: Int, keySize: Int, start: Int,
+            structSize: Int, numStructs: Int, keyOffset: Int,
+            options: Int): Int = {
+    init(key, keySize, start, structSize, keyOffset, options)
     var i = 0
     var continue = true
     while (continue) {
@@ -130,10 +152,7 @@ extends GlulxArraySearch(state, keySize, start, structSize, keyOffset, options) 
   }
 }
 
-class BinarySearch(state: GlulxVMState, key: Int, keySize: Int, start: Int,
-                   structSize: Int, numStructs: Int, keyOffset: Int,
-                   options: Int)
-extends GlulxArraySearch(state, keySize, start, structSize, keyOffset, options) {
+class BinarySearch(state: GlulxVMState) extends GlulxArraySearch(state) {
 
   private def keyCompareAtIndex(compareIndex: Int): Int = {
     if (keyIndirect) {
@@ -170,16 +189,17 @@ extends GlulxArraySearch(state, keySize, start, structSize, keyOffset, options) 
     else           return binsearch(middle + 1, right)
   }
 
-  def search: Int = {
+  def apply(key: Int, keySize: Int, start: Int,
+            structSize: Int, numStructs: Int, keyOffset: Int,
+            options: Int): Int = {
+    init(key, keySize, start, structSize, keyOffset, options)
     if (zeroKeyTerminates)
       throw new UnsupportedOperationException("zeroKeyTerminates not allowed for binary search")
     binsearch(0, numStructs - 1)
   }
 }
 
-class LinkedSearch(state: GlulxVMState, key: Int, keySize: Int, start: Int,
-                   keyOffset: Int, nextOffset: Int, options: Int)
-  extends GlulxSearch(state, keySize, options) {
+class LinkedSearch(state: GlulxVMState) extends GlulxSearch(state) {
 
   def keyAtAddress(addr: Int) = {
     (keySize: @switch) match {
@@ -218,7 +238,10 @@ class LinkedSearch(state: GlulxVMState, key: Int, keySize: Int, start: Int,
     else keyAtAddress(currentAddr + keyOffset) == 0
   }
 
-  def search: Int = {
+  def apply(key: Int, keySize: Int, start: Int,
+            keyOffset: Int, nextOffset: Int, options: Int): Int = {
+    super.init(key, keyOffset, keySize, options)
+
     if (returnIndex)
       throw new UnsupportedOperationException("returnIndex not supported for linked search")
     var currentAddr = start

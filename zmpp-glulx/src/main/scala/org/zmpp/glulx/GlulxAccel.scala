@@ -71,7 +71,7 @@ abstract class AccelFunc(val _state: GlulxVMState, val _glk: Glk,
     val otab = _state.memIntAt(obj + 16)
     if (otab == 0) return 0
     val max = _state.memIntAt(otab)
-    new BinarySearch(_state, id, 2, otab + 4, 10, max, 0, 0).search
+    _state.binarySearch(id, 2, otab + 4, 10, max, 0, 0)
   }
   // func 3
   protected def raPr(obj: Int, id: Int): Int = {

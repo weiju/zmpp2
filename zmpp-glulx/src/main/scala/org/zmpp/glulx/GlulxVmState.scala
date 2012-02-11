@@ -53,10 +53,12 @@ object Stack {
  */
 class GlulxVMState extends VMState {
   val logger = Logger.getLogger("glulx")
-  //private[this] var _story    : Memory = null
   private[this] var _storyBytes: Array[Byte] = null
   private[this] var _header   : GlulxStoryHeader = null
-  
+  val binarySearch = new BinarySearch(this)
+  val linearSearch = new LinearSearch(this)
+  val linkedSearch = new LinkedSearch(this)
+
   // Memory setup
   private[this] var _memheap  : MemoryHeap = null
   private[this] var _extMem   : Memory = null

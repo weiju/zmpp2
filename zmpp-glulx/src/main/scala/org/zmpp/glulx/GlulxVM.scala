@@ -1037,23 +1037,22 @@ class GlulxVM {
               "IO system[%d] not supported".format(iosys))
         }
       case 0x150 => // linearsearch
-        val search = new LinearSearch(_state, getOperand(0), getOperand(1),
-                                      getOperand(2), getOperand(3),
-                                      getOperand(4), getOperand(5),
-                                      getOperand(6))
-        storeAtOperand(7, search.search)
+        val result = _state.linearSearch(getOperand(0), getOperand(1),
+                                         getOperand(2), getOperand(3),
+                                         getOperand(4), getOperand(5),
+                                         getOperand(6))
+        storeAtOperand(7, result)
       case 0x151 => // binarysearch
-        val search = new BinarySearch(_state, getOperand(0), getOperand(1),
-                                      getOperand(2), getOperand(3),
-                                      getOperand(4), getOperand(5),
-                                      getOperand(6))
-        val result = search.search
+        val result = _state.binarySearch(getOperand(0), getOperand(1),
+                                         getOperand(2), getOperand(3),
+                                         getOperand(4), getOperand(5),
+                                         getOperand(6))
         storeAtOperand(7, result)
       case 0x152 => // linkedsearch
-        val search = new LinkedSearch(_state, getOperand(0), getOperand(1),
-                                      getOperand(2), getOperand(3),
-                                      getOperand(4), getOperand(5))
-        storeAtOperand(6, search.search)
+        val result = _state.linkedSearch(getOperand(0), getOperand(1),
+                                         getOperand(2), getOperand(3),
+                                         getOperand(4), getOperand(5))
+        storeAtOperand(6, result)
       case 0x160 => // callf
         doCallf0(getOperand(0), _operands(1))
       case 0x161 => // callfi

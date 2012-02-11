@@ -77,24 +77,22 @@ class BinarySearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
   }
 
   "BinarySearch" should "search keys returning key address" in {
-    val binarySearch1 = new BinarySearch(vmstate, key=1, keySize=1, start=36,
-                                         structSize=1, numStructs=4, keyOffset=0,
-                                         options=0)
-    binarySearch1.search should be (36)
-    val binarySearch2 = new BinarySearch(vmstate, key=3, keySize=1, start=36,
-                                         structSize=1, numStructs=4, keyOffset=0,
-                                         options=0)
-    binarySearch2.search should be (37)
+    val binarySearch = new BinarySearch(vmstate)
+    binarySearch(key=1, keySize=1, start=36,
+                 structSize=1, numStructs=4, keyOffset=0,
+                 options=0) should be (36)
+    binarySearch(key=3, keySize=1, start=36,
+                 structSize=1, numStructs=4, keyOffset=0,
+                 options=0) should be (37)
   }
   it should "search keys returning index" in {
-    val binarySearch1 = new BinarySearch(vmstate, key=1, keySize=1, start=36,
-                                         structSize=1, numStructs=4, keyOffset=0,
-                                         options=4)
-    binarySearch1.search should be (0)
-    val binarySearch2 = new BinarySearch(vmstate, key=7, keySize=1, start=36,
-                                         structSize=1, numStructs=4, keyOffset=0,
-                                         options=4)
-    binarySearch2.search should be (3)
+    val binarySearch = new BinarySearch(vmstate)
+    binarySearch(key=1, keySize=1, start=36,
+                 structSize=1, numStructs=4, keyOffset=0,
+                 options=4) should be (0)
+    binarySearch(key=7, keySize=1, start=36,
+                 structSize=1, numStructs=4, keyOffset=0,
+                 options=4) should be (3)
   }
 }
 
@@ -108,24 +106,22 @@ class LinearSearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
   }
 
   "LinearSearch" should "search keys returning key address" in {
-    val linearSearch1 = new LinearSearch(vmstate, key=1, keySize=1, start=36,
-                                         structSize=1, numStructs=4, keyOffset=0,
-                                         options=0)
-    linearSearch1.search should be (36)
-    val linearSearch2 = new LinearSearch(vmstate, key=3, keySize=1, start=36,
-                                         structSize=1, numStructs=4, keyOffset=0,
-                                         options=0)
-    linearSearch2.search should be (37)
+    val linearSearch = new LinearSearch(vmstate)
+    linearSearch(key=1, keySize=1, start=36,
+                 structSize=1, numStructs=4, keyOffset=0,
+                 options=0) should be (36)
+    linearSearch(key=3, keySize=1, start=36,
+                 structSize=1, numStructs=4, keyOffset=0,
+                 options=0) should be (37)
   }
   it should "search keys returning index" in {
-    val linearSearch1 = new LinearSearch(vmstate, key=1, keySize=1, start=36,
-                                         structSize=1, numStructs=4, keyOffset=0,
-                                         options=4)
-    linearSearch1.search should be (0)
-    val linearSearch2 = new LinearSearch(vmstate, key=7, keySize=1, start=36,
-                                         structSize=1, numStructs=4, keyOffset=0,
-                                         options=4)
-    linearSearch2.search should be (3)
+    val linearSearch = new LinearSearch(vmstate)
+    linearSearch(key=1, keySize=1, start=36,
+                 structSize=1, numStructs=4, keyOffset=0,
+                 options=4) should be (0)
+    linearSearch(key=7, keySize=1, start=36,
+                 structSize=1, numStructs=4, keyOffset=0,
+                 options=4) should be (3)
   }
 }
 
@@ -139,11 +135,10 @@ class LinkedSearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
   }
 
   "LinkedSearch" should "search keys returning key address" in {
-    val linkedSearch1 = new LinkedSearch(vmstate, key=1, keySize=1, start=36,
-                                         keyOffset=0, nextOffset=1, options=0)
-    linkedSearch1.search should be (36)
-    val linkedSearch2 = new LinkedSearch(vmstate, key=3, keySize=1, start=36,
-                                         keyOffset=0, nextOffset=1, options=0)
-    linkedSearch2.search should be (41)
+    val linkedSearch = new LinkedSearch(vmstate)
+    linkedSearch(key=1, keySize=1, start=36,
+                        keyOffset=0, nextOffset=1, options=0) should be (36)
+    linkedSearch(key=3, keySize=1, start=36,
+                        keyOffset=0, nextOffset=1, options=0) should be (41)
   }
 }
