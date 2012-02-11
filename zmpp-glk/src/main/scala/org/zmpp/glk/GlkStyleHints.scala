@@ -32,185 +32,67 @@ package org.zmpp.glk
  * Styles, style hints and their defaults. I put that in its separate file,
  * because it's long.
  */
-object StyleType extends Enumeration {
-  val Normal       = Value("Normal")
-  val Emphasized   = Value("Emphasized")
-  val Preformatted = Value("Preformatted")
-  val Header       = Value("Header")
-  val Subheader    = Value("Subheader")
-  val Alert        = Value("Alert")
-  val Note         = Value("Note")
-  val BlockQuote   = Value("BlockQuote")
-  val Input        = Value("Input")
-  val User1        = Value("User1")
-  val User2        = Value("User2")
-  def Num          = maxId
-  def isSupported(id: Int) = id <= maxId
+object StyleType {
+  val Normal       = 0
+  val Emphasized   = 1
+  val Preformatted = 2
+  val Header       = 3
+  val Subheader    = 4
+  val Alert        = 5
+  val Note         = 6
+  val BlockQuote   = 7
+  val Input        = 8
+  val User1        = 9
+  val User2        = 10
+  val Num          = 11
+  def isSupported(id: Int) = id <= 10
 }
 
-object StyleHintType extends Enumeration {
-  val Indentation     = Value("Indentation")
-  val ParaIndentation = Value("ParaIndentation")
-  val Justification   = Value("Justification")
-  val Size            = Value("Size")
-  val Weight          = Value("Weight")
-  val Oblique         = Value("Oblique")
-  val Proportional    = Value("Proportional")
-  val TextColor       = Value("TextColor")
-  val BackColor       = Value("BackColor")
-  val ReverseColor    = Value("ReverseColor")
-  val Num             = maxId
-  def isSupported(id: Int) = id <= maxId
+object StyleHintType {
+  val Indentation     = 0
+  val ParaIndentation = 1
+  val Justification   = 2
+  val Size            = 3
+  val Weight          = 4
+  val Oblique         = 5
+  val Proportional    = 6
+  val TextColor       = 7
+  val BackColor       = 8
+  val ReverseColor    = 9
+  val Num             = 10
+  def isSupported(id: Int) = id <= 9
 }
 
-object StyleHintJustification extends Enumeration {
-  val LeftFlush  = Value("LeftFlush")
-  val LeftRight  = Value("LeftRight")
-  val Centered   = Value("Centered")
-  val RightFlush = Value("RightFlush")
+object StyleHintJustification {
+  val LeftFlush  = 0
+  val LeftRight  = 1
+  val Centered   = 2
+  val RightFlush = 3
 }
 
 object StyleHints {
   import StyleType._
   import StyleHintType._
-  val Defaults = Map(
-    Normal -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 0,
-      Weight          -> 0,
-      Oblique         -> 0,
-      Proportional    -> 1,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      ),
-    Emphasized -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 0,
-      Weight          -> 1,
-      Oblique         -> 0,
-      Proportional    -> 1,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      ),
-    Preformatted -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 0,
-      Weight          -> 0,
-      Oblique         -> 0,
-      Proportional    -> 0,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      ),
-    Header -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 1,
-      Weight          -> 1,
-      Oblique         -> 0,
-      Proportional    -> 1,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      ),
-    Subheader -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 0,
-      Weight          -> 1,
-      Oblique         -> 1,
-      Proportional    -> 1,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      ),
-    Alert -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 0,
-      Weight          -> 0,
-      Oblique         -> 0,
-      Proportional    -> 1,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      ),
-    Note -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 0,
-      Weight          -> 0,
-      Oblique         -> 0,
-      Proportional    -> 1,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      ),
-    BlockQuote -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 0,
-      Weight          -> 0,
-      Oblique         -> 0,
-      Proportional    -> 1,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      ),
-    Input -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 0,
-      Weight          -> 1,
-      Oblique         -> 0,
-      Proportional    -> 1,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      ),
-    User1 -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 0,
-      Weight          -> 0,
-      Oblique         -> 0,
-      Proportional    -> 1,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      ),
-    User2 -> Map(
-      Indentation     -> 0,
-      ParaIndentation -> 0,
-      Justification   -> StyleHintJustification.LeftFlush.id,
-      Size            -> 0,
-      Weight          -> 0,
-      Oblique         -> 0,
-      Proportional    -> 1,
-      TextColor       -> -1,
-      BackColor       -> -1,
-      ReverseColor    -> 0
-      )
+  import StyleHintJustification._
+
+  val Defaults = Array(
+    Array(0, 0, LeftFlush, 0, 0, 0, 1, -1, -1, 0), // Normal
+    Array(0, 0, LeftFlush, 0, 1, 0, 1, -1, -1, 0), // Emphasized
+    Array(0, 0, LeftFlush, 0, 0, 0, 0, -1, -1, 0), // Preformatted
+    Array(0, 0, LeftFlush, 1, 1, 0, 1, -1, -1, 0), // Header
+    Array(0, 0, LeftFlush, 0, 1, 1, 1, -1, -1, 0), // Subheader
+    Array(0, 0, LeftFlush, 0, 0, 0, 1, -1, -1, 0), // Alert
+    Array(0, 0, LeftFlush, 0, 0, 0, 1, -1, -1, 0), // Note
+    Array(0, 0, LeftFlush, 0, 0, 0, 1, -1, -1, 0), // BlockQuote
+    Array(0, 0, LeftFlush, 0, 1, 0, 1, -1, -1, 0), // Input
+    Array(0, 0, LeftFlush, 0, 0, 0, 1, -1, -1, 0), // User1
+    Array(0, 0, LeftFlush, 0, 0, 0, 1, -1, -1, 0)  // User2
   )
 }
 
 class StyleHints {
-  private val _hints = Array.ofDim[Int](StyleType.Num, StyleHintType.Num)
+  private val _hints = Array.ofDim[Int](StyleType.Num,
+                                        StyleHintType.Num)
   reset
 
   def reset {
@@ -238,8 +120,7 @@ class StyleHints {
     }
   }
   def reset(styleNum: Int, hintNum: Int) {
-    _hints(styleNum)(hintNum) =
-      StyleHints.Defaults(StyleType(styleNum))(StyleHintType(hintNum))
+    _hints(styleNum)(hintNum) = StyleHints.Defaults(styleNum)(hintNum)
   }
 
   def distinguishable(style1: Int, style2: Int): Boolean = {

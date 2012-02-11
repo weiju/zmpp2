@@ -56,7 +56,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
                                 SwingTextBufferUI.MarginLeft,
                                 SwingTextBufferUI.MarginBottom,
                                 SwingTextBufferUI.MarginRight))
-  style = StyleType.Normal.id
+  style = StyleType.Normal
   setStandardFont
 
   private def setStandardFont {
@@ -116,15 +116,15 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     flush
     val attrs = getInputAttributes
     val isProportional =
-      if (glkWindow.styleHints.get(style, Proportional.id) == 1) true else false
+      if (glkWindow.styleHints.get(style, Proportional) == 1) true else false
     val isBold =
-      if (glkWindow.styleHints.get(style, Weight.id) == 1) true else false
+      if (glkWindow.styleHints.get(style, Weight) == 1) true else false
     val isItalic =
-      if (glkWindow.styleHints.get(style, Oblique.id) == 1) true else false
+      if (glkWindow.styleHints.get(style, Oblique) == 1) true else false
     val isReverse =
-      if (glkWindow.styleHints.get(style, ReverseColor.id) == 1) true else false
-    var backColor = glkWindow.styleHints.get(style, BackColor.id)
-    var textColor = glkWindow.styleHints.get(style, TextColor.id)
+      if (glkWindow.styleHints.get(style, ReverseColor) == 1) true else false
+    var backColor = glkWindow.styleHints.get(style, BackColor)
+    var textColor = glkWindow.styleHints.get(style, TextColor)
 
     if (backColor >= 0) {
       currentBackgroundColor = backColor

@@ -92,7 +92,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   private def resumeExecution {
     if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
         eventManager.processNextEvent) {
-      style = StyleType.Normal.id
+      style = StyleType.Normal
       stopSendingRequests
       ExecutionControl.executeTurn(screenUI.vm)   
     }
@@ -140,7 +140,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
         }
         // make sure that input style is not "removed".
         // Note: This sometimes works and sometimes not, why is that ?
-        style = StyleType.Input.id
+        style = StyleType.Input
       } else if (event.getKeyCode == KeyEvent.VK_UP) {
         event.consume
       }
@@ -162,14 +162,14 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   
   // has to be called in UI event thread
   def requestLineInput {
-    style = StyleType.Input.id
+    style = StyleType.Input
     requestFocusInWindow
     getCaret.setVisible(true)
     inputStart = getDocument.getLength
     textInputMode = SwingTextWindowUI.InputModeLine
   }
   def requestPreviousLineInput {
-    style = StyleType.Input.id
+    style = StyleType.Input
     requestFocusInWindow
     getCaret.setVisible(true)
     // here we assume the input mark is the one from the last select
@@ -211,7 +211,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
       }
       // reset style to normal, we have to set this AFTER setting the
       // link to NULL (the order is important) !!
-      style = StyleType.Normal.id
+      style = StyleType.Normal
     } else {
       flush
       val attrs = getInputAttributes

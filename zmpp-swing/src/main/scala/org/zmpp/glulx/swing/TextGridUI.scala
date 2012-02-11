@@ -56,7 +56,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
                                 SwingTextGridUI.MarginRight))
 
   setFont(screenUI.fixedFont)
-  style = StyleType.Normal.id
+  style = StyleType.Normal
   val attrs = getInputAttributes
   StyleConstants.setFontFamily(attrs, screenUI.fixedFont.getFamily)
   StyleConstants.setFontSize(attrs,   screenUI.fixedFont.getSize)  
@@ -88,7 +88,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
       }
       text.append("\n")
     }
-    style = StyleType.Normal.id
+    style = StyleType.Normal
     setText("")
     getDocument.insertString(0, text.toString, getInputAttributes)
   }
@@ -145,14 +145,14 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     flush
     val attrs = getInputAttributes
     val isBold =
-      if (glkWindow.styleHints.get(style, Weight.id) == 1) true else false
+      if (glkWindow.styleHints.get(style, Weight) == 1) true else false
     val isItalic =
-      if (glkWindow.styleHints.get(style, Oblique.id) == 1) true else false
+      if (glkWindow.styleHints.get(style, Oblique) == 1) true else false
 
     val isReverse =
-      if (glkWindow.styleHints.get(style, ReverseColor.id) == 1) true else false
-    var backColor = glkWindow.styleHints.get(style, BackColor.id)
-    var textColor = glkWindow.styleHints.get(style, TextColor.id)
+      if (glkWindow.styleHints.get(style, ReverseColor) == 1) true else false
+    var backColor = glkWindow.styleHints.get(style, BackColor)
+    var textColor = glkWindow.styleHints.get(style, TextColor)
 
     if (backColor >= 0) {
       currentBackgroundColor = backColor
