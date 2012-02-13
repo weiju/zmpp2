@@ -499,7 +499,15 @@ public class GlulxVMState implements VMState {
     // Analogous to setLocalAtAddress(), this returns an int-sized value
     // and does not check the format, as the Glulx specification requests.
     public int getLocalAtAddress(int localAddr) {
-        return getIntInStack(fp + localsPos() + localAddr);
+        // * ugly optimization * inlined the following:
+        // int lpos = localsPos();
+        // return getIntInStack(fp + lpos + localAddr);
+        int lposAddr = fp + Stack.OffsetLocalsPos;
+        int lpos = ((_stackArray[lposAddr] & 0xff) << 24) | ((_stackArray[lposAddr + 1] & 0xff) << 16) |
+            ((_stackArray[lposAddr + 2] & 0xff) << 8) | (_stackArray[lposAddr + 3] & 0xff);
+        int addr = fp + lpos + localAddr;
+        return ((_stackArray[addr] & 0xff) << 24) | ((_stackArray[addr + 1] & 0xff) << 16) |
+            ((_stackArray[addr + 2] & 0xff) << 8) | (_stackArray[addr + 3] & 0xff);
     }
   
     // For copyb/copys
