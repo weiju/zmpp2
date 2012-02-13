@@ -76,7 +76,7 @@ class GlulxVM {
   private[this] val _operands           = new Array[Operand](GlulxVM.MaxOperands)
   private[this] var _opcodeNum          = 0
   private[this] var _opcodeNumSize      = 0
-  
+
   // function arguments - we avoid creating them over and over
   // we are using these when we setup a normal function call and
   // we also use them in accelerated functions
@@ -134,7 +134,7 @@ class GlulxVM {
   def nativeSoundSystem_=(soundSystem: NativeSoundSystem) = _glk.nativeSoundSystem = soundSystem
 
   
-  def runState   = _state.runState
+  def runState   = _state.pRunState
   def header     = _state.header
   
   private def restart {
@@ -642,7 +642,7 @@ class GlulxVM {
     _state.sp = _state.fp
     if (_state.sp == 0) {
       // return from entry function -> Quit
-      _state.runState = VMRunStates.Halted
+      _state.pRunState = VMRunStates.Halted
     } else {
       // we can't use GlulxVM's popInt(), because it performs checks on
       // the call frame, which is exactly what we manipulate here
@@ -946,7 +946,7 @@ class GlulxVM {
         if (newSize % 256 != 0) fatal("@setmemsize: size must be multiple of 256")
         if (_state.heapIsActive)
           fatal("@setmemsize: can not set while heap is active")
-        _state.memsize = newSize
+        _state.setMemsize(newSize)
         // Result is 0 for success, 1 for fail
         0
       case 0x104 => // jumpabs
@@ -966,7 +966,7 @@ class GlulxVM {
         if (seed == 0) _random.setSeed(seed)
         else _random.setSeed(System.currentTimeMillis)
       case 0x120 => // quit
-        _state.runState = VMRunStates.Halted
+        _state.pRunState = VMRunStates.Halted
       case 0x121 => // verify
         storeAtOperand(0, _state.verify)
       case 0x122 => // restart
@@ -1173,6 +1173,6 @@ class GlulxVM {
 
   def fatal(msg: String) {
     _glk.put_java_string(msg)
-    _state.runState = VMRunStates.Halted
+    _state.pRunState = VMRunStates.Halted
   }
 }

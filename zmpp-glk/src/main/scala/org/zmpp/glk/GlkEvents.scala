@@ -344,7 +344,7 @@ class EventManager(_state: VMState) {
         req.prepareWindow(screenUI)
       })
     })
-    _state.runState = VMRunStates.WaitForEvent
+    _state.setRunState(VMRunStates.WaitForEvent)
   }
 
   def selectPoll(eventPtr: Int) {
@@ -369,7 +369,7 @@ class EventManager(_state: VMState) {
   def setEventAndResume(eventType: GlkEventType.Value, windowId: Int,
                         value1: Int, value2: Int) {
     setEventStruct(_eventPtr, eventType, windowId, value1, value2)    
-    _state.runState = VMRunStates.Running
+    _state.setRunState(VMRunStates.Running)
   }
 
   def lineRequestForWindow(winId: Int) = {

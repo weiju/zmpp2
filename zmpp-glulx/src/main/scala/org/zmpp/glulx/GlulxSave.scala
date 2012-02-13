@@ -78,7 +78,7 @@ class SaveGameLoader(glk: Glk, streamId: Int, vmState: GlulxVMState,
     // read new memory size and adjust VM state's memory size
     val memsize = cmemChunk.memory.intAt(offset)
     logger.info("NEW MEMSIZE = %d [OFFSET = %d]".format(memsize, offset))
-    vmState.memsize = cmemChunk.memory.intAt(offset)
+    vmState.setMemsize(cmemChunk.memory.intAt(offset))
     offset += 4
 
     while (offset < chunkEnd) {
@@ -104,7 +104,7 @@ class SaveGameLoader(glk: Glk, streamId: Int, vmState: GlulxVMState,
     var offset = umemChunk.dataStart
     var ramAddress = 0
     val chunkEnd = umemChunk.dataStart + umemChunk.size
-    vmState.memsize = umemChunk.memory.intAt(offset)
+    vmState.setMemsize(umemChunk.memory.intAt(offset))
     offset += 4
     while (offset < chunkEnd) {
       vmState.setRamByteAt(ramAddress, umemChunk.memory.byteAt(offset))
