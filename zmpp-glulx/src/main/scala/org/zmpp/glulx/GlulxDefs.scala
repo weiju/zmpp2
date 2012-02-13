@@ -29,64 +29,12 @@
 package org.zmpp.glulx
 
 import scala.annotation.switch
-import java.util.logging._
-import org.zmpp.base.Memory
 
 // *************************************************************************
 // ***** Glulx Definitions
 // ***** Rather than defining enumerations for everything, we define
 // ***** frequently used constants as simple int values
 // *************************************************************************
-
-object AddressModes {
-  val ConstZero        = 0
-  val ConstByte        = 1
-  val ConstShort       = 2
-  val ConstInt         = 3
-  val Address00_FF     = 5
-  val Address0000_FFFF = 6
-  val AddressAny       = 7
-  val Stack            = 8
-  val Local00_FF       = 9
-  val Local0000_FFFF   = 10
-  val LocalAny         = 11
-  val Ram00_FF         = 13
-  val Ram0000_FFFF     = 14
-  val RamAny           = 15  
-}
-
-object DestTypes {
-  val DoNotStore    = 0
-  val Memory        = 1
-  val LocalVariable = 2
-  val Stack         = 3
-  val Ram           = 4
-  
-  // while printing
-  val ResumePrintCompressed = 10
-  val ResumeExecuteFunction = 11
-  val ResumePrintDecimal    = 12
-  val ResumePrintCString    = 13
-  val ResumePrintUnicode    = 14
-  def isStringDestType(destType: Int) = destType >= 10
-
-  def fromAddressMode(addressMode: Int) = addressMode match {
-    case AddressModes.ConstZero        => DestTypes.DoNotStore
-    case AddressModes.Address00_FF     => DestTypes.Memory
-    case AddressModes.Address0000_FFFF => DestTypes.Memory
-    case AddressModes.AddressAny       => DestTypes.Memory
-    case AddressModes.Stack            => DestTypes.Stack
-    case AddressModes.Local00_FF       => DestTypes.LocalVariable
-    case AddressModes.Local0000_FFFF   => DestTypes.LocalVariable
-    case AddressModes.LocalAny         => DestTypes.LocalVariable
-    case AddressModes.Ram00_FF         => DestTypes.Ram
-    case AddressModes.Ram0000_FFFF     => DestTypes.Ram
-    case AddressModes.RamAny           => DestTypes.Ram
-    case _ =>
-      throw new IllegalArgumentException(
-        "unknown address mode: %02x".format(addressMode))
-  }  
-}
 
 object Opcodes {
   val Nop           = 0x00
@@ -456,101 +404,4 @@ object Opcodes {
           "unknown opcode %02x: ".format(opcodeNum))
     }
   }
-}
-
-class GlulxStoryHeader(data : Array[Byte]) {
-  def isGlulx       = intAt(0) == 0x476c756c // 'Glul'
-  def version       = intAt(4)
-  def ramstart      = intAt(8)
-  def extstart      = intAt(12)
-  def endmem        = intAt(16)
-  def stacksize     = intAt(20)
-  def startfunc     = intAt(24)
-  def decodingTable = intAt(28)
-  def checksum      = intAt(32)
-
-  private def intAt(addr: Int): Int = {
-    ((data(addr) & 0xff) << 24) | ((data(addr + 1) & 0xff) << 16) |
-    ((data(addr + 2) & 0xff) << 8) | (data(addr + 3) & 0xff)    
-  }
-}
-
-class Operand(var addressMode: Int, var value: Int) {
-  def this() = this(0, 0)
-  
-  override def toString: String = {
-    if (addressMode <= 3) "#$%02x".format(value)
-    else if (addressMode >= 5 && addressMode <= 7) "MEM$%02x".format(value)
-    else if (addressMode == 8) "(SP)"
-    else if (addressMode >= 9 && addressMode <= 11) "L%02x".format(value)
-    else "RAM$%02x".format(value)
-  }
-
-  def toString(state: GlulxVMState): String = {
-    val str = toString
-    if (addressMode >= 9 && addressMode <= 11) {
-      str + "[%02x]".format(state.getLocalShortAtAddress(value))
-    } else str
-  }
-}
-
-class LocalDescriptor {
-  var localType  = 0
-  var localCount = 0
-}
-
-object GlulxGestalt {
-
-  val Version      = 0
-  val TerpVersion  = 1
-  val ResizeMem    = 2
-  val Undo         = 3
-  val IOSystem     = 4
-  val Unicode      = 5
-  val MemCopy      = 6
-  val MAlloc       = 7
-  val MAllocHeap   = 8
-  val Acceleration = 9
-  val AccelFunc    = 10
-  val GlulxFloat   = 11
-
-  def gestalt(selector: Int, param: Int): Int = {
-    println("Glulx.gestalt(#$%02x, #$%02x)".format(selector, param))
-    (selector: @switch) match {
-      case 0  => 0x00030102 // Version
-      case 1  => 0x00010000 // TerpVersion
-      case 2  => 1          // ResizeMem
-      case 3  => 1          // Undo
-      case 4  =>            // IOSystem, suppose we know FyreVM
-        if (param >= 0 && param <= 2 || param == 20) 1 else 0
-      case 5  => 1          // Unicode
-      case 6  => 1          // MemCopy
-      case 7  => 1          // MAlloc
-      case 9  => 1 // Acceleration
-      case 10 => if (param >= 1 && param <= 7) 1 else 0 // AccelFunc
-      case 11 => 1 // GlulxFloat
-      case _  => 0
-    }
-  }
-}
-
-object FyreCallCodes {
-  val ReadLine     = 1
-  val SetStyle     = 2
-  val ToLower      = 3
-  val ToUpper      = 4
-  val Channel      = 5
-  val EnableFilter = 6
-  val ReadKey      = 7
-  val SetVeneer    = 8
-}
-
-/**
- * A class that is only concerned with keeping serializable, persistent
- * VM state. VMState is too much concerned with execution support, so it
- * makes sense, to keep things in a simpler data structure for undo and
- * similar things.
- */
-class Snapshot(val ram: Array[Byte], val stack: Array[Byte],
-               val extMem: Array[Byte]) {
 }

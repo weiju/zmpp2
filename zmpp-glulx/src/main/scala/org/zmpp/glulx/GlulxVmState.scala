@@ -54,7 +54,7 @@ object Stack {
 class GlulxVMState extends VMState {
   val logger = Logger.getLogger("glulx")
   private[this] var _storyBytes: Array[Byte] = null
-  private[this] var _header   : GlulxStoryHeader = null
+  private[this] var _header   : StoryHeader = null
   val binarySearch = new BinarySearch(this)
   val linearSearch = new LinearSearch(this)
   val linkedSearch = new LinkedSearch(this)
@@ -83,7 +83,7 @@ class GlulxVMState extends VMState {
 
   def init(storyBytes: Array[Byte]) {
     _storyBytes = storyBytes
-    _header     = new GlulxStoryHeader(storyBytes)
+    _header     = new StoryHeader(storyBytes)
     initStack
     _extstart   = _header.extstart
     _memheap    = new MemoryHeap(_header.endmem)
