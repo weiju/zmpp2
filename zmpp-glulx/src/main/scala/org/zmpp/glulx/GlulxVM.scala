@@ -286,6 +286,9 @@ class GlulxVM {
     }
   }
   
+  /*
+   * Used by both signed and unsigned instructions.
+   */
   private def getOperand(pos : Int) :Int = {
     (_operands(pos).addressMode: @switch) match {
       case 0  => 0 // ConstZero
@@ -308,13 +311,6 @@ class GlulxVM {
           _operands(pos).addressMode)
     }
   }
-
-  /*
-   * Used by signed instructions. Only an alias, since getOperand() delivers
-   * signed values anyways. Some instructions use it more for illustrative
-   * purposes.
-   */
-  private def getSignedOperand(pos: Int) : Int = getOperand(pos)
 
   // only for copyb/copys
   // Only used by copyb.
@@ -731,9 +727,9 @@ class GlulxVM {
       case 0x12  => // mul
         storeAtOperand(2, getOperand(0) * getOperand(1))
       case 0x13  => // div
-        storeAtOperand(2, getSignedOperand(0) / getSignedOperand(1))
+        storeAtOperand(2, getOperand(0) / getOperand(1))
       case 0x14  => // mod
-        storeAtOperand(2, getSignedOperand(0) % getSignedOperand(1))
+        storeAtOperand(2, getOperand(0) % getOperand(1))
       case 0x15  => // neg
         storeAtOperand(1, -(getOperand(0)))
       case 0x18  => // bitand
@@ -767,21 +763,21 @@ class GlulxVM {
       case 0x20  => // jump
         doBranch(getOperand(0))
       case 0x22  => // jz
-        if (getSignedOperand(0) == 0) doBranch(getOperand(1))
+        if (getOperand(0) == 0) doBranch(getOperand(1))
       case 0x23  => // jnz
-        if (getSignedOperand(0) != 0) doBranch(getOperand(1))
+        if (getOperand(0) != 0) doBranch(getOperand(1))
       case 0x24  => // jeq
-        if (getSignedOperand(0) == getSignedOperand(1)) doBranch(getOperand(2))
+        if (getOperand(0) == getOperand(1)) doBranch(getOperand(2))
       case 0x25  => // jne
-        if (getSignedOperand(0) != getSignedOperand(1)) doBranch(getOperand(2))
+        if (getOperand(0) != getOperand(1)) doBranch(getOperand(2))
       case 0x26  => // jlt
-        if (getSignedOperand(0) < getSignedOperand(1)) doBranch(getOperand(2))
+        if (getOperand(0) < getOperand(1)) doBranch(getOperand(2))
       case 0x27 => // jge
-        if (getSignedOperand(0) >= getSignedOperand(1)) doBranch(getOperand(2))
+        if (getOperand(0) >= getOperand(1)) doBranch(getOperand(2))
       case 0x28  => // jgt
-        if (getSignedOperand(0) > getSignedOperand(1)) doBranch(getOperand(2))
+        if (getOperand(0) > getOperand(1)) doBranch(getOperand(2))
       case 0x29  => // jle
-        if (getSignedOperand(0) <= getSignedOperand(1)) doBranch(getOperand(2))
+        if (getOperand(0) <= getOperand(1)) doBranch(getOperand(2))
       case 0x2a => // jltu
         val op0 = getOperand(0).toLong & 0x0ffffffffl
         val op1 = getOperand(1).toLong & 0x0ffffffffl
@@ -850,19 +846,19 @@ class GlulxVM {
         storeAtOperand(1, Types.signExtend8(getOperand(0)))
       case 0x48  => // aload
         val arr   = getOperand(0)
-        val index = getSignedOperand(1)
+        val index = getOperand(1)
         storeAtOperand(2, _state.memIntAt(arr + index * 4))
       case 0x49  => // aloads
         val arr = getOperand(0)
-        val index = getSignedOperand(1)
+        val index = getOperand(1)
         storeAtOperand(2, _state.memShortAt(arr + index * 2))
       case 0x4a  => // aloadb
         val arr    = getOperand(0)
-        val index  = getSignedOperand(1)
+        val index  = getOperand(1)
         storeAtOperand(2, _state.memByteAt(arr + index))
       case 0x4b  => // aloadbit
         val addr      = getOperand(0)
-        val bitOffset = getSignedOperand(1)
+        val bitOffset = getOperand(1)
         var memAddr   = addr + bitOffset / 8
         var bitnum    = bitOffset % 8
         if (bitnum < 0) {
@@ -876,19 +872,19 @@ class GlulxVM {
         storeAtOperand(2, test)
       case 0x4c  => // astore
         val arr = getOperand(0)
-        val index = getSignedOperand(1)
+        val index = getOperand(1)
         _state.setMemIntAt(arr + index * 4, getOperand(2))
       case 0x4d  => // astores
         val arr = getOperand(0)
-        val index = getSignedOperand(1)
+        val index = getOperand(1)
         _state.setMemShortAt(arr + index * 2, getOperand(2))
       case 0x4e  => // astoreb
         val arr   = getOperand(0)
-        val index = getSignedOperand(1)
+        val index = getOperand(1)
         _state.setMemByteAt(arr + index, getOperand(2))
       case 0x4f  => // astorebit
         val addr      = getOperand(0)
-        val bitOffset = getSignedOperand(1)
+        val bitOffset = getOperand(1)
         var memAddr   = addr + bitOffset / 8
         var bitnum    = bitOffset % 8
         if (bitnum < 0) {
@@ -910,7 +906,7 @@ class GlulxVM {
       case 0x52  => // stkswap
         _state.stackSwap
       case 0x53  => // stkroll
-        _state.stackRoll(getOperand(0), getSignedOperand(1))
+        _state.stackRoll(getOperand(0), getOperand(1))
       case 0x54  => // stkcopy
         val numElems = getOperand(0)
         val copyStart = _state.sp - Types.SizeInt * numElems
@@ -922,7 +918,7 @@ class GlulxVM {
       case 0x70  => //streamchar
         currentIOSystem.streamChar((getOperand(0) & 0xff).asInstanceOf[Char])
       case 0x71  => // streamnum
-        currentIOSystem.streamNum(getSignedOperand(0), 0)
+        currentIOSystem.streamNum(getOperand(0), 0)
       case 0x72  => // streamstr
         currentIOSystem.streamStr(StreamStrState.newString(getOperand(0)))
       case 0x73  => // streamunichar
@@ -952,7 +948,7 @@ class GlulxVM {
       case 0x104 => // jumpabs
         _state.pc = getOperand(0)
       case 0x110 => // random
-        val range = getSignedOperand(0)
+        val range = getOperand(0)
         if (range < 0) {
           val translate = range + 1
           storeAtOperand(1, _random.nextInt(-range) + translate)
