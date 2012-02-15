@@ -256,7 +256,12 @@ class AccelSystem(vm: GlulxVM) {
   private[this] val _accelParams = new Array[Int](AccelSystem.MaxAccelParams)
   private[this] val _accelFunctions    = new Array[AccelFuncEntry](100)
   private[this] var _numAccelFuncs = 0
-  var glk: Glk = null
+  private[this] var _glk: Glk = null
+
+  def glk = _glk
+  def setGlk(aGlk: Glk) {
+    this._glk = aGlk
+  }
 
   private def accelFuncFor(funcnum: Int): AccelFunc = {
     (funcnum: @switch) match {

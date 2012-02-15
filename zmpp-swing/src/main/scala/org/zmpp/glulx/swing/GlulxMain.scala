@@ -100,9 +100,9 @@ object ExecutionControl {
   def runStory(screenUI: SwingGlkScreenUI, filename: String) {    
     try {
       val vm = Glulx.readFile(filename)
-      vm.screenUI = screenUI
+      vm.glk.screenUI = screenUI
       screenUI.vm = vm
-      vm.nativeSoundSystem = new JavaSeSoundSystem(vm.blorbData, vm)
+      vm.glk.nativeSoundSystem = new JavaSeSoundSystem(vm.blorbData, vm)
       
       executeTurn(vm)
     } catch {
