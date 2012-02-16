@@ -1,6 +1,6 @@
 /*
- * Created on 2010/11/04
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Created on 2012/02/15
+ * Copyright (c) 2010-2012, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,40 +26,39 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glulx
+package org.zmpp.glulx;
 
-import java.util.logging._
+class NullIOSystem extends IOSystem {
+    public NullIOSystem(GlulxVM vm, int rock) {
+        super(vm, rock);
+    }
 
-class ChannelIOSystem(vm: GlulxVM, rock: Int) extends IOSystem(vm, rock) {
-  def id = 20
-  def streamChar(c: Char) {
-    logger.info("streamChar(%c)".format(c))
-  }
-  def streamUniChar(c: Int) {
-    logger.info("streamUniChar(%c)".format(c.asInstanceOf[Char]))
-  }
+    public int id() { return 0; }
+    public void streamChar(char c) { }
+    public void streamUniChar(int c) { }
   
-  // streamstr actions
-  def handleChar8(c: Char, inBetween: Boolean, currentStreamByte: Int,
-                  currentStreamBit: Int)    = {
-    logger.info("handleChar8(%c)".format(c))
-    StreamStrState.Continue
-  }
-  def handleChar32(c: Int, inBetween: Boolean, currentStreamByte: Int,
-                   currentStreamBit: Int) = {
-    logger.info("handleChar32(%d)".format(c))
-    StreamStrState.Continue
-  }
-  def handleHuffmanCString(nodeAddr: Int,
-                           currentStreamByte: Int, currentStreamBit: Int,
-                           inBetween: Boolean): StreamStrState = {
-    logger.info("handleHuffmanCString(%04x)".format(nodeAddr))
-    StreamStrState.Continue
-  }
-  def handleHuffmanUnicodeString(nodeAddr: Int,
-                                 currentStreamByte: Int, currentStreamBit: Int,
-                                 inBetween: Boolean): StreamStrState = {
-    logger.info("handleHuffmanUnicodeString(%04x)".format(nodeAddr))
-    StreamStrState.Continue
-  }
+    // streamstr actions
+    public StreamStrState handleChar8(char c, boolean inBetween,
+                                      int currentStreamByte,
+                                      int currentStreamBit) {
+        return StreamStrState.Continue;
+    }
+
+    public StreamStrState handleChar32(int c, boolean inBetween,
+                                       int currentStreamByte,
+                                       int currentStreamBit) {
+        return StreamStrState.Continue;
+    }
+    public StreamStrState handleHuffmanCString(int nodeAddr,
+                                               int currentStreamByte,
+                                               int currentStreamBit,
+                                               boolean inBetween) {
+        return StreamStrState.Continue;
+    }
+    public StreamStrState handleHuffmanUnicodeString(int nodeAddr,
+                                                     int currentStreamByte,
+                                                     int currentStreamBit,
+                                                     boolean inBetween) {
+        return StreamStrState.Continue;
+    }
 }

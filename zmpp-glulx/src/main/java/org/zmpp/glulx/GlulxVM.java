@@ -992,7 +992,7 @@ public class GlulxVM {
             break;
         case 0x148: // getiosys
             storeAtOperand(0, currentIOSystem.id());
-            storeAtOperand(1, currentIOSystem.rock());
+            storeAtOperand(1, currentIOSystem.rock);
             break;
         case 0x149: // setiosys
             {
