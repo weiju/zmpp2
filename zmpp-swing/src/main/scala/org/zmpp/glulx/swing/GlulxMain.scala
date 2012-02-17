@@ -80,20 +80,10 @@ object Glulx {
 }
 
 object ExecutionControl {
-  var iterations = 1
-
-  def _executeTurn(vm: GlulxVM) {
-    val startTime = System.currentTimeMillis
-    while (vm.runState == VMRunStates.Running) {
-      vm.doInstruction
-    }
-    val elapsed = System.currentTimeMillis - startTime
-    printf("Executed turn in %d ms.\n", elapsed.asInstanceOf[Int])
-  }
 
   def executeTurn(vm: GlulxVM) {
     new Thread(new Runnable {
-      def run = _executeTurn(vm)
+      def run = vm.executeTurn
     }).start
   }
 
