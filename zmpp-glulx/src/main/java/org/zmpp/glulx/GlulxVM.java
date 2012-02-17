@@ -192,25 +192,6 @@ public class GlulxVM {
         return localSectionSize;
     }
 
-    private void decodeOpcodeNum() {
-        // look at the two highest bits: 11 means 4 bytes, 10 means 2 bytes
-        // else one byte
-        int b0 = state.memByteAt(state.pc) & 0xff;
-        int bitpattern = b0 & 0xc0;
-
-        if (bitpattern == 0xc0) {
-            _opcodeNum = state.memIntAt(state.pc) - 0xc0000000;
-            _opcodeNumSize = Types.SizeInt;
-        } else if (bitpattern == 0x80) {
-            _opcodeNum = (state.memShortAt(state.pc) & 0xffff) - 0x8000;
-            _opcodeNumSize = Types.SizeShort;
-        } else {
-            _opcodeNum = b0;
-            _opcodeNumSize = Types.SizeByte;
-        }
-        state.pc += _opcodeNumSize;
-    }
-
     private int readOperand(int addressMode) {
         switch (addressMode) {
         case 0:  return 0;               // ConstZero
@@ -233,26 +214,6 @@ public class GlulxVM {
         }
     }
 
-    private void readOperands() {
-        int addrModeOffset = state.pc;
-        int numOperands = Opcodes.numOperands(_opcodeNum);
-        int nbytesNumOperands = numOperands / 2 + numOperands % 2;
-        state.pc += nbytesNumOperands; // adjust pc to the start of operand data
-        int numRead = 0;
-        for (int i = 0; i < nbytesNumOperands; i++) {
-            int byteVal = state.memByteAt(addrModeOffset + i);
-            _operands[numRead].addressMode = byteVal & 0x0f;
-            _operands[numRead].value = readOperand(_operands[numRead].addressMode);
-
-            numRead++;
-            if (numRead < numOperands) {
-                _operands[numRead].addressMode = (byteVal >>> 4) & 0x0f;
-                _operands[numRead].value = readOperand(_operands[numRead].addressMode);
-                numRead++;
-            }
-        }
-    }
-  
     // Used by both signed and unsigned instructions.
     private int getOperand(int pos) {
         Operand operand = _operands[pos];
@@ -620,7 +581,62 @@ public class GlulxVM {
   }
 */
 
-    private void executeInstruction() {
+    // decode instruction at current pc
+    public void doInstruction() {
+        //int pc = _state.pc;
+
+        // decode opcode number
+        // look at the two highest bits: 11 means 4 bytes, 10 means 2 bytes
+        // else one byte
+        int b0 = state.memByteAt(state.pc) & 0xff;
+        int bitpattern = b0 & 0xc0;
+
+        if (bitpattern == 0xc0) {
+            _opcodeNum = state.memIntAt(state.pc) - 0xc0000000;
+            _opcodeNumSize = Types.SizeInt;
+        } else if (bitpattern == 0x80) {
+            _opcodeNum = (state.memShortAt(state.pc) & 0xffff) - 0x8000;
+            _opcodeNumSize = Types.SizeShort;
+        } else {
+            _opcodeNum = b0;
+            _opcodeNumSize = Types.SizeByte;
+        }
+        state.pc += _opcodeNumSize;
+
+        // read operands
+        int addrModeOffset = state.pc;
+        int numOperands = Opcodes.numOperands(_opcodeNum);
+        int nbytesNumOperands = numOperands / 2 + numOperands % 2;
+        state.pc += nbytesNumOperands; // adjust pc to the start of operand data
+        int numRead = 0;
+        for (int i = 0; i < nbytesNumOperands; i++) {
+            int byteVal = state.memByteAt(addrModeOffset + i);
+            _operands[numRead].addressMode = byteVal & 0x0f;
+            _operands[numRead].value = readOperand(_operands[numRead].addressMode);
+
+            numRead++;
+            if (numRead < numOperands) {
+                _operands[numRead].addressMode = (byteVal >>> 4) & 0x0f;
+                _operands[numRead].value = readOperand(_operands[numRead].addressMode);
+                numRead++;
+            }
+        }
+  
+        // for debugging
+        /*
+          StringBuilder builder = new StringBuilder();
+          builder.append("%04d: $%04x - @%s".format(iterations, pc, Opcodes.name(_opcodeNum)))
+          int numOperands = Opcodes.numOperands(_opcodeNum);
+          for (int i = 0; i < numOperands; i++) {
+          builder.append(" %s".format(_operands(i).toString(state)));
+          }
+          builder.append(" {FP = %d SP = %d} ".format(_state.fp, _state.sp));
+          builder.append(" " + state.stackValuesAsString);
+          logger.info(builder.toString());
+        */
+        // Debugging end
+
+        // execute instruction
         switch (_opcodeNum) {
         case 0x00: break; // nop, do nothing
         case 0x10: // add
@@ -1138,29 +1154,9 @@ public class GlulxVM {
             throw new IllegalArgumentException(String.format("unknown opcode number: %02x",
                                                              _opcodeNum));
         }
+        //iterations++;
     }
 
-    // decode instruction at current pc
-    public void doInstruction() {
-        //int pc = _state.pc;
-        decodeOpcodeNum();
-        readOperands();
-        // for debugging
-        /*
-          StringBuilder builder = new StringBuilder();
-          builder.append("%04d: $%04x - @%s".format(iterations, pc, Opcodes.name(_opcodeNum)))
-          int numOperands = Opcodes.numOperands(_opcodeNum);
-          for (int i = 0; i < numOperands; i++) {
-          builder.append(" %s".format(_operands(i).toString(state)));
-          }
-          builder.append(" {FP = %d SP = %d} ".format(_state.fp, _state.sp));
-          builder.append(" " + state.stackValuesAsString);
-          logger.info(builder.toString());
-        */
-        // Debugging end
-        executeInstruction();
-        iterations++;
-    }
 
     public void fatal(String msg) {
         _glk.put_java_string(msg);
