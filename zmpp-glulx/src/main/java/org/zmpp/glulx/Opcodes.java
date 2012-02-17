@@ -273,10 +273,12 @@ public class Opcodes {
     }
   }
       */
-
+    // This function is not called in the VM. Rather, it serves as a means
+    // for verification
     public static final int numOperands(int opcodeNum) {
         switch (opcodeNum) {
         case 0x00  : return 0; // nop
+
         case 0x10  : return 3; // add
         case 0x11  : return 3; // sub
         case 0x12  : return 3; // mul
@@ -290,6 +292,7 @@ public class Opcodes {
         case 0x1c  : return 3; // shiftl
         case 0x1d  : return 3; // sshiftr
         case 0x1e  : return 3; // ushiftr
+
         case 0x20  : return 1; // jump
         case 0x22  : return 2; // jz
         case 0x23  : return 2; // jnz
@@ -303,11 +306,13 @@ public class Opcodes {
         case 0x2b  : return 3; // jgeu
         case 0x2c  : return 3; // jgtu
         case 0x2d  : return 3; // jleu
+
         case 0x30  : return 3; // call
         case 0x31  : return 1; // return
         case 0x32  : return 2; // catch
         case 0x33  : return 2; // throw
         case 0x34  : return 2; // tailcall
+
         case 0x40  : return 2; // copy
         case 0x41  : return 2; // copys
         case 0x42  : return 2; // copyb
@@ -321,22 +326,27 @@ public class Opcodes {
         case 0x4d  : return 3; // astores
         case 0x4e  : return 3; // astoreb
         case 0x4f  : return 3; // astorebit
+
         case 0x50  : return 1; // stkcount
         case 0x51  : return 2; // stkpeek
         case 0x52  : return 0; // stkswap
         case 0x53  : return 2; // stkroll
         case 0x54  : return 1; // stkcopy
+
         case 0x70  : return 1; // streamchar
         case 0x71  : return 1; // streamnum
         case 0x72  : return 1; // streamstr
         case 0x73  : return 1; // streamunichar
+
         case 0x100 : return 3; // gestalt
         case 0x101 : return 1; // debugtrap
         case 0x102 : return 1; // getmemsize
         case 0x103 : return 2; // setmemsize
         case 0x104 : return 1; // jumpabs
+
         case 0x110 : return 2; // random
         case 0x111 : return 1; // setrandom
+
         case 0x120 : return 0; // quit
         case 0x121 : return 1; // verify
         case 0x122 : return 0; // restart
@@ -345,29 +355,37 @@ public class Opcodes {
         case 0x125 : return 1; // saveundo
         case 0x126 : return 1; // restoreundo
         case 0x127 : return 2; // protect
+
         case 0x130 : return 3; // glk
+
         case 0x140 : return 1; // getstringtbl
         case 0x141 : return 1; // setstringtbl
         case 0x148 : return 2; // getiosys
         case 0x149 : return 2; // setiosys
+
         case 0x150 : return 8; // linearsearch
         case 0x151 : return 8; // binarysearch
         case 0x152 : return 7; // linkedsearch
+
         case 0x160 : return 2; // callf
         case 0x161 : return 3; // callfi
         case 0x162 : return 4; // callfii
         case 0x163 : return 5; // callfiii
+
         case 0x170 : return 2; // mzero
         case 0x171 : return 3; // mcopy
         case 0x178 : return 2; // malloc
         case 0x179 : return 1; // mfree
+
         case 0x180 : return 2; // accelfunc
         case 0x181 : return 2; // accelparam
+
         case 0x190 : return 2; // numtof
         case 0x191 : return 2; // ftonumz
         case 0x192 : return 2; // ftonumn
         case 0x198 : return 2; // ceil
         case 0x199 : return 2; // floor
+
         case 0x1a0 : return 3; // fadd
         case 0x1a1 : return 3; // fsub
         case 0x1a2 : return 3; // fmul
@@ -377,6 +395,7 @@ public class Opcodes {
         case 0x1a9 : return 2; // exp
         case 0x1aa : return 2; // log
         case 0x1ab : return 3; // pow
+
         case 0x1b0 : return 2; // sin
         case 0x1b1 : return 2; // cos
         case 0x1b2 : return 2; // tan
@@ -384,6 +403,7 @@ public class Opcodes {
         case 0x1b4 : return 2; // acos
         case 0x1b5 : return 2; // atan
         case 0x1b6 : return 3; // atan2
+
         case 0x1c0 : return 4; // jfeq
         case 0x1c1 : return 4; // jfne
         case 0x1c2 : return 3; // jflt
@@ -392,8 +412,7 @@ public class Opcodes {
         case 0x1c5 : return 3; // jfge
         case 0x1c8 : return 2; // jisnan
         case 0x1c9 : return 2; // jisinf
-        default:
-            throw new IllegalArgumentException(String.format("unknown opcode %02x: ", opcodeNum));
+        default: return 0;
     }
   }
 }

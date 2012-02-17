@@ -45,6 +45,39 @@ public class GlulxVM {
     private static final int MaxArguments        = 20;
     private static final int SizeLocalDescriptor = Types.SizeByte * 2;
 
+    // lookup table for number of operands
+    public static final byte[] NumOperands = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00-0x0f
+        3, 3, 3, 3, 3, 2, 0, 0, 3, 3, 3, 2, 3, 3, 3, 0, // 0x10-0x1f
+        1, 0, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, // 0x20-0x2f
+        3, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x30-0x3f
+        2, 2, 2, 0, 2, 2, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, // 0x40-0x4f
+        1, 2, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x50-0x5f
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x60-0x6f
+        1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x70-0x7f
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x80-0x8f
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x90-0x9f
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xa0-0xaf
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xb0-0xbf
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xc0-0xcf
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xd0-0xdf
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xe0-0xef
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xf0-0xff
+        3, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x100-0x10f
+        2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x110-0x11f
+        0, 1, 0, 2, 2, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, // 0x120-0x12f
+        3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x130-0x13f
+        1, 1, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, // 0x140-0x14f
+        8, 8, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x150-0x15f
+        2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x160-0x16f
+        2, 3, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, // 0x170-0x17f
+        2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x180-0x18f
+        2, 2, 2, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, // 0x190-0x19f
+        3, 3, 3, 3, 4, 0, 0, 0, 2, 2, 2, 3, 0, 0, 0, 0, // 0x1a0-0x1af
+        2, 2, 2, 2, 2, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x1b0-0x1bf
+        4, 4, 3, 3, 3, 3, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0 // 0x1c0-0x1cf
+    };
+
     private static Logger logger = Logger.getLogger("glulx");
     private int iterations = 1;
 
@@ -581,7 +614,7 @@ public class GlulxVM {
 
             // read operands
             int addrModeOffset = state.pc;
-            int numOperands = Opcodes.numOperands(_opcodeNum);
+            int numOperands = NumOperands[_opcodeNum];
             int nbytesNumOperands = numOperands / 2 + numOperands % 2;
             state.pc += nbytesNumOperands; // adjust pc to the start of operand data
             int numRead = 0;
