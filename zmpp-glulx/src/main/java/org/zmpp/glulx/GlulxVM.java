@@ -110,7 +110,7 @@ public class GlulxVM {
         _glkDispatch = new GlkDispatch(state, _glk);
         state.init(storyBytes);
         currentDecodingTable  = state.header.decodingTable();
-        _accelSystem.setGlk(_glk);
+        _accelSystem.glk = _glk;
         if (_originalRam == null) _originalRam = state.cloneRam();
 
         prepareCall(state.header.startfunc(), null);
