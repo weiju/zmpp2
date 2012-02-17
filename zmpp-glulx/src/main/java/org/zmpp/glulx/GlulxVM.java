@@ -188,28 +188,6 @@ public class GlulxVM {
         return localSectionSize;
     }
 
-    private int readOperand(int addressMode) {
-        switch (addressMode) {
-        case 0:  return 0;               // ConstZero
-        case 1:  return state.nextByte();  // ConstByte
-        case 2:  return state.nextShort(); // ConstShort
-        case 3:  return state.nextInt();   // ConstInt
-        case 5:  return state.nextByte();  // Address00_FF
-        case 6:  return state.nextShort(); // Address0000_FFFF
-        case 7:  return state.nextInt();   // AddressAny
-        case 8:  return 0;               // Stack
-        case 9:  return state.nextByte();  // Local00_FF
-        case 10: return state.nextShort(); // Local0000_FFFF
-        case 11: return state.nextInt();   // LocalAny
-        case 13: return state.nextByte();  // Ram00_FF
-        case 14: return state.nextShort(); // Ram0000_FFFF
-        case 15: return state.nextInt();   // RamAny
-        default:
-            throw new IllegalArgumentException("unsupported address mode: " +
-                                               addressMode);
-        }
-    }
-
     // Used by both signed and unsigned instructions.
     private int getOperand(int pos) {
         Operand operand = _operands[pos];
@@ -605,19 +583,64 @@ public class GlulxVM {
         int nbytesNumOperands = numOperands / 2 + numOperands % 2;
         state.pc += nbytesNumOperands; // adjust pc to the start of operand data
         int numRead = 0;
+        int byteVal = 0;
+        Operand currentOperand = null;
         for (int i = 0; i < nbytesNumOperands; i++) {
-            int byteVal = state.memByteAt(addrModeOffset + i);
-            _operands[numRead].addressMode = byteVal & 0x0f;
+            byteVal = state.memByteAt(addrModeOffset + i);
+            currentOperand = _operands[numRead];
+            currentOperand.addressMode = byteVal & 0x0f;
 
-            // readOperand()
-            _operands[numRead].value = readOperand(_operands[numRead].addressMode);
+            // READ OPERAND START
+            //_operands[numRead].value = readOperand(_operands[numRead].addressMode);
+            switch (currentOperand.addressMode) {
+            case 0:  currentOperand.value = 0;                 break; // ConstZero
+            case 1:  currentOperand.value = state.nextByte();  break; // ConstByte
+            case 2:  currentOperand.value = state.nextShort(); break; // ConstShort
+            case 3:  currentOperand.value = state.nextInt();   break; // ConstInt
+            case 5:  currentOperand.value = state.nextByte();  break; // Address00_FF
+            case 6:  currentOperand.value = state.nextShort(); break; // Address0000_FFFF
+            case 7:  currentOperand.value = state.nextInt();   break; // AddressAny
+            case 8:  currentOperand.value = 0;                 break; // Stack
+            case 9:  currentOperand.value = state.nextByte();  break; // Local00_FF
+            case 10: currentOperand.value = state.nextShort(); break; // Local0000_FFFF
+            case 11: currentOperand.value = state.nextInt();   break; // LocalAny
+            case 13: currentOperand.value = state.nextByte();  break; // Ram00_FF
+            case 14: currentOperand.value = state.nextShort(); break; // Ram0000_FFFF
+            case 15: currentOperand.value = state.nextInt();   break; // RamAny
+            default:
+                throw new IllegalArgumentException("unsupported address mode: " +
+                                                   currentOperand.addressMode);
+            }
+            // READ OPERAND END
 
             numRead++;
+            // second operand nibble in byte val
             if (numRead < numOperands) {
-                _operands[numRead].addressMode = (byteVal >>> 4) & 0x0f;
+                currentOperand = _operands[numRead];
+                currentOperand.addressMode = (byteVal >>> 4) & 0x0f;
 
-                // readOperand()
-                _operands[numRead].value = readOperand(_operands[numRead].addressMode);
+                // READ OPERAND START
+                // _operands[numRead].value = readOperand(_operands[numRead].addressMode);
+                switch (currentOperand.addressMode) {
+                case 0:  currentOperand.value = 0;                 break; // ConstZero
+                case 1:  currentOperand.value = state.nextByte();  break; // ConstByte
+                case 2:  currentOperand.value = state.nextShort(); break; // ConstShort
+                case 3:  currentOperand.value = state.nextInt();   break; // ConstInt
+                case 5:  currentOperand.value = state.nextByte();  break; // Address00_FF
+                case 6:  currentOperand.value = state.nextShort(); break; // Address0000_FFFF
+                case 7:  currentOperand.value = state.nextInt();   break; // AddressAny
+                case 8:  currentOperand.value = 0;                 break; // Stack
+                case 9:  currentOperand.value = state.nextByte();  break; // Local00_FF
+                case 10: currentOperand.value = state.nextShort(); break; // Local0000_FFFF
+                case 11: currentOperand.value = state.nextInt();   break; // LocalAny
+                case 13: currentOperand.value = state.nextByte();  break; // Ram00_FF
+                case 14: currentOperand.value = state.nextShort(); break; // Ram0000_FFFF
+                case 15: currentOperand.value = state.nextInt();   break; // RamAny
+                default:
+                    throw new IllegalArgumentException("unsupported address mode: " +
+                                                       currentOperand.addressMode);
+                }
+                // READ OPERAND END
                 numRead++;
             }
         }
