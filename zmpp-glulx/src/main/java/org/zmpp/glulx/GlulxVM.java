@@ -74,7 +74,7 @@ public class GlulxVM {
     private int _numArguments;
   
     // VM state
-    private Glk _glk;
+    public  Glk glk;
     private GlkDispatch _glkDispatch;
     private Random _random = new Random();
 
@@ -87,8 +87,7 @@ public class GlulxVM {
     private int _protectionLength;
 
     // IO Systems
-    public EventManager eventManager() { return _glk.eventManager(); }
-    public Glk glk() { return _glk; }
+    public EventManager eventManager() { return glk.eventManager(); }
     public int runState() { return state.pRunState; }
     public BlorbData blorbData;
     public int currentDecodingTable;
@@ -106,19 +105,16 @@ public class GlulxVM {
 
     public void init(byte[] storyBytes, BlorbData aBlorbData) {
         blorbData = aBlorbData;
-        _glk = new Glk(new EventManager(state));
-        _glkDispatch = new GlkDispatch(state, _glk);
+        glk = new Glk(new EventManager(state));
+        _glkDispatch = new GlkDispatch(state, glk);
         state.init(storyBytes);
         currentDecodingTable  = state.header.decodingTable();
-        _accelSystem.glk = _glk;
+        _accelSystem.glk = glk;
         if (_originalRam == null) _originalRam = state.cloneRam();
 
         prepareCall(state.header.startfunc(), null);
     }
 
-    public int memIntAt(int addr) { return state.memIntAt(addr); }
-    public int memByteAt(int addr) { return state.memByteAt(addr); }
-    public int  memShortAt(int addr) { return state.memShortAt(addr); }
     private void restart() {
         state.restart(_originalRam, _protectionStart, _protectionLength);
         //_protectionStart  = 0
@@ -612,11 +608,15 @@ public class GlulxVM {
         for (int i = 0; i < nbytesNumOperands; i++) {
             int byteVal = state.memByteAt(addrModeOffset + i);
             _operands[numRead].addressMode = byteVal & 0x0f;
+
+            // readOperand()
             _operands[numRead].value = readOperand(_operands[numRead].addressMode);
 
             numRead++;
             if (numRead < numOperands) {
                 _operands[numRead].addressMode = (byteVal >>> 4) & 0x0f;
+
+                // readOperand()
                 _operands[numRead].value = readOperand(_operands[numRead].addressMode);
                 numRead++;
             }
@@ -944,7 +944,7 @@ public class GlulxVM {
         case 0x123: // save
             {
                 int streamId = getOperand(0);
-                SaveGameWriter writer = new SaveGameWriter(_glk, streamId, state, _operands[1]);
+                SaveGameWriter writer = new SaveGameWriter(glk, streamId, state, _operands[1]);
                 boolean result = writer.writeGameFile();
                 if (result) storeAtOperand(1, 0);
                 else storeAtOperand(1, 1);
@@ -953,7 +953,7 @@ public class GlulxVM {
         case 0x124: // restore
             {
                 int streamId = getOperand(0);
-                SaveGameLoader loader = new SaveGameLoader(_glk, streamId, state, _originalRam);
+                SaveGameLoader loader = new SaveGameLoader(glk, streamId, state, _originalRam);
                 if (loader.loadGame()) {
                     state.popCallStubThrow(-1);
                 } else {
@@ -1018,7 +1018,7 @@ public class GlulxVM {
                 switch (iosys) {
                 case 0:  currentIOSystem = new NullIOSystem(this, rock); break;
                 case 1:  currentIOSystem = new FilterIOSystem(this, rock); break;
-                case 2:  currentIOSystem = new GlkIOSystem(this, _glk, rock); break;
+                case 2:  currentIOSystem = new GlkIOSystem(this, glk, rock); break;
                 case 20: currentIOSystem = new ChannelIOSystem(this, rock); break;
                 default:
                     throw new UnsupportedOperationException(String.format("IO system[%d] not supported",
@@ -1159,7 +1159,7 @@ public class GlulxVM {
 
 
     public void fatal(String msg) {
-        _glk.put_java_string(msg);
+        glk.put_java_string(msg);
         state.pRunState = VMRunStates.Halted;
     }
 }

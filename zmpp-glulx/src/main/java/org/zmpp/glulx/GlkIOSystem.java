@@ -33,10 +33,12 @@ import org.zmpp.glk.Glk;
 class GlkIOSystem extends IOSystem {
 
     private Glk glk;
+    private GlulxVMState vmState;
 
     public GlkIOSystem(GlulxVM vm, Glk glk, int rock) {
         super(vm, rock);
         this.glk = glk;
+        this.vmState = vm.state;
     }
 
     public int id() { return 2; }
@@ -63,11 +65,11 @@ class GlkIOSystem extends IOSystem {
                                                int currentStreamBit,
                                                boolean inBetween) {
         int cstrAddr    = nodeAddr + 1;
-        int currentChar = vm.memByteAt(cstrAddr);
+        int currentChar = vmState.memByteAt(cstrAddr);
         while (currentChar != 0) {
             streamChar((char) currentChar);
             cstrAddr++;
-            currentChar = vm.memByteAt(cstrAddr);
+            currentChar = vmState.memByteAt(cstrAddr);
         }
         return StreamStrState.Continue;
     }
@@ -77,11 +79,11 @@ class GlkIOSystem extends IOSystem {
                                                      int currentStreamBit,
                                                      boolean inBetween) {
         int uniCStrAddr = nodeAddr + 1;
-        int currentChar = vm.memIntAt(uniCStrAddr);
+        int currentChar = vmState.memIntAt(uniCStrAddr);
         while (currentChar != 0) {
             streamChar((char) (currentChar & 0xffff));
             uniCStrAddr += 4;
-            currentChar = vm.memIntAt(uniCStrAddr);
+            currentChar = vmState.memIntAt(uniCStrAddr);
         }
         return StreamStrState.Continue;
     }
