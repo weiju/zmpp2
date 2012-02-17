@@ -34,10 +34,11 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.zmpp.base.*;
+import org.zmpp.iff.ResourceInfo.ResourceTypes;
 
 // Assumes that the form chunk given as constructor argument is a valid
 // blorb file and provides Blorb-specific accesssors
-class BlorbData {
+public class BlorbData {
     private static final int ResourceIndexEntrySize  = 12;
     private static final int ResourceIndexEntryStart = 4;
 

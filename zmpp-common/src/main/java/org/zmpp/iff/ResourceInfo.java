@@ -28,19 +28,19 @@
  */
 package org.zmpp.iff;
 
-interface UsageTypes {
-    public static final int Pict = 0x50696374;
-    public static final int Snd  = 0x536e6420;
-    public static final int Exec = 0x45786563;
-}
-
-interface ResourceTypes {
-    public static final int Picture = 1;
-    public static final int Sound   = 2;
-    public static final int Exec    = 3;
-}
 
 public class ResourceInfo {
+    public static class ResourceTypes {
+        public static final int Picture = 1;
+        public static final int Sound   = 2;
+        public static final int Exec    = 3;
+    }
+    public static class UsageTypes {
+        public static final int Pict = 0x50696374;
+        public static final int Snd  = 0x536e6420;
+        public static final int Exec = 0x45786563;
+    }
+
     public int usage;
     public int number;
     public int start;

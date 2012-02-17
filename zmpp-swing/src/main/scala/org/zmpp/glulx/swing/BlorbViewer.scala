@@ -36,6 +36,7 @@ import java.awt.event.WindowEvent
 
 import org.zmpp.base._
 import org.zmpp.iff._
+import org.zmpp.iff.ResourceInfo.ResourceTypes;
 import org.zmpp.glulx._
 
 import java.util.concurrent.ExecutorService
@@ -54,7 +55,7 @@ class ViewerTableModel extends AbstractTableModel {
     fireTableDataChanged
   }
   def resources = blorbData.resources
-  def getRowCount = if (blorbData == null) 0 else resources.length
+  def getRowCount = if (blorbData == null) 0 else resources.size()
   def getColumnCount = 5
   override def getColumnName(col: Int) = col match {
     case 0 => "Type"
@@ -65,21 +66,21 @@ class ViewerTableModel extends AbstractTableModel {
   }
   def getValueAt(row: Int, col: Int) = col match {
     case 0 =>
-      resources(row).resourceType match {
+      resources.get(row).resourceType match {
         case ResourceTypes.Picture => "Picture"
         case ResourceTypes.Sound => "Sound"
         case ResourceTypes.Exec => "Exec"
         case _ => "?"
       }
-    case 1 => resources(row).number.asInstanceOf[AnyRef]
+    case 1 => resources.get(row).number.asInstanceOf[AnyRef]
     case 2 =>
-      val subChunk = _blorbData.formChunk.chunkAtAddress(resources(row).start)
+      val subChunk = _blorbData.formChunk.chunkAtAddress(resources.get(row).start)
       val id = subChunk.id
       if (id == "FORM") "AIFF"
       else id
-    case 3 => resources(row).start.asInstanceOf[AnyRef]
+    case 3 => resources.get(row).start.asInstanceOf[AnyRef]
     case 4 =>
-      val subChunk = _blorbData.formChunk.chunkAtAddress(resources(row).start)
+      val subChunk = _blorbData.formChunk.chunkAtAddress(resources.get(row).start)
       subChunk.size.asInstanceOf[AnyRef]
   }
 }
@@ -128,8 +129,8 @@ class BlorbViewerFrame extends JFrame("Blorb Viewer") {
   viewButton.addActionListener(new ActionListener {
     def actionPerformed(event: ActionEvent) {
       val selindex = viewerTable.getSelectedRow
-      if (selindex >= 0 && selindex < tableModel.resources.length) {
-        val resource = tableModel.resources(selindex)
+      if (selindex >= 0 && selindex < tableModel.resources.size) {
+        val resource = tableModel.resources.get(selindex)
         if (resource.isPicture) {
           println("PLAY PICTURE")
         } else if (resource.isSound) {
@@ -142,10 +143,10 @@ class BlorbViewerFrame extends JFrame("Blorb Viewer") {
   saveResourceButton.addActionListener(new ActionListener {
     def actionPerformed(event: ActionEvent) {
       val selindex = viewerTable.getSelectedRow
-      if (selindex >= 0 && selindex < tableModel.resources.length) {
+      if (selindex >= 0 && selindex < tableModel.resources.size) {
         val chooser = new JFileChooser
         if (chooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
-          val resource = tableModel.resources(selindex)
+          val resource = tableModel.resources.get(selindex)
           val blorbData = tableModel.blorbData
           val memory = tableModel.blorbData.formChunk.memory
           val subChunk = blorbData.formChunk.chunkAtAddress(resource.start)

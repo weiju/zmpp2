@@ -37,7 +37,7 @@ package org.zmpp.base;
 public class DefaultMemory implements Memory, Comparable<DefaultMemory> {
 
     public byte[] buffer;
-    protected int address;
+    public int address;
     private int _size;
     private int _startIndex;
 

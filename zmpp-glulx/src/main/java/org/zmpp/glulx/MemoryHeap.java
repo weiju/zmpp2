@@ -65,10 +65,10 @@ class MemoryHeap implements Memory {
     }
 
     private int compareAddress(int addr, DefaultMemory memblock) {
-        if (addr < memblock.address())                        return -1;
-        else if (addr >= memblock.address() &&
-                 addr < memblock.address() + memblock.size()) return 0;
-        else                                                  return 1;
+        if (addr < memblock.address)                        return -1;
+        else if (addr >= memblock.address &&
+                 addr < memblock.address + memblock.size()) return 0;
+        else                                                return 1;
     }
 
     private DefaultMemory memblockAtRecursive(int addr, int left, int right) {

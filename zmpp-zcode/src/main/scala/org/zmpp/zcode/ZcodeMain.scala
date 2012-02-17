@@ -136,7 +136,7 @@ object ZcodeMain extends App {
     val fileBytes = readFileData(new File(args(0)))
     if (fileBytes(0) >= 1 && fileBytes(0) <= 8) {
       runStory(new DefaultMemory0(fileBytes))
-    } else if (BlorbData.isBlorbFile(fileBytes)) {
+    } else if (BlorbDataHelper.isBlorbFile(fileBytes)) {
       val blorbData = new BlorbData(new DefaultFormChunk(new DefaultMemory0(fileBytes)))
       if (blorbData.hasZcodeChunk) {
         val frontispieceNum = blorbData.frontispieceNum

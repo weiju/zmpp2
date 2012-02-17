@@ -61,17 +61,17 @@ public class BlorbDataHelper {
     private static int chunklen;
 
     // Checking for valid Blorb files
-    public boolean isIffFile(byte[] dataBytes) { return intAt(dataBytes, 0) == FORM; }
-    public boolean isBlorbFile(byte[] dataBytes) {
+    public static boolean isIffFile(byte[] dataBytes) { return intAt(dataBytes, 0) == FORM; }
+    public static boolean isBlorbFile(byte[] dataBytes) {
         return isIffFile(dataBytes) && intAt(dataBytes, 8) == IFRS;
     }
 
-    private int intAt(byte[] dataBytes, int offset) {
+    private static int intAt(byte[] dataBytes, int offset) {
         return ((dataBytes[offset] & 0xff) << 24) | ((dataBytes[offset + 1] & 0xff) << 16) |
             ((dataBytes[offset + 2] & 0xff) << 8) | (dataBytes[offset + 3] & 0xff);
     }
 
-    private int shortAt(byte[] dataBytes, int offset) {
+    private static int shortAt(byte[] dataBytes, int offset) {
         return ((dataBytes[offset] & 0xff) << 8) | (dataBytes[offset + 1] & 0xff);
     }
 
@@ -80,7 +80,7 @@ public class BlorbDataHelper {
     // on a memory-restricted environment. We just read information
     // on the fly and just use the header information we need
     // Currently, this can read Z-blorbs and plain Z-files
-    public ZStoryInfo quickScanZInfo(InputStream inputStream) throws IOException {
+    public static ZStoryInfo quickScanZInfo(InputStream inputStream) throws IOException {
         byte[] buffer = new byte[BufferSize];
 
         // read the identifier
@@ -116,7 +116,7 @@ public class BlorbDataHelper {
         }
     }
 
-    private ZStoryInfo zinfo(byte[] buffer) {
+    private static ZStoryInfo zinfo(byte[] buffer) {
         int version = buffer[0];
         StringBuilder serialBuffer = new StringBuilder();
         for (int i = 0; i < 6; i++) {
@@ -126,7 +126,7 @@ public class BlorbDataHelper {
         return new ZStoryInfo(version, shortAt(buffer, 2), serial, shortAt(buffer, 0x1c));
     }
 
-    private void readChunkHeader(InputStream inputStream, byte[] buffer) throws IOException {
+    private static void readChunkHeader(InputStream inputStream, byte[] buffer) throws IOException {
         if (inputStream.read(buffer, 0, 8) == 8) {
             chunkId = intAt(buffer, 0);
             chunklen = intAt(buffer, 4);

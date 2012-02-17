@@ -30,7 +30,7 @@ package org.zmpp.iff;
 
 import org.zmpp.base.*;
 
-class DefaultFormChunk extends DefaultChunk implements FormChunk {
+public class DefaultFormChunk extends DefaultChunk implements FormChunk {
 
     public DefaultFormChunk(Memory memory) throws java.io.IOException {
         super(memory, 0);

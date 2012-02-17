@@ -152,35 +152,39 @@ class SaveGameLoader {
         glk.stream_set_position(streamId, 0, SeekModes.End());
         int fileSize = glk.stream_get_position(streamId);
         byte[] fileBytes = readFileBytes(fileSize);
-        DefaultFormChunk formChunk = new DefaultFormChunk(new DefaultMemory(fileBytes));
-        if (isQuetzalFile(formChunk)) {
-
-            // Quetzal file
-            // we can ignore IFhd for Glulx games, instead, we might have
-            // an MAll chunk
-            Chunk cmemChunk = formChunk.subChunk("CMem");
-            Chunk umemChunk = formChunk.subChunk("UMem");
-            Chunk stksChunk = formChunk.subChunk("Stks");
-            Chunk mallChunk = formChunk.subChunk("MAll");
-            if (cmemChunk == null && umemChunk == null) {
-                logger.severe("NO MEMORY CHUNK FOUND !!");
+        try {
+            DefaultFormChunk formChunk = new DefaultFormChunk(new DefaultMemory(fileBytes));
+            if (isQuetzalFile(formChunk)) {
+                // Quetzal file
+                // we can ignore IFhd for Glulx games, instead, we might have
+                // an MAll chunk
+                Chunk cmemChunk = formChunk.subChunk("CMem");
+                Chunk umemChunk = formChunk.subChunk("UMem");
+                Chunk stksChunk = formChunk.subChunk("Stks");
+                Chunk mallChunk = formChunk.subChunk("MAll");
+                if (cmemChunk == null && umemChunk == null) {
+                    logger.severe("NO MEMORY CHUNK FOUND !!");
+                    return false;
+                }
+                if (stksChunk == null) {
+                    logger.severe("NO STACK CHUNK FOUND !!");
+                    return false;
+                }
+                
+                logger.info("1. READING RAM");
+                if (cmemChunk != null) readCMemChunk(cmemChunk);
+                else if (umemChunk != null) readUMemChunk(umemChunk);
+                logger.info("2. READING STACK STATE");
+                readStksChunk(stksChunk);
+                logger.info("3. READING HEAP");
+                if (mallChunk != null) readMAllChunk(mallChunk);
+                return true;
+            } else {
+                logger.severe("NOT A VALID QUETZAL FILE");
                 return false;
             }
-            if (stksChunk == null) {
-                logger.severe("NO STACK CHUNK FOUND !!");
-                return false;
-            }
-
-            logger.info("1. READING RAM");
-            if (cmemChunk != null) readCMemChunk(cmemChunk);
-            else if (umemChunk != null) readUMemChunk(umemChunk);
-            logger.info("2. READING STACK STATE");
-            readStksChunk(stksChunk);
-            logger.info("3. READING HEAP");
-            if (mallChunk != null) readMAllChunk(mallChunk);
-            return true;
-        } else {
-            logger.severe("NOT A VALID QUETZAL FILE");
+        } catch (java.io.IOException ex) {
+            ex.printStackTrace();
             return false;
         }
     }
