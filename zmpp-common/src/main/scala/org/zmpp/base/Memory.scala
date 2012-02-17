@@ -28,12 +28,8 @@
  */
 package org.zmpp.base
 
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.util.logging._
-
 /**
- * Memory implemented with a ByteBuffer object
+ * Memory implemented with a byte array
  * All byte and short are considered to be unsigned values, int's are signed
  * to avoid extension to long values where in most cases, we won't use the full
  * positive range of a 32-bit int
@@ -112,7 +108,6 @@ object DefaultMemory {
 
 class MemoryInputStream(_mem: Memory, offset: Int, val size: Int)
 extends java.io.InputStream {
-  val logger = Logger.getLogger("glulx")
   private var position = 0
   private var mark     = 0
 

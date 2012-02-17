@@ -1,6 +1,6 @@
 /*
- * Created on 2011/11/10
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Created on 2012/02/16
+ * Copyright (c) 2010-2012, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,29 +26,34 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.base
+package org.zmpp.base;
 
 /**
  * A space-saving data structure that we can use to implement undo
  */
-class CircularStack[T](capacity: Int) {
-  private val buffer = Array.ofDim[AnyRef](capacity)
-  private var top: Int = 0
-  private var size = 0
+public class CircularStack<T> {
+    private Object[] buffer;
+    private int top;
+    private int size;
 
-  def empty = size == 0
-  def push(elem: T) {
-    buffer(top) = elem.asInstanceOf[AnyRef]
-    top = (top + 1) % capacity
-    size += 1
-    if (size > capacity) size = capacity
-  }
-  def pop: T = {
-    var pos = top - 1
-    if (pos < 0) pos = capacity + pos
-    val result = buffer(pos)
-    size -= 1
-    top = pos
-    result.asInstanceOf[T]
-  }
+    public CircularStack(int capacity) {
+        buffer = new Object[capacity];
+    }
+    public boolean empty() { return size == 0; }
+
+    @SuppressWarnings("unchecked") public void push(T elem) {
+        buffer[top] = elem;
+        top = (top + 1) % buffer.length;
+        size++;
+        if (size > buffer.length) size = buffer.length;
+    }
+
+    @SuppressWarnings("unchecked") public T pop() {
+        int pos = top - 1;
+        if (pos < 0) pos = buffer.length + pos;
+        T result = (T) buffer[pos];
+        size--;
+        top = pos;
+        return result;
+    }
 }
