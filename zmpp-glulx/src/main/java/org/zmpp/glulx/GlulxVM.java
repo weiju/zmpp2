@@ -116,8 +116,10 @@ public class GlulxVM {
 
     // this is of course, super-ugly: sharing the stack array directly with the state
     // object. If Inform 7 throws 30 million instructions per turn at you, you gotta
-    // do what you need to do
+    // do what you need to do. And we do it for the story memory, too.
     private byte[] stackBytes;
+    private byte[] storyBytes;
+    private int extstart; // this is cached, too
 
     // The original state of writable memory after loading
     private byte[] _originalRam;
@@ -146,9 +148,11 @@ public class GlulxVM {
         glk = new Glk(new EventManager(state));
         _glkDispatch = new GlkDispatch(state, glk);
         state.init(storyBytes);
-        currentDecodingTable  = state.header.decodingTable();
+        this.currentDecodingTable  = state.header.decodingTable();
         // copy reference to vm so we can directly access the stack memory (...)
-        stackBytes = state.stackBytes();
+        this.stackBytes = state.stackBytes();
+        this.storyBytes = state.storyBytes;
+        this.extstart   = state.extstart;
 
         _accelSystem.glk = glk;
         if (_originalRam == null) _originalRam = state.cloneRam();
@@ -627,7 +631,10 @@ public class GlulxVM {
             // decode opcode number
             // look at the two highest bits: 11 means 4 bytes, 10 means 2 bytes
             // else one byte
-            int b0 = state.memByteAt(state.pc) & 0xff;
+            // ******************************************
+            int b0 = storyBytes[state.pc] & 0xff;
+            // ******************************************
+
             int bitpattern = b0 & 0xc0;
 
             if (bitpattern == 0xc0) {
@@ -646,6 +653,9 @@ public class GlulxVM {
             // This is really, really ugly, in order to make it fast, I had to
             // inline a lot of functions, which has almost no effect in Hotspot
             // but the difference is huge in Dalvik
+            // Note that this section assumes that all instructions are in story
+            // memory, if the story is doing weird stuff with self-modifying code,
+            // shame on its author
             int addrModeOffset = state.pc;
             int numOperands = NumOperands[_opcodeNum];
             int nbytesNumOperands = numOperands / 2 + numOperands % 2;
@@ -653,8 +663,11 @@ public class GlulxVM {
             int numRead = 0;
             int byteVal = 0;
             Operand currentOperand = null;
+
             for (int i = 0; i < nbytesNumOperands; i++) {
-                byteVal = state.memByteAt(addrModeOffset + i);
+                // **********************************************
+                byteVal = storyBytes[addrModeOffset + i] & 0xff;
+                // **********************************************
                 currentOperand = _operands[numRead];
                 currentOperand.addressMode = byteVal & 0x0f;
 
@@ -663,27 +676,31 @@ public class GlulxVM {
                 switch (currentOperand.addressMode) {
                 case 0:  currentOperand.value = 0;                 break; // ConstZero
                 case 1: // ConstByte
-                    // currentOperand.value = state.nextByte();
-                    currentOperand.value = state.memByteAt(state.pc++);
+                    // ******************************************
+                    currentOperand.value = storyBytes[state.pc++] & 0xff;
+                    // ******************************************
                     break;
                 case 2:  currentOperand.value = state.nextShort(); break; // ConstShort
                 case 3:  currentOperand.value = state.nextInt();   break; // ConstInt
                 case 5: // Address00_FF
-                    // currentOperand.value = state.nextByte();
-                    currentOperand.value = state.memByteAt(state.pc++);
+                    // ******************************************
+                    currentOperand.value = storyBytes[state.pc++] & 0xff;
+                    // ******************************************
                     break;
                 case 6:  currentOperand.value = state.nextShort(); break; // Address0000_FFFF
                 case 7:  currentOperand.value = state.nextInt();   break; // AddressAny
                 case 8:  currentOperand.value = 0;                 break; // Stack
                 case 9: // Local00_FF
-                    // currentOperand.value = state.nextByte();
-                    currentOperand.value = state.memByteAt(state.pc++);
+                    // ******************************************
+                    currentOperand.value = storyBytes[state.pc++] & 0xff;
+                    // ******************************************
                     break;
                 case 10: currentOperand.value = state.nextShort(); break; // Local0000_FFFF
                 case 11: currentOperand.value = state.nextInt();   break; // LocalAny
                 case 13:
-                    // currentOperand.value = state.nextByte();
-                    currentOperand.value = state.memByteAt(state.pc++);                    
+                    // ******************************************
+                    currentOperand.value = storyBytes[state.pc++] & 0xff;                    
+                    // ******************************************
                     break; // Ram00_FF
                 case 14: currentOperand.value = state.nextShort(); break; // Ram0000_FFFF
                 case 15: currentOperand.value = state.nextInt();   break; // RamAny
@@ -704,27 +721,31 @@ public class GlulxVM {
                     switch (currentOperand.addressMode) {
                     case 0:  currentOperand.value = 0;                 break; // ConstZero
                     case 1: // ConstByte
-                        // currentOperand.value = state.nextByte();
-                        currentOperand.value = state.memByteAt(state.pc++);
+                        // ******************************************
+                        currentOperand.value = storyBytes[state.pc++] & 0xff;
+                        // ******************************************
                         break;
                     case 2:  currentOperand.value = state.nextShort(); break; // ConstShort
                     case 3:  currentOperand.value = state.nextInt();   break; // ConstInt
                     case 5: // Address00_FF
-                        // currentOperand.value = state.nextByte();
-                        currentOperand.value = state.memByteAt(state.pc++);
+                        // ******************************************
+                        currentOperand.value = storyBytes[state.pc++] & 0xff;
+                        // ******************************************
                         break;
                     case 6:  currentOperand.value = state.nextShort(); break; // Address0000_FFFF
                     case 7:  currentOperand.value = state.nextInt();   break; // AddressAny
                     case 8:  currentOperand.value = 0;                 break; // Stack
                     case 9: // Local00_FF
-                        // currentOperand.value = state.nextByte();
-                        currentOperand.value = state.memByteAt(state.pc++);
+                        // ******************************************
+                        currentOperand.value = storyBytes[state.pc++] & 0xff;
+                        // ******************************************
                         break;
                     case 10: currentOperand.value = state.nextShort(); break; // Local0000_FFFF
                     case 11: currentOperand.value = state.nextInt();   break; // LocalAny
                     case 13: // Ram00_FF
-                        // currentOperand.value = state.nextByte();
-                        currentOperand.value = state.memByteAt(state.pc++);
+                        // ******************************************
+                        currentOperand.value = storyBytes[state.pc++] & 0xff;
+                        // ******************************************
                         break;
                     case 14: currentOperand.value = state.nextShort(); break; // Ram0000_FFFF
                     case 15: currentOperand.value = state.nextInt();   break; // RamAny
