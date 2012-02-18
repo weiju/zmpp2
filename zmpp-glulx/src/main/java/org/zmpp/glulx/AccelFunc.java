@@ -64,7 +64,7 @@ abstract class AccelFunc {
         int tb = _vm.memByteAt(addr);
         if      (tb >= 0xe0) return 3;
         else if (tb >= 0xc0) return 2;
-        else if (tb >= 0x70 && tb <= 0x7f && addr >= _vm.header.ramstart()) return 1;
+        else if (tb >= 0x70 && tb <= 0x7f && addr >= _vm.ramstart) return 1;
         else return 0;
     }
 

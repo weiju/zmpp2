@@ -124,20 +124,33 @@ class GlulxVMStackOperationsSpec extends FlatSpec with ShouldMatchers with Befor
 @RunWith(classOf[JUnitRunner])
 class GlulxVMInitSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
-  val DummyMem = Array[Byte](0x47, 0x6c, 0x75, 0x6c, 0x00, 0x03, 0x01, 0x01,
-                             0x00, 0x00, 0x00, 0x00, // RAMSTART
-                             0x00, 0x00, 0x00, 0x00, // EXTSTART
-                             0x00, 0x00, 0x00, 0x00, // ENDMEM
+  val DummyMem = Array[Byte](0x47, 0x6c, 0x75, 0x6c,
+                             0x00, 0x03, 0x01, 0x01, // Version
+                             0x00, 0x00, 0x00, 0x24, // RAMSTART
+                             0x00, 0x00, 0x00, 0x28, // EXTSTART
+                             0x00, 0x00, 0x00, 0x28, // ENDMEM
                              0x00, 0x00, 0x00, 0xff.asInstanceOf[Byte], // STACKSIZE
                              0x00, 0x00, 0x00, 0x00, // STARTFUNC
-                             0x00, 0x00, 0x00, 0x00, // Decoding table
-                             0x00, 0x00, 0x00, 0x00 // Checksum
+                             0x04, 0x07, 0x01, 0x01, // Decoding table
+                             0x01, 0x02, 0x03, 0x04, // Checksum
+                             0x00, 0x00, 0x00, 0x00  // simulated RAM (0x24 = 36 dec)
                             )
   var vm = new GlulxVM()
 
   "GlulxVM" should "be in a defined state after initState()" in {
     vm.initState(DummyMem)
-    vm.pc should equal (0)
-    vm.fp should equal (0)
+    vm.isGlulx    should be (true)
+    vm.pc         should equal (0)
+    vm.fp         should equal (0)
+    vm.version    should equal (0x00030101)
+    vm.ramstart   should equal (0x24)
+    vm.extstart   should equal (0x28)
+    vm.endmem     should equal (0x28)
+    vm.stacksize  should equal (255)
+    vm.startfunc  should equal (0x00)
+    vm.checksum   should equal (0x01020304)
+    vm.runState   should equal (VMRunStates.Running)
+    vm.memsize    should equal (0x28)
+    vm.currentDecodingTable should equal (0x04070101)
   }
 }

@@ -42,7 +42,7 @@ import java.util.logging.*;
  * The Java Hotspot engine can do lots of these optimizations by itself,
  * but not Android's Dalvik VM.
  */
-public class GlulxVM implements VMState {
+final public class GlulxVM implements VMState {
 
     // ************************************************************
     // * STATIC MEMBERS
@@ -119,12 +119,19 @@ public class GlulxVM implements VMState {
     public MemoryHeap memheap;
     public Memory extMem;
     private int _extEnd;
-    public int extstart; // cached, because accessed frequently
 
     public BinarySearch binarySearch = new BinarySearch(this);
     public LinearSearch linearSearch = new LinearSearch(this);
     public LinkedSearch linkedSearch = new LinkedSearch(this);
-    public StoryHeader header;
+
+    // header information
+    public int version;
+    public int extstart;
+    public int ramstart;
+    public int endmem;
+    public int stacksize;
+    public int startfunc;
+    public int checksum;
 
     // Stack
     private byte[] _stackArray;
@@ -204,24 +211,33 @@ public class GlulxVM implements VMState {
         glk = new Glk(new EventManager(this));
         _glkDispatch = new GlkDispatch(this, glk);
         initState(storyBytes);
-        this.currentDecodingTable  = header.decodingTable();
         _accelSystem.glk = glk;
         if (_originalRam == null) _originalRam = cloneRam();
-        prepareCall(header.startfunc(), null);
+        prepareCall(startfunc, null);
     }
 
     public void initState(byte[] storyBytes) {
         this.storyBytes = storyBytes;
-        header      = new StoryHeader(storyBytes);
-        initStack();
-        extstart   = header.extstart();
-        memheap    = new MemoryHeap(header.endmem());
+        version   = storyIntAt(4);
+        ramstart  = storyIntAt(8);
+        extstart  = storyIntAt(12);
+        endmem    = storyIntAt(16);
+        stacksize = storyIntAt(20);
+        startfunc = storyIntAt(24);
+        currentDecodingTable = storyIntAt(28);
+        checksum = storyIntAt(32);
+
+        // init stack
+        _stackArray = new byte[stacksize];
+        sp         = 0;
+
+        memheap    = new MemoryHeap(endmem);
         pc          = 0;
         fp          = 0;
         pRunState   = VMRunStates.Running;
-        setMemsize(header.endmem());
+        setMemsize(endmem);
         logger.info(String.format("VM INITIALIZED WITH EXT_START: %d END_MEM: %d",
-                                  extstart, header.endmem()));
+                                  extstart, endmem));
     }
 
     private void restart() {
@@ -230,7 +246,7 @@ public class GlulxVM implements VMState {
         //_protectionStart  = 0
         //_protectionLength = 0
         //_undoSnapshots = Nil
-        prepareCall(header.startfunc(), null);
+        prepareCall(startfunc, null);
     }
 
     private void restartState(byte[] originalRam, int protectionStart, int protectionLength) {
@@ -238,24 +254,19 @@ public class GlulxVM implements VMState {
                                   protectionStart, protectionLength));
         logger.info(String.format("HEAP ACTIVE: %b EXT_START: $%02x EXT_END: $%02x",
                                   memheap.active(), extstart, _extEnd));
-        initStack();
-        memheap   = new MemoryHeap(header.endmem());
-        setMemsize(header.endmem());
+
+        memheap   = new MemoryHeap(endmem);
+        setMemsize(endmem);
         pc         = 0;
         fp         = 0;
+        sp         = 0;
         pRunState  = VMRunStates.Running;
 
         // reset bytes in ram
-        int ramsize = extstart - header.ramstart();
-        protectedMemRestore(originalRam, 0, header.ramstart(), ramsize,
+        int ramsize = extstart - ramstart;
+        protectedMemRestore(originalRam, 0, ramstart, ramsize,
                             protectionStart, protectionLength);
     }
-
-    private void initStack() {
-        _stackArray = new byte[header.stacksize()];
-        sp         = 0;
-    }
-
 
     private void printState() { System.out.println(toString()); }
 
@@ -1185,7 +1196,7 @@ public class GlulxVM implements VMState {
             case 0x103: // setmemsize
                 int newSize = getOperand(0);
                 logger.info(String.format("@setmemsize %d\n", newSize));
-                if (newSize < header.endmem()) fatal("@setmemsize: size must be >= ENDMEM");
+                if (newSize < endmem) fatal("@setmemsize: size must be >= ENDMEM");
                 if (newSize % 256 != 0) fatal("@setmemsize: size must be multiple of 256");
                 if (memheap.active()) {
                     fatal("@setmemsize: can not set while heap is active");
@@ -1461,6 +1472,13 @@ public class GlulxVM implements VMState {
     // *******************************************************************************
     // *******************************************************************************
 
+    public boolean isGlulx() { return storyIntAt(0) == 0x476c756c; } // 'Glul'
+    public int version() { return storyIntAt(4); }
+    private int storyIntAt(int addr) {
+        return ((storyBytes[addr] & 0xff) << 24) | ((storyBytes[addr + 1] & 0xff) << 16) |
+            ((storyBytes[addr + 2] & 0xff) << 8) | (storyBytes[addr + 3] & 0xff);
+    }
+
     public int runState() { return pRunState; }
     public void setRunState(int state) { this.pRunState = state; }
   
@@ -1498,7 +1516,7 @@ public class GlulxVM implements VMState {
         _extEnd = extstart + size;
     }
 
-    public int ramSize() { return memsize() - header.ramstart(); }
+    public int ramSize() { return memsize() - ramstart; }
 
     private boolean inStoryMem(int addr) { return addr < extstart; }
     public boolean inExtMem(int addr)   { return addr >= extstart && addr < _extEnd; }
@@ -1655,11 +1673,11 @@ public class GlulxVM implements VMState {
     }
 
     public void setMemByteAt(int addr, int value) {
-        if (addr < header.ramstart()) {
+        if (addr < ramstart) {
             logger.warning(String.format("SETTING BYTE VALUE IN ROM %02x = %d !",
                                          addr, value));
         }
-        if (addr < extstart)      storyBytes[addr] = (byte) (value & 0xff);
+        if (addr < extstart)     storyBytes[addr] = (byte) (value & 0xff);
         else if (inExtMem(addr)) extMem.setByteAt(addr, value);
         else                     memheap.setByteAt(addr, value);
     }
@@ -1672,7 +1690,7 @@ public class GlulxVM implements VMState {
     }
 
     public void setMemShortAt(int addr, int value) {
-        if (addr < header.ramstart()) {
+        if (addr < ramstart) {
             logger.warning(String.format("SETTING SHORT VALUE IN ROM %02x = %d !",
                                          addr, value));
         }
@@ -1692,7 +1710,7 @@ public class GlulxVM implements VMState {
     }
 
     public void setMemIntAt(int addr, int value) {
-        if (addr < header.ramstart()) {
+        if (addr < ramstart) {
             logger.warning(String.format("SETTING INT VALUE IN ROM %02x = %d !",
                                          addr, value));
         }
@@ -1705,17 +1723,17 @@ public class GlulxVM implements VMState {
         else                       memheap.setIntAt(addr, value);
     }
 
-    public int ramByteAt(int address) { return memByteAt(header.ramstart() + address); }
+    public int ramByteAt(int address) { return memByteAt(ramstart + address); }
     public void setRamByteAt(int address, int value) {
-        setMemByteAt(header.ramstart() + address, value);
+        setMemByteAt(ramstart + address, value);
     }
-    public int ramShortAt(int address) { return memShortAt(header.ramstart() + address); }
+    public int ramShortAt(int address) { return memShortAt(ramstart + address); }
     public void setRamShortAt(int address, int value) {
-        setMemShortAt(header.ramstart() + address, value);
+        setMemShortAt(ramstart + address, value);
     }
-    public int ramIntAt(int address) { return memIntAt(header.ramstart() + address); }
+    public int ramIntAt(int address) { return memIntAt(ramstart + address); }
     public void setRamIntAt(int address, int value) {
-        setMemIntAt(header.ramstart() + address, value);
+        setMemIntAt(ramstart + address, value);
     }
 
     public int malloc(int size) { return memheap.allocate(size); }
@@ -1962,8 +1980,8 @@ public class GlulxVM implements VMState {
     // *************************************************************
     public void readSnapshot(Snapshot snapshot, int protectionStart,
                              int protectionLength) {
-        int ramsize = extstart - header.ramstart();
-        protectedMemRestore(snapshot.ram, 0, header.ramstart(), ramsize,
+        int ramsize = extstart - ramstart;
+        protectedMemRestore(snapshot.ram, 0, ramstart, ramsize,
                             protectionStart, protectionLength);
         initStackFromByteArray(snapshot.stack);    
         // TODO: Extmem and Heap
@@ -1982,11 +2000,11 @@ public class GlulxVM implements VMState {
     }
 
     public byte[] cloneRam() {
-        int ramsize = extstart - header.ramstart();
+        int ramsize = extstart - ramstart;
         logger.info(String.format("Copying %d Bytes of RAM to preserve initial data", ramsize));
         byte[] ram = new byte[ramsize];
-        //_story.copyBytesTo(ram, header.ramstart(), ramsize)
-        System.arraycopy(storyBytes, header.ramstart(), ram, 0, ramsize);
+        //_story.copyBytesTo(ram, ramstart, ramsize)
+        System.arraycopy(storyBytes, ramstart, ram, 0, ramsize);
         return ram;
     }
 }
