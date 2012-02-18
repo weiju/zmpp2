@@ -37,7 +37,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.zmpp.base._
 
 @RunWith(classOf[JUnitRunner])
-class GlulxVMStateSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class GlulxVMStackOperationsSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
   val DummyMem = Array[Byte](0x47, 0x6c, 0x75, 0x6c, 0x00, 0x03, 0x01, 0x01,
                              0x00, 0x00, 0x00, 0x00, // RAMSTART
@@ -48,81 +48,96 @@ class GlulxVMStateSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
                              0x00, 0x00, 0x00, 0x00, // Decoding table
                              0x00, 0x00, 0x00, 0x00 // Checksum
                             )
-  var vmstate = new GlulxVM()
+  val vm = new GlulxVM()
 
   override def beforeEach {
     // push artificial call frame
-    vmstate.initState(DummyMem)
-    vmstate.pushInt(12)
-    vmstate.pushInt(12)
-    vmstate.pushInt(0)
+    vm.initState(DummyMem)
+    vm.pushInt(12)
+    vm.pushInt(12)
+    vm.pushInt(0)
   }
 
-  "GlulxVMStateSpec" should "be initialized" in {
-    vmstate.pc should equal (0)
-    vmstate.fp should equal (0)
-    vmstate.sp should equal (12)
-  }
-  it should "do StkSwap" in {
-    vmstate.pushInt(1)
-    vmstate.pushInt(2)
-    vmstate.pushInt(3)
+  "GlulxVM" should "do StkSwap" in {
+    vm.pushInt(1)
+    vm.pushInt(2)
+    vm.pushInt(3)
 
     // after stack swap, order must be 2, 3, 1
-    vmstate.stackSwap
-    vmstate.popInt should equal (2)
-    vmstate.popInt should equal (3)
-    vmstate.popInt should equal (1)
+    vm.stackSwap
+    vm.popInt should equal (2)
+    vm.popInt should equal (3)
+    vm.popInt should equal (1)
   }
   it should "do StkPeek" in {
-    vmstate.pushInt(1)
-    vmstate.pushInt(2)
-    vmstate.pushInt(3)
+    vm.pushInt(1)
+    vm.pushInt(2)
+    vm.pushInt(3)
       
-    vmstate.stackPeek(0) should equal (3)
-    vmstate.stackPeek(1) should equal (2)
-    vmstate.stackPeek(2) should equal (1)
+    vm.stackPeek(0) should equal (3)
+    vm.stackPeek(1) should equal (2)
+    vm.stackPeek(2) should equal (1)
   }
   it should "do StkRoll with positive rotate" in {
-    vmstate.pushInt(8)
-    vmstate.pushInt(7)
-    vmstate.pushInt(6)
-    vmstate.pushInt(5)
-    vmstate.pushInt(4)
-    vmstate.pushInt(3)
-    vmstate.pushInt(2)
-    vmstate.pushInt(1)
-    vmstate.pushInt(0)
+    vm.pushInt(8)
+    vm.pushInt(7)
+    vm.pushInt(6)
+    vm.pushInt(5)
+    vm.pushInt(4)
+    vm.pushInt(3)
+    vm.pushInt(2)
+    vm.pushInt(1)
+    vm.pushInt(0)
       
-    vmstate.stackRoll(5, 1)
-    vmstate.popInt should equal (1)
-    vmstate.popInt should equal (2)
-    vmstate.popInt should equal (3)
-    vmstate.popInt should equal (4)
-    vmstate.popInt should equal (0)
+    vm.stackRoll(5, 1)
+    vm.popInt should equal (1)
+    vm.popInt should equal (2)
+    vm.popInt should equal (3)
+    vm.popInt should equal (4)
+    vm.popInt should equal (0)
   }
   it should "do StkRoll with negative rotate" in {
-    vmstate.pushInt(8)
-    vmstate.pushInt(7)
-    vmstate.pushInt(6)
-    vmstate.pushInt(5)
-    vmstate.pushInt(4)
-    vmstate.pushInt(3)
-    vmstate.pushInt(2)
-    vmstate.pushInt(1)
-    vmstate.pushInt(0)
+    vm.pushInt(8)
+    vm.pushInt(7)
+    vm.pushInt(6)
+    vm.pushInt(5)
+    vm.pushInt(4)
+    vm.pushInt(3)
+    vm.pushInt(2)
+    vm.pushInt(1)
+    vm.pushInt(0)
       
-    vmstate.stackRoll(5, 1)
-    vmstate.stackRoll(9, -3)
-    vmstate.popInt should equal (6)
-    vmstate.popInt should equal (7)
-    vmstate.popInt should equal (8)
-    vmstate.popInt should equal (1)
-    vmstate.popInt should equal (2)
-    vmstate.popInt should equal (3)
-    vmstate.popInt should equal (4)
-    vmstate.popInt should equal (0)
-    vmstate.popInt should equal (5)
+    vm.stackRoll(5, 1)
+    vm.stackRoll(9, -3)
+    vm.popInt should equal (6)
+    vm.popInt should equal (7)
+    vm.popInt should equal (8)
+    vm.popInt should equal (1)
+    vm.popInt should equal (2)
+    vm.popInt should equal (3)
+    vm.popInt should equal (4)
+    vm.popInt should equal (0)
+    vm.popInt should equal (5)
   }
 }
 
+@RunWith(classOf[JUnitRunner])
+class GlulxVMInitSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+
+  val DummyMem = Array[Byte](0x47, 0x6c, 0x75, 0x6c, 0x00, 0x03, 0x01, 0x01,
+                             0x00, 0x00, 0x00, 0x00, // RAMSTART
+                             0x00, 0x00, 0x00, 0x00, // EXTSTART
+                             0x00, 0x00, 0x00, 0x00, // ENDMEM
+                             0x00, 0x00, 0x00, 0xff.asInstanceOf[Byte], // STACKSIZE
+                             0x00, 0x00, 0x00, 0x00, // STARTFUNC
+                             0x00, 0x00, 0x00, 0x00, // Decoding table
+                             0x00, 0x00, 0x00, 0x00 // Checksum
+                            )
+  var vm = new GlulxVM()
+
+  "GlulxVM" should "be in a defined state after initState()" in {
+    vm.initState(DummyMem)
+    vm.pc should equal (0)
+    vm.fp should equal (0)
+  }
+}
