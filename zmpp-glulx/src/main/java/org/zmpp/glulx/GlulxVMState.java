@@ -101,6 +101,11 @@ public class GlulxVMState implements VMState {
         sp         = 0;
     }
 
+    /**
+     * Yessir, we need to read the stack directly, to save some cycles in Inform7 games.
+     */
+    public byte[] stackBytes() { return _stackArray; }
+
     public int runState() { return pRunState; }
     public void setRunState(int state) { this.pRunState = state; }
 
@@ -607,7 +612,6 @@ public class GlulxVMState implements VMState {
     */
   
     // Reading data at the PC
-    public int nextByte() { return memByteAt(pc++); }
     public int nextShort() {
         pc += 2;
         return memShortAt(pc - 2);

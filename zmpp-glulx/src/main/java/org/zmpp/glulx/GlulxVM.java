@@ -114,6 +114,11 @@ public class GlulxVM {
     private List<Snapshot> _undoSnapshots = new ArrayList<Snapshot>();
     private AccelSystem _accelSystem = new AccelSystem(this);
 
+    // this is of course, super-ugly: sharing the stack array directly with the state
+    // object. If Inform 7 throws 30 million instructions per turn at you, you gotta
+    // do what you need to do
+    private byte[] stackBytes;
+
     // The original state of writable memory after loading
     private byte[] _originalRam;
     private int _protectionStart;
@@ -142,6 +147,9 @@ public class GlulxVM {
         _glkDispatch = new GlkDispatch(state, glk);
         state.init(storyBytes);
         currentDecodingTable  = state.header.decodingTable();
+        // copy reference to vm so we can directly access the stack memory (...)
+        stackBytes = state.stackBytes();
+
         _accelSystem.glk = glk;
         if (_originalRam == null) _originalRam = state.cloneRam();
 
@@ -150,6 +158,8 @@ public class GlulxVM {
 
     private void restart() {
         state.restart(_originalRam, _protectionStart, _protectionLength);
+        // copy reference to vm so we can directly access the stack memory (...)
+        stackBytes = state.stackBytes();
         //_protectionStart  = 0
         //_protectionLength = 0
         //_undoSnapshots = Nil
@@ -177,10 +187,17 @@ public class GlulxVM {
     }
 
     private int setLocalDescriptorsToCallFrame(int numDescriptors) {
+        LocalDescriptor descriptor = null;
+        int sp = state.sp;
         for (int i = 0; i < numDescriptors; i++) {
-            state.pushByte(_localDescriptors[i].localType);
-            state.pushByte(_localDescriptors[i].localCount);
+            descriptor = _localDescriptors[i];
+            //state.pushByte(descriptor.localType);
+            //state.pushByte(descriptor.localCount);
+            stackBytes[sp++] = (byte) descriptor.localType;
+            stackBytes[sp++] = (byte) descriptor.localCount;
         }
+        state.sp = sp; // re-adjust stackpointer
+
         // Ensure a size dividable by 4 (the size of an int)
         int localDescriptorSize = numDescriptors * Types.SizeShort;
         if ((localDescriptorSize % Types.SizeInt) != 0) {
@@ -205,17 +222,24 @@ public class GlulxVM {
             // of 4
             int numPadBytes = 0;
             if (ltype == Types.ShortType && ((state.sp & 0x01) == 1)) {
-                state.pushByte(0);
+                // WAS: state.pushByte(0);
+                stackBytes[state.sp++] = 0;
                 numPadBytes = 1;
             } else if (ltype == Types.IntType && ((state.sp & 0x03) != 0)) {
                 numPadBytes = Types.SizeInt - (state.sp & 0x03);
-                for (int j = 0; j < numPadBytes; j++) state.pushByte(0);
+                for (int j = 0; j < numPadBytes; j++) {
+                    // WAS: state.pushByte(0);
+                    stackBytes[state.sp++] = 0;
+                }
             }
             // push numlocals locals of size ltype on the stack, we do this
             // by incrementing the stackpointer, which does not do any initialization
             // to the variables
             int blocksize = numlocals * ltype;
-            for (int j = 0; j < blocksize; j++) state.pushByte(0);
+            for (int j = 0; j < blocksize; j++) {
+                // WAS: state.pushByte(0);
+                stackBytes[state.sp++] = 0;
+            }
             localSectionSize += blocksize + numPadBytes;
         }
         return localSectionSize;
@@ -226,7 +250,9 @@ public class GlulxVM {
         Operand operand = _operands[pos];
         switch (operand.addressMode) {
         case 0: return 0; // ConstZero
-        case 1: return Types.signExtend8(operand.value);  // ConstByte
+        case 1:
+            //return Types.signExtend8(operand.value);  // ConstByte
+            return ((operand.value & 0x80) == 0x80) ? operand.value | 0xffffff00 : operand.value & 0xff;
         case 2: return Types.signExtend16(operand.value); // ConstShort
         case 3: return operand.value;                     // ConstInt
         case 7: return state.memIntAt(operand.value);     // AddressAny
@@ -247,7 +273,9 @@ public class GlulxVM {
         Operand operand = _operands[pos];
         switch (operand.addressMode) {
         case 0: return 0; // ConstZero
-        case 1: return Types.signExtend8(operand.value);  // ConstByte
+        case 1:
+            //return Types.signExtend8(operand.value);  // ConstByte
+            return ((operand.value & 0x80) == 0x80) ? operand.value | 0xffffff00 : operand.value & 0xff;
         case 2: return Types.signExtend16(operand.value); // ConstShort
         case 3: return operand.value;                     // ConstInt
         case 5: case 6: case 7:    // Address00_FF/Address0000_FFFF/AddressAny
@@ -268,7 +296,9 @@ public class GlulxVM {
         Operand operand = _operands[pos];
         switch (operand.addressMode) {
         case 0: return 0; // ConstZero
-        case 1: return Types.signExtend8(operand.value); // ConstByte
+        case 1:
+            // return Types.signExtend8(operand.value); // ConstByte
+            return ((operand.value & 0x80) == 0x80) ? operand.value | 0xffffff00 : operand.value & 0xff;
         case 2: return Types.signExtend16(operand.value); // ConstShort
         case 3: return operand.value; // ConstInt
         case 5: case 6: case 7: // Address00_FF/Address_0000_FFFF/AddressAny
@@ -613,6 +643,9 @@ public class GlulxVM {
             state.pc += _opcodeNumSize;
 
             // read operands
+            // This is really, really ugly, in order to make it fast, I had to
+            // inline a lot of functions, which has almost no effect in Hotspot
+            // but the difference is huge in Dalvik
             int addrModeOffset = state.pc;
             int numOperands = NumOperands[_opcodeNum];
             int nbytesNumOperands = numOperands / 2 + numOperands % 2;
@@ -629,17 +662,29 @@ public class GlulxVM {
                 //_operands[numRead].value = readOperand(_operands[numRead].addressMode);
                 switch (currentOperand.addressMode) {
                 case 0:  currentOperand.value = 0;                 break; // ConstZero
-                case 1:  currentOperand.value = state.nextByte();  break; // ConstByte
+                case 1: // ConstByte
+                    // currentOperand.value = state.nextByte();
+                    currentOperand.value = state.memByteAt(state.pc++);
+                    break;
                 case 2:  currentOperand.value = state.nextShort(); break; // ConstShort
                 case 3:  currentOperand.value = state.nextInt();   break; // ConstInt
-                case 5:  currentOperand.value = state.nextByte();  break; // Address00_FF
+                case 5: // Address00_FF
+                    // currentOperand.value = state.nextByte();
+                    currentOperand.value = state.memByteAt(state.pc++);
+                    break;
                 case 6:  currentOperand.value = state.nextShort(); break; // Address0000_FFFF
                 case 7:  currentOperand.value = state.nextInt();   break; // AddressAny
                 case 8:  currentOperand.value = 0;                 break; // Stack
-                case 9:  currentOperand.value = state.nextByte();  break; // Local00_FF
+                case 9: // Local00_FF
+                    // currentOperand.value = state.nextByte();
+                    currentOperand.value = state.memByteAt(state.pc++);
+                    break;
                 case 10: currentOperand.value = state.nextShort(); break; // Local0000_FFFF
                 case 11: currentOperand.value = state.nextInt();   break; // LocalAny
-                case 13: currentOperand.value = state.nextByte();  break; // Ram00_FF
+                case 13:
+                    // currentOperand.value = state.nextByte();
+                    currentOperand.value = state.memByteAt(state.pc++);                    
+                    break; // Ram00_FF
                 case 14: currentOperand.value = state.nextShort(); break; // Ram0000_FFFF
                 case 15: currentOperand.value = state.nextInt();   break; // RamAny
                 default:
@@ -658,17 +703,29 @@ public class GlulxVM {
                     // _operands[numRead].value = readOperand(_operands[numRead].addressMode);
                     switch (currentOperand.addressMode) {
                     case 0:  currentOperand.value = 0;                 break; // ConstZero
-                    case 1:  currentOperand.value = state.nextByte();  break; // ConstByte
+                    case 1: // ConstByte
+                        // currentOperand.value = state.nextByte();
+                        currentOperand.value = state.memByteAt(state.pc++);
+                        break;
                     case 2:  currentOperand.value = state.nextShort(); break; // ConstShort
                     case 3:  currentOperand.value = state.nextInt();   break; // ConstInt
-                    case 5:  currentOperand.value = state.nextByte();  break; // Address00_FF
+                    case 5: // Address00_FF
+                        // currentOperand.value = state.nextByte();
+                        currentOperand.value = state.memByteAt(state.pc++);
+                        break;
                     case 6:  currentOperand.value = state.nextShort(); break; // Address0000_FFFF
                     case 7:  currentOperand.value = state.nextInt();   break; // AddressAny
                     case 8:  currentOperand.value = 0;                 break; // Stack
-                    case 9:  currentOperand.value = state.nextByte();  break; // Local00_FF
+                    case 9: // Local00_FF
+                        // currentOperand.value = state.nextByte();
+                        currentOperand.value = state.memByteAt(state.pc++);
+                        break;
                     case 10: currentOperand.value = state.nextShort(); break; // Local0000_FFFF
                     case 11: currentOperand.value = state.nextInt();   break; // LocalAny
-                    case 13: currentOperand.value = state.nextByte();  break; // Ram00_FF
+                    case 13: // Ram00_FF
+                        // currentOperand.value = state.nextByte();
+                        currentOperand.value = state.memByteAt(state.pc++);
+                        break;
                     case 14: currentOperand.value = state.nextShort(); break; // Ram0000_FFFF
                     case 15: currentOperand.value = state.nextInt();   break; // RamAny
                     default:
@@ -840,7 +897,13 @@ public class GlulxVM {
             case 0x44: // sexs 
                 storeAtOperand(1, Types.signExtend16(getOperand(0))); break;
             case 0x45: // sexb
-                storeAtOperand(1, Types.signExtend8(getOperand(0))); break;
+                {
+                    //storeAtOperand(1, Types.signExtend8(getOperand(0)));
+                    int value = getOperand(0);
+                    value = ((value & 0x80) == 0x80) ? value | 0xffffff00 : value & 0xff;
+                    storeAtOperand(1, value);
+                }
+                break;
             case 0x48: // aload
                 {
                     int arr   = getOperand(0);
