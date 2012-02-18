@@ -50,65 +50,65 @@ class StackSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
                              0x00, 0x00, 0x00, 0x00 // Checksum
                             )
 
-  var vmstate = new GlulxVM
+  var vm = new GlulxVM
 
   override def beforeEach {
-    vmstate.init(DummyMem, null)
+    vm.initState(DummyMem)
   }
 
   "GlulxVM stack" should "be initialized" in {
-    vmstate.stackEmpty should be (true)
+    vm.stackEmpty should be (true)
   }
   it should "push and pop a byte" in {
-    vmstate.pushInt(0) // artificial frame len
-    vmstate.pushByte(1)
-    vmstate.sp should be (5)
-    vmstate.topByte should be (1)
-    vmstate.popByte should be (1)
-    vmstate.sp should be (4)
+    vm.pushInt(0) // artificial frame len
+    vm.pushByte(1)
+    vm.sp should be (5)
+    vm.topByte should be (1)
+    vm.popByte should be (1)
+    vm.sp should be (4)
 
-    vmstate.pushByte(255)
-    vmstate.topByte should be (255)
-    vmstate.popByte should be (255)
+    vm.pushByte(255)
+    vm.topByte should be (255)
+    vm.popByte should be (255)
   }
   it should "push and pop short" in {
-    vmstate.pushInt(0) // artificial frame len
+    vm.pushInt(0) // artificial frame len
 
-    vmstate.pushShort(32767)
-    vmstate.topShort should be (32767)
-    vmstate.pushShort(65535)
+    vm.pushShort(32767)
+    vm.topShort should be (32767)
+    vm.pushShort(65535)
 
-    vmstate.topShort should be (65535)
-    vmstate.popShort should be (65535)
-    vmstate.popShort should be (32767)
-    vmstate.sp should be (4)
+    vm.topShort should be (65535)
+    vm.popShort should be (65535)
+    vm.popShort should be (32767)
+    vm.sp should be (4)
   }
   it should "push and pop int" in {
-    vmstate.pushInt(0) // artificial frame len
+    vm.pushInt(0) // artificial frame len
 
-    vmstate.pushInt(32767)
-    vmstate.topInt should equal (32767)
-    vmstate.pushInt(-42)
-    vmstate.topInt should equal (-42)
-    vmstate.popInt should equal (-42)
-    vmstate.popInt should equal (32767)
+    vm.pushInt(32767)
+    vm.topInt should equal (32767)
+    vm.pushInt(-42)
+    vm.topInt should equal (-42)
+    vm.popInt should equal (-42)
+    vm.popInt should equal (32767)
 
-    vmstate.sp should be (4)
+    vm.sp should be (4)
   }
   it should "set and get a byte" in {
-    vmstate.setByteInStack(3, 0xba)
-    vmstate.getByteInStack(3) should be (0xba)
-    vmstate.sp should be (0)
+    vm.setByteInStack(3, 0xba)
+    vm.getByteInStack(3) should be (0xba)
+    vm.sp should be (0)
   }
   it should "set and get a short" in {
-    vmstate.setShortInStack(4, 0xcafe)
-    vmstate.getShortInStack(4) should be (0xcafe)
-    vmstate.sp should be (0)
+    vm.setShortInStack(4, 0xcafe)
+    vm.getShortInStack(4) should be (0xcafe)
+    vm.sp should be (0)
   }
   it should "set and get a int" in {
-    vmstate.setIntInStack(4, 0xdeadbeef)
-    vmstate.getIntInStack(4) should be (0xdeadbeef)
-    vmstate.sp should be (0)
+    vm.setIntInStack(4, 0xdeadbeef)
+    vm.getIntInStack(4) should be (0xdeadbeef)
+    vm.sp should be (0)
   }
 }
 

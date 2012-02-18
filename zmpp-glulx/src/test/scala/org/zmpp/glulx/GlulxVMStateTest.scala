@@ -52,7 +52,7 @@ class GlulxVMStateSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
 
   override def beforeEach {
     // push artificial call frame
-    vmstate.init(DummyMem, null)
+    vmstate.initState(DummyMem)
     vmstate.pushInt(12)
     vmstate.pushInt(12)
     vmstate.pushInt(0)

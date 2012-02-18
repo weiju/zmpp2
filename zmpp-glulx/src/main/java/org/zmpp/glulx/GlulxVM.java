@@ -35,15 +35,34 @@ import java.util.*;
 import java.util.logging.*;
 
 /****************************************************************************
- ****
- **** VM main control
- ****
+ * VM main class. If you think this is ugly, it probably is.
+ * Due to heavy optimization, this class is mainly a huge execution
+ * loop with lots of redundant code due to optimizations like manual
+ * inlining.
+ * The Java Hotspot engine can do lots of these optimizations by itself,
+ * but not Android's Dalvik VM.
  */
 public class GlulxVM implements VMState {
+
+    // ************************************************************
+    // * STATIC MEMBERS
+    // ************************************************************
+
     private static final int MaxLocalDescriptors = 255;
     private static final int MaxOperands         = 10;
     private static final int MaxArguments        = 20;
     private static final int SizeLocalDescriptor = Types.SizeByte * 2;
+
+    public static final  int OffsetLocalsPos     = 4;
+    public static final  int OffsetLocalsFormat  = 8;
+
+    private static final int ByteType   = 1;
+    private static final int ShortType  = 2;
+    private static final int IntType    = 4;
+  
+    private static final int SizeByte   = 1;
+    private static final int SizeShort  = 2;
+    private static final int SizeInt    = 4;
 
     // lookup table for number of operands
     public static final byte[] NumOperands = {
@@ -79,7 +98,7 @@ public class GlulxVM implements VMState {
     };
 
     private static Logger logger = Logger.getLogger("glulx");
-    private int iterations = 1;
+    private static int iterations = 1;
 
     // *******************************************************************************
     // State is public for subsystems to access. This is the only data
@@ -90,18 +109,8 @@ public class GlulxVM implements VMState {
     // - stack access
     // - local variables
     // - functions
-    // This once was in a separate file, but no more. Inform 7 killed it.
-
-    public static final int OffsetLocalsPos     = 4;
-    public static final int OffsetLocalsFormat  = 8;
-
-    private static final int ByteType   = 1;
-    private static final int ShortType  = 2;
-    private static final int IntType    = 4;
-  
-    private static final int SizeByte   = 1;
-    private static final int SizeShort  = 2;
-    private static final int SizeInt    = 4;
+    // This once was in a separate file, but no more. A lot of Inform 7 games are
+    // very, very slow.
 
     public int pRunState = VMRunStates.Running;
     public byte[] storyBytes;
@@ -126,7 +135,12 @@ public class GlulxVM implements VMState {
     public int fp;
 
     // *******************************************************************************
-
+    //
+    // VM Execution state
+    // 
+    // This does not need to be serialized or saved
+    //
+    // *******************************************************************************
     // Cached currrent frame state. This is used in setting up the current
     // function and is only supposed to be used at that time. When returning
     // from a function, the descriptors are not restored, so do not rely on them !
@@ -138,6 +152,7 @@ public class GlulxVM implements VMState {
     // quick and easy access to the current instruction's values, so we
     // do not need to read them over and over
     private Operand[] _operands = new Operand[MaxOperands];
+    private int[] _operandValues = new int[MaxOperands];
     private int _opcodeNum;
     private int _opcodeNumSize;
 
@@ -146,6 +161,10 @@ public class GlulxVM implements VMState {
     // we also use them in accelerated functions
     private int[] _arguments    = new int[MaxArguments];
     private int _numArguments;
+
+    // *******************************************************************************
+    // SUB SYSTEMS AND HELPERS
+    // *******************************************************************************
   
     // VM state
     public  Glk glk;
@@ -162,11 +181,14 @@ public class GlulxVM implements VMState {
 
     // IO Systems
     public EventManager eventManager() { return glk.eventManager(); }
-    public int runState() { return pRunState; }
     public BlorbData blorbData;
     public int currentDecodingTable;
     private IOSystem currentIOSystem = new NullIOSystem(this, 0);
 
+    // *******************************************************************************
+    // METHOD AREA
+    // *******************************************************************************
+    
     public GlulxVM() {
         // initialization
         for (int i = 0; i < MaxLocalDescriptors; i++) {
@@ -333,6 +355,36 @@ public class GlulxVM implements VMState {
         default:
             throw new IllegalStateException("unsupported operand type: " +
                                             operand.addressMode);
+        }
+    }
+
+    // Get a bunch of consecutive operands. This is getOperand(), to be used when
+    // there are more than one getOperand() calls. This averages out the ridiculous
+    // amount of getOperand() calls when there are a couple million instructions
+    // per turn
+    private void getOperandValues(int numOperands) {
+        Operand operand = null;
+        for (int pos = 0; pos < numOperands; pos++) {
+            operand = _operands[pos];
+            switch (operand.addressMode) {
+            case 0: _operandValues[pos] = 0; break; // ConstZero
+            case 1:
+                //return Types.signExtend8(operand.value);  // ConstByte
+                _operandValues[pos] = ((operand.value & 0x80) == 0x80) ?
+                    operand.value | 0xffffff00 : operand.value & 0xff;
+                break;
+            case 2: _operandValues[pos] = Types.signExtend16(operand.value); break; // ConstShort
+            case 3: _operandValues[pos] = operand.value; break;                     // ConstInt
+            case 7: _operandValues[pos] = memIntAt(operand.value); break;           // AddressAny
+            case 8: _operandValues[pos] = popInt(); break;                          // Stack
+            case 9: case 10: case 11: // Local00_FF, Local0000_FFFF, LocalAny
+                _operandValues[pos] = getLocalAtAddress(operand.value); break;
+            case 13: case 14: case 15: // Ram00_FF, Ram0000_FFFF, RamAny
+                _operandValues[pos] = ramIntAt(operand.value); break;
+            default:
+                throw new IllegalStateException("unsupported operand type: " +
+                                                operand.addressMode);
+            }
         }
     }
 
@@ -830,37 +882,47 @@ public class GlulxVM implements VMState {
             switch (_opcodeNum) {
             case 0x00: break; // nop, do nothing
             case 0x10: // add
-                storeAtOperand(2, getOperand(0) + getOperand(1)); break;
+                getOperandValues(2);
+                storeAtOperand(2, _operandValues[0] + _operandValues[1]); break;
             case 0x11: // sub
-                storeAtOperand(2, getOperand(0) - getOperand(1)); break;
+                getOperandValues(2);
+                storeAtOperand(2, _operandValues[0] - _operandValues[1]); break;
             case 0x12: // mul
-                storeAtOperand(2, getOperand(0) * getOperand(1)); break;
+                getOperandValues(2);
+                storeAtOperand(2, _operandValues[0] * _operandValues[1]); break;
             case 0x13: // div
-                storeAtOperand(2, getOperand(0) / getOperand(1)); break;
+                getOperandValues(2);
+                storeAtOperand(2, _operandValues[0] / _operandValues[1]); break;
             case 0x14: // mod
-                storeAtOperand(2, getOperand(0) % getOperand(1)); break;
+                getOperandValues(2);
+                storeAtOperand(2, _operandValues[0] % _operandValues[1]); break;
             case 0x15: // neg
-                storeAtOperand(1, -(getOperand(0))); break;
+                storeAtOperand(1, -getOperand(0)); break;
             case 0x18: // bitand
-                storeAtOperand(2, getOperand(0) & getOperand(1)); break;
+                getOperandValues(2);
+                storeAtOperand(2, _operandValues[0] & _operandValues[1]); break;
             case 0x19: // bitor
-                storeAtOperand(2, getOperand(0) | getOperand(1)); break;
+                getOperandValues(2);
+                storeAtOperand(2, _operandValues[0] | _operandValues[1]); break;
             case 0x1a: // bitxor
-                storeAtOperand(2, getOperand(0) ^ getOperand(1)); break;
+                getOperandValues(2);
+                storeAtOperand(2, _operandValues[0] ^ _operandValues[1]); break;
             case 0x1b: // bitnot
                 storeAtOperand(1, ~getOperand(0)); break;
             case 0x1c: // shiftl
                 {
-                    int value    = getOperand(0);
-                    int numShift = getOperand(1);
+                    getOperandValues(2);
+                    int value    = _operandValues[0];
+                    int numShift = _operandValues[1];
                     int result   = (numShift >= 32 || numShift < 0) ? 0 : (value << numShift);
                     storeAtOperand(2, result);
                 }
                 break;
             case 0x1d: // sshiftr
                 {
-                    int value    = getOperand(0);
-                    int numShift = getOperand(1);
+                    getOperandValues(2);
+                    int value    = _operandValues[0];
+                    int numShift = _operandValues[1];
                     int result = 0;
                     if (value < 0 && (numShift >= 32 || numShift < 0))       result = -1;
                     else if (value >= 0 && (numShift >= 32 || numShift < 0)) result = 0;
@@ -870,8 +932,9 @@ public class GlulxVM implements VMState {
                 break;
             case 0x1e: // ushiftr
                 {
-                    int value    = getOperand(0);
-                    int numShift = getOperand(1);
+                    getOperandValues(2);
+                    int value    = _operandValues[0];
+                    int numShift = _operandValues[1];
                     int result   = (numShift >= 32 || numShift < 0) ? 0 : (value >>> numShift);
                     storeAtOperand(2, result);
                 }
@@ -879,54 +942,67 @@ public class GlulxVM implements VMState {
             case 0x20: // jump
                 doBranch(getOperand(0)); break;
             case 0x22: // jz
-                if (getOperand(0) == 0) doBranch(getOperand(1)); break;
+                getOperandValues(2);
+                if (_operandValues[0] == 0) doBranch(_operandValues[1]); break;
             case 0x23: // jnz
-                if (getOperand(0) != 0) doBranch(getOperand(1)); break;
+                getOperandValues(2);
+                if (_operandValues[0] != 0) doBranch(_operandValues[1]); break;
             case 0x24: // jeq
-                if (getOperand(0) == getOperand(1)) doBranch(getOperand(2)); break;
+                getOperandValues(3);
+                if (_operandValues[0] == _operandValues[1]) doBranch(_operandValues[2]); break;
             case 0x25: // jne
-                if (getOperand(0) != getOperand(1)) doBranch(getOperand(2)); break;
+                getOperandValues(3);
+                if (_operandValues[0] != _operandValues[1]) doBranch(_operandValues[2]); break;
             case 0x26: // jlt
-                if (getOperand(0) < getOperand(1)) doBranch(getOperand(2)); break;
+                getOperandValues(3);
+                if (_operandValues[0] < _operandValues[1]) doBranch(_operandValues[2]); break;
             case 0x27: // jge
-                if (getOperand(0) >= getOperand(1)) doBranch(getOperand(2)); break;
+                getOperandValues(3);
+                if (_operandValues[0] >= _operandValues[1]) doBranch(_operandValues[2]); break;
             case 0x28: // jgt
-                if (getOperand(0) > getOperand(1)) doBranch(getOperand(2)); break;
+                getOperandValues(3);
+                if (_operandValues[0] > _operandValues[1]) doBranch(_operandValues[2]); break;
             case 0x29: // jle
-                if (getOperand(0) <= getOperand(1)) doBranch(getOperand(2)); break;
+                getOperandValues(3);
+                if (_operandValues[0] <= _operandValues[1]) doBranch(_operandValues[2]); break;
             case 0x2a: // jltu
                 {
-                    long op0 = getOperand(0) & 0x0ffffffffl;
-                    long op1 = getOperand(1) & 0x0ffffffffl;
-                    if (op0 < op1) doBranch(getOperand(2));
+                    getOperandValues(3);
+                    long op0 = _operandValues[0] & 0x0ffffffffl;
+                    long op1 = _operandValues[1] & 0x0ffffffffl;
+                    if (op0 < op1) doBranch(_operandValues[2]);
                 }
                 break;
             case 0x2b: // jgeu
                 {
-                    long op0 = getOperand(0) & 0x0ffffffffl;
-                    long op1 = getOperand(1) & 0x0ffffffffl;
-                    if (op0 >= op1) doBranch(getOperand(2));
+                    getOperandValues(3);
+                    long op0 = _operandValues[0] & 0x0ffffffffl;
+                    long op1 = _operandValues[1] & 0x0ffffffffl;
+                    if (op0 >= op1) doBranch(_operandValues[2]);
                 }
                 break;
             case 0x2c: // jgtu
                 {
-                    long op0 = getOperand(0) & 0x0ffffffffl;
-                    long op1 = getOperand(1) & 0x0ffffffffl;
-                    if (op0 > op1) doBranch(getOperand(2));
+                    getOperandValues(3);
+                    long op0 = _operandValues[0] & 0x0ffffffffl;
+                    long op1 = _operandValues[1] & 0x0ffffffffl;
+                    if (op0 > op1) doBranch(_operandValues[2]);
                 }
                 break;
             case 0x2d: // jleu
                 {
-                    long op0 = getOperand(0) & 0x0ffffffffl;
-                    long op1 = getOperand(1) & 0x0ffffffffl;
-                    if (op0 <= op1) doBranch(getOperand(2));
+                    getOperandValues(3);
+                    long op0 = _operandValues[0] & 0x0ffffffffl;
+                    long op1 = _operandValues[1] & 0x0ffffffffl;
+                    if (op0 <= op1) doBranch(_operandValues[2]);
                 }
                 break;
             case 0x30: // call
                 // Take the arguments from the stack and store them, prepareCall
                 // will use them and store them according to the function type
-                int funaddr = getOperand(0);
-                _numArguments = getOperand(1);
+                getOperandValues(2);
+                int funaddr   = _operandValues[0];
+                _numArguments = _operandValues[1];
                 for (int i = 0; i < _numArguments; i++) {
                     _arguments[i] = popInt();
                 }
@@ -981,29 +1057,33 @@ public class GlulxVM implements VMState {
                 break;
             case 0x48: // aload
                 {
-                    int arr   = getOperand(0);
-                    int index = getOperand(1);
+                    getOperandValues(2);
+                    int arr   = _operandValues[0];
+                    int index = _operandValues[1];
                     storeAtOperand(2, memIntAt(arr + index * 4));
                 }
                 break;
             case 0x49: // aloads
                 {
-                    int arr = getOperand(0);
-                    int index = getOperand(1);
+                    getOperandValues(2);
+                    int arr   = _operandValues[0];
+                    int index = _operandValues[1];
                     storeAtOperand(2, memShortAt(arr + index * 2));
                 }
                 break;
             case 0x4a: // aloadb
                 {
-                    int arr    = getOperand(0);
-                    int index  = getOperand(1);
+                    getOperandValues(2);
+                    int arr    = _operandValues[0];
+                    int index  = _operandValues[1];
                     storeAtOperand(2, memByteAt(arr + index));
                 }
                 break;
             case 0x4b: // aloadbit
                 {
-                    int addr      = getOperand(0);
-                    int bitOffset = getOperand(1);
+                    getOperandValues(2);
+                    int addr      = _operandValues[0];
+                    int bitOffset = _operandValues[1];
                     int memAddr   = addr + bitOffset / 8;
                     int bitnum    = bitOffset % 8;
                     if (bitnum < 0) {
@@ -1019,29 +1099,33 @@ public class GlulxVM implements VMState {
                 break;
             case 0x4c: // astore
                 {
-                    int arr   = getOperand(0);
-                    int index = getOperand(1);
-                    setMemIntAt(arr + index * 4, getOperand(2));
+                    getOperandValues(3);
+                    int arr   = _operandValues[0];
+                    int index = _operandValues[1];
+                    setMemIntAt(arr + index * 4, _operandValues[2]);
                 }
                 break;
             case 0x4d: // astores
                 {
-                    int arr   = getOperand(0);
-                    int index = getOperand(1);
-                    setMemShortAt(arr + index * 2, getOperand(2));
+                    getOperandValues(3);
+                    int arr   = _operandValues[0];
+                    int index = _operandValues[1];
+                    setMemShortAt(arr + index * 2, _operandValues[2]);
                 }
                 break;
             case 0x4e: // astoreb
                 {
-                    int arr   = getOperand(0);
-                    int index = getOperand(1);
-                    setMemByteAt(arr + index, getOperand(2));
+                    getOperandValues(3);
+                    int arr   = _operandValues[0];
+                    int index = _operandValues[1];
+                    setMemByteAt(arr + index, _operandValues[2]);
                 }
                 break;
             case 0x4f: // astorebit
                 {
-                    int addr      = getOperand(0);
-                    int bitOffset = getOperand(1);
+                    getOperandValues(3);
+                    int addr      = _operandValues[0];
+                    int bitOffset = _operandValues[1];
                     int memAddr   = addr + bitOffset / 8;
                     int bitnum    = bitOffset % 8;
                     if (bitnum < 0) {
@@ -1049,7 +1133,7 @@ public class GlulxVM implements VMState {
                         memAddr--;
                         bitnum += 8;
                     }
-                    if (getOperand(2) == 0) { // clear
+                    if (_operandValues[2] == 0) { // clear
                         setMemByteAt(memAddr,
                                      memByteAt(memAddr) & (~(1 << bitnum) & 0xff));
                     } else { // set
@@ -1103,7 +1187,7 @@ public class GlulxVM implements VMState {
                 logger.info(String.format("@setmemsize %d\n", newSize));
                 if (newSize < header.endmem()) fatal("@setmemsize: size must be >= ENDMEM");
                 if (newSize % 256 != 0) fatal("@setmemsize: size must be multiple of 256");
-                if (heapIsActive()) {
+                if (memheap.active()) {
                     fatal("@setmemsize: can not set while heap is active");
                 }
                 setMemsize(newSize);
@@ -1180,9 +1264,10 @@ public class GlulxVM implements VMState {
                 break;
             case 0x130: // glk
                 {
-                    int glkId = getOperand(0);
-                    int numArgs = getOperand(1);
-                    int[] args = new int[numArgs];
+                    getOperandValues(2);
+                    int glkId   = _operandValues[0];
+                    int numArgs = _operandValues[1];
+                    int[] args  = new int[numArgs];
                     for (int i = 0; i < numArgs; i++) {
                         args[i] = popInt();
                     }
@@ -1208,8 +1293,9 @@ public class GlulxVM implements VMState {
                 break;
             case 0x149: // setiosys
                 {
-                    int iosys = getOperand(0);
-                    int rock  = getOperand(1);
+                    getOperandValues(2);
+                    int iosys = _operandValues[0];
+                    int rock  = _operandValues[1];
                     //currentIOSystem = (iosys: @switch) match {
                     switch (iosys) {
                     case 0:  currentIOSystem = new NullIOSystem(this, rock); break;
@@ -1224,27 +1310,30 @@ public class GlulxVM implements VMState {
                 break;
             case 0x150: // linearsearch
                 {
-                    int result = linearSearch.apply(getOperand(0), getOperand(1),
-                                                    getOperand(2), getOperand(3),
-                                                    getOperand(4), getOperand(5),
-                                                    getOperand(6));
+                    getOperandValues(7);
+                    int result = linearSearch.apply(_operandValues[0], _operandValues[1],
+                                                    _operandValues[2], _operandValues[3],
+                                                    _operandValues[4], _operandValues[5],
+                                                    _operandValues[6]);
                     storeAtOperand(7, result);
                 }
                 break;
             case 0x151: // binarysearch
                 {
-                    int result = binarySearch.apply(getOperand(0), getOperand(1),
-                                                    getOperand(2), getOperand(3),
-                                                    getOperand(4), getOperand(5),
-                                                    getOperand(6));
+                    getOperandValues(7);
+                    int result = binarySearch.apply(_operandValues[0], _operandValues[1],
+                                                    _operandValues[2], _operandValues[3],
+                                                    _operandValues[4], _operandValues[5],
+                                                    _operandValues[6]);
                     storeAtOperand(7, result);
                 }
                 break;
             case 0x152: // linkedsearch
                 {
-                    int result = linkedSearch.apply(getOperand(0), getOperand(1),
-                                                    getOperand(2), getOperand(3),
-                                                    getOperand(4), getOperand(5));
+                    getOperandValues(6);
+                    int result = linkedSearch.apply(_operandValues[0], _operandValues[1],
+                                                    _operandValues[2], _operandValues[3],
+                                                    _operandValues[4], _operandValues[5]);
                     storeAtOperand(6, result);
                 }
                 break;
@@ -1361,11 +1450,18 @@ public class GlulxVM implements VMState {
         glk.put_java_string(msg);
         pRunState = VMRunStates.Halted;
     }
-
+    
     // *******************************************************************************
-    // STATE MANAGEMENT FUNCTIONS
+    // *******************************************************************************
+    // *******************************************************************************
+    // *******************************************************************************
+    // STATE MANAGEMENT FUNCTIONS (FORMERLY KNOWN AS GLULXVMSTATE)
+    // *******************************************************************************
+    // *******************************************************************************
+    // *******************************************************************************
     // *******************************************************************************
 
+    public int runState() { return pRunState; }
     public void setRunState(int state) { this.pRunState = state; }
   
     private void protectedMemRestore(byte[] memarray, int srcOffset,
@@ -1402,7 +1498,6 @@ public class GlulxVM implements VMState {
         _extEnd = extstart + size;
     }
 
-    public boolean heapIsActive() { return memheap.active(); }
     public int ramSize() { return memsize() - header.ramstart(); }
 
     private boolean inStoryMem(int addr) { return addr < extstart; }

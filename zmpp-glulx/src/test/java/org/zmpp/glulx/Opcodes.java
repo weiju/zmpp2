@@ -28,6 +28,11 @@
  */
 package org.zmpp.glulx;
 
+/**
+ * This Opcodes class is only kept around for testing. It used to be part of the
+ * main implementation, but alas, it actually not that useful - and it bloats
+ * the core anyways.
+ */
 public class Opcodes {
     public static final int Nop           = 0x00;
     public static final int Add           = 0x10;

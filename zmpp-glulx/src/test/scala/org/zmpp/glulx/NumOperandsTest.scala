@@ -33,6 +33,10 @@ import org.scalatest.matchers.ShouldMatchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
+/**
+ * This is actually a silly test. Just making sure, that operand number table
+ * does not get any accidental typos in. Kinda hard to tell
+ */
 @RunWith(classOf[JUnitRunner])
 class NumOperandsSpec extends FlatSpec with ShouldMatchers {
 
