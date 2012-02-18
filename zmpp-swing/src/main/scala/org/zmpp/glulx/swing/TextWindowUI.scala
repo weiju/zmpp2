@@ -90,7 +90,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   }
 
   private def resumeExecution {
-    if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
+    if (screenUI.vm.runState == VMRunStates.WaitForEvent &&
         eventManager.processNextEvent) {
       style = StyleType.Normal
       stopSendingRequests

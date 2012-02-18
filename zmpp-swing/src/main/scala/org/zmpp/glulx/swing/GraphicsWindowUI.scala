@@ -172,7 +172,7 @@ extends JComponent with SwingGlkWindowUI {
   private def resumeWithMouseInput(xpos: Int, ypos: Int) {
     eventManager.addMouseEvent(glkWindow.id, xpos, ypos)
     waitForMouse = false
-    if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
+    if (screenUI.vm.runState == VMRunStates.WaitForEvent &&
       eventManager.processNextEvent) {
       ExecutionControl.executeTurn(screenUI.vm)   
     }

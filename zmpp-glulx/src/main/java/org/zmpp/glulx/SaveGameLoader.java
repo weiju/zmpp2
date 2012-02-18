@@ -44,14 +44,14 @@ class SaveGameLoader {
     private static Logger logger = Logger.getLogger("glulx");
     private Glk          glk;
     private int          streamId;
-    private GlulxVMState vmState;
+    private GlulxVM      vm;
     private byte[]       originalRam;
 
-    public SaveGameLoader(Glk glk, int streamId, GlulxVMState vmState,
+    public SaveGameLoader(Glk glk, int streamId, GlulxVM vm,
                           byte[] originalRam) {
         this.glk         = glk;
         this.streamId    = streamId;
-        this.vmState     = vmState;
+        this.vm          = vm;
         this.originalRam = originalRam;
     }
 
@@ -99,7 +99,7 @@ class SaveGameLoader {
         // read new memory size and adjust VM state's memory size
         int memsize = cmemChunk.memory().intAt(offset);
         logger.info(String.format("NEW MEMSIZE = %d [OFFSET = %d]", memsize, offset));
-        vmState.setMemsize(cmemChunk.memory().intAt(offset));
+        vm.setMemsize(cmemChunk.memory().intAt(offset));
         offset += 4;
 
         while (offset < chunkEnd) {
@@ -115,7 +115,7 @@ class SaveGameLoader {
                 }
             } else {
                 // XOR Delta-Value with initial RAM to get saved state
-                vmState.setRamByteAt(ramAddress, originalRam[ramAddress] ^ b);
+                vm.setRamByteAt(ramAddress, originalRam[ramAddress] ^ b);
                 ramAddress++;
             }
         }
@@ -126,10 +126,10 @@ class SaveGameLoader {
         int offset = umemChunk.dataStart();
         int ramAddress = 0;
         int chunkEnd = umemChunk.dataStart() + umemChunk.size();
-        vmState.setMemsize(umemChunk.memory().intAt(offset));
+        vm.setMemsize(umemChunk.memory().intAt(offset));
         offset += 4;
         while (offset < chunkEnd) {
-            vmState.setRamByteAt(ramAddress, umemChunk.memory().byteAt(offset));
+            vm.setRamByteAt(ramAddress, umemChunk.memory().byteAt(offset));
             ramAddress++;
             offset++;
         }
@@ -140,7 +140,7 @@ class SaveGameLoader {
         logger.info(String.format("Uncompressed memory, SIZE = %d", stackSize));
         byte[] stackValues = new byte[stackSize];
         stksChunk.memory().copyBytesTo(stackValues, stksChunk.dataStart(), stackSize);
-        vmState.initStackFromByteArray(stackValues);
+        vm.initStackFromByteArray(stackValues);
     }
 
     private void readMAllChunk(Chunk mallChunk) {

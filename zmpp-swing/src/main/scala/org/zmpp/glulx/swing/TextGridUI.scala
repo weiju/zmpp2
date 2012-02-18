@@ -112,7 +112,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     eventManager.addMouseEvent(glkWindow.id, xpos, ypos)
     textInputMode = SwingTextWindowUI.InputModeNone
     waitForMouse = false
-    if (screenUI.vm.state.runState == VMRunStates.WaitForEvent &&
+    if (screenUI.vm.runState == VMRunStates.WaitForEvent &&
       eventManager.processNextEvent) {
       ExecutionControl.executeTurn(screenUI.vm)   
     }

@@ -254,7 +254,7 @@ extends NativeSoundChannel {
   }
 
   private def resumeWithNextEvent {
-    if (vm.state.runState == VMRunStates.WaitForEvent &&
+    if (vm.runState == VMRunStates.WaitForEvent &&
         vm.eventManager.processNextEvent) {
       ExecutionControl.executeTurn(vm)   
     }

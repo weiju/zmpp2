@@ -35,47 +35,47 @@ class FilterIOSystem extends IOSystem {
     public FilterIOSystem(GlulxVM vm, int functionAddr) {
         super(vm, functionAddr); // note that functionAddr and rock are identical
         this.functionAddr = functionAddr;
-        funType = vm.state.memByteAt(functionAddr);
+        funType = vm.memByteAt(functionAddr);
     }
 
     public int id() { return 1; }
 
     public void streamChar(char c) {
-        vm.callWithArgs(DestTypes.DoNotStore, 0, vm.state.pc, vm.state.fp, functionAddr, (int) c);
+        vm.callWithArgs(DestTypes.DoNotStore, 0, vm.pc, vm.fp, functionAddr, (int) c);
     }
 
     public void streamUniChar(int c) {
-        vm.callWithArgs(DestTypes.DoNotStore, 0, vm.state.pc, vm.state.fp, functionAddr, c);
+        vm.callWithArgs(DestTypes.DoNotStore, 0, vm.pc, vm.fp, functionAddr, c);
     }
 
     @Override public void streamNum(int num, int pos) {
         String numberString = String.format("%d", num);
         if (pos == 0) {
-            vm.state.pushCallStub(DestTypes.ResumeExecuteFunction, 0, vm.state.pc, vm.state.fp);
+            vm.pushCallStub(DestTypes.ResumeExecuteFunction, 0, vm.pc, vm.fp);
         }
     
         if (pos >= numberString.length()) {
-            int fpVal    = vm.state.popInt();
-            int pcVal    = vm.state.popInt();
-            int destAddr = vm.state.popInt();
-            int destType = vm.state.popInt();
+            int fpVal    = vm.popInt();
+            int pcVal    = vm.popInt();
+            int destAddr = vm.popInt();
+            int destType = vm.popInt();
             if (destType == DestTypes.ResumeExecuteFunction) {
-                vm.state.pc = pcVal;
-                vm.state.fp = fpVal;
+                vm.pc = pcVal;
+                vm.fp = fpVal;
             } else {
                 throw new IllegalStateException(String.format("FALLBACK, SHOULD NOT HAPPEN, destType is: %d",
                                                               destType));
             }
         } else {
-            vm.state.pushCallStub(DestTypes.ResumePrintDecimal, pos + 1, num, vm.state.fp);
+            vm.pushCallStub(DestTypes.ResumePrintDecimal, pos + 1, num, vm.fp);
             vm.callWithArgsNoCallStub(functionAddr, (int) numberString.charAt(pos));
         }
     }
 
     @Override public StreamStrState handleResumeUniString(int addr) {
-        int currentChar = vm.state.memIntAt(addr);
+        int currentChar = vm.memIntAt(addr);
         if (currentChar != 0) {
-            vm.state.pushCallStub(DestTypes.ResumePrintUnicode, 0, addr + 4, vm.state.fp);
+            vm.pushCallStub(DestTypes.ResumePrintUnicode, 0, addr + 4, vm.fp);
             vm.callWithArgsNoCallStub(functionAddr, currentChar);
             return StreamStrState.CallFunction;
         } else {
@@ -84,9 +84,9 @@ class FilterIOSystem extends IOSystem {
     }
 
     @Override public StreamStrState handleResumeCString(int addr) {
-        int currentChar = vm.state.memByteAt(addr);
+        int currentChar = vm.memByteAt(addr);
         if (currentChar != 0) {
-            vm.state.pushCallStub(DestTypes.ResumePrintCString, 0, addr + 1, vm.state.fp);
+            vm.pushCallStub(DestTypes.ResumePrintCString, 0, addr + 1, vm.fp);
             vm.callWithArgsNoCallStub(functionAddr, currentChar);
             return StreamStrState.CallFunction;
         } else {
@@ -99,11 +99,11 @@ class FilterIOSystem extends IOSystem {
                                         int currentStreamByte,
                                         int currentStreamBit) {
         if (!inBetween) {
-            vm.state.pushCallStub(DestTypes.ResumeExecuteFunction, 0,
-                                  vm.state.pc, vm.state.fp);
+            vm.pushCallStub(DestTypes.ResumeExecuteFunction, 0,
+                                  vm.pc, vm.fp);
         }
-        vm.state.pushCallStub(DestTypes.ResumePrintCompressed, currentStreamBit,
-                              currentStreamByte, vm.state.fp);
+        vm.pushCallStub(DestTypes.ResumePrintCompressed, currentStreamBit,
+                        currentStreamByte, vm.fp);
     }
   
     public StreamStrState handleChar8(char c, boolean inBetween, int currentStreamByte,
@@ -139,8 +139,8 @@ class FilterIOSystem extends IOSystem {
     @Override public StreamStrState handleStreamstrCString(boolean inBetween,
                                                            int stringAddress) {
         if (!inBetween) {
-            vm.state.pushCallStub(DestTypes.ResumeExecuteFunction, 0,
-                                  vm.state.pc, vm.state.fp);
+            vm.pushCallStub(DestTypes.ResumeExecuteFunction, 0,
+                                  vm.pc, vm.fp);
         }
         return StreamStrState.resumeCStringAt(stringAddress + 1);
     }
@@ -148,8 +148,8 @@ class FilterIOSystem extends IOSystem {
     @Override public StreamStrState handleStreamstrUnicodeString(boolean inBetween,
                                                                  int stringAddress) {
         if (!inBetween) {
-            vm.state.pushCallStub(DestTypes.ResumeExecuteFunction, 0,
-                                  vm.state.pc, vm.state.fp);
+            vm.pushCallStub(DestTypes.ResumeExecuteFunction, 0,
+                            vm.pc, vm.fp);
         }
         return StreamStrState.resumeUniStringAt(stringAddress + 4);
     }

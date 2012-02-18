@@ -59,12 +59,10 @@ abstract class IOSystem {
     public abstract void streamChar(char c);
     public abstract void streamUniChar(int c);
     protected GlulxVM vm;
-    private GlulxVMState vmState;
     public int rock;
 
     public IOSystem(GlulxVM vm, int rock) {
         this.vm      = vm;
-        this.vmState = vm.state;
         this.rock    = rock;
     }
 
@@ -77,13 +75,13 @@ abstract class IOSystem {
         }
 
         if (pos > 0) {
-            int fpVal    = vmState.popInt();
-            int pcVal    = vmState.popInt();
-            int destAddr = vmState.popInt();
-            int destType = vmState.popInt();
+            int fpVal    = vm.popInt();
+            int pcVal    = vm.popInt();
+            int destAddr = vm.popInt();
+            int destType = vm.popInt();
             if (destType == DestTypes.ResumeExecuteFunction) {
-                vmState.pc = pcVal;
-                vmState.fp = fpVal;
+                vm.pc = pcVal;
+                vm.fp = fpVal;
             } else {
                 throw new IllegalStateException(String.format("FALLBACK, SHOULD NOT HAPPEN, destType is: %d",
                                                               destType));
@@ -100,13 +98,13 @@ abstract class IOSystem {
 
     private StreamStrState popCallStubIfNecessary(boolean inBetween, StreamStrState state) {
         if (inBetween && state == StreamStrState.Finished) {
-            int fpVal    = vmState.popInt();
-            int pcVal    = vmState.popInt();
-            int destAddr = vmState.popInt();
-            int destType = vmState.popInt();
+            int fpVal    = vm.popInt();
+            int pcVal    = vm.popInt();
+            int destAddr = vm.popInt();
+            int destType = vm.popInt();
             if (destType == DestTypes.ResumeExecuteFunction) {
-                vmState.pc = pcVal;
-                vmState.fp = fpVal;
+                vm.pc = pcVal;
+                vm.fp = fpVal;
                 return StreamStrState.Finished;
             } else if (destType == DestTypes.ResumePrintCompressed) {
                 return StreamStrState.resumeAt(pcVal, destAddr);
@@ -124,7 +122,7 @@ abstract class IOSystem {
         if (state.startString() || state.printSubstring()) {
             // this conditional branch processes strings only from their start position
             int stringAddress = state.byteAddress;
-            int strtype = vmState.memByteAt(stringAddress);
+            int strtype = vm.memByteAt(stringAddress);
             switch (strtype) {
             case 0xe0: nextState = handleStreamstrCString(inBetween, stringAddress); break;
             case 0xe1: nextState = decompress(inBetween, stringAddress + 1, 0); break;
@@ -151,22 +149,22 @@ abstract class IOSystem {
 
     public StreamStrState handleStreamstrCString(boolean inBetween, int stringAddress) {
         int currentAddr = stringAddress + 1;
-        int currentChar = vmState.memByteAt(currentAddr);
+        int currentChar = vm.memByteAt(currentAddr);
         while (currentChar != 0) {
             streamChar((char) currentChar);
             currentAddr++;
-            currentChar = vmState.memByteAt(currentAddr);
+            currentChar = vm.memByteAt(currentAddr);
         }
         return StreamStrState.Finished;
     }
   
     public StreamStrState handleStreamstrUnicodeString(boolean inBetween, int stringAddress) {
         int currentAddr = stringAddress + 4;
-        int currentChar = vmState.memIntAt(currentAddr);
+        int currentChar = vm.memIntAt(currentAddr);
         while (currentChar != 0) {
             streamUniChar((char) (currentChar & 0xffff));
             currentAddr += 4;
-            currentChar = vmState.memIntAt(currentAddr);
+            currentChar = vm.memIntAt(currentAddr);
         }
         return StreamStrState.Finished;
     }
@@ -188,12 +186,12 @@ abstract class IOSystem {
                                        boolean inBetween,
                                        int currentStreamByte, int currentStreamBit) {
         if (!inBetween) {
-            vmState.pushCallStub(DestTypes.ResumeExecuteFunction, 0,
-                                  vmState.pc, vmState.fp);
+            vm.pushCallStub(DestTypes.ResumeExecuteFunction, 0,
+                            vm.pc, vm.fp);
         }
-        vmState.pushCallStub(DestTypes.ResumePrintCompressed, currentStreamBit,
-                             currentStreamByte, vmState.fp);
-        return vmState.memByteAt(ref);
+        vm.pushCallStub(DestTypes.ResumePrintCompressed, currentStreamBit,
+                        currentStreamByte, vm.fp);
+        return vm.memByteAt(ref);
     }
 
     private StreamStrState handleIndirectReference(int ref,
@@ -240,39 +238,39 @@ abstract class IOSystem {
                                       int currentStreamBit) {
         switch (nodeType) {
         case 0x02: // C character
-            return handleChar8((char) vmState.memByteAt(nodeAddr + 1),
+            return handleChar8((char) vm.memByteAt(nodeAddr + 1),
                                inBetween, currentStreamByte, currentStreamBit);
         case 0x03:
             return handleHuffmanCString(nodeAddr, currentStreamByte, currentStreamBit,
                                         inBetween);
         case 0x04: // unicode character
-            return handleChar32(vmState.memIntAt(nodeAddr + 1),
+            return handleChar32(vm.memIntAt(nodeAddr + 1),
                                 inBetween, currentStreamByte, currentStreamBit);
         case 0x05:
             return handleHuffmanUnicodeString(nodeAddr,
                                               currentStreamByte, currentStreamBit,
                                               inBetween);
         case 0x08: // indirect reference
-            return handleIndirectReference(vmState.memIntAt(nodeAddr + 1),
+            return handleIndirectReference(vm.memIntAt(nodeAddr + 1),
                                            inBetween,
                                            currentStreamByte,
                                            currentStreamBit);
         case 0x09: // double indirect reference
             {
-                int refptr = vmState.memIntAt(nodeAddr + 1);
-                return handleIndirectReference(vmState.memIntAt(refptr),
+                int refptr = vm.memIntAt(nodeAddr + 1);
+                return handleIndirectReference(vm.memIntAt(refptr),
                                                inBetween,
                                                currentStreamByte,
                                                currentStreamBit);
             }
         case 0x0a: // indirect reference with arguments
             {
-                int ref = vmState.memIntAt(nodeAddr + 1);
-                int argCount = vmState.memIntAt(nodeAddr + 5);
+                int ref = vm.memIntAt(nodeAddr + 1);
+                int argCount = vm.memIntAt(nodeAddr + 5);
                 int[] args = new int[argCount];
 
                 for (int i = 0; i < argCount; i++) {
-                    args[i] = vmState.memIntAt(nodeAddr + 9 + i * 4);
+                    args[i] = vm.memIntAt(nodeAddr + 9 + i * 4);
                 }
                 return handleIndirectReferenceWithArgs(ref, args,
                                                        inBetween,
@@ -281,13 +279,13 @@ abstract class IOSystem {
             }
         case 0x0b: // double indirect reference with arguments
             {
-                int refptr = vmState.memIntAt(nodeAddr + 1);
-                int argCount = vmState.memIntAt(nodeAddr + 5);
+                int refptr = vm.memIntAt(nodeAddr + 1);
+                int argCount = vm.memIntAt(nodeAddr + 5);
                 int[] args = new int[argCount];
                 for (int i = 0; i < argCount; i++) {
-                    args[i] = vmState.memIntAt(nodeAddr + 9 + i * 4);
+                    args[i] = vm.memIntAt(nodeAddr + 9 + i * 4);
                 }
-                return handleIndirectReferenceWithArgs(vmState.memIntAt(refptr), args,
+                return handleIndirectReferenceWithArgs(vm.memIntAt(refptr), args,
                                                        inBetween,
                                                        currentStreamByte,
                                                        currentStreamBit);
@@ -302,9 +300,9 @@ abstract class IOSystem {
     // previous decompress() invocation left off.
     private StreamStrState decompress(boolean inBetween, int streamByte, int bit) {
         int decodeTable           = vm.currentDecodingTable;
-        int tableLength           = vmState.memIntAt(decodeTable);
-        int numNodes              = vmState.memIntAt(decodeTable + 4);
-        int rootNodeAddr          = vmState.memIntAt(decodeTable + 8);
+        int tableLength           = vm.memIntAt(decodeTable);
+        int numNodes              = vm.memIntAt(decodeTable + 4);
+        int rootNodeAddr          = vm.memIntAt(decodeTable + 8);
         int streamAddr            = streamByte;
         int bitnum                = bit;
     
@@ -313,15 +311,15 @@ abstract class IOSystem {
         StreamStrState result     = StreamStrState.Continue;
 
         // this value holds the byte sized window into the bitstream
-        int currentByte = vmState.memByteAt(streamAddr) >> bitnum;
+        int currentByte = vm.memByteAt(streamAddr) >> bitnum;
 
         while (result == StreamStrState.Continue) {
             if ((currentByte & 1) == 0) {
-                currentNodeAddr = vmState.memIntAt(currentNodeAddr + 1);
+                currentNodeAddr = vm.memIntAt(currentNodeAddr + 1);
             } else {
-                currentNodeAddr = vmState.memIntAt(currentNodeAddr + 5);
+                currentNodeAddr = vm.memIntAt(currentNodeAddr + 5);
             }
-            int nodeType   = vmState.memByteAt(currentNodeAddr);
+            int nodeType   = vm.memByteAt(currentNodeAddr);
             boolean atLeaf = nodeType != 0x00;
             if (nodeType == 0x01) result = StreamStrState.Finished;
 
@@ -332,7 +330,7 @@ abstract class IOSystem {
                 if (bitnum == 8) {
                     bitnum = 0;
                     streamAddr++;
-                    currentByte = vmState.memByteAt(streamAddr);
+                    currentByte = vm.memByteAt(streamAddr);
                 }
       
                 if (atLeaf) {

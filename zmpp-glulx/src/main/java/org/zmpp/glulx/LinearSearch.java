@@ -30,8 +30,8 @@ package org.zmpp.glulx;
 
 class LinearSearch extends GlulxArraySearch {
 
-    public LinearSearch(GlulxVMState state) {
-        super(state);
+    public LinearSearch(GlulxVM vm) {
+        super(vm);
     }
 
     private boolean keyEqualsAtIndex(int compareIndex) {
@@ -39,8 +39,8 @@ class LinearSearch extends GlulxArraySearch {
             int addr0 = key;
             int addr1 = keyAddress(compareIndex);
             for (int i = 0; i < keySize; i++) {
-                int b0 = state.memByteAt(addr0 + i);
-                int b1 = state.memByteAt(addr1 + i);
+                int b0 = vm.memByteAt(addr0 + i);
+                int b1 = vm.memByteAt(addr1 + i);
                 if (b0 != b1) return false;
             }
             return true;
@@ -56,7 +56,7 @@ class LinearSearch extends GlulxArraySearch {
         else if (keyIndirect) {
             int addr = keyAddress(compareIndex);
             for (int i = 0; i < keySize; i++) {
-                int b = state.memByteAt(addr + i);
+                int b = vm.memByteAt(addr + i);
                 if (b != 0) return false;
             }
             return true;

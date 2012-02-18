@@ -41,8 +41,8 @@ object SearchSpec {
   // A simple memory setup with key size 1 byte
   val ArraySearchMemSize1 = Array[Byte](0x47, 0x6c, 0x75, 0x6c, // Glul
                                         0x00, 0x03, 0x01, 0x01, // SIZE
-                                        0x00, 0x00, 0x00, 0x00, // RAMSTART
-                                        0x00, 0x00, 0x01, 0x00, // EXTSTART
+                                        0x00, 0x00, 0x00, 0x24, // RAMSTART
+                                        0x00, 0x00, 0x00, 0x28, // EXTSTART
                                         0x00, 0x00, 0x02, 0x00, // ENDMEM
                                         0x00, 0x00, 0x00, 0xff.asInstanceOf[Byte], // STACKSIZE
                                         0x00, 0x00, 0x00, 0x00, // STARTFUNC
@@ -54,8 +54,8 @@ object SearchSpec {
   // A simple search memory setup with key size 1
   val LinkedSearchMemSize1 = Array[Byte](0x47, 0x6c, 0x75, 0x6c, // Glul
                                          0x00, 0x03, 0x01, 0x01, // SIZE
-                                         0x00, 0x00, 0x00, 0x00, // RAMSTART
-                                         0x00, 0x00, 0x01, 0x00, // EXTSTART
+                                         0x00, 0x00, 0x00, 0x24, // RAMSTART
+                                         0x00, 0x00, 0x00, 0x2f, // EXTSTART
                                          0x00, 0x00, 0x02, 0x00, // ENDMEM
                                          0x00, 0x00, 0x00, 0xff.asInstanceOf[Byte], // STACKSIZE
                                          0x00, 0x00, 0x00, 0x00, // STARTFUNC
@@ -70,10 +70,10 @@ object SearchSpec {
 @RunWith(classOf[JUnitRunner])
 class BinarySearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
-  var vmstate = new GlulxVMState
+  var vmstate = new GlulxVM
 
   override def beforeEach {
-    vmstate.init(SearchSpec.ArraySearchMemSize1)
+    vmstate.initState(SearchSpec.ArraySearchMemSize1)
   }
 
   "BinarySearch" should "search keys returning key address" in {
@@ -91,10 +91,10 @@ class BinarySearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
 @RunWith(classOf[JUnitRunner])
 class LinearSearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
-  var vmstate = new GlulxVMState
+  var vmstate = new GlulxVM
 
   override def beforeEach {
-    vmstate.init(SearchSpec.ArraySearchMemSize1)
+    vmstate.initState(SearchSpec.ArraySearchMemSize1)
   }
 
   "LinearSearch" should "search keys returning key address" in {
@@ -112,10 +112,10 @@ class LinearSearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
 @RunWith(classOf[JUnitRunner])
 class LinkedSearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
-  var vmstate = new GlulxVMState
+  var vmstate = new GlulxVM
 
   override def beforeEach {
-    vmstate.init(SearchSpec.LinkedSearchMemSize1)
+    vmstate.initState(SearchSpec.LinkedSearchMemSize1)
   }
 
   "LinkedSearch" should "search keys returning key address" in {

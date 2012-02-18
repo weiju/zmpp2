@@ -39,7 +39,7 @@ import java.util.logging.*;
  **** VM main control
  ****
  */
-public class GlulxVM {
+public class GlulxVM implements VMState {
     private static final int MaxLocalDescriptors = 255;
     private static final int MaxOperands         = 10;
     private static final int MaxArguments        = 20;
@@ -81,10 +81,51 @@ public class GlulxVM {
     private static Logger logger = Logger.getLogger("glulx");
     private int iterations = 1;
 
+    // *******************************************************************************
     // State is public for subsystems to access. This is the only data
     // that is needed to be serializaed between turns. All other data
     // is scratch data which is only valid during one turn.
-    public GlulxVMState state = new GlulxVMState();
+    // - story memory
+    // - RAM access
+    // - stack access
+    // - local variables
+    // - functions
+    // This once was in a separate file, but no more. Inform 7 killed it.
+
+    public static final int OffsetLocalsPos     = 4;
+    public static final int OffsetLocalsFormat  = 8;
+
+    private static final int ByteType   = 1;
+    private static final int ShortType  = 2;
+    private static final int IntType    = 4;
+  
+    private static final int SizeByte   = 1;
+    private static final int SizeShort  = 2;
+    private static final int SizeInt    = 4;
+
+    public int pRunState = VMRunStates.Running;
+    public byte[] storyBytes;
+
+    // Memory setup
+    public MemoryHeap memheap;
+    public Memory extMem;
+    private int _extEnd;
+    public int extstart; // cached, because accessed frequently
+
+    public BinarySearch binarySearch = new BinarySearch(this);
+    public LinearSearch linearSearch = new LinearSearch(this);
+    public LinkedSearch linkedSearch = new LinkedSearch(this);
+    public StoryHeader header;
+
+    // Stack
+    private byte[] _stackArray;
+    public int sp;
+
+    // Registers
+    public int pc;
+    public int fp;
+
+    // *******************************************************************************
 
     // Cached currrent frame state. This is used in setting up the current
     // function and is only supposed to be used at that time. When returning
@@ -114,13 +155,6 @@ public class GlulxVM {
     private List<Snapshot> _undoSnapshots = new ArrayList<Snapshot>();
     private AccelSystem _accelSystem = new AccelSystem(this);
 
-    // this is of course, super-ugly: sharing the stack array directly with the state
-    // object. If Inform 7 throws 30 million instructions per turn at you, you gotta
-    // do what you need to do. And we do it for the story memory, too.
-    private byte[] stackBytes;
-    private byte[] storyBytes;
-    private int extstart; // this is cached, too
-
     // The original state of writable memory after loading
     private byte[] _originalRam;
     private int _protectionStart;
@@ -128,7 +162,7 @@ public class GlulxVM {
 
     // IO Systems
     public EventManager eventManager() { return glk.eventManager(); }
-    public int runState() { return state.pRunState; }
+    public int runState() { return pRunState; }
     public BlorbData blorbData;
     public int currentDecodingTable;
     private IOSystem currentIOSystem = new NullIOSystem(this, 0);
@@ -145,32 +179,63 @@ public class GlulxVM {
 
     public void init(byte[] storyBytes, BlorbData aBlorbData) {
         blorbData = aBlorbData;
-        glk = new Glk(new EventManager(state));
-        _glkDispatch = new GlkDispatch(state, glk);
-        state.init(storyBytes);
-        this.currentDecodingTable  = state.header.decodingTable();
-        // copy reference to vm so we can directly access the stack memory (...)
-        this.stackBytes = state.stackBytes();
-        this.storyBytes = state.storyBytes;
-        this.extstart   = state.extstart;
-
+        glk = new Glk(new EventManager(this));
+        _glkDispatch = new GlkDispatch(this, glk);
+        initState(storyBytes);
+        this.currentDecodingTable  = header.decodingTable();
         _accelSystem.glk = glk;
-        if (_originalRam == null) _originalRam = state.cloneRam();
+        if (_originalRam == null) _originalRam = cloneRam();
+        prepareCall(header.startfunc(), null);
+    }
 
-        prepareCall(state.header.startfunc(), null);
+    public void initState(byte[] storyBytes) {
+        this.storyBytes = storyBytes;
+        header      = new StoryHeader(storyBytes);
+        initStack();
+        extstart   = header.extstart();
+        memheap    = new MemoryHeap(header.endmem());
+        pc          = 0;
+        fp          = 0;
+        pRunState   = VMRunStates.Running;
+        setMemsize(header.endmem());
+        logger.info(String.format("VM INITIALIZED WITH EXT_START: %d END_MEM: %d",
+                                  extstart, header.endmem()));
     }
 
     private void restart() {
-        state.restart(_originalRam, _protectionStart, _protectionLength);
+        restartState(_originalRam, _protectionStart, _protectionLength);
         // copy reference to vm so we can directly access the stack memory (...)
-        stackBytes = state.stackBytes();
         //_protectionStart  = 0
         //_protectionLength = 0
         //_undoSnapshots = Nil
-        prepareCall(state.header.startfunc(), null);
+        prepareCall(header.startfunc(), null);
     }
 
-    private void printState() { System.out.println(state.toString()); }
+    private void restartState(byte[] originalRam, int protectionStart, int protectionLength) {
+        logger.info(String.format("@restart (start: %02x, # bytes: %02x)",
+                                  protectionStart, protectionLength));
+        logger.info(String.format("HEAP ACTIVE: %b EXT_START: $%02x EXT_END: $%02x",
+                                  memheap.active(), extstart, _extEnd));
+        initStack();
+        memheap   = new MemoryHeap(header.endmem());
+        setMemsize(header.endmem());
+        pc         = 0;
+        fp         = 0;
+        pRunState  = VMRunStates.Running;
+
+        // reset bytes in ram
+        int ramsize = extstart - header.ramstart();
+        protectedMemRestore(originalRam, 0, header.ramstart(), ramsize,
+                            protectionStart, protectionLength);
+    }
+
+    private void initStack() {
+        _stackArray = new byte[header.stacksize()];
+        sp         = 0;
+    }
+
+
+    private void printState() { System.out.println(toString()); }
 
     private int readLocalDescriptors(int addr) {
         int currentAddr = addr;
@@ -178,8 +243,8 @@ public class GlulxVM {
         boolean hasMoreDescriptors = true;
 
         while (hasMoreDescriptors) {
-            _localDescriptors[descIndex].localType  = state.memByteAt(currentAddr);
-            _localDescriptors[descIndex].localCount = state.memByteAt(currentAddr + 1);
+            _localDescriptors[descIndex].localType  = memByteAt(currentAddr);
+            _localDescriptors[descIndex].localCount = memByteAt(currentAddr + 1);
 
             hasMoreDescriptors = !(_localDescriptors[descIndex].localType == 0 &&
                                    _localDescriptors[descIndex].localCount == 0);
@@ -192,20 +257,20 @@ public class GlulxVM {
 
     private int setLocalDescriptorsToCallFrame(int numDescriptors) {
         LocalDescriptor descriptor = null;
-        int sp = state.sp;
+        int sp = this.sp;
         for (int i = 0; i < numDescriptors; i++) {
             descriptor = _localDescriptors[i];
             //state.pushByte(descriptor.localType);
             //state.pushByte(descriptor.localCount);
-            stackBytes[sp++] = (byte) descriptor.localType;
-            stackBytes[sp++] = (byte) descriptor.localCount;
+            _stackArray[sp++] = (byte) descriptor.localType;
+            _stackArray[sp++] = (byte) descriptor.localCount;
         }
-        state.sp = sp; // re-adjust stackpointer
+        this.sp = sp; // re-adjust stackpointer
 
         // Ensure a size dividable by 4 (the size of an int)
         int localDescriptorSize = numDescriptors * Types.SizeShort;
         if ((localDescriptorSize % Types.SizeInt) != 0) {
-            state.pushShort(0);
+            pushShort(0);
             localDescriptorSize += Types.SizeShort;
         }
         return localDescriptorSize;
@@ -225,15 +290,15 @@ public class GlulxVM {
             // Padding: For short, pad to even address, for int, pad to multiple
             // of 4
             int numPadBytes = 0;
-            if (ltype == Types.ShortType && ((state.sp & 0x01) == 1)) {
-                // WAS: state.pushByte(0);
-                stackBytes[state.sp++] = 0;
+            if (ltype == Types.ShortType && ((this.sp & 0x01) == 1)) {
+                // WAS: pushByte(0);
+                _stackArray[this.sp++] = 0;
                 numPadBytes = 1;
-            } else if (ltype == Types.IntType && ((state.sp & 0x03) != 0)) {
-                numPadBytes = Types.SizeInt - (state.sp & 0x03);
+            } else if (ltype == Types.IntType && ((this.sp & 0x03) != 0)) {
+                numPadBytes = Types.SizeInt - (this.sp & 0x03);
                 for (int j = 0; j < numPadBytes; j++) {
-                    // WAS: state.pushByte(0);
-                    stackBytes[state.sp++] = 0;
+                    // WAS: pushByte(0);
+                    _stackArray[this.sp++] = 0;
                 }
             }
             // push numlocals locals of size ltype on the stack, we do this
@@ -241,8 +306,8 @@ public class GlulxVM {
             // to the variables
             int blocksize = numlocals * ltype;
             for (int j = 0; j < blocksize; j++) {
-                // WAS: state.pushByte(0);
-                stackBytes[state.sp++] = 0;
+                // WAS: pushByte(0);
+                _stackArray[this.sp++] = 0;
             }
             localSectionSize += blocksize + numPadBytes;
         }
@@ -259,12 +324,12 @@ public class GlulxVM {
             return ((operand.value & 0x80) == 0x80) ? operand.value | 0xffffff00 : operand.value & 0xff;
         case 2: return Types.signExtend16(operand.value); // ConstShort
         case 3: return operand.value;                     // ConstInt
-        case 7: return state.memIntAt(operand.value);     // AddressAny
-        case 8: return state.popInt();                    // Stack
+        case 7: return memIntAt(operand.value);     // AddressAny
+        case 8: return popInt();                    // Stack
         case 9: case 10: case 11: // Local00_FF, Local0000_FFFF, LocalAny
-            return state.getLocalAtAddress(operand.value);
+            return getLocalAtAddress(operand.value);
         case 13: case 14: case 15: // Ram00_FF, Ram0000_FFFF, RamAny
-            return state.ramIntAt(operand.value);
+            return ramIntAt(operand.value);
         default:
             throw new IllegalStateException("unsupported operand type: " +
                                             operand.addressMode);
@@ -283,12 +348,12 @@ public class GlulxVM {
         case 2: return Types.signExtend16(operand.value); // ConstShort
         case 3: return operand.value;                     // ConstInt
         case 5: case 6: case 7:    // Address00_FF/Address0000_FFFF/AddressAny
-            return state.memByteAt(operand.value);
-        case 8: return state.popInt();                    // Stack
+            return memByteAt(operand.value);
+        case 8: return popInt();                    // Stack
         case 9: case 10: case 11:  // Local00_FF/Local0000_FFFF/LocalAny 
-            return state.getLocalByteAtAddress(operand.value);
+            return getLocalByteAtAddress(operand.value);
         case 13: case 14: case 15: // Ram00_FF/Ram0000_FFFF/RamAny
-            return state.ramByteAt(operand.value);
+            return ramByteAt(operand.value);
         default:
           throw new IllegalStateException("unsupported operand type: " +
                                           operand.addressMode);
@@ -306,12 +371,12 @@ public class GlulxVM {
         case 2: return Types.signExtend16(operand.value); // ConstShort
         case 3: return operand.value; // ConstInt
         case 5: case 6: case 7: // Address00_FF/Address_0000_FFFF/AddressAny
-            return state.memShortAt(operand.value);
-        case 8: return state.popInt(); // Stack
+            return memShortAt(operand.value);
+        case 8: return popInt(); // Stack
         case 9: case 10: case 11: // Local00_FF/Local0000_FFFF/LocalAny
-            return state.getLocalShortAtAddress(operand.value);
+            return getLocalShortAtAddress(operand.value);
         case 13: case 14: case 15: // Ram00_FF/Ram0000_FFFF/RamAny
-            return state.ramShortAt(operand.value);
+            return ramShortAt(operand.value);
         default:
             throw new IllegalStateException("unsupported operand type: " +
                                             operand.addressMode);
@@ -327,16 +392,16 @@ public class GlulxVM {
         case 0: // ConstZero, throw result away
             break;
         case 5: case 6: case 7: // Address00_FF, Address0000_FFFF, AddressAny
-            state.setMemIntAt(operand.value, value);
+            setMemIntAt(operand.value, value);
             break;
         case 8:
-            state.pushInt(value); // Stack
+            pushInt(value); // Stack
             break;
         case 9: case 10: case 11: // Local00_FF, Local0000_FFFF, LocalAny
-            state.setLocalAtAddress(operand.value, value);
+            setLocalAtAddress(operand.value, value);
             break;
         case 13: case 14: case 15: // Ram00_FF, Ram0000_FFFF, RamAny
-            state.setRamIntAt(operand.value, value);
+            setRamIntAt(operand.value, value);
             break;
         default:
             throw new IllegalArgumentException("unsupported address mode for store: " +
@@ -350,12 +415,12 @@ public class GlulxVM {
         switch (operand.addressMode) {
         case 0: break; // ConstZero, throw result away
         case 5: case 6: case 7: // Address00_FF/Address0000_FFFF/AddressAny
-            state.setMemByteAt(operand.value, value); break;
-        case 8: state.pushInt(value); break; // Stack
+            setMemByteAt(operand.value, value); break;
+        case 8: pushInt(value); break; // Stack
         case 9: case 10: case 11: // Local00_FF/Local0000_FFFF/LocalAny
-            state.setLocalByteAtAddress(operand.value, value); break;
+            setLocalByteAtAddress(operand.value, value); break;
         case 13: case 14: case 15: // Ram00_FF/Ram0000_FFFF/RamAny
-            state.setRamByteAt(operand.value, value); break;
+            setRamByteAt(operand.value, value); break;
         default:
             throw new IllegalArgumentException(String.format("unsupported address mode for store: ",
                                                              operand.addressMode));
@@ -368,12 +433,12 @@ public class GlulxVM {
         switch (operand.addressMode) {
         case 0: break; // ConstZero, throw result away
         case 5: case 6: case 7: // Address00_FF/Address0000_FFFF/AddressAny
-            state.setMemShortAt(operand.value, value); break;
-        case 8: state.pushInt(value); break; // Stack
+            setMemShortAt(operand.value, value); break;
+        case 8: pushInt(value); break; // Stack
         case 9: case 10: case 11: // Local00_FF/Local0000_FFFF/LocalAny
-            state.setLocalShortAtAddress(operand.value, value); break;
+            setLocalShortAtAddress(operand.value, value); break;
         case 13: case 14: case 15: // Ram00_FF/Ram0000_FFFF/RamAny
-            state.setRamShortAt(operand.value, value); break;
+            setRamShortAt(operand.value, value); break;
         default:
           throw new IllegalArgumentException("unsupported address mode for store: " +
                                              operand.addressMode);
@@ -387,29 +452,29 @@ public class GlulxVM {
     // this does *NOT* push a call stub
     private void callFunction(int funaddr) {
         // create call frame (might have to be pushed to the state class)
-        state.pushInt(0); // call frame size
-        state.pushInt(0); // locals position
+        pushInt(0); // call frame size
+        pushInt(0); // locals position
 
-        int funtype = state.memByteAt(funaddr);
+        int funtype = memByteAt(funaddr);
         int numDescriptors = readLocalDescriptors(funaddr + 1);
         int localDescriptorSize = setLocalDescriptorsToCallFrame(numDescriptors);
 
         // now that we know the size of the local descriptors section, we set
         // the position of locals
-        state.setIntInStack(state.fp + Stack.OffsetLocalsPos,
-                            localDescriptorSize + 8);
+        setIntInStack(this.fp + OffsetLocalsPos,
+                      localDescriptorSize + 8);
         int localSectionSize = setLocalsToCallFrame(numDescriptors);
 
         if (funtype == 0xc0) { // stack-arg type
             // push arguments backwards, then the number of arguments
             for (int i = 0; i < _numArguments; i++) {
-                state.pushInt(_arguments[_numArguments - i - 1]);
+                pushInt(_arguments[_numArguments - i - 1]);
             }
-            state.pushInt(_numArguments);
+            pushInt(_numArguments);
         } else if (funtype == 0xc1) { // local-arg type
             // Copy arguments on the stack backwards to the locals
             for (int i = 0; i < _numArguments; i++) {
-                state.setLocal(i, _arguments[i]);
+                setLocal(i, _arguments[i]);
             }
         } else {
             throw new IllegalArgumentException(String.format("unsupported function type: %02x",
@@ -417,44 +482,35 @@ public class GlulxVM {
         }
 
         // set frame len
-        state.setIntInStack(state.fp, state.localsPos() + localSectionSize);
+        setIntInStack(fp, localsPos() + localSectionSize);
         // jump to the code
-        state.pc = funaddr + 1 + SizeLocalDescriptor * numDescriptors;
+        pc = funaddr + 1 + SizeLocalDescriptor * numDescriptors;
     }
     // normal function call, called by the VM itself
     private void prepareCall(int funaddr, Operand storeLocation) {
         if (storeLocation != null) {
-            state.pushCallStub(storeLocation);
-            state.fp = state.sp;
+            pushCallStub(storeLocation);
+            fp = sp;
         }
         if (_accelSystem.isAccelerated(funaddr)) {
             // 4 dummy ints on the stack to trick the check
-            state.pushInt(0);
-            state.pushInt(0);
-            state.pushInt(0);
-            state.pushInt(0);
+            pushInt(0);
+            pushInt(0);
+            pushInt(0);
+            pushInt(0);
             _accelSystem.call(funaddr, _arguments, _numArguments);
         } else {
             callFunction(funaddr);
         }
     }
   
-    /*
-  // generic function call, called by string decoding
-  def prepareCall(funaddr : Int, destType: Int, destAddr: Int) {
-    _state.pushCallStub(destType, destAddr)
-    _state.fp = _state.sp
-    callFunction(funaddr)
-  }
-    */
-
     // called by @tailcall
     private void tailCall(int funaddr, int numArgs) {
         _numArguments = numArgs;
         for (int i = 0; i < _numArguments; i++) {
-            _arguments[i] = state.popInt();
+            _arguments[i] = popInt();
         }
-        state.sp = state.fp;
+        sp = fp;
         prepareCall(funaddr, null);
     }
 
@@ -495,8 +551,8 @@ public class GlulxVM {
            _arguments[i] = args[i];
        }
        _numArguments = args.length;
-       state.pushCallStub(destType, destAddr, pcVal, fpVal);
-       state.fp = state.sp;
+       pushCallStub(destType, destAddr, pcVal, fpVal);
+       fp = sp;
        callFunction(funaddr);
    }
 
@@ -504,8 +560,8 @@ public class GlulxVM {
                              int funaddr, int arg0) {
         _arguments[0] = arg0;
         _numArguments = 1;
-        state.pushCallStub(destType, destAddr, pcVal, fpVal);
-        state.fp = state.sp;
+        pushCallStub(destType, destAddr, pcVal, fpVal);
+        fp = sp;
         callFunction(funaddr);
     }
 
@@ -514,44 +570,44 @@ public class GlulxVM {
             _arguments[i] = args[i];
         }
         _numArguments = args.length;
-        state.fp = state.sp;
+        fp = sp;
         callFunction(funaddr);
     }
     public void callWithArgsNoCallStub(int funaddr) {
         _numArguments = 0;
-        state.fp = state.sp;
+        fp = sp;
         callFunction(funaddr);
     }
 
     public void callWithArgsNoCallStub(int funaddr, int arg0) {
         _arguments[0] = arg0;
         _numArguments = 1;
-        state.fp = state.sp;
+        fp = sp;
         callFunction(funaddr);
     }
 
     // Returns from a function
     public void popCallStub(int retval) {
-        if (state.sp < state.fp + 12) {
+        if (sp < fp + 12) {
             throw new IllegalStateException("popCallStub(), stack is too small !!");
         }
-        state.sp = state.fp;
-        if (state.sp == 0) {
+        sp = fp;
+        if (sp == 0) {
             // return from entry function -> Quit
-            state.pRunState = VMRunStates.Halted;
+            pRunState = VMRunStates.Halted;
         } else {
             // we can't use GlulxVM's popInt(), because it performs checks on
             // the call frame, which is exactly what we manipulate here
-            int fpValue  = state.popIntUnchecked();
-            int pcValue  = state.popIntUnchecked();
-            int destAddr = state.popIntUnchecked();
-            int destType = state.popIntUnchecked();
+            int fpValue  = popIntUnchecked();
+            int pcValue  = popIntUnchecked();
+            int destAddr = popIntUnchecked();
+            int destType = popIntUnchecked();
             if (DestTypes.isStringDestType(destType)) {
                 handleStringCallStub(destType, destAddr, pcValue, fpValue);
             } else { // regular behaviour
-                state.fp = fpValue;
-                state.pc = pcValue;
-                state.storeResult(destType, destAddr, retval);
+                fp = fpValue;
+                pc = pcValue;
+                storeResult(destType, destAddr, retval);
             }
         }
     }
@@ -585,7 +641,7 @@ public class GlulxVM {
     // *********************************
     private void doBranch(int offset) {
         if (offset == 0 || offset == 1) popCallStub(offset);
-        else state.pc += offset - 2;
+        else pc += offset - 2;
     }
 
     // ***********************************************************************
@@ -625,29 +681,27 @@ public class GlulxVM {
     // decode instruction at current pc
     public void executeTurn() {
         long startTime = System.currentTimeMillis();
-        while (state.pRunState == VMRunStates.Running) {
-            //int pc = _state.pc;
-
+        while (pRunState == VMRunStates.Running) {
             // decode opcode number
             // look at the two highest bits: 11 means 4 bytes, 10 means 2 bytes
             // else one byte
             // ******************************************
-            int b0 = storyBytes[state.pc] & 0xff;
+            int b0 = storyBytes[pc] & 0xff;
             // ******************************************
 
             int bitpattern = b0 & 0xc0;
 
             if (bitpattern == 0xc0) {
-                _opcodeNum = state.memIntAt(state.pc) - 0xc0000000;
+                _opcodeNum = memIntAt(pc) - 0xc0000000;
                 _opcodeNumSize = Types.SizeInt;
             } else if (bitpattern == 0x80) {
-                _opcodeNum = (state.memShortAt(state.pc) & 0xffff) - 0x8000;
+                _opcodeNum = (memShortAt(pc) & 0xffff) - 0x8000;
                 _opcodeNumSize = Types.SizeShort;
             } else {
                 _opcodeNum = b0;
                 _opcodeNumSize = Types.SizeByte;
             }
-            state.pc += _opcodeNumSize;
+            pc += _opcodeNumSize;
 
             // read operands
             // This is really, really ugly, in order to make it fast, I had to
@@ -656,10 +710,10 @@ public class GlulxVM {
             // Note that this section assumes that all instructions are in story
             // memory, if the story is doing weird stuff with self-modifying code,
             // shame on its author
-            int addrModeOffset = state.pc;
+            int addrModeOffset = pc;
             int numOperands = NumOperands[_opcodeNum];
             int nbytesNumOperands = numOperands / 2 + numOperands % 2;
-            state.pc += nbytesNumOperands; // adjust pc to the start of operand data
+            pc += nbytesNumOperands; // adjust pc to the start of operand data
             int numRead = 0;
             int byteVal = 0;
             Operand currentOperand = null;
@@ -677,33 +731,33 @@ public class GlulxVM {
                 case 0:  currentOperand.value = 0;                 break; // ConstZero
                 case 1: // ConstByte
                     // ******************************************
-                    currentOperand.value = storyBytes[state.pc++] & 0xff;
+                    currentOperand.value = storyBytes[pc++] & 0xff;
                     // ******************************************
                     break;
-                case 2:  currentOperand.value = state.nextShort(); break; // ConstShort
-                case 3:  currentOperand.value = state.nextInt();   break; // ConstInt
+                case 2:  currentOperand.value = nextShort(); break; // ConstShort
+                case 3:  currentOperand.value = nextInt();   break; // ConstInt
                 case 5: // Address00_FF
                     // ******************************************
-                    currentOperand.value = storyBytes[state.pc++] & 0xff;
+                    currentOperand.value = storyBytes[pc++] & 0xff;
                     // ******************************************
                     break;
-                case 6:  currentOperand.value = state.nextShort(); break; // Address0000_FFFF
-                case 7:  currentOperand.value = state.nextInt();   break; // AddressAny
+                case 6:  currentOperand.value = nextShort(); break; // Address0000_FFFF
+                case 7:  currentOperand.value = nextInt();   break; // AddressAny
                 case 8:  currentOperand.value = 0;                 break; // Stack
                 case 9: // Local00_FF
                     // ******************************************
-                    currentOperand.value = storyBytes[state.pc++] & 0xff;
+                    currentOperand.value = storyBytes[pc++] & 0xff;
                     // ******************************************
                     break;
-                case 10: currentOperand.value = state.nextShort(); break; // Local0000_FFFF
-                case 11: currentOperand.value = state.nextInt();   break; // LocalAny
+                case 10: currentOperand.value = nextShort(); break; // Local0000_FFFF
+                case 11: currentOperand.value = nextInt();   break; // LocalAny
                 case 13:
                     // ******************************************
-                    currentOperand.value = storyBytes[state.pc++] & 0xff;                    
+                    currentOperand.value = storyBytes[pc++] & 0xff;                    
                     // ******************************************
                     break; // Ram00_FF
-                case 14: currentOperand.value = state.nextShort(); break; // Ram0000_FFFF
-                case 15: currentOperand.value = state.nextInt();   break; // RamAny
+                case 14: currentOperand.value = nextShort(); break; // Ram0000_FFFF
+                case 15: currentOperand.value = nextInt();   break; // RamAny
                 default:
                     throw new IllegalArgumentException("unsupported address mode: " +
                                                        currentOperand.addressMode);
@@ -722,33 +776,33 @@ public class GlulxVM {
                     case 0:  currentOperand.value = 0;                 break; // ConstZero
                     case 1: // ConstByte
                         // ******************************************
-                        currentOperand.value = storyBytes[state.pc++] & 0xff;
+                        currentOperand.value = storyBytes[pc++] & 0xff;
                         // ******************************************
                         break;
-                    case 2:  currentOperand.value = state.nextShort(); break; // ConstShort
-                    case 3:  currentOperand.value = state.nextInt();   break; // ConstInt
+                    case 2:  currentOperand.value = nextShort(); break; // ConstShort
+                    case 3:  currentOperand.value = nextInt();   break; // ConstInt
                     case 5: // Address00_FF
                         // ******************************************
-                        currentOperand.value = storyBytes[state.pc++] & 0xff;
+                        currentOperand.value = storyBytes[pc++] & 0xff;
                         // ******************************************
                         break;
-                    case 6:  currentOperand.value = state.nextShort(); break; // Address0000_FFFF
-                    case 7:  currentOperand.value = state.nextInt();   break; // AddressAny
+                    case 6:  currentOperand.value = nextShort(); break; // Address0000_FFFF
+                    case 7:  currentOperand.value = nextInt();   break; // AddressAny
                     case 8:  currentOperand.value = 0;                 break; // Stack
                     case 9: // Local00_FF
                         // ******************************************
-                        currentOperand.value = storyBytes[state.pc++] & 0xff;
+                        currentOperand.value = storyBytes[pc++] & 0xff;
                         // ******************************************
                         break;
-                    case 10: currentOperand.value = state.nextShort(); break; // Local0000_FFFF
-                    case 11: currentOperand.value = state.nextInt();   break; // LocalAny
+                    case 10: currentOperand.value = nextShort(); break; // Local0000_FFFF
+                    case 11: currentOperand.value = nextInt();   break; // LocalAny
                     case 13: // Ram00_FF
                         // ******************************************
-                        currentOperand.value = storyBytes[state.pc++] & 0xff;
+                        currentOperand.value = storyBytes[pc++] & 0xff;
                         // ******************************************
                         break;
-                    case 14: currentOperand.value = state.nextShort(); break; // Ram0000_FFFF
-                    case 15: currentOperand.value = state.nextInt();   break; // RamAny
+                    case 14: currentOperand.value = nextShort(); break; // Ram0000_FFFF
+                    case 15: currentOperand.value = nextInt();   break; // RamAny
                     default:
                         throw new IllegalArgumentException("unsupported address mode: " +
                                                            currentOperand.addressMode);
@@ -874,7 +928,7 @@ public class GlulxVM {
                 int funaddr = getOperand(0);
                 _numArguments = getOperand(1);
                 for (int i = 0; i < _numArguments; i++) {
-                    _arguments[i] = state.popInt();
+                    _arguments[i] = popInt();
                 }
                 prepareCall(funaddr, _operands[2]);
                 break;
@@ -885,12 +939,12 @@ public class GlulxVM {
                 if (_operands[0].addressMode == AddressModes.Stack ||
                     _operands[1].addressMode == AddressModes.Stack) {
                     int branchOffset = getOperand(1);
-                    state.pushCallStub(_operands[0]);
-                    storeAtOperand(0, state.sp); // catch token
+                    pushCallStub(_operands[0]);
+                    storeAtOperand(0, sp); // catch token
                     doBranch(branchOffset);
                 } else {
-                    state.pushCallStub(_operands[0]);
-                    storeAtOperand(0, state.sp); // catch token
+                    pushCallStub(_operands[0]);
+                    storeAtOperand(0, sp); // catch token
                     doBranch(getOperand(1));
                 }
                 break;
@@ -898,14 +952,14 @@ public class GlulxVM {
                 int storeVal   = getOperand(0);
                 int catchToken = getOperand(1);
                 logger.info(String.format("@throw %d %d CURRENT SP = %d",
-                                          storeVal, catchToken, state.sp));
-                if (state.sp < catchToken)
+                                          storeVal, catchToken, sp));
+                if (sp < catchToken)
                     throw new IllegalStateException("@throw: catch token > current SP !!!");
-                state.sp = catchToken;
-                logger.info(String.format("@throw, SP is now: %d\n", state.sp));
-                state.popCallStubThrow(storeVal);
+                sp = catchToken;
+                logger.info(String.format("@throw, SP is now: %d\n", sp));
+                popCallStubThrow(storeVal);
                 logger.info(String.format("@throw, after popCallStub SP is now: %d\n",
-                                          state.sp));
+                                          sp));
                 break;
             case 0x34: // tailcall
                 tailCall(getOperand(0), getOperand(1)); break;
@@ -929,21 +983,21 @@ public class GlulxVM {
                 {
                     int arr   = getOperand(0);
                     int index = getOperand(1);
-                    storeAtOperand(2, state.memIntAt(arr + index * 4));
+                    storeAtOperand(2, memIntAt(arr + index * 4));
                 }
                 break;
             case 0x49: // aloads
                 {
                     int arr = getOperand(0);
                     int index = getOperand(1);
-                    storeAtOperand(2, state.memShortAt(arr + index * 2));
+                    storeAtOperand(2, memShortAt(arr + index * 2));
                 }
                 break;
             case 0x4a: // aloadb
                 {
                     int arr    = getOperand(0);
                     int index  = getOperand(1);
-                    storeAtOperand(2, state.memByteAt(arr + index));
+                    storeAtOperand(2, memByteAt(arr + index));
                 }
                 break;
             case 0x4b: // aloadbit
@@ -959,7 +1013,7 @@ public class GlulxVM {
                     }
                     int mask = 1 << bitnum;
                     int test =
-                        ((state.memByteAt(memAddr) & mask) == mask) ? 1 : 0;
+                        ((memByteAt(memAddr) & mask) == mask) ? 1 : 0;
                     storeAtOperand(2, test);
                 }
                 break;
@@ -967,21 +1021,21 @@ public class GlulxVM {
                 {
                     int arr   = getOperand(0);
                     int index = getOperand(1);
-                    state.setMemIntAt(arr + index * 4, getOperand(2));
+                    setMemIntAt(arr + index * 4, getOperand(2));
                 }
                 break;
             case 0x4d: // astores
                 {
                     int arr   = getOperand(0);
                     int index = getOperand(1);
-                    state.setMemShortAt(arr + index * 2, getOperand(2));
+                    setMemShortAt(arr + index * 2, getOperand(2));
                 }
                 break;
             case 0x4e: // astoreb
                 {
                     int arr   = getOperand(0);
                     int index = getOperand(1);
-                    state.setMemByteAt(arr + index, getOperand(2));
+                    setMemByteAt(arr + index, getOperand(2));
                 }
                 break;
             case 0x4f: // astorebit
@@ -996,28 +1050,28 @@ public class GlulxVM {
                         bitnum += 8;
                     }
                     if (getOperand(2) == 0) { // clear
-                        state.setMemByteAt(memAddr,
-                                           state.memByteAt(memAddr) & (~(1 << bitnum) & 0xff));
+                        setMemByteAt(memAddr,
+                                     memByteAt(memAddr) & (~(1 << bitnum) & 0xff));
                     } else { // set
-                        state.setMemByteAt(memAddr,
-                                           state.memByteAt(memAddr) | ((1 << bitnum) & 0xff));
+                        setMemByteAt(memAddr,
+                                     memByteAt(memAddr) | ((1 << bitnum) & 0xff));
                     }
                 }
                 break;
             case 0x50: // stkcount
-                storeAtOperand(0, state.numStackValuesInCallFrame()); break;
+                storeAtOperand(0, numStackValuesInCallFrame()); break;
             case 0x51: // stkpeek
-                storeAtOperand(1, state.stackPeek(getOperand(0))); break;
+                storeAtOperand(1, stackPeek(getOperand(0))); break;
             case 0x52: // stkswap
-                state.stackSwap(); break;
+                stackSwap(); break;
             case 0x53: // stkroll
-                state.stackRoll(getOperand(0), getOperand(1)); break;
+                stackRoll(getOperand(0), getOperand(1)); break;
             case 0x54: // stkcopy
                 {
                     int numElems  = getOperand(0);
-                    int copyStart = state.sp - Types.SizeInt * numElems;
+                    int copyStart = sp - Types.SizeInt * numElems;
                     for (int i = 0; i < numElems; i++) {
-                        state.pushInt(state.getIntInStack(copyStart + i * Types.SizeInt));
+                        pushInt(getIntInStack(copyStart + i * Types.SizeInt));
                     }
                 }
                 break;
@@ -1034,7 +1088,7 @@ public class GlulxVM {
                     int selector = getOperand(0);
                     int arg      = getOperand(1);
                     if (selector == GlulxGestalt.MAllocHeap) {
-                        storeAtOperand(2, state.heapStart());
+                        storeAtOperand(2, heapStart());
                     } else {
                         storeAtOperand(2, GlulxGestalt.gestalt(selector, arg));
                     }
@@ -1043,20 +1097,20 @@ public class GlulxVM {
             case 0x101: // debugtrap
                 fatal(String.format("[** ERROR, VM HALTED WITH CODE %d **]", getOperand(0))); break;
             case 0x102: // getmemsize
-                storeAtOperand(0, state.memsize()); break;
+                storeAtOperand(0, memsize()); break;
             case 0x103: // setmemsize
                 int newSize = getOperand(0);
                 logger.info(String.format("@setmemsize %d\n", newSize));
-                if (newSize < state.header.endmem()) fatal("@setmemsize: size must be >= ENDMEM");
+                if (newSize < header.endmem()) fatal("@setmemsize: size must be >= ENDMEM");
                 if (newSize % 256 != 0) fatal("@setmemsize: size must be multiple of 256");
-                if (state.heapIsActive()) {
+                if (heapIsActive()) {
                     fatal("@setmemsize: can not set while heap is active");
                 }
-                state.setMemsize(newSize);
+                setMemsize(newSize);
                 // Result is 0 for success, 1 for fail
                 break;
             case 0x104: // jumpabs
-                state.pc = getOperand(0); break;
+                pc = getOperand(0); break;
             case 0x110: // random
                 {
                     int range = getOperand(0);
@@ -1078,15 +1132,15 @@ public class GlulxVM {
                 }
                 break;
             case 0x120: // quit
-                state.pRunState = VMRunStates.Halted; break;
+                pRunState = VMRunStates.Halted; break;
             case 0x121: // verify
-                storeAtOperand(0, state.verify()); break;
+                storeAtOperand(0, verify()); break;
             case 0x122: // restart
                 restart(); break;
             case 0x123: // save
                 {
                     int streamId = getOperand(0);
-                    SaveGameWriter writer = new SaveGameWriter(glk, streamId, state, _operands[1]);
+                    SaveGameWriter writer = new SaveGameWriter(glk, streamId, this, _operands[1]);
                     boolean result = writer.writeGameFile();
                     if (result) storeAtOperand(1, 0);
                     else storeAtOperand(1, 1);
@@ -1095,30 +1149,30 @@ public class GlulxVM {
             case 0x124: // restore
                 {
                     int streamId = getOperand(0);
-                    SaveGameLoader loader = new SaveGameLoader(glk, streamId, state, _originalRam);
+                    SaveGameLoader loader = new SaveGameLoader(glk, streamId, this, _originalRam);
                     if (loader.loadGame()) {
-                        state.popCallStubThrow(-1);
+                        popCallStubThrow(-1);
                     } else {
                         storeAtOperand(1, 1); // fail for now
                     }
                 }
                 break;
             case 0x125: // saveundo
-                _undoSnapshots.add(state.createSnapshot(_operands[0]));
+                _undoSnapshots.add(createSnapshot(_operands[0]));
                 storeAtOperand(0, 0); // Always say SUCCEED
                 break;
             case 0x126: // restoreundo
                 if (_undoSnapshots.size() > 0) {
-                    state.readSnapshot(_undoSnapshots.get(_undoSnapshots.size() - 1),
-                                       _protectionStart,
+                    readSnapshot(_undoSnapshots.get(_undoSnapshots.size() - 1),
+                                 _protectionStart,
                                        _protectionLength);
                     _undoSnapshots.remove(_undoSnapshots.size() - 1);
-                    state.popCallStubThrow(-1);
+                    popCallStubThrow(-1);
                 } else {
                     storeAtOperand(0, 1); // fail
                 }
                 logger.info(String.format("RESTORED WITH PC: %02x AND FP: %d SP: %d",
-                                          state.pc, state.fp, state.sp));
+                                          pc, fp, sp));
                 break;
             case 0x127: // protect
                 _protectionStart  = getOperand(0);
@@ -1130,7 +1184,7 @@ public class GlulxVM {
                     int numArgs = getOperand(1);
                     int[] args = new int[numArgs];
                     for (int i = 0; i < numArgs; i++) {
-                        args[i] = state.popInt();
+                        args[i] = popInt();
                     }
                     int glkResult = _glkDispatch.dispatch(glkId, args);
                     //printf("GLK result = #$%02x\n", glkResult)
@@ -1170,27 +1224,27 @@ public class GlulxVM {
                 break;
             case 0x150: // linearsearch
                 {
-                    int result = state.linearSearch.apply(getOperand(0), getOperand(1),
-                                                          getOperand(2), getOperand(3),
-                                                          getOperand(4), getOperand(5),
-                                                          getOperand(6));
+                    int result = linearSearch.apply(getOperand(0), getOperand(1),
+                                                    getOperand(2), getOperand(3),
+                                                    getOperand(4), getOperand(5),
+                                                    getOperand(6));
                     storeAtOperand(7, result);
                 }
                 break;
             case 0x151: // binarysearch
                 {
-                    int result = state.binarySearch.apply(getOperand(0), getOperand(1),
-                                                          getOperand(2), getOperand(3),
-                                                          getOperand(4), getOperand(5),
-                                                          getOperand(6));
+                    int result = binarySearch.apply(getOperand(0), getOperand(1),
+                                                    getOperand(2), getOperand(3),
+                                                    getOperand(4), getOperand(5),
+                                                    getOperand(6));
                     storeAtOperand(7, result);
                 }
                 break;
             case 0x152: // linkedsearch
                 {
-                    int result = state.linkedSearch.apply(getOperand(0), getOperand(1),
-                                                          getOperand(2), getOperand(3),
-                                                          getOperand(4), getOperand(5));
+                    int result = linkedSearch.apply(getOperand(0), getOperand(1),
+                                                    getOperand(2), getOperand(3),
+                                                    getOperand(4), getOperand(5));
                     storeAtOperand(6, result);
                 }
                 break;
@@ -1204,13 +1258,13 @@ public class GlulxVM {
                 doCallf3(getOperand(0), _operands[4], getOperand(1), getOperand(2),
                          getOperand(3)); break;
             case 0x170: // mzero
-                state.mzero(getOperand(0), getOperand(1)); break;
+                mzero(getOperand(0), getOperand(1)); break;
             case 0x171: // mcopy
-                state.mcopy(getOperand(0), getOperand(1), getOperand(2)); break;
+                mcopy(getOperand(0), getOperand(1), getOperand(2)); break;
             case 0x178: // malloc
-                storeAtOperand(1, state.malloc(getOperand(0))); break;
+                storeAtOperand(1, malloc(getOperand(0))); break;
             case 0x179: // mfree
-                state.mfree(getOperand(0)); break;
+                mfree(getOperand(0)); break;
             case 0x180: // accelfunc
                 _accelSystem.setFunction(getOperand(0), getOperand(1)); break;
             case 0x181: // accelparam
@@ -1305,6 +1359,539 @@ public class GlulxVM {
 
     public void fatal(String msg) {
         glk.put_java_string(msg);
-        state.pRunState = VMRunStates.Halted;
+        pRunState = VMRunStates.Halted;
+    }
+
+    // *******************************************************************************
+    // STATE MANAGEMENT FUNCTIONS
+    // *******************************************************************************
+
+    public void setRunState(int state) { this.pRunState = state; }
+  
+    private void protectedMemRestore(byte[] memarray, int srcOffset,
+                                     int destOffset, int numBytes,
+                                     int protectionStart,
+                                     int protectionLength) {
+        if (protectionLength > 0) {
+            for (int i = 0; i < numBytes; i++) {                
+                int destAddress = destOffset + i;
+                if (destAddress < protectionStart ||
+                    destAddress >= protectionStart + protectionLength) {
+                    storyBytes[destAddress] = (byte) memarray[i];
+                }
+            }
+        } else {
+            //_story.copyBytesFrom(memarray, srcOffset, destOffset, numBytes)
+            System.arraycopy(memarray, srcOffset, storyBytes, destOffset, numBytes);
+        }
+    }
+
+    private void _setExtendedMem(int size) {
+        int currentExtSize = (extMem == null) ? 0 : _extEnd - extstart;
+        // note: we actually do not need to "shrink" extended memory, we only
+        // need to extend it
+        if (currentExtSize != size) {
+            if (size > currentExtSize) {
+                byte[] extbytes = new byte[size];
+                if (extMem != null) {
+                    extMem.copyBytesTo(extbytes, extstart, currentExtSize);
+                }
+                extMem = new DefaultMemory(extbytes, extstart);
+            }
+        }
+        _extEnd = extstart + size;
+    }
+
+    public boolean heapIsActive() { return memheap.active(); }
+    public int ramSize() { return memsize() - header.ramstart(); }
+
+    private boolean inStoryMem(int addr) { return addr < extstart; }
+    public boolean inExtMem(int addr)   { return addr >= extstart && addr < _extEnd; }
+    private boolean fitsInStoryMem(int addr, int size) {
+        return inStoryMem(addr) && inStoryMem(addr + size - 1);
+    }
+
+    private boolean fitsOnHeap(int addr, int size) {
+        return memheap.memblockAt(addr) != null;
+    }
+
+    // Stack interface
+    public boolean stackEmpty() { return sp == 0; }
+
+    public int localsPos() { return getIntInStack(fp + OffsetLocalsPos); }
+    public int frameLen() { return getIntInStack(fp); }
+
+    private String stackToStringFromTo(int start, int end) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("(Stack [" + start + "-" + end + ")) = [");
+        for (int i = start; i < end; i++) {
+            if (i > start) builder.append(", ");
+            builder.append(String.format("%02x", _stackArray[i]));
+        }
+        builder.append("]");
+        return builder.toString();
+    }
+
+    public String stackToStringFrom(int start) { return stackToStringFromTo(start, sp); }
+
+    public byte[] cloneStackValues() {
+        byte[] values = new byte[sp];
+        System.arraycopy(_stackArray, 0, values, 0, sp);
+        return values;
+    }
+
+    public void initStackFromByteArray(byte[] array) {
+        sp = array.length;
+        System.arraycopy(array, 0, _stackArray, 0, sp);
+    }
+
+    public void pushByte(int value) {
+        _stackArray[sp++] = (byte) value;
+    }
+    public int topByte() { return _stackArray[sp - 1] & 0xff; }
+
+    public int popByte() {
+        if (sp <= fp + frameLen())
+            throw new IllegalStateException("POP BYTE - STACK UNDERFLOW !!");
+        return (int) _stackArray[--sp] & 0xff;
+    }
+    public void pushShort(int value) {
+        _stackArray[sp]     = (byte) ((value >>> 8) & 0xff);
+        _stackArray[sp + 1] = (byte) (value & 0xff);
+        sp += 2;
+    }
+    public int topShort() {
+        return ((_stackArray[sp - 2] & 0xff) << 8) | (_stackArray[sp - 1] & 0xff);
+    }
+    public int popShort() {
+        if (sp <= fp + frameLen())
+            throw new IllegalStateException("POP SHORT - STACK UNDERFLOW !!");
+        sp -= 2;
+        return ((_stackArray[sp] & 0xff) << 8) | (_stackArray[sp + 1] & 0xff);
+    }
+    public void pushInt(int value) {
+        _stackArray[sp] = (byte) ((value >>> 24) & 0xff);
+        _stackArray[sp + 1] = (byte) ((value >>> 16) & 0xff);
+        _stackArray[sp + 2] = (byte) ((value >>> 8) & 0xff);
+        _stackArray[sp + 3] = (byte) (value & 0xff);
+        sp += 4;
+    }
+
+    public int topInt() {
+        return ((_stackArray[sp - 4] & 0xff) << 24) | ((_stackArray[sp - 3] & 0xff) << 16) |
+            ((_stackArray[sp - 2] & 0xff) << 8) | (_stackArray[sp - 1] & 0xff);
+    }
+    public int popIntUnchecked() {
+        sp -= 4;
+        return ((_stackArray[sp] & 0xff) << 24) | ((_stackArray[sp + 1] & 0xff) << 16) |
+            ((_stackArray[sp + 2] & 0xff) << 8) | (_stackArray[sp + 3] & 0xff);
+    }
+    public int popInt() {
+        if (sp <= fp + frameLen())
+            throw new IllegalStateException("POP INT - STACK UNDERFLOW !!");
+        sp -= 4;
+        return ((_stackArray[sp] & 0xff) << 24) | ((_stackArray[sp + 1] & 0xff) << 16) |
+            ((_stackArray[sp + 2] & 0xff) << 8) | (_stackArray[sp + 3] & 0xff);
+    }
+
+    public void setIntInStack(int addr, int value) {
+        _stackArray[addr] = (byte) ((value >>> 24) & 0xff);
+        _stackArray[addr + 1] = (byte) ((value >>> 16) & 0xff);
+        _stackArray[addr + 2] = (byte) ((value >>> 8) & 0xff);
+        _stackArray[addr + 3] = (byte) (value & 0xff);
+    }
+    public int getIntInStack(int addr) {
+        return ((_stackArray[addr] & 0xff) << 24) | ((_stackArray[addr + 1] & 0xff) << 16) |
+            ((_stackArray[addr + 2] & 0xff) << 8) | (_stackArray[addr + 3] & 0xff);
+    }
+
+    public void setShortInStack(int addr, int value) {
+        _stackArray[addr] = (byte) ((value >>> 8) & 0xff);
+        _stackArray[addr + 1] = (byte) (value & 0xff);
+    }
+
+    public int getShortInStack(int addr) {
+        return ((_stackArray[addr] & 0xff) << 8) | (_stackArray[addr + 1] & 0xff);
+    }
+    public void setByteInStack(int addr, int value) {
+        _stackArray[addr] = (byte) (value & 0xff);
+    }
+    public int getByteInStack(int addr) {
+        return _stackArray[addr] & 0xff;
+    }
+
+    public int numStackValuesInCallFrame() { return (sp - (fp + frameLen())) / 4; }
+  
+    // special stack functions
+    public void stackSwap() {
+        if (numStackValuesInCallFrame() < 2)
+            throw new IllegalStateException("STACK SWAP - NOT ENOUGH STACK VALUES");
+        int val0 = popInt();
+        int val1 = popInt();
+        pushInt(val0);
+        pushInt(val1);
+    }
+    public int stackPeek(int i) {
+        if (numStackValuesInCallFrame() <= i) {
+            throw new IllegalStateException("STACK PEEK - NOT ENOUGH STACK VALUES");
+        }
+        return getIntInStack(sp - (4 * (i + 1)));
+    }
+    public void stackRoll(int numValues, int numRotatePlaces) {
+        if (numRotatePlaces == 0) return;
+        int[] tmparr = new int[numValues];
+        for (int i = 0; i < numValues; i++) {
+            int pos = ((numValues - 1 - i) + numRotatePlaces) % numValues;
+            if (pos < 0) pos = numValues + pos;
+            tmparr[pos] = popInt();
+        }
+        for (int i = 0; i < numValues; i++) {
+            pushInt(tmparr[i]);
+        }
+    }
+    // **********************************************************************
+    // ***** MEMORY INTERFACE
+    // **********************************************************************
+
+    public int memByteAt(int addr) {
+        if (addr < extstart) return (storyBytes[addr] & 0xff); // inStoryMem(), manually inlined
+        else if (inExtMem(addr)) return extMem.byteAt(addr);
+        else return memheap.byteAt(addr);
+    }
+
+    public void setMemByteAt(int addr, int value) {
+        if (addr < header.ramstart()) {
+            logger.warning(String.format("SETTING BYTE VALUE IN ROM %02x = %d !",
+                                         addr, value));
+        }
+        if (addr < extstart)      storyBytes[addr] = (byte) (value & 0xff);
+        else if (inExtMem(addr)) extMem.setByteAt(addr, value);
+        else                     memheap.setByteAt(addr, value);
+    }
+
+    public int memShortAt(int addr) {
+        if (addr < extstart) {
+            return ((storyBytes[addr] & 0xff) << 8) | (storyBytes[addr + 1] & 0xff);
+        } else if (inExtMem(addr)) return extMem.shortAt(addr);
+        else return memheap.shortAt(addr);
+    }
+
+    public void setMemShortAt(int addr, int value) {
+        if (addr < header.ramstart()) {
+            logger.warning(String.format("SETTING SHORT VALUE IN ROM %02x = %d !",
+                                         addr, value));
+        }
+        if (addr < extstart) {
+            storyBytes[addr]     = (byte) ((value >>> 8) & 0xff);
+            storyBytes[addr + 1] = (byte) (value & 0xff);
+        } else if (inExtMem(addr))   extMem.setShortAt(addr, value);
+        else                       memheap.setShortAt(addr, value);
+    }
+
+    public int memIntAt(int addr) {
+        if (addr < extstart) {
+            return ((storyBytes[addr] & 0xff) << 24) | ((storyBytes[addr + 1] & 0xff) << 16) |
+                ((storyBytes[addr + 2] & 0xff) << 8) | (storyBytes[addr + 3] & 0xff);
+        } else if (inExtMem(addr)) return extMem.intAt(addr);
+        else return memheap.intAt(addr);
+    }
+
+    public void setMemIntAt(int addr, int value) {
+        if (addr < header.ramstart()) {
+            logger.warning(String.format("SETTING INT VALUE IN ROM %02x = %d !",
+                                         addr, value));
+        }
+        if (addr < extstart) {
+            storyBytes[addr]     = (byte) ((value >>> 24) & 0xff);
+            storyBytes[addr + 1] = (byte) ((value >>> 16) & 0xff);
+            storyBytes[addr + 2] = (byte) ((value >>> 8) & 0xff);
+            storyBytes[addr + 3] = (byte) (value & 0xff);
+        } else if (inExtMem(addr)) extMem.setIntAt(addr, value);
+        else                       memheap.setIntAt(addr, value);
+    }
+
+    public int ramByteAt(int address) { return memByteAt(header.ramstart() + address); }
+    public void setRamByteAt(int address, int value) {
+        setMemByteAt(header.ramstart() + address, value);
+    }
+    public int ramShortAt(int address) { return memShortAt(header.ramstart() + address); }
+    public void setRamShortAt(int address, int value) {
+        setMemShortAt(header.ramstart() + address, value);
+    }
+    public int ramIntAt(int address) { return memIntAt(header.ramstart() + address); }
+    public void setRamIntAt(int address, int value) {
+        setMemIntAt(header.ramstart() + address, value);
+    }
+
+    public int malloc(int size) { return memheap.allocate(size); }
+    public void mfree(int addr) { memheap.free(addr); }
+    public void mcopy(int numBytes, int srcAddr, int destAddr) {
+        if (fitsInStoryMem(srcAddr, numBytes) &&
+            fitsInStoryMem(destAddr, numBytes)) {
+            //_story.copyBytesTo(destAddr, srcAddr, numBytes);
+            System.arraycopy(storyBytes, srcAddr, storyBytes, destAddr, numBytes);
+        } else if (fitsOnHeap(srcAddr, numBytes) && fitsOnHeap(destAddr, numBytes)) {
+            memheap.copyBytesTo(destAddr, srcAddr, numBytes);
+        } else {
+            for (int i = 0; i < numBytes; i++) {
+                setMemByteAt(destAddr + i, memByteAt(srcAddr + i));
+            }
+        }
+    }
+
+    public void mzero(int numBytes, int addr) {
+        for (int i = 0; i < numBytes; i++) {
+            setMemByteAt(addr + i, 0);
+        }
+    }
+    public int memsize() { return (memheap.active()) ? memheap.maxAddress() : _extEnd; }
+    public void setMemsize(int newSize) { _setExtendedMem(newSize - extstart); }
+    public int heapStart() { return (memheap.active()) ? _extEnd : 0; }
+
+    // **********************************************************************
+    // ***** FUNCTION CALLS
+    // **********************************************************************
+
+    // Pushes a call stub, given an operand
+    public void pushCallStub(Operand storeLocation) {
+        pushCallStub(DestTypes.fromAddressMode(storeLocation.addressMode),
+                     storeLocation.value, pc, fp);
+    }
+    public void pushCallStub(int destType, int destAddr) {
+        pushCallStub(destType, destAddr, pc, fp);
+    }
+    // generic call stub pushing, can take other values for pc and fp
+    public void pushCallStub(int destType, int destAddr, int pcVal, int fpVal) {
+        pushInt(destType);
+        pushInt(destAddr);
+        pushInt(pcVal);
+        pushInt(fpVal);
+    }
+  
+    public void popCallStubThrow(int retval) {
+        fp           = popInt();
+        pc           = popInt();
+        int destAddr = popInt();
+        int destType = popInt();
+        storeResult(destType, destAddr, retval);
+    }
+
+    private void setValueInStack(int index, int vartype, int value) {
+        switch (vartype) {
+        case 1: // Types.ByteType
+            setByteInStack(index, value);
+            break;
+        case 2: // Types.ShortType
+            setShortInStack(index, value);
+            break;
+        case 4: // Types.IntType
+            setIntInStack(index, value);
+            break;
+        default:
+            throw new IllegalStateException("unknown local type: " + vartype);
+        }
+    }
+
+    public void storeResult(int destType, int destAddress, int value) {
+        switch (destType) {
+        case 0: // DestTypes.DoNotStore, do nothing
+            break;
+        case 1: // DestTypes.Memory
+            setMemIntAt(destAddress, value);
+            break;
+        case 2: // DestTypes.LocalVariable
+            setLocalAtAddress(destAddress, value);
+            break;
+        case 3: // DestTypes.Stack
+            pushInt(value);
+            break;
+        case 4: // DestTypes.Ram
+            setRamIntAt(destAddress, value);
+            break;
+        default:
+            throw new IllegalArgumentException(String.format("unsupported dest type for store: ",
+                                                             destType));
+        }
+    }
+
+    // ***********************************************************************
+    // ***** Local variable access
+    // *********************************
+    // determine the current index of the specified local variable relative
+    // to the current frame pointer. By returning values, relative to the current
+    // frame, we facilitate debugging  by only needing to look at the current
+    // frame.
+    // we do this by searching the format of the locals and adding pad counts
+    // if necessary
+    private int alignAddress(int address, int datatype) {
+        // set to multiple of 4 for ltype == 4 and to even for ltype == 2
+        if (datatype == IntType && ((address & 0x03) != 0)) {
+            return address + (SizeInt - (address & 0x03));
+        } else if (datatype == ShortType && ((address & 0x01) != 0)) {
+            return address + SizeByte;
+        } else {
+            return address;
+        }
+    }
+
+    // Stores an int at the specified address within the current frame's local
+    // space. Note that we do not check the type, simply set the value without
+    // a check with type Int. A couple of games seem to rely on the interpreter
+    // letting them to write to locals that do not exist.
+    public void setLocalAtAddress(int destAddr, int value) {
+        setIntInStack(fp + localsPos() + destAddr, value);
+    }
+
+    // Analogous to setLocalAtAddress(), this returns an int-sized value
+    // and does not check the format, as the Glulx specification requests.
+    public int getLocalAtAddress(int localAddr) {
+        // * ugly optimization * inlined the following:
+        // int lpos = localsPos();
+        // return getIntInStack(fp + lpos + localAddr);
+        int lposAddr = fp + OffsetLocalsPos;
+        int lpos = ((_stackArray[lposAddr] & 0xff) << 24) | ((_stackArray[lposAddr + 1] & 0xff) << 16) |
+            ((_stackArray[lposAddr + 2] & 0xff) << 8) | (_stackArray[lposAddr + 3] & 0xff);
+        int addr = fp + lpos + localAddr;
+        return ((_stackArray[addr] & 0xff) << 24) | ((_stackArray[addr + 1] & 0xff) << 16) |
+            ((_stackArray[addr + 2] & 0xff) << 8) | (_stackArray[addr + 3] & 0xff);
+    }
+  
+    // For copyb/copys
+    public int getLocalByteAtAddress(int localAddr) {
+        return getByteInStack(fp + localsPos() + localAddr);
+    }
+    public int getLocalShortAtAddress(int localAddr) {
+        return getShortInStack(fp + localsPos() + localAddr);
+    }
+    public void setLocalByteAtAddress(int destAddr, int value) {
+        setByteInStack(fp + localsPos() + destAddr, value);
+    }
+    public void setLocalShortAtAddress(int destAddr, int value) {
+        setShortInStack(fp + localsPos() + destAddr, value);
+    }
+
+    // ***********************************************************************
+    // ***** Access local variables through variable numbers
+    // *************************************************************
+    private int localFrameIndex(int localNum) {
+        int descriptorPos    = fp + OffsetLocalsFormat;
+        int currentLocalPos  = localsPos();
+        int localRangeStart    = 0;
+        boolean hasMoreDescriptors = true;
+
+        while (hasMoreDescriptors) {
+            int ltype    = getByteInStack(descriptorPos);
+            int nlocals  = getByteInStack(descriptorPos + 1);
+            // needs alignment of localPos ?
+            descriptorPos = alignAddress(descriptorPos, ltype);
+            // the variable is within the current range, determine which one
+            // and returns its address
+            if (localRangeStart + nlocals > localNum) {
+                return currentLocalPos + (localNum - localRangeStart) * ltype;
+            }
+            // adjust variables
+            hasMoreDescriptors = ltype != 0 && nlocals != 0;
+            currentLocalPos    += ltype * nlocals; // advance to next variable block
+            localRangeStart    += nlocals;         // advance range index
+            // advance to next descriptor pair
+            descriptorPos      += SizeLocalDescriptor;
+        }
+        throw new IllegalStateException("unknown local variable: " + localNum);
+    }
+
+    private int localType(int localNum) {
+        int descriptorPos = fp + OffsetLocalsFormat;
+        int localRangeStart    = 0;
+        boolean hasMoreDescriptors = true;
+
+        while (hasMoreDescriptors) {
+            int ltype    = getByteInStack(descriptorPos);
+            int nlocals  = getByteInStack(descriptorPos + 1);
+            if (localRangeStart + nlocals > localNum) return ltype;
+            hasMoreDescriptors = ltype != 0 && nlocals != 0;
+
+            // advance to next descriptor pair
+            descriptorPos   += SizeLocalDescriptor;
+            localRangeStart += nlocals;
+        }
+        return 0;
+    }
+
+    public void setLocal(int localNum, int value) {
+        int ltype  = localType(localNum);
+        if (ltype != 0) {
+            int lindex = localFrameIndex(localNum);
+            // Note: Only set a local if it exists !!!
+            setValueInStack(fp + lindex, ltype, value);
+        }
+    }
+
+    // do not implement if for now  
+    public int verify() { return 0; }
+        /*
+  override def toString = {
+    val builder = new StringBuilder
+    builder.append("pc = $%02x stackframe = $%02x\n".format(_pc, _fp))
+    builder.append(stackToStringFrom(_fp))
+    builder.toString
+  }
+  
+  def stackValuesAsString = {
+    val builder = new StringBuilder
+    val stackStart = _fp + frameLen
+    val numElems = numStackValuesInCallFrame
+    builder.append("[")
+    var i = 0
+    while (i < numElems) {
+      if (i > 0) builder.append(", ")
+      builder.append("#$%02x".format(getIntInStack(stackStart + (i * 4))))
+      i += 1
+    }
+    builder.append("]")
+    builder.toString
+  }
+    */
+  
+    // Reading data at the PC
+    public int nextShort() {
+        pc += 2;
+        return memShortAt(pc - 2);
+    }
+    public int nextInt() {
+        pc += 4;
+        return memIntAt(pc - 4);
+    }
+
+    // ***********************************************************************
+    // ***** State Serialization
+    // *************************************************************
+    public void readSnapshot(Snapshot snapshot, int protectionStart,
+                             int protectionLength) {
+        int ramsize = extstart - header.ramstart();
+        protectedMemRestore(snapshot.ram, 0, header.ramstart(), ramsize,
+                            protectionStart, protectionLength);
+        initStackFromByteArray(snapshot.stack);    
+        // TODO: Extmem and Heap
+    }
+  
+    public Snapshot createSnapshot(Operand storeLocation) {
+        byte[] ram = cloneRam();
+        logger.info(String.format("CREATE_SNAPSHOT, PC = $%02x FP = %d SP: %d",
+                                  pc, fp, sp));
+        pushCallStub(storeLocation);
+        byte[] stackValues = cloneStackValues();
+        byte[] extmemClone = null;
+
+        // TODO: extmem and heap
+        return new Snapshot(ram, stackValues, extmemClone);
+    }
+
+    public byte[] cloneRam() {
+        int ramsize = extstart - header.ramstart();
+        logger.info(String.format("Copying %d Bytes of RAM to preserve initial data", ramsize));
+        byte[] ram = new byte[ramsize];
+        //_story.copyBytesTo(ram, header.ramstart(), ramsize)
+        System.arraycopy(storyBytes, header.ramstart(), ram, 0, ramsize);
+        return ram;
     }
 }

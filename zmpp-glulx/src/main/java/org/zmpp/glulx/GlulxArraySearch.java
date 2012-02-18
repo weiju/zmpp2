@@ -32,9 +32,9 @@ abstract class GlulxArraySearch extends GlulxSearch {
 
     protected int start;
     protected int structSize;
-    protected GlulxVMState state;
+    protected GlulxVM vm;
 
-    public GlulxArraySearch(GlulxVMState state) { this. state = state; }
+    public GlulxArraySearch(GlulxVM vm) { this.vm = vm; }
 
     protected void init(int key, int keySize, int start,
                         int structSize, int keyOffset, int options) {
@@ -49,9 +49,9 @@ abstract class GlulxArraySearch extends GlulxSearch {
     protected int keyAt(int index) {
         int addr = keyAddress(index);
         switch (keySize) {
-        case 1: return state.memByteAt(keyAddress(index));
-        case 2: return state.memShortAt(keyAddress(index));
-        case 4: return state.memIntAt(keyAddress(index));
+        case 1: return vm.memByteAt(keyAddress(index));
+        case 2: return vm.memShortAt(keyAddress(index));
+        case 4: return vm.memIntAt(keyAddress(index));
         default:
             throw new IllegalStateException("illegal key size: " + keySize);
         }

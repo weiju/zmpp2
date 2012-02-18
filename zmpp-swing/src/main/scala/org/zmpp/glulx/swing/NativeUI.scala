@@ -413,7 +413,7 @@ trait SwingGlkScreenUI extends GlkScreenUI {
   }
   
   private def resumeWithNextEvent {
-    if (vm.state.runState == VMRunStates.WaitForEvent &&
+    if (vm.runState == VMRunStates.WaitForEvent &&
         eventManager.processNextEvent) {
       ExecutionControl.executeTurn(vm)   
     }

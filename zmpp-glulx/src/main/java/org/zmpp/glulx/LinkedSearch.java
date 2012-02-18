@@ -30,17 +30,17 @@ package org.zmpp.glulx;
 
 class LinkedSearch extends GlulxSearch {
 
-    private GlulxVMState state;
+    private GlulxVM vm;
 
-    public LinkedSearch(GlulxVMState state) {
-        this.state = state;
+    public LinkedSearch(GlulxVM vm) {
+        this.vm = vm;
     }
 
     private int keyAtAddress(int addr) {
         switch (keySize) {
-        case 1: return state.memByteAt(addr);
-        case 2: return state.memShortAt(addr);
-        case 4: return state.memIntAt(addr);
+        case 1: return vm.memByteAt(addr);
+        case 2: return vm.memShortAt(addr);
+        case 4: return vm.memIntAt(addr);
         default:
           throw new IllegalStateException("illegal key size: " + keySize);
         }
@@ -49,8 +49,8 @@ class LinkedSearch extends GlulxSearch {
     private boolean keyCompare(int key, int currentAddr) {
         if (keyIndirect) {
             for (int i = 0; i < keySize; i++) {
-                int b0 = state.memByteAt(key + i);
-                int b1 = state.memByteAt(currentAddr + keyOffset + i);
+                int b0 = vm.memByteAt(key + i);
+                int b1 = vm.memByteAt(currentAddr + keyOffset + i);
                 if (b0 != b1) return false;
             }
             return true;
@@ -63,7 +63,7 @@ class LinkedSearch extends GlulxSearch {
         if (!zeroKeyTerminates) return false;
         else if (keyIndirect) {
             for (int i = 0; i < keySize; i++) {
-                if (state.memByteAt(currentAddr + keyOffset + i) != 0) return false;
+                if (vm.memByteAt(currentAddr + keyOffset + i) != 0) return false;
             }
             return true;
         } else {
@@ -84,7 +84,7 @@ class LinkedSearch extends GlulxSearch {
             if (keyCompare(key, currentAddr)) return currentAddr;
             if (doesCurrentKeyTerminate(currentAddr)) return 0;
             pos++;
-            currentAddr = state.memIntAt(currentAddr + nextOffset);
+            currentAddr = vm.memIntAt(currentAddr + nextOffset);
         }
         return 0;
     }

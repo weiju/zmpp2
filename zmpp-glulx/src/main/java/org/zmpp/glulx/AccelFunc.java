@@ -39,13 +39,12 @@ abstract class AccelFunc {
     protected static final int numRaPr    = 1;
     protected static final int numRlPr    = 1;
 
-    protected GlulxVMState _state;
+    protected GlulxVM      _vm;
     private   Glk          _glk;
     private   int[]        _accelParams;
 
-    public AccelFunc(GlulxVMState state, Glk glk,
-                     int[] accelParams) {
-        this._state = state;
+    public AccelFunc(GlulxVM vm, Glk glk, int[] accelParams) {
+        this._vm = vm;
         this._glk = glk;
         this._accelParams = accelParams;
     }
@@ -60,12 +59,12 @@ abstract class AccelFunc {
     // func 1
     protected int zRegion(int addr) {
         if (addr < 36) return 0;
-        if (addr >= _state.memsize()) return 0;
+        if (addr >= _vm.memsize()) return 0;
 
-        int tb = _state.memByteAt(addr);
+        int tb = _vm.memByteAt(addr);
         if      (tb >= 0xe0) return 3;
         else if (tb >= 0xc0) return 2;
-        else if (tb >= 0x70 && tb <= 0x7f && addr >= _state.header.ramstart()) return 1;
+        else if (tb >= 0x70 && tb <= 0x7f && addr >= _vm.header.ramstart()) return 1;
         else return 0;
     }
 
@@ -75,22 +74,22 @@ abstract class AccelFunc {
             accelError("[** Programming error: tried to find the \".\" of (something) **]");
             return 0;
         }
-        int otab = _state.memIntAt(obj + 16);
+        int otab = _vm.memIntAt(obj + 16);
         if (otab == 0) return 0;
-        int max = _state.memIntAt(otab);
-        return _state.binarySearch.apply(id, 2, otab + 4, 10, max, 0, 0);
+        int max = _vm.memIntAt(otab);
+        return _vm.binarySearch.apply(id, 2, otab + 4, 10, max, 0, 0);
     }
 
     // func 3
     protected int raPr(int obj, int id) {
         int prop = getProp(obj, id);
-        return (prop == 0) ? 0 : _state.memIntAt(prop + 4);
+        return (prop == 0) ? 0 : _vm.memIntAt(prop + 4);
     }
 
     // func 4
     protected int rlPr(int obj, int id) {
         int prop = getProp(obj, id);
-        return (prop == 0) ? 0 : 4 * _state.memShortAt(prop + 2);
+        return (prop == 0) ? 0 : 4 * _vm.memShortAt(prop + 2);
     }
 
     // func 5
@@ -125,12 +124,12 @@ abstract class AccelFunc {
         }
         int prop = getProp(obj, 2);
         if (prop == 0) return 0;
-        int inlist = _state.memIntAt(prop + 4);
+        int inlist = _vm.memIntAt(prop + 4);
         if (inlist == 0) return 0;
-        int inlistlen = _state.memShortAt(prop + 2);
+        int inlistlen = _vm.memShortAt(prop + 2);
 
         for (int j = 0; j < inlistlen; j++) {
-            if (_state.memIntAt(inlist + 4 * j) == cla) return 1;
+            if (_vm.memIntAt(inlist + 4 * j) == cla) return 1;
         }
         return 0;
     }
@@ -156,7 +155,7 @@ abstract class AccelFunc {
     }
 
     public boolean objInClass(int obj) {
-        return _state.memIntAt(obj + 13 + NumAttrBytes()) == ClassMetaclass();
+        return _vm.memIntAt(obj + 13 + NumAttrBytes()) == ClassMetaclass();
     }
 
     protected int getProp(int anObject, int anId) {
@@ -165,7 +164,7 @@ abstract class AccelFunc {
         int cla = 0;
 
         if ((id & 0xffff0000) != 0) {
-            cla = _state.memIntAt(ClassesTable() + (id & 0xffff) * 4);
+            cla = _vm.memIntAt(ClassesTable() + (id & 0xffff) * 4);
             if (ocCl(obj, cla) == 0) return 0;
             id >>= 16;
             obj = cla;
@@ -177,16 +176,16 @@ abstract class AccelFunc {
         if (objInClass(obj) && cla == 0) {
             if (id < IndivPropStart() || id >= IndivPropStart() + 8) return 0;
         }
-        if (_state.memIntAt(Self()) != obj) {
-            if ((_state.memByteAt(prop + 9) & 1) != 0) return 0;
+        if (_vm.memIntAt(Self()) != obj) {
+            if ((_vm.memByteAt(prop + 9) & 1) != 0) return 0;
         }
         return prop;
     }  
 }
 
 class Func1ZRegion extends AccelFunc {
-    public Func1ZRegion(GlulxVMState state, Glk glk, int[] accelParams) {
-        super(state, glk, accelParams);
+    public Func1ZRegion(GlulxVM vm, Glk glk, int[] accelParams) {
+        super(vm, glk, accelParams);
     }
     public int call(int[] args, int numArgs) {
         return (numArgs < 1) ? 0 : zRegion(args[0]);
@@ -194,8 +193,8 @@ class Func1ZRegion extends AccelFunc {
 }
 
 class Func2CPTab extends AccelFunc {
-    public Func2CPTab(GlulxVMState state, Glk glk, int[] accelParams) {
-        super(state, glk, accelParams);
+    public Func2CPTab(GlulxVM vm, Glk glk, int[] accelParams) {
+        super(vm, glk, accelParams);
     }
     public int call(int[] args, int numArgs) {
         return cpTab(argIfGiven(args, numArgs, 0), argIfGiven(args, numArgs, 1));
@@ -203,8 +202,8 @@ class Func2CPTab extends AccelFunc {
 }
 
 class Func3RAPr extends AccelFunc {
-    public Func3RAPr(GlulxVMState state, Glk glk, int[] accelParams) {
-        super(state, glk, accelParams);
+    public Func3RAPr(GlulxVM vm, Glk glk, int[] accelParams) {
+        super(vm, glk, accelParams);
     }
     public int call(int[] args, int numArgs) {
         return raPr(argIfGiven(args, numArgs, 0), argIfGiven(args, numArgs, 1));
@@ -212,8 +211,8 @@ class Func3RAPr extends AccelFunc {
 }
 
 class Func4RLPr extends AccelFunc {
-    public Func4RLPr(GlulxVMState state, Glk glk, int[] accelParams) {
-        super(state, glk, accelParams);
+    public Func4RLPr(GlulxVM vm, Glk glk, int[] accelParams) {
+        super(vm, glk, accelParams);
     }
     public int call(int[] args, int numArgs) {
         return rlPr(argIfGiven(args, numArgs, 0), argIfGiven(args, numArgs, 1));
@@ -221,8 +220,8 @@ class Func4RLPr extends AccelFunc {
 }
 
 class Func5OCCl extends AccelFunc {
-    public Func5OCCl(GlulxVMState state, Glk glk, int[] accelParams) {
-        super(state, glk, accelParams);
+    public Func5OCCl(GlulxVM vm, Glk glk, int[] accelParams) {
+        super(vm, glk, accelParams);
     }
 
     public int call(int[] args, int numArgs) {
@@ -231,8 +230,8 @@ class Func5OCCl extends AccelFunc {
 }
 
 class Func6RVPr extends AccelFunc {
-    public Func6RVPr(GlulxVMState state, Glk glk, int[] accelParams) {
-        super(state, glk, accelParams);
+    public Func6RVPr(GlulxVM vm, Glk glk, int[] accelParams) {
+        super(vm, glk, accelParams);
     }
 
     public int call(int[] args, int numArgs) {
@@ -240,18 +239,18 @@ class Func6RVPr extends AccelFunc {
         int addr = raPr(args[0], id);
         if (addr == 0) {
             if (id > 0 && id < IndivPropStart()) {
-                return _state.memIntAt(CpvStart() + 4 * id);
+                return _vm.memIntAt(CpvStart() + 4 * id);
             } else {
                 accelError("[** Programming error: tried to read (something) **]");
                 return 0;
             }
-        } else return _state.memIntAt(addr);
+        } else return _vm.memIntAt(addr);
     }
 }
 
 class Func7OPPr extends AccelFunc {
-    public Func7OPPr(GlulxVMState state, Glk glk, int[] accelParams) {
-        super(state, glk, accelParams);
+    public Func7OPPr(GlulxVM vm, Glk glk, int[] accelParams) {
+        super(vm, glk, accelParams);
     }
 
     public int call(int[] args, int numArgs) {

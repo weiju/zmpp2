@@ -42,14 +42,14 @@ class SaveGameWriter {
     private int bytesWritten;
     private Glk glk;
     private int streamId;
-    private GlulxVMState vmState;
+    private GlulxVM vm;
     private Operand storeLocation;
 
-    public SaveGameWriter(Glk glk, int streamId, GlulxVMState vmState,
+    public SaveGameWriter(Glk glk, int streamId, GlulxVM vm,
                           Operand storeLocation) {
         this.glk           = glk;
         this.streamId      = streamId;
-        this.vmState       = vmState;
+        this.vm            = vm;
         this.storeLocation = storeLocation;
     }
 
@@ -78,27 +78,27 @@ class SaveGameWriter {
         writeByteArray("IFhd".getBytes());
         writeInt(128);
         for (int i = 0; i < 128; i++) {
-            glk.put_char_stream(streamId, (char) vmState.memByteAt(i));
+            glk.put_char_stream(streamId, (char) vm.memByteAt(i));
         }
         bytesWritten += 128 + 8;
     }
 
     private void writeUMemChunk() {
-        int ramSize   = vmState.ramSize();
+        int ramSize   = vm.ramSize();
         int chunkSize = ramSize + 4;
         byte[] destRam   = new byte[ramSize];
         writeByteArray("UMem".getBytes());
         writeInt(chunkSize);
-        writeInt(vmState.memsize());
+        writeInt(vm.memsize());
         for (int i = 0; i < ramSize; i++) {
-            glk.put_char_stream(streamId, (char) vmState.ramByteAt(i));
+            glk.put_char_stream(streamId, (char) vm.ramByteAt(i));
         }
         bytesWritten += ramSize + 12;
     }
 
     private void writeStksChunk() {
-        vmState.pushCallStub(storeLocation);
-        byte[] stackValues = vmState.cloneStackValues();
+        vm.pushCallStub(storeLocation);
+        byte[] stackValues = vm.cloneStackValues();
         int stackSize   = stackValues.length;
         writeByteArray("Stks".getBytes());
         writeInt(stackSize);

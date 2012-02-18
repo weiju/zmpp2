@@ -50,10 +50,10 @@ class StackSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
                              0x00, 0x00, 0x00, 0x00 // Checksum
                             )
 
-  var vmstate = new GlulxVMState
+  var vmstate = new GlulxVM
 
   override def beforeEach {
-    vmstate.init(DummyMem)
+    vmstate.init(DummyMem, null)
   }
 
   "GlulxVM stack" should "be initialized" in {

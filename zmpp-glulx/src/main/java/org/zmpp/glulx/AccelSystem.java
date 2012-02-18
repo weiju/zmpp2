@@ -57,13 +57,13 @@ class AccelSystem {
 
     private AccelFunc accelFuncFor(int funcnum) {
         switch (funcnum) {
-        case 1: return new Func1ZRegion(vm.state, glk, _accelParams);
-        case 2: return new Func2CPTab(vm.state, glk, _accelParams);
-        case 3: return new Func3RAPr(vm.state, glk, _accelParams);
-        case 4: return new Func4RLPr(vm.state, glk, _accelParams);
-        case 5: return new Func5OCCl(vm.state, glk, _accelParams);
-        case 6: return new Func6RVPr(vm.state, glk, _accelParams);
-        case 7: return new Func7OPPr(vm.state, glk, _accelParams);
+        case 1: return new Func1ZRegion(vm, glk, _accelParams);
+        case 2: return new Func2CPTab(vm, glk, _accelParams);
+        case 3: return new Func3RAPr(vm, glk, _accelParams);
+        case 4: return new Func4RLPr(vm, glk, _accelParams);
+        case 5: return new Func5OCCl(vm, glk, _accelParams);
+        case 6: return new Func6RVPr(vm, glk, _accelParams);
+        case 7: return new Func7OPPr(vm, glk, _accelParams);
         default:
             logger.warning(String.format("Unsupported Function number: %d", funcnum));
             return null;

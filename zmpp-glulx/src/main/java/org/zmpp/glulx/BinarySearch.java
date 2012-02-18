@@ -30,8 +30,8 @@ package org.zmpp.glulx;
 
 class BinarySearch extends GlulxArraySearch {
 
-    public BinarySearch(GlulxVMState state) {
-        super(state);
+    public BinarySearch(GlulxVM vm) {
+        super(vm);
     }
 
     private int keyCompareAtIndex(int compareIndex) {
@@ -42,8 +42,8 @@ class BinarySearch extends GlulxArraySearch {
             int addr1 = keyAddress(compareIndex);
 
             for (int i = 0; i < keySize; i++) {
-                int b0 = state.memByteAt(addr0 + i);
-                int b1 = state.memByteAt(addr1 + i);
+                int b0 = vm.memByteAt(addr0 + i);
+                int b1 = vm.memByteAt(addr1 + i);
                 if (b0 < b1)      return -1;
                 else if (b0 > b1) return 1;
             }

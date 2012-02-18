@@ -52,10 +52,10 @@ public class Operand {
         }
     }
 
-    public String toString(GlulxVMState state) {
+    public String toString(GlulxVM vm) {
         String str = toString();
         return (addressMode >= 9 && addressMode <= 11) ?
-            String.format("%s[%02x]", str, state.getLocalShortAtAddress(value)) :
+            String.format("%s[%02x]", str, vm.getLocalShortAtAddress(value)) :
             str;
     }
 }
