@@ -357,9 +357,10 @@ final public class GlulxVM implements VMState {
             return ((operand.value & 0x80) == 0x80) ? operand.value | 0xffffff00 : operand.value & 0xff;
         case 2: return Types.signExtend16(operand.value); // ConstShort
         case 3: return operand.value;                     // ConstInt
-        case 7: return memIntAt(operand.value);     // AddressAny
-        case 8: return popInt();                    // Stack
-        case 9: case 10: case 11: // Local00_FF, Local0000_FFFF, LocalAny
+        case 5: case 6: case 7:    // Address00_FF, Address0000_FFFF, AddressAny
+            return memIntAt(operand.value);
+        case 8: return popInt();                          // Stack
+        case 9: case 10: case 11:  // Local00_FF, Local0000_FFFF, LocalAny
             return getLocalAtAddress(operand.value);
         case 13: case 14: case 15: // Ram00_FF, Ram0000_FFFF, RamAny
             return ramIntAt(operand.value);
@@ -386,11 +387,12 @@ final public class GlulxVM implements VMState {
                 break;
             case 2: _operandValues[pos] = Types.signExtend16(operand.value); break; // ConstShort
             case 3: _operandValues[pos] = operand.value; break;                     // ConstInt
-            case 7: _operandValues[pos] = memIntAt(operand.value); break;           // AddressAny
+            case 5: case 6: case 7:    // Address00_FF/Address0000_FFFF/AddressAny
+                _operandValues[pos] = memIntAt(operand.value); break;
             case 8: _operandValues[pos] = popInt(); break;                          // Stack
-            case 9: case 10: case 11: // Local00_FF, Local0000_FFFF, LocalAny
+            case 9: case 10: case 11:  // Local00_FF/Local0000_FFFF/LocalAny
                 _operandValues[pos] = getLocalAtAddress(operand.value); break;
-            case 13: case 14: case 15: // Ram00_FF, Ram0000_FFFF, RamAny
+            case 13: case 14: case 15: // Ram00_FF/Ram0000_FFFF/RamAny
                 _operandValues[pos] = ramIntAt(operand.value); break;
             default:
                 throw new IllegalStateException("unsupported operand type: " +
@@ -806,7 +808,7 @@ final public class GlulxVM implements VMState {
                     break;
                 case 6:  currentOperand.value = nextShort(); break; // Address0000_FFFF
                 case 7:  currentOperand.value = nextInt();   break; // AddressAny
-                case 8:  currentOperand.value = 0;                 break; // Stack
+                case 8:  currentOperand.value = 0;           break; // Stack
                 case 9: // Local00_FF
                     // ******************************************
                     currentOperand.value = storyBytes[pc++] & 0xff;
