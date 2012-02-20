@@ -174,54 +174,63 @@ class GlulxVMInitSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEa
 }
 
 @RunWith(classOf[JUnitRunner])
-class GlulxVMAddressModeSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class GlulxVMReadOperandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
+  // sets up a setstringtbl instruction
   val DummyMem = Array[Byte](0x47, 0x6c, 0x75, 0x6c,
                              0x00, 0x03, 0x01, 0x01, // Version
                              0x00, 0x00, 0x00, 0x24, // RAMSTART
-                             0x00, 0x00, 0x00, 0x34, // EXTSTART
-                             0x00, 0x00, 0x00, 0x34, // ENDMEM
+                             0x00, 0x00, 0x00, 0x38, // EXTSTART
+                             0x00, 0x00, 0x00, 0x38, // ENDMEM
                              0x00, 0x00, 0x00, 0xff.asInstanceOf[Byte], // STACKSIZE
                              0x00, 0x00, 0x00, 0x24, // STARTFUNC
                              0x04, 0x07, 0x01, 0x01, // Decoding table
                              0x01, 0x02, 0x03, 0x04, // Checksum
-                             0xc0.asInstanceOf[Byte], 0x00, 0x00, 0x81.asInstanceOf[Byte],  // (0x24 = 36)
-                             0x41, 0x00, 0x00, 0x00,  // setstringtbl
-                             0x00, 0x00, 0x00, 0x00,
-                             0x00, 0x00, 0x00, 0x00
+                             // 3 locals of size byte
+                             0xc0.asInstanceOf[Byte], 0x01, 0x03, 0x00, // 0x24
+                             0x00, 0x81.asInstanceOf[Byte], 0x41, 0x00, // 0x28
+                             0x00, 0x00, 0x00, 0x00, // 0x2c
+                             0x00, 0x00, 0x00, 0x00, // 0x30
+                             0x00, 0x00, 0x00, 0x00  // 0x34
                             )
   var vm = new GlulxVM()
 
   override def beforeEach {
     // clear the clearable area
-    for (i <- 0x29 until 0x34) DummyMem(i) = 0
+    for (i <- 0x2b until 0x38) DummyMem(i) = 0
+    DummyMem(0x34) = 0xde.asInstanceOf[Byte]
+    DummyMem(0x35) = 0xad.asInstanceOf[Byte]
+    DummyMem(0x36) = 0xbe.asInstanceOf[Byte]
+    DummyMem(0x37) = 0xef.asInstanceOf[Byte]
   }
 
 
   "GlulxVM" should "read address mode const 0" in {
     vm.init(DummyMem, null)
-    DummyMem(0x29) = 0x00 // address mode 0 (ConstZero)
-    DummyMem(0x2a) = 0x81.asInstanceOf[Byte] // quit instruction
-    DummyMem(0x2b) = 0x20
+    DummyMem(0x2b) = 0x00 // address mode 0 (ConstZero)
+    DummyMem(0x2c) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2d) = 0x20
     vm.executeTurn
     vm.currentDecodingTable should be (0)
+
   }
 
   it should "read address mode const byte" in {
-    DummyMem(0x29) = 0x01 // address mode 1 (ConstByte)
-    DummyMem(0x2a) = 0x42 // value
-    DummyMem(0x2b) = 0x81.asInstanceOf[Byte] // quit instruction
-    DummyMem(0x2c) = 0x20
+    DummyMem(0x2b) = 0x01 // address mode 1 (ConstByte)
+    DummyMem(0x2c) = 0x42 // value
+    DummyMem(0x2d) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2e) = 0x20
 
     vm.init(DummyMem, null)
     vm.executeTurn
     vm.currentDecodingTable should be (0x42)
   }
+
   it should "read address mode const byte sign extended" in {
-    DummyMem(0x29) = 0x01 // address mode 1 (ConstByte)
-    DummyMem(0x2a) = 0xff.asInstanceOf[Byte] // value
-    DummyMem(0x2b) = 0x81.asInstanceOf[Byte] // quit instruction
-    DummyMem(0x2c) = 0x20
+    DummyMem(0x2b) = 0x01 // address mode 1 (ConstByte)
+    DummyMem(0x2c) = 0xff.asInstanceOf[Byte] // value
+    DummyMem(0x2d) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2e) = 0x20
 
     vm.init(DummyMem, null)
     vm.executeTurn
@@ -229,22 +238,23 @@ class GlulxVMAddressModeSpec extends FlatSpec with ShouldMatchers with BeforeAnd
   }
 
   it should "read address mode const short" in {
-    DummyMem(0x29) = 0x02 // address mode 2 (ConstShort)
-    DummyMem(0x2a) = 0x42 // value
-    DummyMem(0x2b) = 0x42
-    DummyMem(0x2c) = 0x81.asInstanceOf[Byte] // quit instruction
-    DummyMem(0x2d) = 0x20
+    DummyMem(0x2b) = 0x02 // address mode 2 (ConstShort)
+    DummyMem(0x2c) = 0x42 // value
+    DummyMem(0x2d) = 0x42
+    DummyMem(0x2e) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2f) = 0x20
 
     vm.init(DummyMem, null)
     vm.executeTurn
     vm.currentDecodingTable should be (0x4242)
   }
+
   it should "read address mode const short sign extended" in {
-    DummyMem(0x29) = 0x02 // address mode 2 (ConstShort)
-    DummyMem(0x2a) = 0xff.asInstanceOf[Byte] // value
-    DummyMem(0x2b) = 0xfe.asInstanceOf[Byte]
-    DummyMem(0x2c) = 0x81.asInstanceOf[Byte] // quit instruction
-    DummyMem(0x2d) = 0x20
+    DummyMem(0x2b) = 0x02 // address mode 2 (ConstShort)
+    DummyMem(0x2c) = 0xff.asInstanceOf[Byte] // value
+    DummyMem(0x2d) = 0xfe.asInstanceOf[Byte]
+    DummyMem(0x2e) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2f) = 0x20
 
     vm.init(DummyMem, null)
     vm.executeTurn
@@ -252,13 +262,13 @@ class GlulxVMAddressModeSpec extends FlatSpec with ShouldMatchers with BeforeAnd
   }
 
   it should "read address mode const int" in {
-    DummyMem(0x29) = 0x03 // address mode 3 (ConstInt)
-    DummyMem(0x2a) = 0x42 // value
-    DummyMem(0x2b) = 0x43
-    DummyMem(0x2c) = 0x44
-    DummyMem(0x2d) = 0x45
-    DummyMem(0x2e) = 0x81.asInstanceOf[Byte] // quit instruction
-    DummyMem(0x2f) = 0x20
+    DummyMem(0x2b) = 0x03 // address mode 3 (ConstInt)
+    DummyMem(0x2c) = 0x42 // value
+    DummyMem(0x2d) = 0x43
+    DummyMem(0x2e) = 0x44
+    DummyMem(0x2f) = 0x45
+    DummyMem(0x30) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x31) = 0x20
 
     vm.init(DummyMem, null)
     vm.executeTurn
@@ -266,10 +276,10 @@ class GlulxVMAddressModeSpec extends FlatSpec with ShouldMatchers with BeforeAnd
   }
 
   it should "read address mode address $00-$FF" in {
-    DummyMem(0x29) = 0x05 // address mode 5
-    DummyMem(0x2a) = 0x20 // value
-    DummyMem(0x2b) = 0x81.asInstanceOf[Byte] // quit instruction
-    DummyMem(0x2c) = 0x20
+    DummyMem(0x2b) = 0x05 // address mode 5
+    DummyMem(0x2c) = 0x20 // value
+    DummyMem(0x2d) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2e) = 0x20
 
     vm.init(DummyMem, null)
     vm.executeTurn
@@ -277,20 +287,7 @@ class GlulxVMAddressModeSpec extends FlatSpec with ShouldMatchers with BeforeAnd
   }
 
   it should "read address mode address $0000-$FFFF" in {
-    DummyMem(0x29) = 0x06 // address mode 6
-    DummyMem(0x2a) = 0x00 // value
-    DummyMem(0x2b) = 0x20 // value
-    DummyMem(0x2c) = 0x81.asInstanceOf[Byte] // quit instruction
-    DummyMem(0x2d) = 0x20
-
-    vm.init(DummyMem, null)
-    vm.executeTurn
-    vm.currentDecodingTable should be (0x01020304)
-  }
-  it should "read address mode address any" in {
-    DummyMem(0x29) = 0x07 // address mode 7
-    DummyMem(0x2a) = 0x00 // value
-    DummyMem(0x2b) = 0x00 // value
+    DummyMem(0x2b) = 0x06 // address mode 6
     DummyMem(0x2c) = 0x00 // value
     DummyMem(0x2d) = 0x20 // value
     DummyMem(0x2e) = 0x81.asInstanceOf[Byte] // quit instruction
@@ -301,10 +298,24 @@ class GlulxVMAddressModeSpec extends FlatSpec with ShouldMatchers with BeforeAnd
     vm.currentDecodingTable should be (0x01020304)
   }
 
+  it should "read address mode address any" in {
+    DummyMem(0x2b) = 0x07 // address mode 7
+    DummyMem(0x2c) = 0x00 // value
+    DummyMem(0x2d) = 0x00 // value
+    DummyMem(0x2e) = 0x00 // value
+    DummyMem(0x2f) = 0x20 // value
+    DummyMem(0x30) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x31) = 0x20
+
+    vm.init(DummyMem, null)
+    vm.executeTurn
+    vm.currentDecodingTable should be (0x01020304)
+  }
+
   it should "read address mode stack" in {
-    DummyMem(0x29) = 0x08 // address mode 8
-    DummyMem(0x2a) = 0x81.asInstanceOf[Byte] // quit instruction
-    DummyMem(0x2b) = 0x20
+    DummyMem(0x2b) = 0x08 // address mode 8
+    DummyMem(0x2c) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2d) = 0x20
 
     vm.init(DummyMem, null)
     // need to push after initialization !!!
@@ -312,4 +323,241 @@ class GlulxVMAddressModeSpec extends FlatSpec with ShouldMatchers with BeforeAnd
     vm.executeTurn
     vm.currentDecodingTable should be (4711)
   }
+
+  it should "read address mode local $00-$FF" in {
+    DummyMem(0x2b) = 0x09 // address mode 9 (local 00-ff)
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2e) = 0x20
+
+    vm.init(DummyMem, null)    
+    vm.setLocalAtAddress(0, 4712)
+
+    vm.executeTurn
+    vm.currentDecodingTable should be (4712)
+  }
+
+  it should "read address mode local $0000-$FFFF" in {
+    DummyMem(0x2b) = 0x0a // address mode 10 (local 0000-ffff)
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x01
+    DummyMem(0x2e) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2f) = 0x20
+
+    vm.init(DummyMem, null)    
+    vm.setLocalAtAddress(1, 4713)
+
+    vm.executeTurn
+    vm.currentDecodingTable should be (4713)
+  }
+
+  it should "read address mode local any" in {
+    DummyMem(0x2b) = 0x0b // address mode 11 (local any)
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x00
+    DummyMem(0x2e) = 0x00
+    DummyMem(0x2f) = 0x02
+    DummyMem(0x30) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x31) = 0x20
+
+    vm.init(DummyMem, null)    
+    vm.setLocalAtAddress(2, 4714)
+
+    vm.executeTurn
+    vm.currentDecodingTable should be (4714)
+  }
+
+  it should "read address mode RAM $00-$FF" in {
+    DummyMem(0x2b) = 0x0d // address mode 13 (RAM 00-ff)
+    DummyMem(0x2c) = 0x10
+    DummyMem(0x2d) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2e) = 0x20
+
+    vm.init(DummyMem, null)    
+    vm.executeTurn
+    vm.currentDecodingTable should be (0xdeadbeef)
+  }
+  it should "read address mode RAM $0000-$FFFF" in {
+    DummyMem(0x2b) = 0x0e // address mode 14 (RAM 00-ff)
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x10
+    DummyMem(0x2e) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2f) = 0x20
+
+    vm.init(DummyMem, null)    
+    vm.executeTurn
+    vm.currentDecodingTable should be (0xdeadbeef)
+  }
+
+  it should "read address mode RAM any" in {
+    DummyMem(0x2b) = 0x0f // address mode 14 (RAM 00-ff)
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x00
+    DummyMem(0x2e) = 0x00
+    DummyMem(0x2f) = 0x10
+    DummyMem(0x30) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x31) = 0x20
+
+    vm.init(DummyMem, null)    
+    vm.executeTurn
+    vm.currentDecodingTable should be (0xdeadbeef)
+  }
+}
+
+@RunWith(classOf[JUnitRunner])
+class GlulxVMStoreOperandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+
+  // Sets up a getstringtbl instruction
+  val DummyMem = Array[Byte](0x47, 0x6c, 0x75, 0x6c,
+                             0x00, 0x03, 0x01, 0x01, // Version
+                             0x00, 0x00, 0x00, 0x24, // RAMSTART
+                             0x00, 0x00, 0x00, 0x38, // EXTSTART
+                             0x00, 0x00, 0x00, 0x38, // ENDMEM
+                             0x00, 0x00, 0x00, 0xff.asInstanceOf[Byte], // STACKSIZE
+                             0x00, 0x00, 0x00, 0x24, // STARTFUNC
+                             0x04, 0x07, 0x01, 0x01, // Decoding table
+                             0x01, 0x02, 0x03, 0x04, // Checksum
+                             // 3 locals of size byte
+                             0xc0.asInstanceOf[Byte], 0x01, 0x03, 0x00, // 0x24
+                             0x00, 0x81.asInstanceOf[Byte], 0x40, 0x00, // 0x28
+                             0x00, 0x00, 0x00, 0x00, // 0x2c
+                             0x00, 0x00, 0x00, 0x00, // 0x30
+                             0x00, 0x00, 0x00, 0x00  // 0x34
+                            )
+  var vm = new GlulxVM()
+
+  override def beforeEach {
+    // clear the clearable area
+    for (i <- 0x2b until 0x38) DummyMem(i) = 0
+  }
+
+
+  "GlulxVM" should "store with address mode const 0" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x00 // address mode 0 (ConstZero)
+    DummyMem(0x2c) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2d) = 0x20
+    vm.executeTurn
+  }
+
+  it should "store with address mode address $00-$ff" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x05 // address mode 5
+    DummyMem(0x2c) = 0x34
+    DummyMem(0x2d) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2e) = 0x20
+    vm.executeTurn
+
+    vm.memIntAt(0x34) should be (0x04070101)
+  }
+
+  it should "store with address mode address $0000-$ffff" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x06 // address mode 6
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x34
+    DummyMem(0x2e) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2f) = 0x20
+    vm.executeTurn
+
+    vm.memIntAt(0x34) should be (0x04070101)
+  }
+
+  it should "store with address mode address any" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x07 // address mode 7
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x00
+    DummyMem(0x2e) = 0x00
+    DummyMem(0x2f) = 0x34
+    DummyMem(0x30) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x31) = 0x20
+    vm.executeTurn
+
+    vm.memIntAt(0x34) should be (0x04070101)
+  }
+
+  it should "store with address mode stack" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x08 // address mode 8
+    DummyMem(0x2c) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2d) = 0x20
+
+    vm.executeTurn
+
+    vm.popInt should be (0x04070101)
+  }
+
+  it should "store with address mode local $00-$ff" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x09 // address mode 9
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2e) = 0x20
+    vm.executeTurn
+
+    vm.getLocalAtAddress(0x00) should be (0x04070101)
+  }
+
+  it should "store with address mode local $0000-$ffff" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x0a // address mode 10
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x01
+    DummyMem(0x2e) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2f) = 0x20
+    vm.executeTurn
+
+    vm.getLocalAtAddress(1) should be (0x04070101)
+  }
+
+  it should "store with address mode local any" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x0b // address mode 11
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x00
+    DummyMem(0x2e) = 0x00
+    DummyMem(0x2f) = 0x02
+    DummyMem(0x30) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x31) = 0x20
+    vm.executeTurn
+
+    vm.getLocalAtAddress(2) should be (0x04070101)
+  }
+
+  it should "store with address mode RAM $00-$ff" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x0d // address mode 13
+    DummyMem(0x2c) = 0x10
+    DummyMem(0x2d) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2e) = 0x20
+    vm.executeTurn
+
+    vm.memIntAt(0x34) should be (0x04070101)
+  }
+  it should "store with address mode RAM $0000-$ffff" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x0e // address mode 14
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x10
+    DummyMem(0x2e) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x2f) = 0x20
+    vm.executeTurn
+
+    vm.memIntAt(0x34) should be (0x04070101)
+  }
+  it should "store with address mode RAM any" in {
+    vm.init(DummyMem, null)
+    DummyMem(0x2b) = 0x0f // address mode 14
+    DummyMem(0x2c) = 0x00
+    DummyMem(0x2d) = 0x00
+    DummyMem(0x2e) = 0x00
+    DummyMem(0x2f) = 0x10
+    DummyMem(0x30) = 0x81.asInstanceOf[Byte] // quit instruction
+    DummyMem(0x31) = 0x20
+    vm.executeTurn
+
+    vm.memIntAt(0x34) should be (0x04070101)
+  }
+
 }
