@@ -26,7 +26,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk
+package org.zmpp.glk.events
 
 // Note: Only Scala 2.8 has this, now we can easily iterate over Java
 // collections as if they were Scala collections
@@ -37,175 +37,9 @@ import java.util.logging._
 import scala.collection.mutable.Map
 import org.zmpp.base.VMState
 import org.zmpp.base.VMRunStates
+import org.zmpp.glk._
 
-object GlkEventType extends Enumeration {
-  val EventNone   = Value("EventNone")
-  val Timer       = Value("Timer")
-  val CharInput   = Value("CharInput")
-  val LineInput   = Value("LineInput")
-  val MouseInput  = Value("MouseInput")
-  val Arrange     = Value("Arrange")
-  val Redraw      = Value("Redraw")
-  val SoundNotify = Value("SoundNotify")
-  val Hyperlink   = Value("Hyperlink")
-}
 
-object GlkKeyCodes {
-  val Unknown  = 0xffffffff
-  val Left     = 0xfffffffe
-  val Right    = 0xfffffffd
-  val Up       = 0xfffffffc
-  val Down     = 0xfffffffb
-  val Return   = 0xfffffffa
-  val Delete   = 0xfffffff9
-  val Escape   = 0xfffffff8
-  val Tab      = 0xfffffff7
-  val PageUp   = 0xfffffff6
-  val PageDown = 0xfffffff5
-  val Home     = 0xfffffff4
-  val End      = 0xfffffff3
-  val Func1    = 0xffffffef
-  val Func2    = 0xffffffee
-  val Func3    = 0xffffffed
-  val Func4    = 0xffffffec
-  val Func5    = 0xffffffeb
-  val Func6    = 0xffffffea
-  val Func7    = 0xffffffe9
-  val Func8    = 0xffffffe8
-  val Func9    = 0xffffffe7
-  val Func10   = 0xffffffe6
-  val Func11   = 0xffffffe5
-  val Func12   = 0xffffffe4
-}
-
-// *************************************************************************
-// ***** Events
-// ***************************
-abstract class GlkEvent {
-  def eventType  : GlkEventType.Value
-  def windowId   : Int
-  def isInternal : Boolean
-  def process(eventManager: EventManager, state: VMState)
-}
-
-class ValueEvent(val eventType  : GlkEventType.Value,
-                 val windowId   : Int,
-                 val value1     : Int,
-                 val value2     : Int,
-                 val isInternal : Boolean) extends GlkEvent {
-  def this(eventType: GlkEventType.Value, windowId: Int, value1: Int,
-           value2: Int) {
-    this(eventType, windowId, value1, value2, false)
-  }
-  def process(eventManager: EventManager, state: VMState) {
-    eventManager.removeInputRequestInWindow(windowId, eventType)    
-    eventManager.setEventAndResume(eventType, windowId, value1, value2)
-  }
-}
-
-class LineInputEvent(val windowId: Int, input: String) extends GlkEvent {
-  def eventType = GlkEventType.LineInput
-  def isInternal = false
-  
-  def process(eventManager: EventManager, state: VMState) {
-    val lineRequest = eventManager.lineRequestForWindow(windowId)
-    val buffer = lineRequest.buffer
-    var i = 0
-    while (i < input.length) {
-      if (lineRequest.useUnicode) {
-        state.setMemIntAt(buffer + i * 4, input.charAt(i))
-      } else state.setMemByteAt(buffer + i, input.charAt(i))
-      i += 1
-    }
-    eventManager.removeLineInputRequestInWindow(windowId)
-    eventManager.setEventAndResume(eventType, windowId, input.length, 0)
-  }
-}
-
-class CharInputEvent(val windowId: Int, charCode: Int) extends GlkEvent {
-  def eventType = GlkEventType.CharInput
-  def isInternal = false
-  
-  def process(eventManager: EventManager, state: VMState) {
-    val charRequest = eventManager.charRequestForWindow(windowId)
-    val eventValue1 = if (charRequest.useUnicode) charCode
-                      else charCode & 0xff
-
-    eventManager.removeInputRequestInWindow(windowId, eventType)
-    eventManager.setEventAndResume(eventType, windowId, eventValue1, 0)
-  }
-}
-
-// *************************************************************************
-// ***** Event Requests
-// ***************************
-
-trait EventRequest
-
-/**
- * Event requests that are window-dependent
- */
-abstract class WindowEventRequest(val winId: Int,
-                                  val eventType: GlkEventType.Value) extends EventRequest {
-  // use visitor pattern to set the window events in the native user interface
-  // side
-  def prepareWindow(screenUI: GlkScreenUI)
-}
-
-class LineInputRequest(winId: Int, val buffer: Int, val maxlen: Int,
-                       val initlen: Int, val useUnicode: Boolean)
-extends WindowEventRequest(winId, GlkEventType.LineInput) {
-  private var runOnce = false
-  override def equals(that: Any): Boolean = that match {
-    case other: LineInputRequest => winId == other.winId
-    case _ => false
-  }
-  def prepareWindow(screenUI: GlkScreenUI) {
-    // Line input requests can interfere with timed input interrupts.
-    // We need to save the mark until the program prints out input
-    if (runOnce) {
-      screenUI.requestPreviousLineInput(winId)
-    } else {
-      screenUI.requestLineInput(winId)
-      runOnce = true
-    }
-  }
-  override def hashCode = winId
-}
-
-class CharInputRequest(winId: Int, val useUnicode: Boolean)
-extends WindowEventRequest(winId, GlkEventType.CharInput) {
-  override def equals(that: Any): Boolean = that match {
-    case other: CharInputRequest => winId == other.winId
-    case _ => false
-  }
-  def prepareWindow(screenUI: GlkScreenUI) {
-    screenUI.requestCharInput(winId)
-  }
-  override def hashCode = winId
-}
-class MouseInputRequest(winId: Int)
-extends WindowEventRequest(winId, GlkEventType.MouseInput) {
-  override def equals(that: Any): Boolean = that match {
-    case other: MouseInputRequest => winId == other.winId
-    case _ => false
-  }
-  def prepareWindow(screenUI: GlkScreenUI) {
-    screenUI.requestMouseInput(winId)
-  }
-  override def hashCode = winId
-}
-class HyperlinkEventRequest(winId: Int)
-extends WindowEventRequest(winId, GlkEventType.Hyperlink) {
-  def prepareWindow(screenUI: GlkScreenUI) {
-    screenUI.requestHyperlinkEvent(winId)
-  }
-  override def equals(that: Any): Boolean = that match {
-    case other: HyperlinkEventRequest => winId == other.winId
-    case _ => false
-  }
-  override def hashCode = winId
-}
 
 // *************************************************************************
 // ***** Event Manager
@@ -239,17 +73,17 @@ class EventManager(_state: VMState) {
   }
 
   def setEventStruct(eventPtr: Int,
-                     eventType: GlkEventType.Value,
+                     eventType: Int,
                      winId: Int,
                      val1: Int, val2: Int) {
     if (eventPtr == -1) {
       // On stack
-      _state.pushInt(eventType.id)
+      _state.pushInt(eventType)
       _state.pushInt(winId)
       _state.pushInt(val1)
       _state.pushInt(val2)
     } else if (eventPtr > 0) {
-      _state.setMemIntAt(eventPtr,      eventType.id)
+      _state.setMemIntAt(eventPtr,      eventType)
       _state.setMemIntAt(eventPtr + 4,  winId)
       _state.setMemIntAt(eventPtr + 8,  val1)
       _state.setMemIntAt(eventPtr + 12, val2)
@@ -284,7 +118,7 @@ class EventManager(_state: VMState) {
     _windowEventRequests(winId) =
       reqs.filterNot(req => req.eventType == GlkEventType.LineInput)
   }
-  def removeInputRequestInWindow(winId: Int, eventType: GlkEventType.Value) {
+  def removeInputRequestInWindow(winId: Int, eventType: Int) {
     val reqs = eventRequestsForWindow(winId)
     _windowEventRequests(winId) =
       reqs.filterNot(req => req.eventType == eventType)
@@ -366,7 +200,7 @@ class EventManager(_state: VMState) {
     } else false
   }
   
-  def setEventAndResume(eventType: GlkEventType.Value, windowId: Int,
+  def setEventAndResume(eventType: Int, windowId: Int,
                         value1: Int, value2: Int) {
     setEventStruct(_eventPtr, eventType, windowId, value1, value2)    
     _state.setRunState(VMRunStates.Running)
@@ -492,7 +326,7 @@ class EventManager(_state: VMState) {
     containsEventOfType(GlkEventType.LineInput, winId)
   }
 
-  private def containsEventOfType(eventType: GlkEventType.Value,
+  private def containsEventOfType(eventType: Int,
                                   winId: Int): Boolean = {
     for (event <- eventQueue) {
       if (event.eventType == eventType && event.windowId == winId)
