@@ -26,7 +26,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk
+package org.zmpp.glk.io
 
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
@@ -35,7 +35,6 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 import java.io._
-import org.zmpp.glk.io._
 
 @RunWith(classOf[JUnitRunner])
 class GlkFileSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
