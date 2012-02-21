@@ -26,21 +26,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk;
+package org.zmpp.glk.windows;
 
 /**
- * Window border style (part of winmethod bit mask).
+ * The available window types.
  */
-public final class GlkWindowBorderStyle {
-    public static final int Border       = 0x000;
-    public static final int NoBorder     = 0x100;
-    public static final int Mask         = 0x100;
-
-    public static String name(int method) {
-        switch (method & Mask) {
-        case Border:   return "Border";
-        case NoBorder: return "NoBorder";
-        default: throw new IllegalArgumentException(String.format("unknown border style: %d", method & Mask));
-        }
-    }
+public final class GlkWindowType {
+    public static final int All        = 0;
+    public static final int PairWindow = 1;
+    public static final int Blank      = 2;
+    public static final int TextBuffer = 3;
+    public static final int TextGrid   = 4;
+    public static final int Graphics   = 5;
+    /*
+    public static final String[] Names = {
+        "All", "Pair", "Blank", "TextBuffer", "TextGrid", "Graphics"
+    };
+    */
 }

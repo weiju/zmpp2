@@ -41,6 +41,7 @@ import scala.collection.mutable.HashMap
 
 import org.zmpp.base._
 import org.zmpp.glk._
+import org.zmpp.glk.styles._
 
 object SwingTextWindowUI {
   val InputModeNone = 0

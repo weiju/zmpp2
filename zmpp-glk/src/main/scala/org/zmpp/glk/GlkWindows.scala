@@ -34,6 +34,8 @@ import java.util.logging._
 import org.zmpp.base._
 import org.zmpp.iff._
 import org.zmpp.glk.io._
+import org.zmpp.glk.styles._
+import org.zmpp.glk.windows._
 
 /**
  * Interface to be implemented by the user interface, technology-dependent.
@@ -515,4 +517,3 @@ class GlkWindowSystem {
       if (_rootWindow == newParent.child0) _rootWindow = newParent
   }
 }
-

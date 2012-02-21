@@ -35,6 +35,7 @@ import java.awt.event._
 
 import org.zmpp.base._
 import org.zmpp.glk._
+import org.zmpp.glk.styles._
 
 /**
  * UI representation of a text grid. We use EditorPane, which allows for

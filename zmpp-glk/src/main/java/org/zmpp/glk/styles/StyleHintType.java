@@ -26,25 +26,19 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk;
+package org.zmpp.glk.styles;
 
-/**
- * Styles, style hints and their defaults. I put that in its separate file,
- * because it's long.
- */
-public final class StyleType {
-    public static final int Normal       = 0;
-    public static final int Emphasized   = 1;
-    public static final int Preformatted = 2;
-    public static final int Header       = 3;
-    public static final int Subheader    = 4;
-    public static final int Alert        = 5;
-    public static final int Note         = 6;
-    public static final int BlockQuote   = 7;
-    public static final int Input        = 8;
-    public static final int User1        = 9;
-    public static final int User2        = 10;
-    public static final int Num          = 11;
-
-    public static boolean isSupported(int id) { return id <= 10; }
+public final class StyleHintType {
+    public static final int Indentation     = 0;
+    public static final int ParaIndentation = 1;
+    public static final int Justification   = 2;
+    public static final int Size            = 3;
+    public static final int Weight          = 4;
+    public static final int Oblique         = 5;
+    public static final int Proportional    = 6;
+    public static final int TextColor       = 7;
+    public static final int BackColor       = 8;
+    public static final int ReverseColor    = 9;
+    public static final int Num             = 10;
+    public static boolean isSupported(int id) { return id <= 9; }
 }

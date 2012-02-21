@@ -26,17 +26,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk;
+package org.zmpp.glk.windows;
 
-public final class ImageAlign {
-    public static final int InlineUp     = 0x01;
-    public static final int InlineDown   = 0x02;
-    public static final int InlineCenter = 0x03;
-    public static final int MarginLeft   = 0x04;
-    public static final int MarginRight  = 0x05;
-    /*
-    public static final String[] Names = {
-        "???", "InlineUp", "InlineDown", "InlineCenter", "MarginLeft", "MarginRight"
-    };
-    */
+/**
+ * Window border style (part of winmethod bit mask).
+ */
+public final class GlkWindowBorderStyle {
+    public static final int Border       = 0x000;
+    public static final int NoBorder     = 0x100;
+    public static final int Mask         = 0x100;
+
+    public static String name(int method) {
+        switch (method & Mask) {
+        case Border:   return "Border";
+        case NoBorder: return "NoBorder";
+        default: throw new IllegalArgumentException(String.format("unknown border style: %d", method & Mask));
+        }
+    }
 }

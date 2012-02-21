@@ -37,6 +37,7 @@ import java.awt.Dimension
 import java.awt.image.BufferedImage
 
 import org.zmpp.glk._
+import org.zmpp.glk.styles._
 
 /**
  * UI representation of a text buffer. We use EditorPane, which allows for

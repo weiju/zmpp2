@@ -26,11 +26,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk;
+package org.zmpp.glk.styles;
 
-import static org.zmpp.glk.StyleType.*;
-import static org.zmpp.glk.StyleHintType.*;
-import static org.zmpp.glk.StyleHintJustification.*;
+import static org.zmpp.glk.styles.StyleType.*;
+import static org.zmpp.glk.styles.StyleHintType.*;
+import static org.zmpp.glk.styles.StyleHintJustification.*;
 
 public final class StyleHints {
 

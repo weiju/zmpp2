@@ -26,19 +26,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk;
+package org.zmpp.glk.windows;
 
-public final class StyleHintType {
-    public static final int Indentation     = 0;
-    public static final int ParaIndentation = 1;
-    public static final int Justification   = 2;
-    public static final int Size            = 3;
-    public static final int Weight          = 4;
-    public static final int Oblique         = 5;
-    public static final int Proportional    = 6;
-    public static final int TextColor       = 7;
-    public static final int BackColor       = 8;
-    public static final int ReverseColor    = 9;
-    public static final int Num             = 10;
-    public static boolean isSupported(int id) { return id <= 9; }
+/**
+ * Window division types (part of method bit mask).
+ */
+public final class GlkWindowDivision {
+    public static final int Fixed        = 0x10;
+    public static final int Proportional = 0x20;
+    public static final int Mask         = 0xf0;
+  
+    public static String name(int method) {
+        switch (method & Mask) {
+        case Fixed:        return "Fixed";
+        case Proportional: return "Proportional";
+        default: throw new IllegalArgumentException(String.format("unknown division: %d", method & Mask));
+        }
+    }
 }

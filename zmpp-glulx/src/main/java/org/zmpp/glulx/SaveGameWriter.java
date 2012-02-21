@@ -33,6 +33,7 @@ import java.util.logging.Logger;
 import org.zmpp.base.*;
 import org.zmpp.iff.*;
 import org.zmpp.glk.*;
+import org.zmpp.glk.io.*;
 
 
 // Writes state to Quetzal file. Only writes UMem chunks, CMem is not
@@ -67,7 +68,7 @@ class SaveGameWriter {
     }
 
     private void writeIffHeader() {
-        glk.stream_set_position(streamId, 0, SeekModes.Start());
+        glk.stream_set_position(streamId, 0, SeekModes.Start);
         writeByteArray("FORM".getBytes());
         writeInt(bytesWritten);
         writeByteArray("IFZS".getBytes()); // Quetzal ID

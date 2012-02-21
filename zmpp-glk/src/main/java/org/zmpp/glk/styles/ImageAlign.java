@@ -26,11 +26,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk;
+package org.zmpp.glk.styles;
 
-public final class StyleHintJustification {
-    public static final int LeftFlush  = 0;
-    public static final int LeftRight  = 1;
-    public static final int Centered   = 2;
-    public static final int RightFlush = 3;
+public final class ImageAlign {
+    public static final int InlineUp     = 0x01;
+    public static final int InlineDown   = 0x02;
+    public static final int InlineCenter = 0x03;
+    public static final int MarginLeft   = 0x04;
+    public static final int MarginRight  = 0x05;
+    /*
+    public static final String[] Names = {
+        "???", "InlineUp", "InlineDown", "InlineCenter", "MarginLeft", "MarginRight"
+    };
+    */
 }

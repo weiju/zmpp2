@@ -41,6 +41,7 @@ import javax.imageio.ImageIO
 
 import org.zmpp.base._
 import org.zmpp.glk._
+import org.zmpp.glk.io._
 import org.zmpp.glulx._
 
 import scala.collection.mutable.HashMap

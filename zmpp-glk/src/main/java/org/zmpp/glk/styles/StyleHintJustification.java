@@ -26,21 +26,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk;
+package org.zmpp.glk.styles;
 
-/**
- * The available window types.
- */
-public final class GlkWindowType {
-    public static final int All        = 0;
-    public static final int PairWindow = 1;
-    public static final int Blank      = 2;
-    public static final int TextBuffer = 3;
-    public static final int TextGrid   = 4;
-    public static final int Graphics   = 5;
-    /*
-    public static final String[] Names = {
-        "All", "Pair", "Blank", "TextBuffer", "TextGrid", "Graphics"
-    };
-    */
+public final class StyleHintJustification {
+    public static final int LeftFlush  = 0;
+    public static final int LeftRight  = 1;
+    public static final int Centered   = 2;
+    public static final int RightFlush = 3;
 }

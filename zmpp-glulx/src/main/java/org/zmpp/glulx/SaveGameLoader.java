@@ -33,6 +33,7 @@ import java.util.logging.Logger;
 import org.zmpp.base.*;
 import org.zmpp.iff.*;
 import org.zmpp.glk.*;
+import org.zmpp.glk.io.*;
 
 
 /**
@@ -73,7 +74,7 @@ class SaveGameLoader {
     }
 
     private byte[] readFileBytes(int size) {
-        glk.stream_set_position(streamId, 0, SeekModes.Start());
+        glk.stream_set_position(streamId, 0, SeekModes.Start);
         byte[] result = new byte[size];
         for (int i = 0; i < size; i++) {
             result[i] = (byte) glk.get_char_stream(streamId);
@@ -149,7 +150,7 @@ class SaveGameLoader {
 
     public boolean loadGame() {
         logger.info("LOAD_GAME");
-        glk.stream_set_position(streamId, 0, SeekModes.End());
+        glk.stream_set_position(streamId, 0, SeekModes.End);
         int fileSize = glk.stream_get_position(streamId);
         byte[] fileBytes = readFileBytes(fileSize);
         try {
