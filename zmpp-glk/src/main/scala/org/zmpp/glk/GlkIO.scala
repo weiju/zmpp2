@@ -29,108 +29,9 @@
 package org.zmpp.glk
 
 import java.util.logging._
+import org.zmpp.glk.io.{GlkStream, GlkStreamCloseStruct}
 import org.zmpp.base.VMState
 import org.zmpp.base.Types
-
-trait GlkStream {
-  def id       : Int
-  def id_=(anId: Int)
-  def rock     : Int
-  def position : Int
-  def seek(newpos: Int, seekmode: Int)
-  def close
-  
-  // input methods
-  def readCount  : Int
-  def getChar    : Int
-  def getCharUni : Int
-
-  // output methods
-  def writeCount: Int
-  def style: Int
-  def style_=(value: Int)
-  def putChar(c: Char)
-  def putCharUni(c: Int)
-  def setHyperlink(linkval: Int)
-}
-
-class GlkStreamCloseStruct(_writeCount: Int, _readCount: Int) {
-  def writeCount = _writeCount
-  def readCount = _readCount
-}
-
-class GlkIOSystem {
-  val logger = Logger.getLogger("glk")
-  private var _nextId = 1
-  private var _streams: List[GlkStream] = Nil
-  private var _currentStream: GlkStream = NilStream
-
-  def streamWithId(id: Int) = {
-    _streams.filter(stream => stream.id == id).head
-  }
-
-  def registerStream(stream: GlkStream): Int = {
-    stream.id = _nextId
-    _streams = stream :: _streams
-    _nextId += 1
-    stream.id
-  }
-  def iterate(id: Int): GlkStream = {
-    if (_streams.isEmpty) null
-    else if (id == 0) _streams.head
-    else {
-      val remain = _streams.dropWhile(stream => stream.id != id).tail
-      if (remain.isEmpty) null
-      else remain.head 
-    }
-  }
-  def closeStream(id: Int) = {
-    val stream = streamWithId(id)
-    _streams = _streams.filterNot(stream => stream.id == id)
-    stream.close
-    if (stream == _currentStream) _currentStream = NilStream
-    new GlkStreamCloseStruct(stream.writeCount, stream.readCount)
-  }
-  def getPosition(id: Int) = streamWithId(id).position
-  def setPosition(id: Int, pos: Int, seekmode: Int) =
-    streamWithId(id).seek(pos, seekmode)
-  def putChar(id: Int, c: Char) = streamWithId(id).putChar(c)
-  def putCharUni(id: Int, c: Int) = streamWithId(id).putCharUni(c)
-  
-  // control current stream
-  def currentStream = _currentStream
-  def currentStream_=(s: GlkStream) {
-    _currentStream = if (s == null) NilStream else s
-  }
-  def currentStreamId = _currentStream.id
-  def currentStreamId_=(id: Int) = _currentStream = streamWithId(id)
-
-  def getRock(streamId: Int) = streamWithId(streamId).rock
-
-  def putChar(c: Char)   = _currentStream.putChar(c)
-  def putCharUni(c: Int) = _currentStream.putCharUni(c)
-  // For convenient output (debugging etc.)
-  def putJavaString(str: String) = {
-    var i = 0
-    while (i < str.length) {
-      putCharUni(str.charAt(i))
-      i += 1
-    }
-  }
-  def setHyperlink(linkval: Int) = _currentStream.setHyperlink(linkval)
-  def setHyperlinkStream(streamId: Int, linkval: Int) {
-    streamWithId(streamId).setHyperlink(linkval)
-  }
-  def currentStyle = _currentStream.style
-  def currentStyle_=(value: Int) = _currentStream.style = value
-  
-  def setStyle(streamId: Int, value: Int) {
-    streamWithId(streamId).style = value
-  }
-  // reading
-  def getCharStream(streamId: Int)    = streamWithId(streamId).getChar
-  def getCharStreamUni(streamId: Int) = streamWithId(streamId).getCharUni
-}
 
 /**
  * Byte-based memory stream
@@ -139,8 +40,14 @@ abstract class MemoryStream(val state: VMState, val address: Int, val size: Int,
                             val fmode: Int, val rock: Int) extends GlkStream {
   val logger = Logger.getLogger("glk")
   //logger.info("CREATE MEMORYSTREAM, fmode: %02x size: %d".format(fmode, size))
-  var id         = 0
-  var style      = 0
+  private[this] var _id    = 0
+  private[this] var _style = 0
+
+  def id = _id
+  def setId(anId: Int) { _id = anId }
+  def style = _style
+  def setStyle(aStyle: Int) { _style = aStyle }
+
   var writeCount = 0
   var readCount  = 0
   var position   = 0
@@ -238,39 +145,19 @@ extends MemoryStream(state, address, size, fmode, rock) {
   private def bufferAddress = address + bufferIndex(position)
 }
 
-object NilStream extends GlkStream {
-  def rock       = 0
-  def id         = 0
-  def id_=(anId: Int) {}
-  def style      = 0
-  def style_=(value: Int) { }
-  def writeCount = 0
-  def position   = 0
-  def close {}
-  def putChar(c: Char) { }
-  def putCharUni(c: Int) { }
-  def readCount = 0
-  def getChar = {
-    throw new UnsupportedOperationException("NilStream does not support getChar")
-  }
-  def getCharUni = {
-    throw new UnsupportedOperationException("NilStream does not support getCharUni")
-  }
-
-  def seek(newpos: Int, seekmode: Int) { }
-  def setHyperlink(linkval: Int) { }
-}
-
 /*
  * This stream is not actually used, we just have it to emulate Glulxe's
  * behavior of having the game file available as a stream. ZMPP does not
  * open the game through Glk streams.
  */
 class DummyStream extends GlkStream {
+  private[this] var _id = 0
+
+  def id = _id
+  def setId(anId: Int) { _id = anId }
   def rock       = 0
-  var id         = 0
   def style      = 0
-  def style_=(value: Int) { }
+  def setStyle(value: Int) { }
   def writeCount = 0
   def position   = 0
   def close {}
@@ -287,4 +174,3 @@ class DummyStream extends GlkStream {
       "DummyStream does not support getCharUni")
   }
 }
-

@@ -33,6 +33,7 @@ import java.util.logging._
 
 import org.zmpp.base._
 import org.zmpp.iff._
+import org.zmpp.glk.io._
 
 /**
  * Interface to be implemented by the user interface, technology-dependent.
@@ -116,7 +117,7 @@ class GlkPairWindow(id: Int) extends GlkWindow(id, 0, 0) {
   var child0       : GlkWindow = null
   var child1       : GlkWindow = null
   var keyWindow    : GlkWindow = null// key window child
-  var outputStream = NilStream
+  var outputStream = NilStream.getInstance
   var method       = 0
   def wintype      = GlkWindowType.PairWindow
   def typeName     = "Pair"
@@ -155,7 +156,10 @@ extends GlkWindow(id, size, rock) {
 
   var echoStream: GlkStream = null
   val outputStream = new GlkStream {
-    var id = 0
+    private[this] var _id = 0
+
+    def id = _id
+    def setId(anId: Int) { _id = anId }
     def rock = 0
     def close { }
     def readCount = {
@@ -173,7 +177,7 @@ extends GlkWindow(id, size, rock) {
     def writeCount = _writeCount
     def position   = 0
     def style = _style
-    def style_=(value: Int) = {
+    def setStyle(value: Int) = {
       _style = value
       ui.style = value
     }
@@ -200,7 +204,7 @@ extends GlkWindow(id, size, rock) {
 
 class GlkGraphicsUIWindow(id: Int, size: Int, rock: Int)
 extends GlkWindow(id, size, rock) {
-  var outputStream = NilStream
+  var outputStream = NilStream.getInstance
   def wintype      = GlkWindowType.Graphics
   def styleHints   = null
   def typeName     = "Graphics"

@@ -1,6 +1,6 @@
 /*
  * Created on 2010/04/22
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2012, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,9 +35,12 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 import java.io._
+import org.zmpp.glk.io.{GlkStream, GlkIOSystem}
 
 class DummyStream extends GlkStream {
-  var id: Int = 0
+  private[this] var _id = 0
+  def id = _id
+  def setId(anId: Int) { _id = anId }
   val rock = 0
   def position = 0
   
@@ -56,7 +59,7 @@ class DummyStream extends GlkStream {
   // output methods
   def writeCount: Int = 0
   def style: Int = 0
-  def style_=(value: Int) {}
+  def setStyle(value: Int) {}
   def putChar(c: Char) {}
   def putCharUni(c: Int) {}
   def setHyperlink(linkval: Int) { }
@@ -73,7 +76,7 @@ class GlkIOSpec extends FlatSpec with ShouldMatchers {
   it should "set current stream" in {
     val ioSystem = new GlkIOSystem
     val stream = new DummyStream
-    ioSystem.currentStream = stream
+    ioSystem.setCurrentStream(stream)
 
     ioSystem.currentStream should equal (stream)
   }
@@ -101,8 +104,8 @@ class GlkIOSpec extends FlatSpec with ShouldMatchers {
     ioSystem.registerStream(stream1)
     ioSystem.registerStream(stream2)
 
-    ioSystem.iterate(0)          should equal (stream2)
-    ioSystem.iterate(stream2.id) should equal (stream1)
-    ioSystem.iterate(stream1.id) should be (null)
+    ioSystem.iterate(0)          should equal (stream1)
+    ioSystem.iterate(stream1.id) should equal (stream2)
+    ioSystem.iterate(stream2.id) should be (null)
   }
 }

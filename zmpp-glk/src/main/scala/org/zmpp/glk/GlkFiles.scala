@@ -32,6 +32,7 @@ import java.util.logging._
 import java.io.File
 import java.io.RandomAccessFile
 import scala.collection.mutable._
+import org.zmpp.glk.io._
 
 /*
  * File management for Glk.
@@ -91,13 +92,16 @@ class GlkFileStream(fileRef: FileReference,
   }
   def style: Int =
     throw new UnsupportedOperationException("can not read style from file stream")
-  def style_=(s:Int) =
+  def setStyle(s: Int) =
     throw new UnsupportedOperationException("can not set style in file stream")
 
   protected var _readCount  = 0
   protected var _writeCount = 0
 
-  var id         = 0
+  private[this] var _id         = 0
+  def id = _id
+  def setId(id: Int) { _id = id }
+
   def size       = realFile.length
   def position   = realFile.getFilePointer.asInstanceOf[Int]
   def close = realFile.close

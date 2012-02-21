@@ -30,6 +30,7 @@ package org.zmpp.glk
 
 import java.util.logging._
 import org.zmpp.base._
+import org.zmpp.glk.io.{GlkStreamCloseStruct, GlkIOSystem}
 
 /**
  * Glk implementation. It is implemented as a facade to the Glk's
@@ -215,7 +216,7 @@ class Glk(val eventManager: EventManager) {
     }
   }
   // Styles
-  def set_style(value: Int) = ioSystem.currentStyle = value
+  def set_style(value: Int) = ioSystem.setCurrentStyle(value)
   def set_style_stream(streamId: Int, value: Int) = ioSystem.setStyle(streamId,
                                                                       value)
   def style_distinguish(winId: Int, style1: Int, style2: Int): Int = {
@@ -445,7 +446,7 @@ class Glk(val eventManager: EventManager) {
     ioSystem.registerStream(new MemoryStream32(state, buf, buflen, fmode, rock))
   }
   def stream_set_current(streamId: Int) {
-    ioSystem.currentStreamId = streamId
+    ioSystem.setCurrentStreamId(streamId)
   }
   def stream_set_position(streamId: Int, pos: Int, seekMode: Int) {
     ioSystem.setPosition(streamId, pos, seekMode)
@@ -453,8 +454,8 @@ class Glk(val eventManager: EventManager) {
   
   // Window functions
   def set_window(windowId: Int) {
-    ioSystem.currentStream = if (windowId == 0) null
-      else windowSystem.outputStreamForWindow(windowId)
+    ioSystem.setCurrentStream(if (windowId == 0) null
+      else windowSystem.outputStreamForWindow(windowId))
   }
   def window_clear(winId: Int) = windowSystem.clearWindow(winId)
   def window_close(winId: Int) = windowSystem.closeWindow(winId)
