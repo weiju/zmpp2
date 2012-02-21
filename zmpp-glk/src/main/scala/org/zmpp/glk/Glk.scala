@@ -30,7 +30,7 @@ package org.zmpp.glk
 
 import java.util.logging._
 import org.zmpp.base._
-import org.zmpp.glk.io.{GlkStreamCloseStruct, GlkIOSystem}
+import org.zmpp.glk.io._
 
 /**
  * Glk implementation. It is implemented as a facade to the Glk's

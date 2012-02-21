@@ -34,36 +34,6 @@ import java.io.RandomAccessFile
 import scala.collection.mutable._
 import org.zmpp.glk.io._
 
-/*
- * File management for Glk.
- * In this implementation of the Glk, files are memory objects, which are
- * then written to the native file system if necessary.
- * Alternatively, there is a memory file system, which allows to write files
- * as temporary memory objects.
- */
-object FileUsageTypes {
-  val Data        = 0x00
-  val SavedGame   = 0x01
-  val Transcript  = 0x02
-  val InputRecord = 0x03
-  val TypeMask    = 0x0f
-  val TextMode    = 0x100
-  val BinaryMode  = 0x000
-}
-
-object FileModes {
-  val Write       = 0x01
-  val Read        = 0x02
-  val ReadWrite   = 0x03
-  val WriteAppend = 0x05
-}
-
-object SeekModes {
-  val Start       = 0
-  val Current     = 1
-  val End         = 2
-}
-
 /**
  * File streams are based on RandomAccessFile, this is probably the only
  * way to allow for all the operations that streams require.
@@ -139,21 +109,6 @@ class GlkFileStream(fileRef: FileReference,
     _readCount += 1
     realFile.readChar.asInstanceOf[Int]
   }
-}
-
-class FileReference(val id        : Int,
-                    val usage     : Int,
-                    val fmode     : Int,
-                    val file      : File,
-                    val rock      : Int) {
-  def isBinaryMode = (usage & 0x100) == 0
-  def isTextMode   = (usage & 0x100) == 0x100
-  def fileType     = usage & FileUsageTypes.TypeMask
-  def exists       = file.exists
-  def isReadOnly   = fmode == FileModes.Read
-  def isWriteOnly  = isAppend || fmode == FileModes.Write
-  def isReadWrite  = fmode == FileModes.ReadWrite
-  def isAppend     = fmode == FileModes.WriteAppend
 }
 
 class GlkFileSystem {

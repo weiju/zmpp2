@@ -35,6 +35,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 import java.io._
+import org.zmpp.glk.io._
 
 @RunWith(classOf[JUnitRunner])
 class GlkFileSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
