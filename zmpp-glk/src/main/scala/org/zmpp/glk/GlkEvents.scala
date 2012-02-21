@@ -501,4 +501,3 @@ class EventManager(_state: VMState) {
     false
   }
 }
-

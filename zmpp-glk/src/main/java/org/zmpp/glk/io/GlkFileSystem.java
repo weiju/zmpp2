@@ -45,9 +45,8 @@ public class GlkFileSystem {
     }
 
     private int addFileRef(int usage, int fmode, File file, int rock) {
-        FileReference fileref = new FileReference(_nextId, usage, fmode, file, rock);
+        FileReference fileref = new FileReference(_nextId++, usage, fmode, file, rock);
         _fileRefs.add(fileref);
-        _nextId++;
         return fileref.id;
     }
   

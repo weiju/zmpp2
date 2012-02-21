@@ -31,6 +31,7 @@ package org.zmpp.glk
 import java.util.logging._
 import org.zmpp.base._
 import org.zmpp.glk.io._
+import org.zmpp.glk.sound._
 
 /**
  * Glk implementation. It is implemented as a facade to the Glk's
