@@ -38,39 +38,6 @@ import org.zmpp.glk.styles._
 import org.zmpp.glk._
 
 /**
- * Pair windows only exist in the Glk windowing system. Since they only act as
- * inner nodes of the layout tree they do not have an UI equivalent.
- */
-class GlkPairWindow(id: Int) extends GlkWindow(id, 0, 0) {
-  var child0       : GlkWindow = null
-  var child1       : GlkWindow = null
-  var keyWindow    : GlkWindow = null// key window child
-  var outputStream = NilStream.getInstance
-  var method       = 0
-  def wintype      = GlkWindowType.PairWindow
-  def typeName     = "Pair"
-  def isTextBuffer = false
-  def isTextGrid   = false
-  def echoStream   = null
-  def setEchoStream(stream: GlkStream) = {
-    throw new UnsupportedOperationException(
-      "Can not attach echo stream to pair window")
-  }
- 
-  override def isLeaf = false
-  def position = (method & GlkWindowPosition.Mask)
-  def division = (method & GlkWindowDivision.Mask)
-  def isProportional = division == GlkWindowDivision.Proportional
-  def isFixed        = division == GlkWindowDivision.Fixed
-  def isLeft         = position == GlkWindowPosition.Left
-  def isRight        = position == GlkWindowPosition.Right
-  def isAbove        = position == GlkWindowPosition.Above
-  def isBelow        = position == GlkWindowPosition.Below
-  def isVertical     = isAbove || isBelow
-  def isHorizontal   = isLeft || isRight
-}
-
-/**
  * A user interface with an UI representation which it delegates to.
  * These can be of type blank, text buffer, text grid and graphics.
  */
@@ -130,22 +97,6 @@ extends GlkWindow(id, size, rock) {
       throw new UnsupportedOperationException("WindowStream.seek() not supported")
     }
     def setHyperlink(linkval: Int) = ui.setHyperlink(linkval)
-  }
-}
-
-class GlkGraphicsUIWindow(id: Int, size: Int, rock: Int)
-extends GlkWindow(id, size, rock) {
-  var outputStream = NilStream.getInstance
-  def wintype      = GlkWindowType.Graphics
-  def styleHints   = null
-  def typeName     = "Graphics"
-  override def isGraphics = true
-  def isTextBuffer = false
-  def isTextGrid   = false
-
-  def echoStream   = null
-  def setEchoStream(stream: GlkStream) = {
-    throw new UnsupportedOperationException("Can not attach echo stream to pair window")
   }
 }
 
@@ -242,13 +193,13 @@ class GlkWindowSystem {
 
   def rootWindowId = if (_rootWindow == null) 0 else _rootWindow.id
   def clearWindow(winId: Int) {
-    logger.info("clearWindow(), winId: %d".format(winId))
+    //logger.info("clearWindow(), winId: %d".format(winId))
     val win = windowWithId(winId)
     if (win != null) win.ui.clear
   }
   def createWindow(wintype: Int, size: Int, rock: Int) = {
-    logger.info("createWindow type: %s size: %d rock: %d".format(wintype, size,
-                                                                 rock))
+    //logger.info("createWindow type: %s size: %d rock: %d".format(wintype, size,
+    //                                                             rock))
     val id = nextId
 
     import GlkWindowType._
@@ -305,7 +256,7 @@ class GlkWindowSystem {
   }
   def imageSize(resnum: Int): GlkDimension = screenUI.imageSize(resnum)
   def setBackgroundColor(winId: Int, color: Int) {
-    logger.info("setBackgroundColor() win: %d color: %02x".format(winId, color))
+    //logger.info("setBackgroundColor() win: %d color: %02x".format(winId, color))
     windowWithId(winId).ui.setBackgroundColor(color)
   }
   def getParent(winId: Int): Int = {
@@ -334,7 +285,7 @@ class GlkWindowSystem {
   }
   def open(split: Int, method: Int, size: Int, wintype: Int, rock: Int): Int = {
     val newWindow = createWindow(wintype, size, rock)
-    logger.info("open(), split: %d method: %d, size: %d, wintype: %d, rock: %d, ID = %d".format(split, method, size, wintype, rock, newWindow.id))
+    //logger.info("open(), split: %d method: %d, size: %d, wintype: %d, rock: %d, ID = %d".format(split, method, size, wintype, rock, newWindow.id))
     if (split > 0) {
       splitWindow(windowWithId(split), newWindow, method)
     }
@@ -342,7 +293,7 @@ class GlkWindowSystem {
     newWindow.id
   }
   def closeWindow(winId: Int): Int = {
-    logger.info("closeWindow(), winId: %d".format(winId))
+    //logger.info("closeWindow(), winId: %d".format(winId))
     val windowToClose = windowWithId(winId)
     if (windowToClose == null) return 0
     val writeCount = windowToClose.outputStream.writeCount
