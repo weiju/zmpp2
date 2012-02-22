@@ -38,23 +38,6 @@ import org.zmpp.glk.styles._
 import org.zmpp.glk._
 
 /**
- * Base class of Glk windows to implement the Composite pattern.
- */
-abstract class GlkWindow(val id: Int, var size: Int, val rock: Int) {
-  var ui           : GlkWindowUI = null
-  var parent       : GlkWindow = null
-  def outputStream : GlkStream
-  def echoStream   : GlkStream
-  def echoStream_=(stream: GlkStream)
-  def typeName     : String
-  def wintype      : Int
-  def isGraphics   : Boolean = false
-  def isLeaf       : Boolean = true
-  def isTextBuffer : Boolean
-  def isTextGrid   : Boolean
-}
-
-/**
  * Pair windows only exist in the Glk windowing system. Since they only act as
  * inner nodes of the layout tree they do not have an UI equivalent.
  */
@@ -69,7 +52,7 @@ class GlkPairWindow(id: Int) extends GlkWindow(id, 0, 0) {
   def isTextBuffer = false
   def isTextGrid   = false
   def echoStream   = null
-  def echoStream_=(stream: GlkStream) = {
+  def setEchoStream(stream: GlkStream) = {
     throw new UnsupportedOperationException(
       "Can not attach echo stream to pair window")
   }
@@ -97,9 +80,12 @@ extends GlkWindow(id, size, rock) {
   private[this] var _style = 0
   private[this] var _writeCount = 0
   private[this] var _buffer = new StringBuilder
+  private[this] var _echoStream: GlkStream = null
+
   def styleHints: StyleHints
 
-  var echoStream: GlkStream = null
+  def echoStream = _echoStream
+  def setEchoStream(stream: GlkStream) { _echoStream = stream }
   val outputStream = new GlkStream {
     private[this] var _id = 0
 
@@ -158,7 +144,7 @@ extends GlkWindow(id, size, rock) {
   def isTextGrid   = false
 
   def echoStream   = null
-  def echoStream_=(stream: GlkStream) = {
+  def setEchoStream(stream: GlkStream) = {
     throw new UnsupportedOperationException("Can not attach echo stream to pair window")
   }
 }
@@ -419,7 +405,7 @@ class GlkWindowSystem {
     else window.echoStream.id
   }
   def setEchoStream(winId: Int, streamId: Int) {
-    windowWithId(winId).echoStream = _ioSystem.streamWithId(streamId)
+    windowWithId(winId).setEchoStream(_ioSystem.streamWithId(streamId))
   }
 
   // *********************************************************************

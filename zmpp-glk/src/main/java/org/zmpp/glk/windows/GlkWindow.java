@@ -28,42 +28,32 @@
  */
 package org.zmpp.glk.windows;
 
-import org.zmpp.glk.*;
-import java.io.File;
+import org.zmpp.glk.io.*;
 
 /**
- * Interface to be implemented by the user interface, technology-dependent.
- * Represents the screen as a whole.
+ * Base class of Glk windows to implement the Composite pattern.
  */
-public interface GlkScreenUI {
+public abstract class GlkWindow {
+    public int id;
+    public int size;
+    public int rock;
+    public GlkWindowUI ui;
+    public GlkWindow parent;
 
-    GlkDimension imageSize(int imageNum);
-    void updateLayout(GlkWindow root);
-    GlkWindowUI createTextBufferUI(int id, GlkUIWindow glkUiWindow);
-    GlkWindowUI createTextGridUI(int id, GlkUIWindow glkUiWindow);
-    GlkWindowUI createGraphicsUI(int id, GlkWindow glkWindow);
-  
-    void requestLineInput(int windowId);
+    public GlkWindow(int id, int size, int rock) {
+        this.id   = id;
+        this.size = size;
+        this.rock = rock;
+    }
 
-    /*
-     * A small trick that works with the current ZMPP event model: If
-     * the line input was suspended (e.g. by a timer input or something)
-     * calling this method let's us pick up at the previous input mark.
-     * requestLineInput() would simply start at wherever the cursor is
-     * at the moment, while this method picks up where it was when the
-     * pending line input was requested at the first time.
-     */
-    void requestPreviousLineInput(int windowId);
-    void requestCharInput(int windowId);
-    void requestMouseInput(int windowId);
-    void requestTimerInput(int millis);
-    void requestHyperlinkEvent(int windowId);
-
-    String cancelLineInput(int windowId);
-  
-    /*
-     * Asks the user interface to have the user select a file. Returns null if
-     * cancelled, otherwise the full path to the file.
-     */
-    File selectFileByDialog(int usage, int fmode);
+    public abstract GlkStream outputStream();
+    public abstract GlkStream echoStream();
+    public abstract void setEchoStream(GlkStream stream);
+    public abstract String typeName();
+    public abstract int wintype();
+    public boolean isGraphics() { return false; }
+    public boolean isLeaf() { return true; }
+    public abstract boolean isTextBuffer();
+    public abstract boolean isTextGrid();
 }
+
