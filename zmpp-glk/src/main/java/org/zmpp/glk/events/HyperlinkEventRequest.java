@@ -47,4 +47,3 @@ public final class HyperlinkEventRequest extends WindowEventRequest {
     }
     @Override public int hashCode() { return winId; }
 }
-

@@ -40,7 +40,7 @@ import java.util.concurrent.Future
 
 import org.zmpp.base._
 import org.zmpp.iff._
-import org.zmpp.glk._
+import org.zmpp.glk.sound._
 import org.zmpp.glulx._
 
 

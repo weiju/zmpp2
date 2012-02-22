@@ -34,14 +34,40 @@ import org.scalatest.BeforeAndAfterEach
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
+import org.zmpp.base._
+
 @RunWith(classOf[JUnitRunner])
 class EventQueueSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+  val vmState = new VMState {
+    def runState = 0;
+    def setRunState(state: Int) { }
+
+    // memory access
+    def memByteAt(address: Int) = 0
+    def setMemByteAt(address: Int, value: Int) { }
+    def memShortAt(address: Int) = 0
+    def setMemShortAt(address: Int, value: Int) { }
+    def memIntAt(address: Int) = 0
+    def setMemIntAt(address: Int, value: Int) { }
+
+    // stack access
+    def pushByte(value: Int) { }
+    def topByte = 0
+    def popByte = 0
+    def pushShort(value: Int) { }
+    def topShort = 0
+    def popShort = 0
+    def pushInt(value: Int) { }
+    def topInt = 0
+    def popInt = 0
+  }
+
   var eventQueue: EventManager = null
 
   override def beforeEach {
-    eventQueue = new EventManager(null)
+    eventQueue = new EventManager(vmState)
   }
-  "EventQueue" should "be initialized" in {
+  "EventManager" should "be initialized" in {
     eventQueue.length should be (0)
     eventQueue.isEmpty should be (true)
   }

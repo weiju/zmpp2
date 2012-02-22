@@ -31,6 +31,7 @@ package org.zmpp.glulx;
 import org.zmpp.base.*;
 import org.zmpp.iff.*;
 import org.zmpp.glk.*;
+import org.zmpp.glk.events.*;
 import java.util.*;
 import java.util.logging.*;
 
