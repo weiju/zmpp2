@@ -29,6 +29,7 @@
 package org.zmpp.glk.events;
 
 import org.zmpp.glk.*;
+import org.zmpp.glk.windows.*;
 
 public final class LineInputRequest extends WindowEventRequest {
     public int buffer;

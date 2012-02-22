@@ -29,6 +29,7 @@
 package org.zmpp.glk.events;
 
 import org.zmpp.glk.*;
+import org.zmpp.glk.windows.*;
 
 public final class MouseInputRequest extends WindowEventRequest {
     public MouseInputRequest(int winId) {

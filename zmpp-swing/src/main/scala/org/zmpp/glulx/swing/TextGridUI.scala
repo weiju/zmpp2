@@ -36,6 +36,7 @@ import java.awt.event._
 import org.zmpp.base._
 import org.zmpp.glk._
 import org.zmpp.glk.styles._
+import org.zmpp.glk.windows._
 
 /**
  * UI representation of a text grid. We use EditorPane, which allows for
@@ -57,7 +58,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
                                 SwingTextGridUI.MarginRight))
 
   setFont(screenUI.fixedFont)
-  style = StyleType.Normal
+  setStyle(StyleType.Normal)
   val attrs = getInputAttributes
   StyleConstants.setFontFamily(attrs, screenUI.fixedFont.getFamily)
   StyleConstants.setFontSize(attrs,   screenUI.fixedFont.getSize)  
@@ -94,7 +95,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
       text.append("\n")
       i += 1
     }
-    style = StyleType.Normal
+    setStyle(StyleType.Normal)
     setText("")
     getDocument.insertString(0, text.toString, getInputAttributes)
   }

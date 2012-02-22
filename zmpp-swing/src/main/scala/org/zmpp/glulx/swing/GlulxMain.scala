@@ -37,8 +37,7 @@ import javax.swing.JFileChooser
 import org.zmpp.base._
 import org.zmpp.iff._
 import org.zmpp.glulx._
-import org.zmpp.glk.GlkScreenUI
-import org.zmpp.glk.GlkWindowUI
+import org.zmpp.glk.windows._
 
 object Glulx {
   private[this] var _vm : GlulxVM = null

@@ -26,28 +26,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk.events;
+package org.zmpp.glk.windows;
 
 import org.zmpp.glk.*;
-import org.zmpp.glk.windows.*;
 
-public final class CharInputRequest extends WindowEventRequest {
-    public boolean useUnicode;
+/**
+ * Interface to be implemented by the user interface, technology-dependent.
+ * These are to access the representations of the visual window objects.
+ */
+public interface GlkWindowUI {
+    GlkDimension glkSize();
+    void setGlkSize(GlkDimension size);
+    int style();
+    void setStyle(int style);
 
-    public CharInputRequest(int winId, boolean useUnicode) {
-        super(winId, GlkEventType.CharInput);
-        this.useUnicode = useUnicode;
-    }
-
-    public void prepareWindow(GlkScreenUI screenUI) {
-        screenUI.requestCharInput(winId);
-    }
-
-    @Override public boolean equals(Object that) {
-        if (that instanceof CharInputRequest) {
-            return winId == ((CharInputRequest) that).winId;
-        }
-        return false;
-    }
-    @Override public int hashCode() { return winId; }
+    void moveCursor(int xpos, int ypos);
+    void putChar(char c);
+    void putCharUni(int c);
+    void eraseRect(int left, int top, int width, int height);
+    void fillRect(int color, int left, int top, int width, int height);
+    void drawScaledImage(int resnum, int posx, int posy, int width, int height);
+    void drawImage(int resnum, int posx, int posy);
+    void clear();
+    void setBackgroundColor(int color);
+    void setHyperlink(int linkval);
 }

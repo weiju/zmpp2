@@ -26,7 +26,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk
+package org.zmpp.glk.windows
 
 import java.io.File
 import java.util.logging._
@@ -35,64 +35,7 @@ import org.zmpp.base._
 import org.zmpp.iff._
 import org.zmpp.glk.io._
 import org.zmpp.glk.styles._
-import org.zmpp.glk.windows._
-
-/**
- * Interface to be implemented by the user interface, technology-dependent.
- * These are to access the representations of the visual window objects.
- */
-trait GlkWindowUI {
-  def glkSize: GlkDimension
-  def glkSize_=(size: GlkDimension)
-  def style: Int
-  def style_=(style: Int)
-  def moveCursor(xpos: Int, ypos: Int)
-  def putChar(c: Char)
-  def putCharUni(c: Int)
-  def eraseRect(left: Int, top: Int, width: Int, height: Int)
-  def fillRect(color: Int, left: Int, top: Int, width: Int, height: Int)
-  def drawScaledImage(resnum: Int, posx: Int, posy: Int, width: Int, height: Int)
-  def drawImage(resnum: Int, posx: Int, posy: Int)
-  def clear
-  def setBackgroundColor(color: Int)
-  def setHyperlink(linkval: Int)
-}
-
-/**
- * Interface to be implemented by the user interface, technology-dependent.
- * Represents the screen as a whole.
- */
-trait GlkScreenUI {
-  def imageSize(imageNum: Int): GlkDimension
-  def updateLayout(root: GlkWindow)
-  def createTextBufferUI(id: Int, glkUiWindow: GlkUIWindow): GlkWindowUI
-  def createTextGridUI(id: Int,   glkUiWindow: GlkUIWindow): GlkWindowUI
-  def createGraphicsUI(id: Int,   glkWindow: GlkWindow): GlkWindowUI
-  
-  def requestLineInput(windowId: Int)
-
-  /*
-   * A small trick that works with the current ZMPP event model: If
-   * the line input was suspended (e.g. by a timer input or something)
-   * calling this method let's us pick up at the previous input mark.
-   * requestLineInput() would simply start at wherever the cursor is
-   * at the moment, while this method picks up where it was when the
-   * pending line input was requested at the first time.
-   */
-  def requestPreviousLineInput(windowId: Int)
-  def requestCharInput(windowId: Int)
-  def requestMouseInput(windowId: Int)  
-  def requestTimerInput(millis: Int)
-  def requestHyperlinkEvent(windowId: Int)
-
-  def cancelLineInput(windowId: Int): String
-  
-  /*
-   * Asks the user interface to have the user select a file. Returns null if
-   * cancelled, otherwise the full path to the file.
-   */
-  def selectFileByDialog(usage: Int, fmode: Int): File
-}
+import org.zmpp.glk._
 
 /**
  * Base class of Glk windows to implement the Composite pattern.
@@ -181,7 +124,7 @@ extends GlkWindow(id, size, rock) {
     def style = _style
     def setStyle(value: Int) = {
       _style = value
-      ui.style = value
+      ui.setStyle(value)
     }
     def putChar(c: Char) {
       ui.putChar(c)

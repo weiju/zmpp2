@@ -38,6 +38,7 @@ import java.util.logging.*;
 import org.zmpp.base.VMState;
 import org.zmpp.base.VMRunStates;
 import org.zmpp.glk.*;
+import org.zmpp.glk.windows.*;
 
 
 public final class EventManager {

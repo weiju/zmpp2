@@ -38,6 +38,7 @@ import java.awt.event._
 
 import org.zmpp.base._
 import org.zmpp.glk._
+import org.zmpp.glk.windows._
 
 /*
  * A Graphics window. We render the graphics into a backing store, that we
@@ -57,7 +58,7 @@ extends JComponent with SwingGlkWindowUI {
   def eventManager = screenUI.vm.eventManager
   def container = this
   def glkSize = new GlkDimension(getWidth, getHeight)
-  def glkSize_=(size: GlkDimension) {
+  def setGlkSize(size: GlkDimension) {
     throw new UnsupportedOperationException(
       "Setting Graphics window size not supported")
   }

@@ -1,6 +1,6 @@
 /*
- * Created on 2012/02/21
- * Copyright (c) 2010-2012, Wei-ju Wu.
+ * Created on 2010/04/09
+ * Copyright (c) 2010-2011, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,28 +26,44 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.glk.events;
+package org.zmpp.glk.windows;
 
 import org.zmpp.glk.*;
-import org.zmpp.glk.windows.*;
+import java.io.File;
 
-public final class CharInputRequest extends WindowEventRequest {
-    public boolean useUnicode;
+/**
+ * Interface to be implemented by the user interface, technology-dependent.
+ * Represents the screen as a whole.
+ */
+public interface GlkScreenUI {
 
-    public CharInputRequest(int winId, boolean useUnicode) {
-        super(winId, GlkEventType.CharInput);
-        this.useUnicode = useUnicode;
-    }
+    GlkDimension imageSize(int imageNum);
+    void updateLayout(GlkWindow root);
+    GlkWindowUI createTextBufferUI(int id, GlkUIWindow glkUiWindow);
+    GlkWindowUI createTextGridUI(int id, GlkUIWindow glkUiWindow);
+    GlkWindowUI createGraphicsUI(int id, GlkWindow glkWindow);
+  
+    void requestLineInput(int windowId);
 
-    public void prepareWindow(GlkScreenUI screenUI) {
-        screenUI.requestCharInput(winId);
-    }
+    /*
+     * A small trick that works with the current ZMPP event model: If
+     * the line input was suspended (e.g. by a timer input or something)
+     * calling this method let's us pick up at the previous input mark.
+     * requestLineInput() would simply start at wherever the cursor is
+     * at the moment, while this method picks up where it was when the
+     * pending line input was requested at the first time.
+     */
+    void requestPreviousLineInput(int windowId);
+    void requestCharInput(int windowId);
+    void requestMouseInput(int windowId);
+    void requestTimerInput(int millis);
+    void requestHyperlinkEvent(int windowId);
 
-    @Override public boolean equals(Object that) {
-        if (that instanceof CharInputRequest) {
-            return winId == ((CharInputRequest) that).winId;
-        }
-        return false;
-    }
-    @Override public int hashCode() { return winId; }
+    String cancelLineInput(int windowId);
+  
+    /*
+     * Asks the user interface to have the user select a file. Returns null if
+     * cancelled, otherwise the full path to the file.
+     */
+    File selectFileByDialog(int usage, int fmode);
 }

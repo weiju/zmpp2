@@ -43,6 +43,7 @@ import org.zmpp.base._
 import org.zmpp.glk._
 import org.zmpp.glk.io._
 import org.zmpp.glk.events._
+import org.zmpp.glk.windows._
 import org.zmpp.glulx._
 
 import scala.collection.mutable.HashMap
@@ -63,7 +64,7 @@ with MouseListener with MouseMotionListener {
   def eventManager: EventManager
 
   def style = 0
-  def style_=(value: Int) {
+  def setStyle(value: Int) {
     if (SwingUtilities.isEventDispatchThread) _setStyle(value)
     else {
       SwingUtilities.invokeLater(new Runnable {

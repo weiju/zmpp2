@@ -33,6 +33,7 @@ import org.zmpp.base._
 import org.zmpp.glk.io._
 import org.zmpp.glk.sound._
 import org.zmpp.glk.events._
+import org.zmpp.glk.windows._
 
 /**
  * Glk implementation. It is implemented as a facade to the Glk's

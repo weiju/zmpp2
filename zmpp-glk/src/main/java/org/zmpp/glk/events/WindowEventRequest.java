@@ -29,6 +29,7 @@
 package org.zmpp.glk.events;
 
 import org.zmpp.glk.*;
+import org.zmpp.glk.windows.*;
 
 /**
  * Event requests that are window-dependent are derived from this class.

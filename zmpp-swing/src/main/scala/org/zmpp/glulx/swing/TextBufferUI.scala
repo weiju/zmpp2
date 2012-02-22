@@ -38,6 +38,7 @@ import java.awt.image.BufferedImage
 
 import org.zmpp.glk._
 import org.zmpp.glk.styles._
+import org.zmpp.glk.windows._
 
 /**
  * UI representation of a text buffer. We use EditorPane, which allows for
@@ -57,7 +58,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
                                 SwingTextBufferUI.MarginLeft,
                                 SwingTextBufferUI.MarginBottom,
                                 SwingTextBufferUI.MarginRight))
-  style = StyleType.Normal
+  setStyle(StyleType.Normal)
   setStandardFont
 
   private def setStandardFont {

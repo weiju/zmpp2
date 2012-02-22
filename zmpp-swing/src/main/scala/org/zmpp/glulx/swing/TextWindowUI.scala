@@ -43,6 +43,7 @@ import org.zmpp.base._
 import org.zmpp.glk._
 import org.zmpp.glk.styles._
 import org.zmpp.glk.events._
+import org.zmpp.glk.windows._
 
 object SwingTextWindowUI {
   val InputModeNone = 0
@@ -78,7 +79,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
 
   /** Always return a smaller width to Glk to avoid formatting issues */
   def glkSize = new GlkDimension(numCols - 1, numRows)
-  def glkSize_=(size: GlkDimension) {
+  def setGlkSize(size: GlkDimension) {
     throw new UnsupportedOperationException(
       "Setting text buffer window size not supported")
   }
@@ -94,7 +95,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   private def resumeExecution {
     if (screenUI.vm.runState == VMRunStates.WaitForEvent &&
         eventManager.processNextEvent) {
-      style = StyleType.Normal
+      setStyle(StyleType.Normal)
       stopSendingRequests
       ExecutionControl.executeTurn(screenUI.vm)   
     }
@@ -142,7 +143,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
         }
         // make sure that input style is not "removed".
         // Note: This sometimes works and sometimes not, why is that ?
-        style = StyleType.Input
+        setStyle(StyleType.Input)
       } else if (event.getKeyCode == KeyEvent.VK_UP) {
         event.consume
       }
@@ -164,14 +165,14 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   
   // has to be called in UI event thread
   def requestLineInput {
-    style = StyleType.Input
+    setStyle(StyleType.Input)
     requestFocusInWindow
     getCaret.setVisible(true)
     inputStart = getDocument.getLength
     textInputMode = SwingTextWindowUI.InputModeLine
   }
   def requestPreviousLineInput {
-    style = StyleType.Input
+    setStyle(StyleType.Input)
     requestFocusInWindow
     getCaret.setVisible(true)
     // here we assume the input mark is the one from the last select
@@ -213,7 +214,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
       }
       // reset style to normal, we have to set this AFTER setting the
       // link to NULL (the order is important) !!
-      style = StyleType.Normal
+      setStyle(StyleType.Normal)
     } else {
       flush
       val attrs = getInputAttributes
