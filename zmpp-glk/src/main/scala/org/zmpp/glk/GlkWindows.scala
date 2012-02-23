@@ -37,68 +37,6 @@ import org.zmpp.glk.io._
 import org.zmpp.glk.styles._
 import org.zmpp.glk._
 
-/**
- * A user interface with an UI representation which it delegates to.
- * These can be of type blank, text buffer, text grid and graphics.
- */
-abstract class GlkUIWindow(id: Int, size: Int, rock: Int)
-extends GlkWindow(id, size, rock) {
-  val logger = Logger.getLogger("glk.ui")
-  private[this] var _style = 0
-  private[this] var _writeCount = 0
-  private[this] var _buffer = new StringBuilder
-  private[this] var _echoStream: GlkStream = null
-
-  def styleHints: StyleHints
-
-  def echoStream = _echoStream
-  def setEchoStream(stream: GlkStream) { _echoStream = stream }
-  val outputStream = new GlkStream {
-    private[this] var _id = 0
-
-    def id = _id
-    def setId(anId: Int) { _id = anId }
-    def rock = 0
-    def close { }
-    def readCount = {
-      throw new UnsupportedOperationException(
-        "WindowStream does not support readCount")
-    }
-    def getChar = {
-      throw new UnsupportedOperationException(
-        "WindowStream does not support getChar")
-    }
-    def getCharUni = {
-      throw new UnsupportedOperationException(
-        "WindowStream does not support getCharUni")
-    }
-    def writeCount = _writeCount
-    def position   = 0
-    def style = _style
-    def setStyle(value: Int) = {
-      _style = value
-      ui.setStyle(value)
-    }
-    def putChar(c: Char) {
-      ui.putChar(c)
-      _writeCount += 1
-      
-      // write to echo stream
-      if (echoStream != null) echoStream.putChar(c)
-    }
-    def putCharUni(c: Int) {
-      ui.putCharUni(c)
-      _writeCount += 1
-      
-      // write to echo stream
-      if (echoStream != null) echoStream.putCharUni(c)
-    }
-    def seek(newpos: Int, seekmode: Int) {
-      throw new UnsupportedOperationException("WindowStream.seek() not supported")
-    }
-    def setHyperlink(linkval: Int) = ui.setHyperlink(linkval)
-  }
-}
 
 /**
  * The window system. Mainly a facade that manages the windows both in
