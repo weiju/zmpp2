@@ -554,14 +554,46 @@ class DecodeInfo(var form: Int, var operandCount: Int, var opnum: Int,
 
   def opcodeName(version: Int) = {
     operandCount match {
-      case 0 => Oc0Op.opcodeName(opnum, version)
-      case 1 => Oc1Op.opcodeName(opnum, version)
-      case 2 => Oc2Op.opcodeName(opnum, version)
-      case Instruction.OperandCountVar    => OcVar.opcodeName(opnum, version)
-      case Instruction.OperandCountExtVar => OcExt.opcodeName(opnum, version)
+      case 0 => if (version >= 5 && opnum == 0x09) "CATCH" else Oc0OpNames(opnum)
+      case 1 => if (version >= 5 && opnum == 0x0f) "CALL_1N" else Oc1OpNames(opnum)
+      case 2 => Oc2OpNames(opnum)
+      case Instruction.OperandCountVar    =>
+        OcVarNames(opnum)
+      case Instruction.OperandCountExtVar =>
+        OcExtNames(opnum)
       case _         => "???"
     }
   }
+
+  val Oc0OpNames = Array("RTRUE", "RFALSE", "PRINT", "PRINT_RET", "NOP", "SAVE", "RESTORE",
+                         "RESTART", "RET_POPPED", "POP", "QUIT", "NEW_LINE", "SHOW_STATUS",
+                         "VERIFY", "PIRACY")
+
+  val Oc1OpNames = Array("JZ", "GET_SIBLING", "GET_CHILD", "GET_PARENT", "GET_PROP_LEN",
+                         "INC", "DEC", "PRINT_ADDR", "CALL_1S", "REMOVE_OBJ", "PRINT_OBJ",
+                         "RET", "JUMP", "PRINT_PADDR", "LOAD", "NOT")
+
+  val Oc2OpNames = Array("???", "JE", "JL", "JG", "DEC_CHK", "INC_CHK", "JIN",
+                         "TEST", "OR", "AND", "TEST_ATTR", "SET_ATTR", "CLEAR_ATTR",
+                         "STORE", "INSERT_OBJ", "LOADW", "LOADB", "GET_PROP",
+                         "GET_PROP_ADDR", "GET_NEXT_PROP", "ADD", "SUB", "MUL",
+                         "DIV", "MOD", "CALL_2S", "CALL_2N", "SET_COLOUR", "THROW")
+
+  val OcVarNames = Array("CALL", "STOREW", "STOREB", "PUT_PROP", "SREAD", "PRINT_CHAR",
+                         "PRINT_NUM", "RANDOM", "PUSH", "PULL", "SPLIT_WINDOW",
+                         "SET_WINDOW", "CALL_VS2", "ERASE_WINDOW", "ERASE_LINE",
+                         "SET_CURSOR", "GET_CURSOR", "SET_TEXT_STYLE", "BUFFER_MODE",
+                         "OUTPUT_STREAM", "INPUT_STREAM", "SOUND_EFFECT", "READ_CHAR",
+                         "SCAN_TABLE", "NOT", "CALL_VN", "CALL_VN2", "TOKENISE",
+                         "ENCODE_TEXT", "COPY_TABLE", "PRINT_TABLE", "CHECK_ARG_COUNT")
+
+  val OcExtNames = Array("SAVE", "RESTORE", "LOG_SHIFT", "ART_SHIFT", "SET_FONT",
+                         "DRAW_PICTURE", "PICTURE_DATA", "ERASE_PICTURE", "SET_MARGINS",
+                         "SAVE_UNDO", "RESTORE_UNDO", "PRINT_UNICODE", "CHECK_UNICODE",
+                         "MOVE_WINDOW", "WINDOW_SIZE", "WINDOW_STYLE", "GET_WIND_PROP",
+                         "SCROLL_WINDOW", "POP_STACK", "READ_MOUSE", "MOUSE_WINDOW",
+                         "PUSH_STACK", "PUT_WIND_PROP", "PRINT_FORM", "MAKE_MENU",
+                         "PICTURE_TABLE")
 }
 
 class ReadLineInfo {
@@ -576,158 +608,4 @@ class ReadLineInfo {
 class ReadCharInfo {
   var routine = 0
   var time    = 0
-}
-
-object Oc2Op extends Enumeration {
-  val Je          = Value(0x01, "JE")
-  val Jl          = Value(0x02, "JL")
-  val Jg          = Value(0x03, "JG")
-  val DecChk      = Value(0x04, "DEC_CHK")
-  val IncChk      = Value(0x05, "INC_CHK")
-  val Jin         = Value(0x06, "JIN")
-  val Test        = Value(0x07, "TEST")
-  val Or          = Value(0x08, "OR")
-  val And         = Value(0x09, "AND")
-  val TestAttr    = Value(0x0a, "TEST_ATTR")
-  val SetAttr     = Value(0x0b, "SET_ATTR")
-  val ClearAttr   = Value(0x0c, "CLEAR_ATTR")
-  val Store       = Value(0x0d, "STORE")
-  val InsertObj   = Value(0x0e, "INSERT_OBJ")
-  val Loadw       = Value(0x0f, "LOADW")
-  val Loadb       = Value(0x10, "LOADB")
-  val GetProp     = Value(0x11, "GET_PROP")
-  val GetPropAddr = Value(0x12, "GET_PROP_ADDR")
-  val GetNextProp = Value(0x13, "GET_NEXT_PROP")
-  val Add         = Value(0x14, "ADD")
-  val Sub         = Value(0x15, "SUB")
-  val Mul         = Value(0x16, "MUL")
-  val Div         = Value(0x17, "DIV")
-  val Mod         = Value(0x18, "MOD")
-  val Call2S      = Value(0x19, "CALL_2S")
-  val Call2N      = Value(0x1a, "CALL_2N")
-  val SetColour   = Value(0x1b, "SET_COLOUR")
-  val Throw       = Value(0x1c, "THROW")
-
-  def opcodeName(opnum: Int, version: Int) = {
-    try {
-      Oc2Op(opnum).toString
-    } catch {
-      case e: Exception => "(unknown 2OP opnum %02x)".format(opnum)
-    }
-  }
-}
-
-object Oc1Op extends Enumeration {
-  val Jz         = Value(0x00, "JZ")
-  val GetSibling = Value(0x01, "GET_SIBLING")
-  val GetChild   = Value(0x02, "GET_CHILD")
-  val GetParent  = Value(0x03, "GET_PARENT")
-  val GetPropLen = Value(0x04, "GET_PROP_LEN")
-  val Inc        = Value(0x05, "INC")
-  val Dec        = Value(0x06, "DEC")
-  val PrintAddr  = Value(0x07, "PRINT_ADDR")
-  val Call1S     = Value(0x08, "CALL_1S")
-  val RemoveObj  = Value(0x09, "REMOVE_OBJ")
-  val PrintObj   = Value(0x0a, "PRINT_OBJ")
-  val Ret        = Value(0x0b, "RET")
-  val Jump       = Value(0x0c, "JUMP")
-  val PrintPaddr = Value(0x0d, "PRINT_PADDR")
-  val Load       = Value(0x0e, "LOAD")
-  val Not        = Value(0x0f, "NOT")
-  def opcodeName(opnum: Int, version: Int) = {
-    if (version >= 5 && opnum == 0x0f) "CALL_1N"
-    else Oc1Op(opnum).toString
-  }
-}
-
-object Oc0Op extends Enumeration {
-  val RTrue      = Value(0x00, "RTRUE")
-  val RFalse     = Value(0x01, "RFALSE")
-  val Print      = Value(0x02, "PRINT")
-  val PrintRet   = Value(0x03, "PRINT_RET")
-  val Nop        = Value(0x04, "NOP")
-  val Save       = Value(0x05, "SAVE")
-  val Restore    = Value(0x06, "RESTORE")
-  val Restart    = Value(0x07, "RESTART")
-  val RetPopped  = Value(0x08, "RET_POPPED")
-  val Pop        = Value(0x09, "POP")
-  val Quit       = Value(0x0a, "QUIT")
-  val NewLine    = Value(0x0b, "NEW_LINE")
-  val ShowStatus = Value(0x0c, "SHOW_STATUS")
-  val Verify     = Value(0x0d, "VERIFY")
-  val Piracy     = Value(0x0f, "PIRACY")
-  def opcodeName(opnum: Int, version: Int) = {
-    if (version >= 5 && opnum == 0x09) "CATCH"
-    else Oc0Op(opnum).toString
-  }
-}
-
-object OcVar extends Enumeration {
-  val Call          = Value(0x00, "CALL")
-  val Storew        = Value(0x01, "STOREW")
-  val Storeb        = Value(0x02, "STOREB")
-  val PutProp       = Value(0x03, "PUT_PROP")
-  val Sread         = Value(0x04, "SREAD")
-  val PrintChar     = Value(0x05, "PRINT_CHAR")
-  val PrintNum      = Value(0x06, "PRINT_NUM")
-  val Random        = Value(0x07, "RANDOM")
-  val Push          = Value(0x08, "PUSH")
-  val Pull          = Value(0x09, "PULL")
-  val SplitWindow   = Value(0x0a, "SPLIT_WINDOW")
-  val SetWindow     = Value(0x0b, "SET_WINDOW")
-  val CallVs2       = Value(0x0c, "CALL_VS2")
-  val EraseWindow   = Value(0x0d, "ERASE_WINDOW")
-  val EraseLine     = Value(0x0e, "ERASE_LINE")
-  val SetCursor     = Value(0x0f, "SET_CURSOR")
-  val GetCursor     = Value(0x10, "GET_CURSOR")
-  val SetTextStyle  = Value(0x11, "SET_TEXT_STYLE")
-  val BufferMode    = Value(0x12, "BUFFER_MODE")
-  val OutputStream  = Value(0x13, "OUTPUT_STREAM")
-  val InputStream   = Value(0x14, "INPUT_STREAM")
-  val SoundEffect   = Value(0x15, "SOUND_EFFECT")
-  val ReadChar      = Value(0x16, "READ_CHAR")
-  val ScanTable     = Value(0x17, "SCAN_TABLE")
-  val Not           = Value(0x18, "NOT")
-  val CallVn        = Value(0x19, "CALL_VN")
-  val CallVn2       = Value(0x1a, "CALL_VN2")
-  val Tokenise      = Value(0x1b, "TOKENISE")
-  val EncodeText    = Value(0x1c, "ENCODE_TEXT")
-  val CopyTable     = Value(0x1d, "COPY_TABLE")
-  val PrintTable    = Value(0x1e, "PRINT_TABLE")
-  val CheckArgCount = Value(0x1f, "CHECK_ARG_COUNT")
-  def opcodeName(opnum: Int, version: Int) = {
-    OcVar(opnum).toString
-  }
-}
-
-object OcExt extends Enumeration {
-  val Save         = Value(0x00, "SAVE")
-  val Restore      = Value(0x01, "RESTORE")
-  val LogShift     = Value(0x02, "LOG_SHIFT")
-  val ArtShift     = Value(0x03, "ART_SHIFT")
-  val SetFont      = Value(0x04, "SET_FONT")
-  val DrawPicture  = Value(0x05, "DRAW_PICTURE")
-  val PictureData  = Value(0x06, "PICTURE_DATA")
-  val ErasePicture = Value(0x07, "ERASE_PICTURE")
-  val SetMargins   = Value(0x08, "SET_MARGINS")
-  val SaveUndo     = Value(0x09, "SAVE_UNDO")
-  val RestoreUndo  = Value(0x0a, "RESTORE_UNDO")
-  val PrintUnicode = Value(0x0b, "PRINT_UNICODE")
-  val CheckUnicode = Value(0x0c, "CHECK_UNICODE")
-  val MoveWindow   = Value(0x10, "MOVE_WINDOW")
-  val WindowSize   = Value(0x11, "WINDOW_SIZE")
-  val WindowStyle  = Value(0x12, "WINDOW_STYLE")
-  val GetWindProp  = Value(0x13, "GET_WIND_PROP")
-  val ScrollWindow = Value(0x14, "SCROLL_WINDOW")
-  val PopStack     = Value(0x15, "POP_STACK")
-  val ReadMouse    = Value(0x16, "READ_MOUSE")
-  val MouseWindow  = Value(0x17, "MOUSE_WINDOW")
-  val PushStack    = Value(0x18, "PUSH_STACK")
-  val PutWindProp  = Value(0x19, "PUT_WIND_PROP")
-  val PrintForm    = Value(0x1a, "PRINT_FORM")
-  val MakeMenu     = Value(0x1b, "MAKE_MENU")
-  val PictureTable = Value(0x1c, "PICTURE_TABLE")
-  def opcodeName(opnum: Int, version: Int) = {
-    OcExt(opnum).toString
-  }
 }

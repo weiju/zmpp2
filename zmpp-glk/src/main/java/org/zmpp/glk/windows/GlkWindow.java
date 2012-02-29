@@ -56,4 +56,3 @@ public abstract class GlkWindow {
     public abstract boolean isTextBuffer();
     public abstract boolean isTextGrid();
 }
-
