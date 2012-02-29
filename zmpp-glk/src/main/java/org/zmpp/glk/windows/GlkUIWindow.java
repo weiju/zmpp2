@@ -39,8 +39,8 @@ import org.zmpp.glk.io.*;
 public abstract class GlkUIWindow extends GlkWindow {
     private static Logger logger = Logger.getLogger("glk.ui");
 
-    private int _style = 0;
-    private int _writeCount = 0;
+    private int _style;
+    private int _writeCount;
     private StringBuilder _buffer = new StringBuilder();
     private GlkStream _echoStream;
 
@@ -52,8 +52,8 @@ public abstract class GlkUIWindow extends GlkWindow {
 
     public GlkStream echoStream() { return _echoStream; }
     public void setEchoStream(GlkStream stream) { _echoStream = stream; }
-    public GlkStream outputStream() {
-        return new GlkStream() {
+
+    private GlkStream outputStream = new GlkStream() {
             private int _id = 0;
 
             public int id() { return _id; }
@@ -79,7 +79,7 @@ public abstract class GlkUIWindow extends GlkWindow {
             public void putChar(char c) {
                 ui.putChar(c);
                 _writeCount++;
-      
+
                 // write to echo stream
                 if (_echoStream != null) _echoStream.putChar(c);
             }
@@ -94,9 +94,8 @@ public abstract class GlkUIWindow extends GlkWindow {
             public void seek(int newpos, int seekmode) {
                 throw new UnsupportedOperationException("WindowStream.seek() not supported");
             }
-            public void setHyperlink(int linkval) {
-                ui.setHyperlink(linkval);
-            }
+            public void setHyperlink(int linkval) { ui.setHyperlink(linkval); }
         };
-    }
+
+    public GlkStream outputStream() { return outputStream; }
 }
