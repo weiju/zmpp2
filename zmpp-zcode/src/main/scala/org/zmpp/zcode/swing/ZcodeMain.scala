@@ -26,13 +26,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.zcode
+package org.zmpp.zcode.swing
 
 import java.util.logging._
 import java.io.File
 import java.io.FileInputStream
 
 import javax.swing._
+import javax.swing.text.MutableAttributeSet
 import java.awt.event._
 import java.awt._
 
@@ -41,11 +42,22 @@ import org.zmpp.base.DefaultMemory0
 import org.zmpp.base.VMRunStates
 import org.zmpp.iff._
 
+import org.zmpp.zcode.{Machine, ZMachineRunStates, ScreenModel, InputStream}
+
 trait SwingScreenModel extends ScreenModel with InputStream {
   def readChar
   def requestSaveFile
   def requestRestoreFile
   def flush
+  def getComponent: JComponent
+  def styleCharacter(c: Char): Int
+  def setTransparentAttributeSet(attrs: MutableAttributeSet)
+  def setAttributeSet(attrs: MutableAttributeSet, styledChar: Int)
+  def resumeWithCharInput(c: Int)
+  def resumeWithLineInput(line: String)
+  def attributeSetFor(attrs: MutableAttributeSet, style: Int): MutableAttributeSet
+  def stdFont: Font
+  def backgroundColor: Color
 }
 
 class ZcodeFrame(version: Int) extends JFrame("ZMPP 2.0 Prototype")
@@ -56,11 +68,11 @@ with WindowListener {
     val topWindow   = new TextGrid
     screenModel = new SwingScreenModelStd(topWindow)
     getRootPane.getGlassPane.setVisible(true)
-    getRootPane.setGlassPane(topWindow)
+    getRootPane.setGlassPane(topWindow.textPane)
   } else {
     screenModel = new SwingScreenModelV6
   }
-  getContentPane.add(screenModel.asInstanceOf[Component], BorderLayout.CENTER)
+  getContentPane.add(screenModel.getComponent, BorderLayout.CENTER)
   setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
   pack
   addWindowListener(this)

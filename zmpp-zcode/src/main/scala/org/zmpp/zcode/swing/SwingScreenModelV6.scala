@@ -1,6 +1,6 @@
 /*
  * Created on 2010/08/07
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2012, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,11 +26,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.zmpp.zcode
+package org.zmpp.zcode.swing
 
 import javax.swing._
-import java.awt.{Dimension,Font}
+import javax.swing.text.MutableAttributeSet
+import java.awt.{Dimension,Font, Color}
 import java.io.{FileInputStream, FileOutputStream}
+import org.zmpp.zcode._
 
 sealed trait V6WindowState {
 }
@@ -64,6 +66,7 @@ with OutputStream with InputStream with SwingScreenModel {
   val fixedFont         = new Font("Courier New", Font.PLAIN, 14)
   setPreferredSize(new Dimension(640, 480))
 
+  def getComponent = this
   def capabilities = List(SupportsColors,    SupportsBoldFont,    SupportsItalicFont,
                           SupportsFixedFont, SupportsTimedInput,  SupportsSound,
                           SupportsPictures,  SupportsScreenSplit, SupportsMouse,
@@ -156,4 +159,14 @@ with OutputStream with InputStream with SwingScreenModel {
     vm.resumeWithRestoreStream(inputStream)
     ExecutionControl.executeTurn(vm, this)
   }
+
+  // empty for now
+  def styleCharacter(c: Char): Int = 0
+  def setTransparentAttributeSet(attrs: MutableAttributeSet) {}
+  def setAttributeSet(attrs: MutableAttributeSet, styledChar: Int) {}
+  def resumeWithCharInput(c: Int) {}
+  def resumeWithLineInput(line: String) {}
+  def attributeSetFor(attrs: MutableAttributeSet, style: Int): MutableAttributeSet = null
+  def stdFont: Font = null
+  def backgroundColor: Color = null
 }
