@@ -54,35 +54,35 @@ object SwingTextBufferUI {
 class SwingTextBufferUI(screenUI: SwingGlkScreenUI, glkWindow: GlkUIWindow)
 extends SwingTextWindowUI(screenUI, glkWindow) {
   private[this] var buffer = new StringBuilder
-  setMargin(new java.awt.Insets(SwingTextBufferUI.MarginTop,
-                                SwingTextBufferUI.MarginLeft,
-                                SwingTextBufferUI.MarginBottom,
-                                SwingTextBufferUI.MarginRight))
+  textPane.setMargin(new java.awt.Insets(SwingTextBufferUI.MarginTop,
+                                         SwingTextBufferUI.MarginLeft,
+                                         SwingTextBufferUI.MarginBottom,
+                                         SwingTextBufferUI.MarginRight))
   setStyle(StyleType.Normal)
   setStandardFont
 
   private def setStandardFont {
-    val attrs = getInputAttributes
-    setFont(screenUI.standardFont)
+    val attrs = textPane.getInputAttributes
+    textPane.setFont(screenUI.standardFont)
     StyleConstants.setFontFamily(attrs, screenUI.standardFont.getFamily)
     StyleConstants.setFontSize(attrs,   screenUI.standardFont.getSize)
   }
   private def setFixedFont {
-    val attrs = getInputAttributes
-    setFont(screenUI.fixedFont)
+    val attrs = textPane.getInputAttributes
+    textPane.setFont(screenUI.fixedFont)
     StyleConstants.setFontFamily(attrs, screenUI.fixedFont.getFamily)
     StyleConstants.setFontSize(attrs,   screenUI.fixedFont.getSize)
   }
 
   protected def numCols =
-    (getWidth - SwingTextBufferUI.MarginLeft - SwingTextBufferUI.MarginRight) /
+    (textPane.getWidth - SwingTextBufferUI.MarginLeft - SwingTextBufferUI.MarginRight) /
     screenUI.charWidthStdFont
   protected def numRows =
-    (getHeight - SwingTextBufferUI.MarginTop - SwingTextBufferUI.MarginBottom) /
+    (textPane.getHeight - SwingTextBufferUI.MarginTop - SwingTextBufferUI.MarginBottom) /
     screenUI.lineHeightStdFont
-  protected def currentPos = getDocument.getLength
+  protected def currentPos = textPane.getDocument.getLength
 
-  val container = new JScrollPane(this,
+  val container = new JScrollPane(textPane,
                                   ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                                   ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)
   container.setBorder(null)
@@ -94,14 +94,14 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   def _clear {
     _flush
     val newForeground = new Color(currentForegroundColor)
-    setBackground(new Color(currentBackgroundColor))
-    setForeground(newForeground)
-    setCaretColor(newForeground)
-    getDocument.remove(0, getDocument.getLength)
+    textPane.setBackground(new Color(currentBackgroundColor))
+    textPane.setForeground(newForeground)
+    textPane.setCaretColor(newForeground)
+    textPane.getDocument.remove(0, textPane.getDocument.getLength)
   }
   override def _flush {
-    val attrs = getInputAttributes
-    getDocument.insertString(getDocument.getLength, buffer.toString, attrs)
+    val attrs = textPane.getInputAttributes
+    textPane.getDocument.insertString(textPane.getDocument.getLength, buffer.toString, attrs)
     buffer = new StringBuilder
 
     // TODO
@@ -116,7 +116,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     if (isHyperlinkMode) return // ignore style in hyperlink mode
     import StyleHintType._
     flush
-    val attrs = getInputAttributes
+    val attrs = textPane.getInputAttributes
     val isProportional =
       if (glkWindow.styleHints.get(style, Proportional) == 1) true else false
     val isBold =
@@ -152,8 +152,9 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     if (isProportional) setStandardFont
     else setFixedFont
   }
-  override def setPreferredSize(size: Dimension) {
-    super.setPreferredSize(size)
+  // note that this is not a component class anymore
+  def setPreferredSize(size: Dimension) {
+    textPane.setPreferredSize(size)
     container.setPreferredSize(size)
   }
 
@@ -170,7 +171,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
       logger.warning("INVALID ALIGNMENT ID: %d".format(alignId))
     }
     val image = screenUI.getImage(resnum)
-    val doc = getDocument.asInstanceOf[StyledDocument]
+    val doc = textPane.getDocument.asInstanceOf[StyledDocument]
     val imgStyle = doc.addStyle("imgstyle", null)
     StyleConstants.setIcon(imgStyle, new ImageIcon(image))
     doc.insertString(doc.getLength, "imgtxt", imgStyle)

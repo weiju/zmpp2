@@ -292,13 +292,13 @@ trait SwingGlkScreenUI extends GlkScreenUI {
 
   def createTextBufferUI(id: Int, glkWindow: GlkUIWindow) = {
     val winui = new SwingTextBufferUI(this, glkWindow)
-    winui.setPreferredSize(new Dimension(640, 480))
+    winui.textPane.setPreferredSize(new Dimension(640, 480))
     _windowUIs += id -> winui
     winui
   }
   def createTextGridUI(id: Int, glkWindow: GlkUIWindow) = {
     val winui = new SwingTextGridUI(this, glkWindow)
-    winui.setPreferredSize(new Dimension(640, lineHeightTextGrid))
+    winui.textPane.setPreferredSize(new Dimension(640, lineHeightTextGrid))
     _windowUIs += id -> winui
     winui
   }

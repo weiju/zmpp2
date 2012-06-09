@@ -52,22 +52,23 @@ object SwingTextWindowUI {
 }
 abstract class SwingTextWindowUI(val screenUI: SwingGlkScreenUI,
                                  val glkWindow: GlkUIWindow)
-extends JTextPane with SwingGlkWindowUI with KeyListener {
+extends SwingGlkWindowUI with KeyListener {
   val logger = Logger.getLogger("glk.ui")
   var textInputMode = SwingTextWindowUI.InputModeNone
   var listenToHyperlinkEvents = false
   var inputStart = 0
   var currentBackgroundColor = 0x00ffffff
   var currentForegroundColor = 0x00000000
+  var textPane = new JTextPane
 
   // a map of hyperlinks, cleared when the screen is cleared
   val hyperlinkMap = new HashMap[Int, Hyperlink]
   var currentHyperlink: Hyperlink = null
   def isHyperlinkMode = currentHyperlink != null
   
-  addKeyListener(this)
-  addMouseListener(this)
-  addMouseMotionListener(this)
+  textPane.addKeyListener(this)
+  textPane.addMouseListener(this)
+  textPane.addMouseMotionListener(this)
 
   protected def numCols    : Int
   protected def numRows    : Int
@@ -126,9 +127,9 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
         resumeWithCharInput(keyCode)
       }
     } else if (isLineInputMode) {
-      val doc = getDocument
-      val caretPos = getCaret.getDot
-      if (caretPos < inputStart) getCaret.setDot(doc.getLength)
+      val doc = textPane.getDocument
+      val caretPos = textPane.getCaret.getDot
+      if (caretPos < inputStart) textPane.getCaret.setDot(doc.getLength)
 
       if (event.getKeyCode == KeyEvent.VK_ENTER) {
         event.consume
@@ -138,7 +139,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
         resumeWithLineInput(input)
       } else if (event.getKeyCode == KeyEvent.VK_BACK_SPACE ||
                  event.getKeyCode == KeyEvent.VK_LEFT) {
-        if (getCaret.getDot <= inputStart) {
+        if (textPane.getCaret.getDot <= inputStart) {
           event.consume
         }
         // make sure that input style is not "removed".
@@ -166,21 +167,21 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   // has to be called in UI event thread
   def requestLineInput {
     setStyle(StyleType.Input)
-    requestFocusInWindow
-    getCaret.setVisible(true)
-    inputStart = getDocument.getLength
+    textPane.requestFocusInWindow
+    textPane.getCaret.setVisible(true)
+    inputStart = textPane.getDocument.getLength
     textInputMode = SwingTextWindowUI.InputModeLine
   }
   def requestPreviousLineInput {
     setStyle(StyleType.Input)
-    requestFocusInWindow
-    getCaret.setVisible(true)
+    textPane.requestFocusInWindow
+    textPane.getCaret.setVisible(true)
     // here we assume the input mark is the one from the last select
     textInputMode = SwingTextWindowUI.InputModeLine
   }
   def requestCharInput {
-    requestFocusInWindow
-    getCaret.setVisible(true)
+    textPane.requestFocusInWindow
+    textPane.getCaret.setVisible(true)
     textInputMode = SwingTextWindowUI.InputModeChar
   }
   def requestHyperlinkEvent {
@@ -189,7 +190,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   
   var _incompleteInput: String = null
   def _cancelLineInput {
-    val doc = getDocument
+    val doc = textPane.getDocument
     _incompleteInput = doc.getText(inputStart, doc.getLength - inputStart)
     logger.info("CANCELLED WITH LINE INPUT: '%s'\n".format(_incompleteInput))
   }
@@ -217,7 +218,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
       setStyle(StyleType.Normal)
     } else {
       flush
-      val attrs = getInputAttributes
+      val attrs = textPane.getInputAttributes
       StyleConstants.setBold(attrs, false)
       StyleConstants.setItalic(attrs, false)
       StyleConstants.setUnderline(attrs, true)
@@ -274,11 +275,11 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   }
 
   def mouseMoved(event: MouseEvent) {
-    val pos = viewToModel(event.getPoint)
+    val pos = textPane.viewToModel(event.getPoint)
     if (hyperlinkAtPos(pos) != null) {
-      setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR))
+      textPane.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR))
     } else {
-      setCursor(Cursor.getDefaultCursor)
+      textPane.setCursor(Cursor.getDefaultCursor)
     }
   }
   def mouseDragged(event: MouseEvent) { }
@@ -288,7 +289,7 @@ extends JTextPane with SwingGlkWindowUI with KeyListener {
   def mousePressed(event: MouseEvent) { }
   def mouseClicked(event: MouseEvent) {
     if (listenToHyperlinkEvents) {
-      val pos = viewToModel(event.getPoint)
+      val pos = textPane.viewToModel(event.getPoint)
       val hyperlink = hyperlinkAtPos(pos)
       if (hyperlink != null) {
         resumeWithHyperlink(hyperlink.id)

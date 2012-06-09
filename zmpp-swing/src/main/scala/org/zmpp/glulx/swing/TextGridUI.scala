@@ -52,14 +52,14 @@ object SwingTextGridUI {
 class SwingTextGridUI(screenUI: SwingGlkScreenUI, glkWindow: GlkUIWindow)
 extends SwingTextWindowUI(screenUI, glkWindow) {
 
-  setMargin(new java.awt.Insets(SwingTextGridUI.MarginTop,
-                                SwingTextGridUI.MarginLeft,
-                                SwingTextGridUI.MarginBottom,
-                                SwingTextGridUI.MarginRight))
+  textPane.setMargin(new java.awt.Insets(SwingTextGridUI.MarginTop,
+                                         SwingTextGridUI.MarginLeft,
+                                         SwingTextGridUI.MarginBottom,
+                                         SwingTextGridUI.MarginRight))
 
-  setFont(screenUI.fixedFont)
+  textPane.setFont(screenUI.fixedFont)
   setStyle(StyleType.Normal)
-  val attrs = getInputAttributes
+  val attrs = textPane.getInputAttributes
   StyleConstants.setFontFamily(attrs, screenUI.fixedFont.getFamily)
   StyleConstants.setFontSize(attrs,   screenUI.fixedFont.getSize)  
 
@@ -68,16 +68,16 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   private[this] var _cursory = 0
   
   protected def numCols =
-    (getWidth - SwingTextGridUI.MarginLeft - SwingTextGridUI.MarginRight) /
+    (textPane.getWidth - SwingTextGridUI.MarginLeft - SwingTextGridUI.MarginRight) /
     screenUI.charWidthTextGrid
   protected def numRows =
-    (getHeight - SwingTextGridUI.MarginTop - SwingTextGridUI.MarginBottom) /
+    (textPane.getHeight - SwingTextGridUI.MarginTop - SwingTextGridUI.MarginBottom) /
     screenUI.lineHeightTextGrid
 
   def reset = _clear
   def _clear {
-    setBackground(new Color(currentBackgroundColor))
-    setForeground(new Color(currentForegroundColor))
+    textPane.setBackground(new Color(currentBackgroundColor))
+    textPane.setForeground(new Color(currentForegroundColor))
     _cursorx = 0
     _cursory = 0
     
@@ -96,11 +96,11 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
       i += 1
     }
     setStyle(StyleType.Normal)
-    setText("")
-    getDocument.insertString(0, text.toString, getInputAttributes)
+    textPane.setText("")
+    textPane.getDocument.insertString(0, text.toString, textPane.getInputAttributes)
   }
 
-  def container = this
+  def container = textPane
   override protected def resumeWithLineInput(input: String) {
     super.resumeWithLineInput(input)
     waitForMouse = false
@@ -135,9 +135,9 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     } else {
       val index = currentPos
       // write to the right position in the document
-      val doc = getDocument
+      val doc = textPane.getDocument
       doc.remove(index, 1)
-      doc.insertString(index, String.valueOf(c), getInputAttributes)
+      doc.insertString(index, String.valueOf(c), textPane.getInputAttributes)
       _cursorx += 1
       // wrap around if possible
       if (_cursorx >= numCols && _cursory < numRows) {
@@ -150,7 +150,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
     if (isHyperlinkMode) return // ignore style in hyperlink mode
     import StyleHintType._
     flush
-    val attrs = getInputAttributes
+    val attrs = textPane.getInputAttributes
     val isBold =
       if (glkWindow.styleHints.get(style, Weight) == 1) true else false
     val isItalic =
@@ -188,7 +188,7 @@ extends SwingTextWindowUI(screenUI, glkWindow) {
   override def mouseClicked(event: MouseEvent) {
     if (waitForMouse) {
       // map mouse coordinates to character pos
-      val pos = viewToModel(new java.awt.Point(event.getPoint))
+      val pos = textPane.viewToModel(new java.awt.Point(event.getPoint))
       val y = pos / numCols
       val x = pos % numCols
       logger.info("mouseClicked, POS = %d MAPPED TO X = %d Y = %d".format(pos,
