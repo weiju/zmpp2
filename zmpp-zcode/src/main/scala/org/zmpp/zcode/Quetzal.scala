@@ -240,7 +240,7 @@ class QuetzalReader(vmState: VMStateImpl, machine: Machine) {
         case e:IllegalFormatException =>
           machine.warn("Save file is not in Quetzal format\n")
           return false
-        case _ =>
+        case _: Throwable =>
           machine.warn("Could not read save file\n")
           return false
       } finally {

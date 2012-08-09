@@ -95,7 +95,7 @@ object ExecutionControl {
       
       executeTurn(vm)
     } catch {
-      case ex => ex.printStackTrace
+      case ex: Throwable => ex.printStackTrace
     }
   }  
 }

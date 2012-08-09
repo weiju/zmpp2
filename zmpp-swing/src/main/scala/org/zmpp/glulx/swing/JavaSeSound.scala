@@ -74,7 +74,7 @@ object AudioStreamFactory {
       val readerClass = Class.forName(className)
       return readerClass.newInstance().asInstanceOf[AudioFileReader]
     } catch {
-      case _ =>
+      case _: Throwable =>
         logger.warning(
           "No %s reader found in the classpath (library missing)".format(soundType))
     }
@@ -224,7 +224,7 @@ extends NativeSoundChannel {
           return false
         }
       } catch {
-        case ex =>
+        case ex: Throwable =>
           ex.printStackTrace
           return false
       }

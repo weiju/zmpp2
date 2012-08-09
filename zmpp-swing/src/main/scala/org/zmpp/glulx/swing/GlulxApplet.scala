@@ -53,7 +53,7 @@ class GlulxApplet extends JApplet with SwingGlkScreenUI {
           offset += bytesRead
         }
       } catch {
-        case e => e.printStackTrace
+        case e: Throwable => e.printStackTrace
       } finally {
         in.close
       }

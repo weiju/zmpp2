@@ -242,7 +242,7 @@ class Glk(val eventManager: EventManager) {
     try {
       fileSystem.createFileRefByName(usage, name, rock)
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.warning("Exception in fileref_create_by_name: " + e.toString)
         0
     }
@@ -253,7 +253,7 @@ class Glk(val eventManager: EventManager) {
       if (file == null) 0
       else fileSystem.createFileRefByFile(usage, fmode, file, rock)
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.warning("Exception in fileref_create_by_prompt: " + e.toString)
         0
     }
@@ -263,7 +263,7 @@ class Glk(val eventManager: EventManager) {
     try {
       fileSystem.createFromFileRef(usage, fileRefId, rock)
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.warning("Exception in fileref_create_from_fileref: " +
                        e.toString)
         0
@@ -273,7 +273,7 @@ class Glk(val eventManager: EventManager) {
     try {
       fileSystem.createTemp(usage, rock)
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.warning("Exception in fileref_create_temp: " + e.toString)
         0
     }
@@ -282,7 +282,7 @@ class Glk(val eventManager: EventManager) {
     try {
       fileSystem.deleteFile(fileRefId)
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.warning("Exception in fileref_delete_file: " + e.toString)
     }
   }
@@ -290,7 +290,7 @@ class Glk(val eventManager: EventManager) {
     try {
       fileSystem.destroy(fileRefId)
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.warning("Exception in fileref_destroy: " + e.toString)
     }
   }
@@ -298,7 +298,7 @@ class Glk(val eventManager: EventManager) {
     try {
       if (fileSystem.doesFileExist(fileRefId)) 1 else 0
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.warning("Exception in fileref_does_file_exist: " + e.toString)
         0
     }
@@ -423,7 +423,7 @@ class Glk(val eventManager: EventManager) {
       if (fileStream != null) ioSystem.registerStream(fileStream)
       else 0
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.warning("Exception in stream_open_file: " + e.toString)
         0
     }
@@ -437,7 +437,7 @@ class Glk(val eventManager: EventManager) {
       if (fileStream != null) ioSystem.registerStream(fileStream)
       else 0
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.warning("Exception in stream_open_file_uni: " + e.toString)
         0
     }
