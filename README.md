@@ -17,6 +17,28 @@ The second revision of ZMPP reflects current knowledge and ideas about how I thi
   it runs within a single thread. Whether the user interface employs
   multiple threads is left to the specific UI implementation.
 
+###Build Instructions:
+
+The project is built with sbt 0.12, it is configured for Scala 2.9.2
+Simply type
+
+	sbt clean test
+
+to build all the subprojects and run the unit tests. To build e.g. the Z-Code interpreter
+start sbt and type
+
+	project zmpp-zcode
+
+Typing
+	run <path-to-z-code-game>
+
+will run the desktop interpreter from within sbt, while
+
+	assembly
+
+will build an executable jar file with all dependencies.
+
+
 ###Current features:
 
 - Glulx 3.1.1, Glk 0.7.0 almost feature complete (see known issues)
