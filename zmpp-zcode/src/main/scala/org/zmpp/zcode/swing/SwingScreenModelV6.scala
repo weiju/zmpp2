@@ -99,6 +99,9 @@ with OutputStream with InputStream with SwingScreenModel {
     val fm = g.getFontMetrics(fixedFont)
     vm.setFontSizeInUnits(fm.charWidth('0'), fm.getHeight)
     vm.setScreenSizeInUnits(getWidth, getHeight)
+    
+    println("Screen size (units): " + vm.screenSizeInUnits)
+    println("Font size (units): " + vm.fontSizeInUnits)
   }
   def connect(aVm: Machine) {
     vm = aVm
@@ -118,12 +121,20 @@ with OutputStream with InputStream with SwingScreenModel {
   }
   def eraseWindow(windowId: Int) {
     printf("@erase_window %d (TODO)\n", windowId)
+    windowId match {
+      case -1 =>
+        println("reset screen")
+      case -2 =>
+        println("clear window, no unsplit")
+      case _ =>
+        println("clear selected window")
+    }
   }
   def setWindow(windowId: Int) {
     printf("@set_window %d (TODO)\n", windowId)
   }
   def splitWindow(lines: Int) {
-    printf("@split_window %d (TODO)\n", lines)
+    printf("@split_window (%d units) (TODO)\n", lines)
   }
   def cursorPosition: (Int, Int) = {
     throw new UnsupportedOperationException("getCursorPosition() not yet implemented in screen model")
