@@ -33,21 +33,61 @@ import javax.swing.text.MutableAttributeSet
 import java.awt.{Dimension,Font, Color}
 import java.io.{FileInputStream, FileOutputStream}
 import org.zmpp.zcode._
+import org.zmpp.zcode.ScreenModel._
 
-sealed trait V6WindowState {
+abstract class V6WindowState(var left: Int, var top: Int, var width: Int, var height: Int) {
+  def setCursor(line: Int, column: Int) {
+    throw new UnsupportedOperationException
+  }
+  def eraseLine(value: Int) {
+    throw new UnsupportedOperationException
+  }
 }
 
-class V6TextGrid extends V6WindowState {
+// units are pixels
+class V6GraphicsWindow(width: Int, height: Int) extends V6WindowState(0, 0, width, height)
+class V6NullWindowState(width: Int, height: Int) extends V6WindowState(0, 0, width, height)
+class V6TextGrid(width: Int, height: Int) extends V6WindowState(0, 0, width, height) {
+  override def setCursor(line: Int, column: Int) {
+    printf("@set_cursor l = %d r = %d (TextGrid - TODO)\n", line, column)
+  }
+  override def eraseLine(value: Int) {
+    printf("@erase_line v = %d (TextGrid - TODO)\n", value)
+  }
 }
-class V6TextWindow extends V6WindowState {
-}
-class V6GraphicsWindow extends V6WindowState {
+class V6TextWindow(width: Int, height: Int) extends V6WindowState(0, 0, width, height) {
+  override def setCursor(line: Int, column: Int) {
+    printf("@set_cursor l = %d r = %d (TextWindow - TODO)\n", line, column)
+  }
+  override def eraseLine(value: Int) {
+    printf("@erase_line v = %d (TextWindow - TODO)\n", value)
+  }
 }
 
 class V6Window {
-  private var currentState: V6WindowState = null
-  def setCurrentState(state: V6WindowState) {
-    currentState = state
+  private[this] var _currentState: V6WindowState = new V6NullWindowState(0, 0)
+  def currentState = _currentState
+  def currentState_=(state: V6WindowState) {
+    _currentState = state
+  }
+
+  def clear { }
+  def reset {
+    _currentState.left = 0
+    _currentState.top = 0
+    setBounds(0, 0, 0, 0)
+  }
+  def setBounds(left: Int, top: Int, xunits: Int, yunits: Int) {
+    _currentState.left = left
+    _currentState.top = top
+    _currentState.width = xunits
+    _currentState.height = yunits
+  }
+  def setCursor(line: Int, column: Int) {
+    _currentState.setCursor(line, column)
+  }
+  def eraseLine(value: Int) {
+    _currentState.eraseLine(value)
   }
 }
 
@@ -58,12 +98,14 @@ class V6Window {
  */
 class SwingScreenModelV6 extends JComponent
 with OutputStream with InputStream with SwingScreenModel {
-  var vm: Machine = null
-  val windows = Array.ofDim[V6Window](8)
-  (0 until 7).foreach{ i => windows(i) = new V6Window }
+  private[this] var vm: Machine = null
+  private[this] val windows = Array.ofDim[V6Window](8)
+  private[this] var selected  = true
+  private[this] val fixedFont         = new Font("Courier New", Font.PLAIN, 14)
+  private[this] var selectedWindowId = BottomWindow
+  private[this] var currentStyle = TextStyles.Roman
 
-  private var selected  = true
-  val fixedFont         = new Font("Courier New", Font.PLAIN, 14)
+  (0 until 8).foreach{ i => windows(i) = new V6Window }
   setPreferredSize(new Dimension(640, 480))
 
   def getComponent = this
@@ -92,6 +134,13 @@ with OutputStream with InputStream with SwingScreenModel {
   }
 
   // ScreenModel
+  private def resetScreen {
+    val g = getGraphics
+    g.clearRect(0, 0, getWidth, getHeight)
+    (0 until 8).foreach{ i => windows(i).reset }
+    windows(BottomWindow).setBounds(0, 0, getWidth, getHeight)
+  }
+
   def initUI {
     // now the top window "knows" how large the screen is, so we can set
     // the dimensions and font sizes to the VM
@@ -102,6 +151,8 @@ with OutputStream with InputStream with SwingScreenModel {
     
     println("Screen size (units): " + vm.screenSizeInUnits)
     println("Font size (units): " + vm.fontSizeInUnits)
+    windows(BottomWindow).currentState = new V6TextWindow(getWidth, getHeight)
+    windows(TopWindow).currentState = new V6TextGrid(0, 0)
   }
   def connect(aVm: Machine) {
     vm = aVm
@@ -114,33 +165,37 @@ with OutputStream with InputStream with SwingScreenModel {
     1
   }
   def eraseLine(value: Int) {
-    printf("@erase_line %d not implemented yet (TODO)\n", value)
+    windows(selectedWindowId).eraseLine(value)
   }
   def setTextStyle(aStyle: Int) {
-    printf("@set_text_style %d (TODO)\n", aStyle)
+    // TODO: style is actually a screen-global property
+    currentStyle = aStyle
+    printf("@set_text_style %d\n", aStyle)
   }
   def eraseWindow(windowId: Int) {
-    printf("@erase_window %d (TODO)\n", windowId)
     windowId match {
-      case -1 =>
-        println("reset screen")
+      case -1 => resetScreen
       case -2 =>
-        println("clear window, no unsplit")
+        println("clear window, no unsplit (TODO)")
       case _ =>
-        println("clear selected window")
-    }
+        println("clear selected window (TODO)")
+  }
   }
   def setWindow(windowId: Int) {
-    printf("@set_window %d (TODO)\n", windowId)
+    printf("@set_window %d\n", windowId)
+    selectedWindowId = windowId
   }
   def splitWindow(lines: Int) {
-    printf("@split_window (%d units) (TODO)\n", lines)
+    printf("@split_window (%d units) [V6 emulation] (TODO)\n", lines)
+    val fontSize = vm.fontSizeInUnits
+    windows(BottomWindow).setBounds(0, fontSize._2, getWidth, getHeight - fontSize._2)
+    windows(TopWindow).setBounds(0, 0, getWidth, fontSize._2)
   }
   def cursorPosition: (Int, Int) = {
     throw new UnsupportedOperationException("getCursorPosition() not yet implemented in screen model")
   }
   def setCursorPosition(line: Int, column: Int) {
-    printf("@set_cursor %d %d (TODO)\n", line, column)
+    windows(selectedWindowId).setCursor(line, column)
   }
   def updateStatusLine { }
   def screenOutputStream = this
