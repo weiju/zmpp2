@@ -210,7 +210,8 @@ extends ScreenModelWindow with KeyListener {
   }
 
   def cursorPosition = {
-    throw new UnsupportedOperationException("@get_cursor not supported for bottom window")
+    println("warn: @get_cursor not supported for bottom window")
+    (1, 1)
   }
   def cursorPosition_=(pos: (Int, Int)) = {
     println("warn: @set_cursor not supported for bottom window")
