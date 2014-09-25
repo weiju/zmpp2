@@ -934,11 +934,13 @@ class Machine {
     if (version == 6) {
       state.setByteAt(0x26, height)
       state.setByteAt(0x27, width)
-    } else if (version >= 5) {
+    } else if (version >= 5) { // this means versions 5, 7 and 8
       state.setByteAt(0x26, width)
       state.setByteAt(0x27, height)
     }
   }
+
+  def fontSizeInUnits: (Int, Int) = (state.header.fontWidthUnits, state.header.fontHeightUnits)
 
   def setScreenSizeInUnits(width: Int, height: Int) {
     if (version >= 4) {
@@ -950,6 +952,8 @@ class Machine {
       state.setShortAt(0x24, height)
     }
   }
+
+  def screenSizeInUnits: (Int, Int) = (state.header.screenWidthUnits, state.header.screenHeightUnits)
 
   // **********************************************************************
   // ****** Save/restore games

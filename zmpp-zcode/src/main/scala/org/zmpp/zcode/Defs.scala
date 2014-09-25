@@ -85,12 +85,12 @@ class StoryHeader(story: Memory) {
   def screenWidthUnits    = story.shortAt(0x22) // V5
   def screenHeightUnits   = story.shortAt(0x24) // V5
   def fontWidthUnits      = {
-    if (version == 6) story.shortAt(0x27)
-    else story.shortAt(0x26)
+    if (version == 6) story.byteAt(0x27)
+    else story.byteAt(0x26)
   }
   def fontHeightUnits     = {
-    if (version == 6) story.shortAt(0x26)
-    else story.shortAt(0x27)
+    if (version == 6) story.byteAt(0x26)
+    else story.byteAt(0x27)
   }
   def routinesOffset      = story.shortAt(0x28)
   def staticStringsOffset = story.shortAt(0x2a)
