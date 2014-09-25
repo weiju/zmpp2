@@ -1,6 +1,6 @@
 /*
  * Created on 2010/04/01
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -948,7 +948,8 @@ class GlulxVM {
           fatal("@setmemsize: can not set while heap is active")
         _state.memsize = newSize
         // Result is 0 for success, 1 for fail
-        0
+        // TODO: previously returning 0, now not returning anything
+        // 0
       case 0x104 => // jumpabs
         _state.pc = getOperand(0)
       case 0x110 => // random

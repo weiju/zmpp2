@@ -1,6 +1,6 @@
 /*
  * Created on 2010/11/28
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,13 @@
  */
 package org.zmpp.tads3
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
 
 @RunWith(classOf[JUnitRunner])
-class TadsStringSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class TadsStringSpec extends FlatSpec with BeforeAndAfterEach {
 
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
@@ -47,13 +46,13 @@ class TadsStringSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
     vmState = new TadsVMState(objectSystem, functionSetMapper)
   }
   "TadsString" should "be created" in {
-    makeString(1, "astring").length should equal ("astring".length)
+    assert(makeString(1, "astring").length === "astring".length)
   }
   it should "be concatenated" in {
     val str1 = makeString(1, "Hello, ")
     val str2 = makeString(2, "World !")
     val str3Id = str1 + str2.id
-    objectSystem.toTadsString(str3Id).string should equal ("Hello, World !")
+    assert(objectSystem.toTadsString(str3Id).string == "Hello, World !")
   }
   it should "do a find" in {
     val str1 = makeString(1, "Hello, World !")
@@ -61,60 +60,60 @@ class TadsStringSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
     val str3 = makeString(2, "salami")
 
     // success
-    str1.find(str1, 1) should equal (1)
-    str1.find(str2, 1) should equal (2)
+    assert(str1.find(str1, 1) === 1)
+    assert(str1.find(str2, 1) === 2)
     // failure
-    str1.find(str2, 3) should equal (0)
-    str1.find(str3, 1) should equal (0)
+    assert(str1.find(str2, 3) === 0)
+    assert(str1.find(str3, 1) === 0)
   }
   it should "do a findReplace" in {
     val str1 = makeString(1, "blablabla")
-    ( str1.findReplace(makeString(2, "bla"),
-                     makeString(3, "rhabarber"), true, 1).string
-     should equal ("rhabarberrhabarberrhabarber") )
-    ( str1.findReplace(makeString(2, "bla"),
-                       makeString(3, "rhabarber"), false, 2).string
-     should equal ("blarhabarberbla") )
-    ( str1.findReplace(makeString(2, "bla"),
-                       makeString(3, "rhabarber"), true, 2).string
-     should equal ("blarhabarberrhabarber") )
+    assert( str1.findReplace(makeString(2, "bla"),
+                     makeString(3, "rhabarber"), true, 1).string ==
+     "rhabarberrhabarberrhabarber")
+    assert( str1.findReplace(makeString(2, "bla"),
+                       makeString(3, "rhabarber"), false, 2).string ==
+     "blarhabarberbla")
+    assert( str1.findReplace(makeString(2, "bla"),
+                       makeString(3, "rhabarber"), true, 2).string ==
+     "blarhabarberrhabarber")
   }
   it should "do a substr" in {
     val str1 = makeString(1, "abcdef")
-    str1.substr(3).string     should equal ("cdef")
-    str1.substr(3, 2).string  should equal ("cd")
+    assert(str1.substr(3).string == "cdef")
+    assert(str1.substr(3, 2).string == "cd")
 
     val str2 = makeString(2, "abcdefghi")
-    str2.substr(-3).string    should equal ("ghi")
-    str2.substr(-3, 2).string should equal ("gh")
-    str2.substr(-3, 5).string should equal ("ghi")
-    str2.substr(1, 0).string  should equal ("")
+    assert(str2.substr(-3).string == "ghi")
+    assert(str2.substr(-3, 2).string == "gh")
+    assert(str2.substr(-3, 5).string == "ghi")
+    assert(str2.substr(1, 0).string  == "")
   }
   it should "do substr with start = 0 (undocumented)" in {
-    makeString(1, "abcdef").substr(0, 1).string should equal ("a")
+    assert(makeString(1, "abcdef").substr(0, 1).string == "a")
   }
   it should "when containing invisible char not equal to empty string" in {
     // this is a strange case that happened while
     // developing, we keep it to catch it in the future
     val str1 = makeString(1, "\u000f")
     val str2 = makeString(2, "")
-    str1 should not equal (str2)
+    assert(str1 != str2)
   }
   it should "perform endsWith()" in {
     val str1 = makeString(1, "HelloWorld")
     val str2 = makeString(2, "World")
     val str3 = makeString(3, "Welt")
       
-    str1.endsWith(str2) should be (true)
-    str1.endsWith(str3) should be (false)
+    assert(str1.endsWith(str2))
+    assert(!str1.endsWith(str3))
   }
   it should "perform startsWith()" in {
     val str1 = makeString(1, "HelloWorld")
     val str2 = makeString(2, "Hello")
     val str3 = makeString(3, "Hallo")
       
-    str1.startsWith(str2) should be (true)
-    str1.startsWith(str3) should be (false)
+    assert(str1.startsWith(str2))
+    assert(!str1.startsWith(str3))
   }
 
   private def makeString(id: Int, str: String) = {

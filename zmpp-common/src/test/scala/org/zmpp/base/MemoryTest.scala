@@ -1,6 +1,6 @@
 /**
  * Created on 2010/04/01
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,15 +28,14 @@
  */
 package org.zmpp.base
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 import java.io._
 
 @RunWith(classOf[JUnitRunner])
-class MemorySpec extends FlatSpec with ShouldMatchers {
+class MemorySpec extends FlatSpec with Matchers {
 
   "DefaultMemory" should "be initialized" in {
     val data : Array[Byte] = Array(0x01, 0x02, 0x03, 0xff.toByte, 0xfe.toByte)

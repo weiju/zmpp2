@@ -1,6 +1,6 @@
 /*
  * Created on 2011/2/8
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,13 @@
  */
 package org.zmpp.tads3
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
 
 @RunWith(classOf[JUnitRunner])
-class TadsFileSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class TadsFileSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
@@ -52,8 +51,8 @@ class TadsFileSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach 
 
     vmState.stack.pushInt(FileAccessRead)
     vmState.stack.pushInt(LibraryDefaultsFile)
-    evaluating {
+    a [FileNotFoundException] should be thrownBy {
       objectSystem.fileMetaClass.openTextFile(null, 2)
-    } should produce[FileNotFoundException]
+    }
   }
 }

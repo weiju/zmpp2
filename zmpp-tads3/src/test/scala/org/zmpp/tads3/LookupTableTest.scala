@@ -1,6 +1,6 @@
 /*
  * Created on 2010/12/13
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,13 @@
  */
 package org.zmpp.tads3
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
 
 @RunWith(classOf[JUnitRunner])
-class LookupTableSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class LookupTableSpec extends FlatSpec with BeforeAndAfterEach {
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
   var vmState : TadsVMState = null
@@ -47,65 +46,65 @@ class LookupTableSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEa
   }
   "LookupTable" should "be created" in {
     val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
-    lookupTable.entryCount should equal (0)
+    assert(lookupTable.entryCount === 0)
   }
 
   it should "add a value" in {
     val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
     lookupTable(T3Integer(3)) = T3Integer(42)
 
-    lookupTable.entryCount should equal (1)
-    lookupTable.isKeyPresent(T3Integer(3)) should be (true)
-    lookupTable(T3Integer(3)) should equal (T3Integer(42))
-    lookupTable.valueAtIndex(T3Integer(3)) should equal(T3Integer(42))
+    assert(lookupTable.entryCount === 1)
+    assert(lookupTable.isKeyPresent(T3Integer(3)))
+    assert(lookupTable(T3Integer(3)) == T3Integer(42))
+    assert(lookupTable.valueAtIndex(T3Integer(3)) == T3Integer(42))
   }
   it should "add a value through setValueAtIndex" in {
     val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
     val id = lookupTable.setValueAtIndex(T3Integer(3), T3Integer(42))
 
-    lookupTable.entryCount                 should equal (1)
-    lookupTable.isKeyPresent(T3Integer(3)) should be (true)
-    lookupTable.valueAtIndex(T3Integer(3)) should equal (T3Integer(42))
-    lookupTable(T3Integer(3))              should equal (T3Integer(42))
-    id                                     should equal (T3ObjectId(1))
+    assert(lookupTable.entryCount === 1)
+    assert(lookupTable.isKeyPresent(T3Integer(3)))
+    assert(lookupTable.valueAtIndex(T3Integer(3)) == T3Integer(42))
+    assert(lookupTable(T3Integer(3)) == T3Integer(42))
+    assert(id == T3ObjectId(1))
   }
   it should "update a value" in {
     val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
     lookupTable(T3Integer(3)) = T3Integer(42)
     lookupTable(T3Integer(3)) = T3Integer(43)
 
-    lookupTable.entryCount                 should equal (1)
-    lookupTable.isKeyPresent(T3Integer(3)) should be (true)
-    lookupTable(T3Integer(3))              should equal (T3Integer(43))
+    assert(lookupTable.entryCount === 1)
+    assert(lookupTable.isKeyPresent(T3Integer(3)))
+    assert(lookupTable(T3Integer(3)) == T3Integer(43))
   }
   it should "add two values" in {
     val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
     lookupTable(T3Integer(3)) = T3Integer(42)
     lookupTable(T3Integer(4)) = T3Integer(43)
 
-    lookupTable.entryCount                 should equal (2)
-    lookupTable.isKeyPresent(T3Integer(3)) should be (true)
-    lookupTable.isKeyPresent(T3Integer(4)) should be (true)
-    lookupTable(T3Integer(3))              should equal (T3Integer(42))
-    lookupTable(T3Integer(4))              should equal (T3Integer(43))
+    assert(lookupTable.entryCount === 2)
+    assert(lookupTable.isKeyPresent(T3Integer(3)))
+    assert(lookupTable.isKeyPresent(T3Integer(4)))
+    assert(lookupTable(T3Integer(3)) == T3Integer(42))
+    assert(lookupTable(T3Integer(4)) == T3Integer(43))
   }
   it should "remove a value" in {
     val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
     lookupTable(T3Integer(3)) = T3Integer(42)
 
     val result = lookupTable.removeElement(T3Integer(3))
-    result                                   should equal (T3Integer(42))
-    lookupTable.entryCount                   should equal (0)
-      lookupTable.isKeyPresent(T3Integer(3)) should be (false)
+    assert(result == T3Integer(42))
+    assert(lookupTable.entryCount === 0)
+    assert(!lookupTable.isKeyPresent(T3Integer(3)))
   }
   it should "remove a non-existing value" in {
     val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
     lookupTable(T3Integer(3)) = T3Integer(42)
       
     val result = lookupTable.removeElement(T3Integer(5))
-    result                                 should equal (T3Nil)
-    lookupTable.entryCount                 should equal (1)
-    lookupTable.isKeyPresent(T3Integer(3)) should be (true)
+    assert(result === T3Nil)
+    assert(lookupTable.entryCount === 1)
+    assert(lookupTable.isKeyPresent(T3Integer(3)))
   }
   it should "invoke keysToList" in {
     val lookupTable = new LookupTable(T3ObjectId(1), vmState, false, 32, 64)
@@ -114,6 +113,6 @@ class LookupTableSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEa
 
     val listId = lookupTable.keysToList
     val keys = objectSystem.objectWithId(listId).asInstanceOf[TadsList]
-    keys.size should equal (2)
+    assert(keys.size === 2)
   }
 }

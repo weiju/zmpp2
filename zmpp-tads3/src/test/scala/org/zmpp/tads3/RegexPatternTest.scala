@@ -1,6 +1,6 @@
 /*
  * Created on 2010/11/28
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,13 @@
  */
 package org.zmpp.tads3
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
 
 @RunWith(classOf[JUnitRunner])
-class RegexPatternSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class RegexPatternSpec extends FlatSpec with BeforeAndAfterEach {
 
   var functionSetMapper : IntrinsicFunctionSetMapper = null
   var objectSystem : ObjectSystem = null
@@ -49,38 +48,38 @@ class RegexPatternSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
 
   "RegexPattern" should "be created" in {
     val pattern = makePattern(1, "apattern")
-    pattern.javaPatternString should equal ("apattern")
-    pattern.ignoreCase        should be (false)
+    assert(pattern.javaPatternString === "apattern")
+    assert(!pattern.ignoreCase)
   }
   it should "use the ignoreCase flag" in {
     val pattern = makePattern(1, "<nocase>apattern")
-    pattern.javaPatternString should equal ("apattern")
-    pattern.ignoreCase        should be (true)
+    assert(pattern.javaPatternString === "apattern")
+    assert(pattern.ignoreCase)
   }
   it should "translate a pattern" in {
     val pattern = makePattern(10, "<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>")
     pattern.compile
 
-    pattern.javaPatternString should equal ("[<]\\.(/?[a-z][a-z0-9]*)[>]")
+    assert(pattern.javaPatternString === "[<]\\.(/?[a-z][a-z0-9]*)[>]")
 
     val s1 = pattern.search(makeString(1, "<.p0><title>"), 1)
-    s1.valueAtIndex(T3Integer(1)) should equal (T3Integer(1))
-    s1.valueAtIndex(T3Integer(2)) should equal (T3Integer(5))
+    assert(s1.valueAtIndex(T3Integer(1)) ==  T3Integer(1))
+    assert(s1.valueAtIndex(T3Integer(2)) == T3Integer(5))
 
     val s2 = pattern.search(makeString(2, "some<.p0><title>"), 1)
-    s2.valueAtIndex(T3Integer(1)) should equal (T3Integer(5))
-    s2.valueAtIndex(T3Integer(2)) should equal (T3Integer(5))
-    pattern.search(makeString(2, "sometext"), 1) should be (null)
+    assert(s2.valueAtIndex(T3Integer(1)) == T3Integer(5))
+    assert(s2.valueAtIndex(T3Integer(2)) == T3Integer(5))
+    assert(pattern.search(makeString(2, "sometext"), 1) === null)
   }
   it should "return a group" in {
     val pattern = makePattern(10, "<nocase><langle>%.(/?[a-z][a-z0-9]*)<rangle>")
     pattern.search(makeString(1, "<.p0><title>"), 1)
     val matchGroup = pattern.group(1)
 
-    matchGroup.size should equal (3)
-    matchGroup.valueAtIndex(T3Integer(1)) should equal (T3Integer(3))
-    matchGroup.valueAtIndex(T3Integer(2)) should equal (T3Integer(2))
-    matchGroup.valueAtIndex(T3Integer(3)).valueType should equal (TypeIds.VmObj)
+    assert(matchGroup.size === 3)
+    assert(matchGroup.valueAtIndex(T3Integer(1)) == T3Integer(3))
+    assert(matchGroup.valueAtIndex(T3Integer(2)) == T3Integer(2))
+    assert(matchGroup.valueAtIndex(T3Integer(3)).valueType == TypeIds.VmObj)
   }
 
   // returns a pattern which is retrieving the specified string from a

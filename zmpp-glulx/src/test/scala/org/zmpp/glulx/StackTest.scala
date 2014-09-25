@@ -1,6 +1,6 @@
 /*
  * Created on 2010/04/01
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,7 @@
  */
 package org.zmpp.glulx
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
@@ -38,7 +37,7 @@ import java.io._
 import org.zmpp.base._
 
 @RunWith(classOf[JUnitRunner])
-class StackSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class StackSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   val DummyMem = Array[Byte](0x47, 0x6c, 0x75, 0x6c, 0x00, 0x03, 0x01, 0x01,
                              0x00, 0x00, 0x00, 0x00, // RAMSTART

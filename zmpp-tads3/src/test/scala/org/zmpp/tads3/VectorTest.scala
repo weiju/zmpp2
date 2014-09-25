@@ -1,6 +1,6 @@
 /*
  * Created on 2010/11/07
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,13 @@
  */
 package org.zmpp.tads3
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
 
 @RunWith(classOf[JUnitRunner])
-class VectorSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class VectorSpec extends FlatSpec with BeforeAndAfterEach {
 
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
@@ -49,16 +48,16 @@ class VectorSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
 
   "Vector" should "be created" in {
     val vector = new Vector(T3ObjectId(1), vmState, false)
-    vector.metaClass.name should equal ("vector")
-    vector.size           should equal (0)
+    assert(vector.metaClass.name == "vector")
+    assert(vector.size === 0)
   }
   it should "append an element" in {
     val vector = new Vector(T3ObjectId(1), vmState, false)
     val value = T3Integer(4711)
     vector.append(value)
 
-    vector.size should equal (1)
-    vector.valueAtIndex(T3Integer(1)) should equal (value)
+    assert(vector.size === 1)
+    assert(vector.valueAtIndex(T3Integer(1)) == value)
   }
   it should "insert an element at position 1" in {
     val vector = new Vector(T3ObjectId(1), vmState, false)
@@ -67,9 +66,9 @@ class VectorSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
     vector.append(value0)
     vector.insertAt(1, value1)
 
-    vector.size should equal (2)
-    vector.valueAtIndex(T3Integer(1)) should equal (value1)
-    vector.valueAtIndex(T3Integer(2)) should equal (value0)
+    assert(vector.size === 2)
+    assert(vector.valueAtIndex(T3Integer(1)) == value1)
+    assert(vector.valueAtIndex(T3Integer(2)) == value0)
   }
   it should "insert an element at the end" in {
     val vector = new Vector(T3ObjectId(1), vmState, false)
@@ -78,9 +77,9 @@ class VectorSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
     vector.append(value0)
     vector.insertAt(2, value1)
 
-    vector.size should equal (2)
-    vector.valueAtIndex(T3Integer(1)) should equal (value0)
-    vector.valueAtIndex(T3Integer(2)) should equal (value1)
+    assert(vector.size === 2)
+    assert(vector.valueAtIndex(T3Integer(1)) == value0)
+    assert(vector.valueAtIndex(T3Integer(2)) == value1)
   }
   it should "determine indexOf()" in {
     val vector = new Vector(T3ObjectId(1), vmState, false)
@@ -98,11 +97,11 @@ class VectorSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
     vector.append(value4)
     vector.append(value5)
 
-    vector.indexOf(value0) should equal (T3Integer(1))
-    vector.indexOf(value5) should equal (T3Integer(6))
-    vector.indexOf(value2) should equal (T3Integer(3))
+    assert(vector.indexOf(value0) == T3Integer(1))
+    assert(vector.indexOf(value5) == T3Integer(6))
+    assert(vector.indexOf(value2) == T3Integer(3))
     // not found
-    vector.indexOf(value6) should equal (T3Nil)
+    assert(vector.indexOf(value6) === T3Nil)
   }
   it should "create a list from a vector" in {
     val vector = new Vector(T3ObjectId(1), vmState, false)
@@ -115,9 +114,9 @@ class VectorSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
     val list =
       objectSystem.objectWithId(vector.toList(2, 3)).asInstanceOf[TadsList]
 
-    list.size should equal (2)
-    list.valueAtIndex(T3Integer(1)) should equal (value1)
-    list.valueAtIndex(T3Integer(2)) should equal (value2)
+    assert(list.size === 2)
+    assert(list.valueAtIndex(T3Integer(1)) == value1)
+    assert(list.valueAtIndex(T3Integer(2)) == value2)
   }
   it should "remove a range from a vector" in {
     val vector = new Vector(T3ObjectId(1), vmState, false)
@@ -133,10 +132,10 @@ class VectorSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
     vector.append(value4)
 
     val id = vector.removeRange(2, 3)
-    id should equal (vector.id)
-    vector.size should equal (3)
-    vector.valueAtIndex(T3Integer(1)) should equal (value0)
-    vector.valueAtIndex(T3Integer(2)) should equal (value3)
-    vector.valueAtIndex(T3Integer(3)) should equal (value4)
+    assert(id == vector.id)
+    assert(vector.size === 3)
+    assert(vector.valueAtIndex(T3Integer(1)) == value0)
+    assert(vector.valueAtIndex(T3Integer(2)) == value3)
+    assert(vector.valueAtIndex(T3Integer(3)) == value4)
   }
 }

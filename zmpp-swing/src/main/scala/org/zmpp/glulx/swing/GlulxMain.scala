@@ -1,6 +1,6 @@
 /*
  * Created on 2010/04/09
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,7 +106,7 @@ object ExecutionControl {
       
       executeTurn(vm)
     } catch {
-      case ex => ex.printStackTrace
+      case ex: Throwable => ex.printStackTrace
     }
   }  
 }

@@ -1,6 +1,6 @@
 /*
  * Created on 2010/11/25
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,13 @@
  */
 package org.zmpp.tads3
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
 
 @RunWith(classOf[JUnitRunner])
-class TadsListSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class TadsListSpec extends FlatSpec with BeforeAndAfterEach {
 
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
@@ -51,7 +50,7 @@ class TadsListSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach 
 
   "TadsList" should "be created" in {
     val list = new TadsList(T3ObjectId(1), vmState, false)
-    list.size should equal (0)
+    assert(list.size === 0)
   }
   it should "be initialized" in {
     val list = new TadsList(T3ObjectId(1), vmState, false)
@@ -60,10 +59,10 @@ class TadsListSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach 
     val three = T3Integer(3)
     list.initWith(List(one, two, three))
 
-    list.size                       should equal (3)
-    list.valueAtIndex(T3Integer(1)) should equal (T3Integer(1))
-    list.valueAtIndex(T3Integer(2)) should equal (T3Integer(2))
-    list.valueAtIndex(T3Integer(3)) should equal (T3Integer(3))
+    assert(list.size === 3)
+    assert(list.valueAtIndex(T3Integer(1)) == T3Integer(1))
+    assert(list.valueAtIndex(T3Integer(2)) == T3Integer(2))
+    assert(list.valueAtIndex(T3Integer(3)) == T3Integer(3))
   }
   it should "be sorted ascending using standard comparison" in {
     val list = new TadsList(T3ObjectId(1), vmState, false)
@@ -73,10 +72,10 @@ class TadsListSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach 
     list.initWith(List(two, three, one))
     val newList = objectSystem.toTadsList(list.sort(desc = false, compFunc = T3Nil))
 
-    newList.size                       should equal (3)
-    newList.valueAtIndex(T3Integer(1)) should equal (T3Integer(1))
-    newList.valueAtIndex(T3Integer(2)) should equal (T3Integer(2))
-    newList.valueAtIndex(T3Integer(3)) should equal (T3Integer(3))
+    assert(newList.size === 3)
+    assert(newList.valueAtIndex(T3Integer(1)) == T3Integer(1))
+    assert(newList.valueAtIndex(T3Integer(2)) == T3Integer(2))
+    assert(newList.valueAtIndex(T3Integer(3)) == T3Integer(3))
   }
   it should "be sorted descending using standard comparison" in {
     val list = new TadsList(T3ObjectId(1), vmState, false)
@@ -86,10 +85,10 @@ class TadsListSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach 
     list.initWith(List(two, three, one))
     val newList = toTadsList(list.sort(desc = true, compFunc = T3Nil))
 
-    newList.size                       should equal (3)
-    newList.valueAtIndex(T3Integer(1)) should equal (T3Integer(3))
-    newList.valueAtIndex(T3Integer(2)) should equal (T3Integer(2))
-    newList.valueAtIndex(T3Integer(3)) should equal (T3Integer(1))
+    assert(newList.size === 3)
+    assert(newList.valueAtIndex(T3Integer(1)) == T3Integer(3))
+    assert(newList.valueAtIndex(T3Integer(2)) == T3Integer(2))
+    assert(newList.valueAtIndex(T3Integer(3)) == T3Integer(1))
   }
   it should "use the + operation with a simple value" in {
     val list = new TadsList(T3ObjectId(1), vmState, false)
@@ -99,11 +98,11 @@ class TadsListSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach 
     list.initWith(List(one, two))
     val newList = toTadsList(list + three)
 
-    newList.size                       should equal (3)
-    newList                            should not equal (list)
-    newList.valueAtIndex(T3Integer(1)) should equal (T3Integer(1))
-    newList.valueAtIndex(T3Integer(2)) should equal (T3Integer(2))
-    newList.valueAtIndex(T3Integer(3)) should equal (T3Integer(3))
+    assert(newList.size === 3)
+    assert(newList != list)
+    assert(newList.valueAtIndex(T3Integer(1)) == T3Integer(1))
+    assert(newList.valueAtIndex(T3Integer(2)) == T3Integer(2))
+    assert(newList.valueAtIndex(T3Integer(3)) == T3Integer(3))
   }
   it should "use the + operation with a non-list object value" in {
     val list = new TadsList(T3ObjectId(1), vmState, false)
@@ -114,11 +113,11 @@ class TadsListSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach 
     list.initWith(List(one, two))
     val newList = toTadsList(list + str.id)
 
-    newList.size                       should equal (3)
-    newList                            should not equal (list)
-    newList.valueAtIndex(T3Integer(1)) should equal (T3Integer(1))
-    newList.valueAtIndex(T3Integer(2)) should equal (T3Integer(2))
-    newList.valueAtIndex(T3Integer(3)) should equal (T3ObjectId(3))
+    assert(newList.size === 3)
+    assert(newList != list)
+    assert(newList.valueAtIndex(T3Integer(1)) == T3Integer(1))
+    assert(newList.valueAtIndex(T3Integer(2)) == T3Integer(2))
+    assert(newList.valueAtIndex(T3Integer(3)) == T3ObjectId(3))
   }
   it should "use the + operation with a list value" in {
     val list1 = new TadsList(T3ObjectId(1), vmState, false)
@@ -132,11 +131,11 @@ class TadsListSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach 
     list2.initWith(List(three, four))
     val newList = toTadsList(list1 + list2.id)
 
-    newList.size                       should equal (4)
-    newList                            should not equal (list1)
-    newList.valueAtIndex(T3Integer(1)) should equal (T3Integer(1))
-    newList.valueAtIndex(T3Integer(2)) should equal (T3Integer(2))
-    newList.valueAtIndex(T3Integer(3)) should equal (T3Integer(3))
-    newList.valueAtIndex(T3Integer(4)) should equal (T3Integer(4))
+    assert(newList.size === 4)
+    assert(newList != list1)
+    assert(newList.valueAtIndex(T3Integer(1)) == T3Integer(1))
+    assert(newList.valueAtIndex(T3Integer(2)) == T3Integer(2))
+    assert(newList.valueAtIndex(T3Integer(3)) == T3Integer(3))
+    assert(newList.valueAtIndex(T3Integer(4)) == T3Integer(4))
   }
 }

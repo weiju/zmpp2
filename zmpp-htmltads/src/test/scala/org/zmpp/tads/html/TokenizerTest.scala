@@ -1,6 +1,6 @@
 /**
  * Created on 2011/04/16
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,15 +28,14 @@
  */
 package org.zmpp.tads.html
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 import java.io._
 
 @RunWith(classOf[JUnitRunner])
-class TokenizerSpec extends FlatSpec with ShouldMatchers {
+class TokenizerSpec extends FlatSpec with Matchers {
 
   "Tokenizer" should "emit start tokens" in {
     val reader = new StringReader("<html><body onload=\"bla\">")

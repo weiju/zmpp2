@@ -1,6 +1,6 @@
 /*
  * Created on 2011/10/05
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,13 +28,12 @@
  */
 package org.zmpp.zcode
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class TextStyleSpec extends FlatSpec with ShouldMatchers {
+class TextStyleSpec extends FlatSpec with Matchers {
 
   "TextStyle" should "encode style, font and foreground colors" in {
     val mask = TextStyles.makeStyle(6, 2, 5, 7)

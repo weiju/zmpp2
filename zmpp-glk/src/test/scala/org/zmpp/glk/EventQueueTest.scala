@@ -1,6 +1,6 @@
 /*
  * Created on 2010/06/24
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,13 @@
  */
 package org.zmpp.glk
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.scalatest.BeforeAndAfterEach
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class EventQueueSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class EventQueueSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   var eventQueue: EventManager = null
 
   override def beforeEach {

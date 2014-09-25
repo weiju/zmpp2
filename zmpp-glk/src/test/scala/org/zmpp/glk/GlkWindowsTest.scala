@@ -1,6 +1,6 @@
 /*
  * Created on 2010/05/09
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,7 @@
  */
 package org.zmpp.glk
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
@@ -38,7 +37,7 @@ import org.scalatest.junit.JUnitRunner
  * tries to use String.isEmpty which only exists in Java SE 6
  */
 @RunWith(classOf[JUnitRunner])
-class GlkWindowsSpec extends FlatSpec with ShouldMatchers {
+class GlkWindowsSpec extends FlatSpec with Matchers {
   "GlkWindowSystem" should "be initialized" in {
     val windowSystem = new GlkWindowSystem
     windowSystem.iterate(0) should be (null)

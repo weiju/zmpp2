@@ -1,6 +1,6 @@
 /*
  * Created on 2010/04/01
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,7 @@
  */
 package org.zmpp.glulx
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
@@ -68,7 +67,7 @@ object SearchSpec {
 }
 
 @RunWith(classOf[JUnitRunner])
-class BinarySearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class BinarySearchSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   var vmstate = new GlulxVMState
 
@@ -97,7 +96,7 @@ class BinarySearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
 }
 
 @RunWith(classOf[JUnitRunner])
-class LinearSearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class LinearSearchSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   var vmstate = new GlulxVMState
 
@@ -126,7 +125,7 @@ class LinearSearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterE
 }
 
 @RunWith(classOf[JUnitRunner])
-class LinkedSearchSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class LinkedSearchSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   var vmstate = new GlulxVMState
 

@@ -1,6 +1,6 @@
 /*
  * Created on 2010/04/22
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,7 @@
  */
 package org.zmpp.glk
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.scalatest.BeforeAndAfterEach
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -37,7 +36,7 @@ import org.scalatest.junit.JUnitRunner
 import java.io._
 
 @RunWith(classOf[JUnitRunner])
-class GlkFileSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class GlkFileSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   var fileStream: GlkFileStream = null
   override def beforeEach {

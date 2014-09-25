@@ -1,6 +1,6 @@
 /*
  * Created on 2010/11/07
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,13 @@
  */
 package org.zmpp.tads3
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.BeforeAndAfterEach
 
 @RunWith(classOf[JUnitRunner])
-class TadsObjectIdSpec extends FlatSpec with ShouldMatchers {
+class TadsObjectIdSpec extends FlatSpec {
 
   "T3ObjectId" should "be equal" in {
     val objId42      = T3ObjectId(42)
@@ -44,32 +43,32 @@ class TadsObjectIdSpec extends FlatSpec with ShouldMatchers {
     val objId42three = T3Value.create(TypeIds.VmObj, 42)
     val int42        = T3Value.create(TypeIds.VmInt, 42)
 
-    objId42      should equal (objId42)
-    objId42      should equal (objId42too)
-    objId42too   should equal (objId42)
-    objId42      should equal (objId42three)
-    objId42three should equal (objId42)
+    assert(objId42 == objId42)
+    assert(objId42 == objId42too)
+    assert(objId42too == objId42)
+    assert(objId42 == objId42three)
+    assert(objId42three == objId42)
     
-    objId42      should not equal (objId43)
-    objId43      should not equal (objId42)
-    int42        should not equal (objId42)
-    objId42      should not equal (int42)
+    assert(objId42  != objId43)
+    assert(objId43  != objId42)
+    assert(int42 != objId42)
+    assert(objId42 != int42)
   }
 }
 
 @RunWith(classOf[JUnitRunner])
-class ObjectSystemSpec extends FlatSpec with ShouldMatchers {
+class ObjectSystemSpec extends FlatSpec {
 
   "ObjectSystem" should "be initialized" in {
     val objectSystem = new ObjectSystem
     val id1 = objectSystem.newObjectId
-    id1.value     should equal (1)
-    id1.valueType should equal (TypeIds.VmObj)
+    assert(id1.value === 1)
+    assert(id1.valueType == TypeIds.VmObj)
   }
 }
 
 @RunWith(classOf[JUnitRunner])
-class TadsObjectSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEach {
+class TadsObjectSpec extends FlatSpec with BeforeAndAfterEach {
 
   var objectSystem : ObjectSystem = null
   var functionSetMapper : IntrinsicFunctionSetMapper = null
@@ -83,20 +82,20 @@ class TadsObjectSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
 
   "TadsObject" should "be created" in {
     val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
-    obj.metaClass.name should equal ("tads-object")
+    assert(obj.metaClass.name == "tads-object")
   }
   it should "get non-existing" in {
     val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
-    obj.getProperty(2831, 0) should equal (InvalidProperty)
-    obj.numProperties        should equal (0)
+    assert(obj.getProperty(2831, 0) === InvalidProperty)
+    assert(obj.numProperties === 0)
   }
   it should "set non-existing" in {
     val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
     val testVal = T3Integer(4711)
     obj.setProperty(2831, testVal)
 
-    obj.numProperties                  should equal (1)
-    obj.getProperty(2831, 0).tadsValue should equal (testVal)
+    assert(obj.numProperties === 1)
+    assert(obj.getProperty(2831, 0).tadsValue == testVal)
   }
   it should "overwrite existing" in {
     val obj = new TadsObject(T3ObjectId(1), vmState, false, 0, 0, false)
@@ -105,7 +104,7 @@ class TadsObjectSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterEac
     obj.setProperty(2831, testVal1)
     obj.setProperty(2831, testVal2)
 
-    obj.numProperties                  should equal (1)
-    obj.getProperty(2831, 0).tadsValue should equal (testVal2)
+    assert(obj.numProperties === 1)
+    assert(obj.getProperty(2831, 0).tadsValue == testVal2)
   }
 }

@@ -1,6 +1,6 @@
 /*
  * Created on 2010/06/08
- * Copyright (c) 2010-2011, Wei-ju Wu.
+ * Copyright (c) 2010-2014, Wei-ju Wu.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -74,7 +74,7 @@ object AudioStreamFactory {
       val readerClass = Class.forName(className)
       return readerClass.newInstance().asInstanceOf[AudioFileReader]
     } catch {
-      case _ =>
+      case _: Throwable =>
         logger.warning(
           "No %s reader found in the classpath (library missing)".format(soundType))
     }
@@ -224,7 +224,7 @@ extends NativeSoundChannel {
           return false
         }
       } catch {
-        case ex =>
+        case ex: Throwable =>
           ex.printStackTrace
           return false
       }
