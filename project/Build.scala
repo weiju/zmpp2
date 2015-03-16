@@ -10,7 +10,7 @@ object Zmpp2 extends Build {
   def buildSettings = Seq(
     organization := "org.zmpp",
     version := "1.0",
-    scalaVersion := "2.11.2",
+    scalaVersion := "2.11.6",
     scalacOptions ++= Seq("-deprecation", "-unchecked"),
     javacOptions in Compile ++= Seq("-target", "6", "-source", "6")
     //compileOrder in Compile := CompileOrder.JavaThenScala,
