@@ -72,6 +72,7 @@ class Machine {
   def version = state.header.version 
 
   def resumeWithLineInput(input: String) {
+    printf("resumeWithLineInput '%s'", input)
     state.runState = ZMachineRunStates.Running
     val parserHelper =
       new ParserHelper(state, readLineInfo.textBuffer, readLineInfo.parseBuffer,
@@ -907,7 +908,7 @@ class Machine {
     val oldpc = state.pc
     decodeInstruction
     decodeForm
-    
+
 /*
     // don't do this when in production - maybe a preprocessor should
     // be hooked in

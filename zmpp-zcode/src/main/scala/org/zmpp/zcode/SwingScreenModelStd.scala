@@ -330,8 +330,8 @@ extends JTextPane with ScreenModelWindow with KeyListener {
         event.consume
         val input = doc.getText(inputStart, doc.getLength - inputStart)
         doc.insertString(doc.getLength, "\n", null)
-        //println("Input was: " + input)
-        screenModel.resumeWithLineInput(input + "\n")          
+        println("Input was: " + input)
+        screenModel.resumeWithLineInput(input + "\n")
         inputMode = TextInputMode.InputNone
       } else if (event.getKeyCode == KeyEvent.VK_BACK_SPACE ||
                  event.getKeyCode == KeyEvent.VK_LEFT) {
