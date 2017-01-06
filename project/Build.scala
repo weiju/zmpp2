@@ -10,7 +10,7 @@ object Zmpp2 extends Build {
   def buildSettings = Seq(
     organization := "org.zmpp",
     version := "1.0",
-    scalaVersion := "2.11.7",
+    scalaVersion := "2.12.1",
     scalacOptions ++= Seq("-deprecation", "-unchecked"),
     javacOptions in Compile ++= Seq("-target", "6", "-source", "6")
     //compileOrder in Compile := CompileOrder.JavaThenScala,
@@ -32,5 +32,5 @@ object Zmpp2 extends Build {
   lazy val glk = Project("zmpp-glk", file("zmpp-glk")) settings(testDependencies: _*) dependsOn(common)
   lazy val common = Project("zmpp-common", file("zmpp-common")) settings(testDependencies :_*)
 
-  def testDependencies = libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "2.2.1" % "test", "junit" % "junit" % "4.10" % "test")
+  def testDependencies = libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "3.0.1" % "test", "junit" % "junit" % "4.12" % "test")
 }
